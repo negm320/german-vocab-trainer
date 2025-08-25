@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>German Vocab Trainer</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    .card { border: 1px solid #ccc; border-radius: 10px; padding: 20px; margin-top: 20px; box-shadow: 2px 2px 8px rgba(0,0,0,0.1); }
+    input, button { margin: 5px; padding: 12px; font-size: 16px; }
+    .article-btn { width: 30%; border-radius: 8px; cursor: pointer; }
+    .selected { background-color: #007bff; color: white; }
+    .correct { color: green; font-weight: bold; }
+    .wrong { color: red; font-weight: bold; }
+    #feedback { margin-top: 15px; }
+    #nextBtn { display: none; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>German Vocab Trainer</h1>
+  <p id="level">Level: 1 (Words 1–25)</p>
+  <div class="card">
+    <p><strong>English word:</strong> <span id="english"></span></p>
+
+    <div>
+      <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
+      <button id="btnDie" class="article-btn" onclick="chooseArticle('die')">die</button>
+      <button id="btnDas" class="article-btn" onclick="chooseArticle('das')">das</button>
+    </div>
+
+    <input type="text" id="german" placeholder="German word">
+    <input type="text" id="plural" placeholder="Plural">
+    <br>
+    <button onclick="checkAnswer()">Check</button>
+    <button id="nextBtn" onclick="nextWord()">Next word</button>
+    <p id="feedback"></p>
+  </div>
+
+  <script>
+    let words = [];
+    let currentWord = null;
+    let chosenArticle = '';
+    let level = 1;
+    const wordsPerLevel = 25;
+    const masteryThreshold = 5; // 5 correct in a row
+
+    async function loadCSV() {
+      const response = await fetch('vocab.csv');
+      const data = await response.text();
+      const lines = data.trim().split('\n');
+      lines.shift(); // remove header
+      words = lines.map(line => {
+        const [english, article, german, plural, example] = line.split(',');
+        return {
+          english,
+          article,
+          german,
+          plural,
+          example,
+          correctStreak: 0,
+          weight: 1 // higher weight = more likely to be picked
+        };
+      });
+      updateLevelDisplay();
+      nextWord();
+    }
+
+    function updateLevelDisplay() {
+      document.getElementById('level').textContent = `Level: ${level} (Words 1–${level * wordsPerLevel})`;
+    }
+
+    function getActiveWords() {
+      return words.slice(0, level * wordsPerLevel);
+    }
+
+    function weightedRandomWord(activeWords) {
+      const totalWeight = activeWords.reduce((sum, w) => sum + w.weight, 0);
+      let r = Math.random() * totalWeight;
+      for (let w of activeWords) {
+        if (r < w.weight) return w;
+        r -= w.weight;
+      }
+      return activeWords[activeWords.length - 1];
+    }
+
+    function nextWord() {
+      const activeWords = getActiveWords();
+      currentWord = weightedRandomWord(activeWords);
+      document.getElementById('english').textContent = currentWord.english;
+      document.getElementById('german').value = '';
+      document.getElementById('plural').value = '';
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('nextBtn').style.display = 'none';
+      chosenArticle = '';
+      resetArticleButtons();
+    }
+
+    function resetArticleButtons() {
+      document.getElementById('btnDer').classList.remove('selected');
+      document.getElementById('btnDie').classList.remove('selected');
+      document.getElementById('btnDas').classList.remove('selected');
+    }
+
+    function chooseArticle(article) {
+      chosenArticle = article;
+      resetArticleButtons();
+      if (article === 'der') document.getElementById('btnDer').classList.add('selected');
+      if (article === 'die') document.getElementById('btnDie').classList.add('selected');
+      if (article === 'das') document.getElementById('btnDas').classList.add('selected');
+    }
+
+    function checkAnswer() {
+      const german = document.getElementById('german').value.trim();
+      const plural = document.getElementById('plural').value.trim();
+      let feedback = '';
+
+      if (chosenArticle === currentWord.article && german === currentWord.german && plural === currentWord.plural) {
+        currentWord.correctStreak++;
+        if (currentWord.correctStreak >= masteryThreshold) {
+          currentWord.weight = 0.2; // mastered → very low probability
+        } else {
+          currentWord.weight = 1; // still normal probability
+        }
+        feedback = '<span class="correct">Correct!</span>';
+      } else {
+        currentWord.correctStreak = 0; // reset streak on error
+        currentWord.weight = 2; // increase probability for weak words
+        feedback = `<span class="wrong">Wrong!</span><br>
+        Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+      }
+
+      document.getElementById('feedback').innerHTML = feedback;
+      document.getElementById('nextBtn').style.display = 'inline-block';
+
+      // Check if all active words are mastered → unlock next level
+      const activeWords = getActiveWords();
+      const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
+      if (allMastered && level * wordsPerLevel < words.length) {
+        level++;
+        updateLevelDisplay();
+      }
+    }
+
+    loadCSV();
+  </script>
+</body>
+</html>
