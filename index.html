@@ -2,37 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>German Vocab Trainer</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
-    .card { border: 1px solid #ccc; border-radius: 10px; padding: 20px; margin-top: 20px; box-shadow: 2px 2px 8px rgba(0,0,0,0.1); }
-    input, button { margin: 5px; padding: 12px; font-size: 16px; }
-    .article-btn { width: 30%; border-radius: 8px; cursor: pointer; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: #f8f8f8; }
+    .container { max-width: 500px; margin: auto; padding: 10px; }
+    h1 { font-size: 1.8em; text-align: center; margin-bottom: 10px; }
+    #level { text-align: center; margin-bottom: 15px; font-size: 1.1em; }
+    .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+    .article-btn { width: 30%; padding: 15px 0; font-size: 18px; margin: 5px 1%; border-radius: 10px; cursor: pointer; }
     .selected { background-color: #007bff; color: white; }
-    .correct { color: green; font-weight: bold; }
-    .wrong { color: red; font-weight: bold; }
-    #feedback { margin-top: 15px; }
-    #nextBtn { display: none; margin-top: 10px; }
+    input { width: 48%; padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; }
+    button { padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; }
+    #feedback { margin-top: 15px; font-size: 1em; }
+    #nextBtn { display: none; width: 100%; }
+    @media (max-width: 400px) {
+      .article-btn { width: 32%; font-size: 16px; padding: 12px 0; }
+      input { width: 48%; font-size: 14px; padding: 10px; }
+      button { font-size: 14px; padding: 10px; }
+    }
   </style>
 </head>
 <body>
-  <h1>German Vocab Trainer</h1>
-  <p id="level">Level: 1 (Words 1–25)</p>
-  <div class="card">
-    <p><strong>English word:</strong> <span id="english"></span></p>
+  <div class="container">
+    <h1>German Vocab Trainer</h1>
+    <p id="level">Level: 1 (Words 1–25)</p>
+    <div class="card">
+      <p><strong>English word:</strong> <span id="english"></span></p>
 
-    <div>
-      <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
-      <button id="btnDie" class="article-btn" onclick="chooseArticle('die')">die</button>
-      <button id="btnDas" class="article-btn" onclick="chooseArticle('das')">das</button>
+      <div>
+        <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
+        <button id="btnDie" class="article-btn" onclick="chooseArticle('die')">die</button>
+        <button id="btnDas" class="article-btn" onclick="chooseArticle('das')">das</button>
+      </div>
+
+      <input type="text" id="german" placeholder="German word">
+      <input type="text" id="plural" placeholder="Plural">
+      <br>
+      <button onclick="checkAnswer()">Check</button>
+      <button id="nextBtn" onclick="nextWord()">Next word</button>
+      <p id="feedback"></p>
     </div>
-
-    <input type="text" id="german" placeholder="German word">
-    <input type="text" id="plural" placeholder="Plural">
-    <br>
-    <button onclick="checkAnswer()">Check</button>
-    <button id="nextBtn" onclick="nextWord()">Next word</button>
-    <p id="feedback"></p>
   </div>
 
   <script>
@@ -41,24 +51,16 @@
     let chosenArticle = '';
     let level = 1;
     const wordsPerLevel = 25;
-    const masteryThreshold = 5; // 5 correct in a row
+    const masteryThreshold = 5;
 
     async function loadCSV() {
       const response = await fetch('vocab.csv');
       const data = await response.text();
       const lines = data.trim().split('\n');
-      lines.shift(); // remove header
+      lines.shift();
       words = lines.map(line => {
         const [english, article, german, plural, example] = line.split(',');
-        return {
-          english,
-          article,
-          german,
-          plural,
-          example,
-          correctStreak: 0,
-          weight: 1 // higher weight = more likely to be picked
-        };
+        return { english, article, german, plural, example, correctStreak: 0, weight: 1 };
       });
       updateLevelDisplay();
       nextWord();
@@ -116,22 +118,20 @@
       if (chosenArticle === currentWord.article && german === currentWord.german && plural === currentWord.plural) {
         currentWord.correctStreak++;
         if (currentWord.correctStreak >= masteryThreshold) {
-          currentWord.weight = 0.2; // mastered → very low probability
+          currentWord.weight = 0.2;
         } else {
-          currentWord.weight = 1; // still normal probability
+          currentWord.weight = 1;
         }
         feedback = '<span class="correct">Correct!</span>';
       } else {
-        currentWord.correctStreak = 0; // reset streak on error
-        currentWord.weight = 2; // increase probability for weak words
-        feedback = `<span class="wrong">Wrong!</span><br>
-        Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+        currentWord.correctStreak = 0;
+        currentWord.weight = 2;
+        feedback = `<span class="wrong">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
 
       document.getElementById('feedback').innerHTML = feedback;
       document.getElementById('nextBtn').style.display = 'inline-block';
 
-      // Check if all active words are mastered → unlock next level
       const activeWords = getActiveWords();
       const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
       if (allMastered && level * wordsPerLevel < words.length) {
