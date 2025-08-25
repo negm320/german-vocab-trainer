@@ -112,11 +112,13 @@
     }
 
     function checkAnswer() {
-      const german = document.getElementById('german').value.trim();
-      const plural = document.getElementById('plural').value.trim();
+      const german = document.getElementById('german').value.trim().toLowerCase();
+      const plural = document.getElementById('plural').value.trim().toLowerCase();
+      const correctGerman = currentWord.german.toLowerCase();
+      const correctPlural = currentWord.plural.toLowerCase();
       let feedback = '';
 
-      if (chosenArticle === currentWord.article && german === currentWord.german && plural === currentWord.plural) {
+      if (chosenArticle === currentWord.article && german === correctGerman && plural === correctPlural) {
         currentWord.correctStreak++;
         if (currentWord.correctStreak >= masteryThreshold) {
           currentWord.weight = 0.2;
