@@ -94,6 +94,7 @@
       document.getElementById('nextBtn').style.display = 'none';
       chosenArticle = '';
       resetArticleButtons();
+      document.getElementById('german').focus();
     }
 
     function resetArticleButtons() {
@@ -139,6 +140,21 @@
         updateLevelDisplay();
       }
     }
+
+    // Enter key behavior
+    document.getElementById('german').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('plural').focus();
+      }
+    });
+
+    document.getElementById('plural').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        checkAnswer();
+      }
+    });
 
     loadCSV();
   </script>
