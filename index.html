@@ -16,7 +16,7 @@
     button { padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; }
     #feedback { margin-top: 15px; font-size: 1em; }
     #nextBtn { display: none; width: 100%; }
-    .score { font-size: 0.9em; font-style: italic; color: #555; margin-left: 10px; }
+    .score { font-size: 0.9em; font-style: italic; color: #555; margin-left: 8px; }
     @media (max-width: 400px) {
       .article-btn { width: 32%; font-size: 16px; padding: 12px 0; }
       input { width: 48%; font-size: 14px; padding: 10px; }
@@ -54,6 +54,10 @@
     const wordsPerLevel = 25;
     const masteryThreshold = 5;
 
+    // Queues for tier system
+    let tierQueue = [];
+    let currentTier = 0;
+
     async function loadCSV() {
       const response = await fetch('vocab.csv');
       const data = await response.text();
@@ -61,9 +65,10 @@
       lines.shift();
       words = lines.map(line => {
         const [english, article, german, plural, example] = line.split(',');
-        return { english, article, german, plural, example, correctStreak: 0, weight: 1 };
+        return { english, article, german, plural, example, correctStreak: 0 };
       });
       updateLevelDisplay();
+      refillTierQueue();
       nextWord();
     }
 
@@ -75,29 +80,22 @@
       return words.slice(0, level * wordsPerLevel);
     }
 
-    function updateWeights(word) {
-      if (word.correctStreak >= masteryThreshold) {
-        word.weight = 0.1; // very low probability
-      } else if (word.correctStreak >= 3) {
-        word.weight = 1;
-      } else {
-        word.weight = 3;
-      }
+    function refillTierQueue() {
+      const activeWords = getActiveWords();
+      let lowestTier = Math.min(...activeWords.map(w => w.correctStreak));
+      currentTier = lowestTier;
+      tierQueue = shuffle(activeWords.filter(w => w.correctStreak === lowestTier));
     }
 
-    function weightedRandomWord(activeWords) {
-      const totalWeight = activeWords.reduce((sum, w) => sum + w.weight, 0);
-      let r = Math.random() * totalWeight;
-      for (let w of activeWords) {
-        if (r < w.weight) return w;
-        r -= w.weight;
-      }
-      return activeWords[activeWords.length - 1];
+    function shuffle(array) {
+      return array.sort(() => Math.random() - 0.5);
     }
 
     function nextWord() {
-      const activeWords = getActiveWords();
-      currentWord = weightedRandomWord(activeWords);
+      if (tierQueue.length === 0) {
+        refillTierQueue();
+      }
+      currentWord = tierQueue.shift();
       document.getElementById('english').textContent = currentWord.english;
       document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/5`;
       document.getElementById('german').value = '';
@@ -121,31 +119,29 @@
       if (article === 'der') document.getElementById('btnDer').classList.add('selected');
       if (article === 'die') document.getElementById('btnDie').classList.add('selected');
       if (article === 'das') document.getElementById('btnDas').classList.add('selected');
-      document.getElementById('german').focus(); // keep keyboard open
+      document.getElementById('german').focus();
     }
+
+    let pluralEnterCount = 0;
 
     function checkAnswer() {
       const german = document.getElementById('german').value.trim().toLowerCase();
       const plural = document.getElementById('plural').value.trim().toLowerCase();
       let feedback = '';
 
-      if (
-        chosenArticle === currentWord.article &&
-        german === currentWord.german.toLowerCase() &&
-        plural === currentWord.plural.toLowerCase()
-      ) {
-        currentWord.correctStreak++;
-        updateWeights(currentWord);
-        feedback = '<span class="correct" style="color:green;">Correct!</span>';
+      if (chosenArticle === currentWord.article &&
+          german === currentWord.german.toLowerCase() &&
+          plural === currentWord.plural.toLowerCase()) {
+        currentWord.correctStreak = Math.min(currentWord.correctStreak + 1, masteryThreshold);
+        feedback = '<span class="correct" style="color:green">Correct!</span>';
       } else {
         currentWord.correctStreak = 0;
-        updateWeights(currentWord);
-        feedback = `<span class="wrong" style="color:red;">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+        feedback = `<span class="wrong" style="color:red">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
 
+      document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/5`;
       document.getElementById('feedback').innerHTML = feedback;
       document.getElementById('nextBtn').style.display = 'inline-block';
-      document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/5`;
 
       const activeWords = getActiveWords();
       const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
@@ -166,7 +162,13 @@
     document.getElementById('plural').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        checkAnswer();
+        if (pluralEnterCount === 0) {
+          checkAnswer();
+          pluralEnterCount = 1;
+        } else {
+          nextWord();
+          pluralEnterCount = 0;
+        }
       }
     });
 
