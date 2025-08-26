@@ -16,7 +16,9 @@
     button { padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; }
     #feedback { margin-top: 15px; font-size: 1em; }
     #nextBtn { display: none; width: 100%; }
-    .score { font-size: 0.9em; font-style: italic; color: #555; margin-left: 8px; }
+    .score { font-size: 0.9em; font-style: italic; color: #555; margin-left: 10px; }
+    .correct { color: green; font-weight: bold; }
+    .wrong { color: red; font-weight: bold; }
     @media (max-width: 400px) {
       .article-btn { width: 32%; font-size: 16px; padding: 12px 0; }
       input { width: 48%; font-size: 14px; padding: 10px; }
@@ -42,6 +44,7 @@
       <br>
       <button onclick="checkAnswer()">Check</button>
       <button id="nextBtn" onclick="nextWord()">Next word</button>
+      <button onclick="resetProgress()" style="background:#dc3545; color:white;">Reset Progress</button>
       <p id="feedback"></p>
     </div>
   </div>
@@ -52,11 +55,7 @@
     let chosenArticle = '';
     let level = 1;
     const wordsPerLevel = 25;
-    const masteryThreshold = 5;
-
-    // Queues for tier system
-    let tierQueue = [];
-    let currentTier = 0;
+    const masteryThreshold = 3;
 
     async function loadCSV() {
       const response = await fetch('vocab.csv');
@@ -65,11 +64,35 @@
       lines.shift();
       words = lines.map(line => {
         const [english, article, german, plural, example] = line.split(',');
-        return { english, article, german, plural, example, correctStreak: 0 };
+        return { english, article, german, plural, example, correctStreak: 0, weight: 1, shownCount: 0 };
       });
+      loadProgress();
       updateLevelDisplay();
-      refillTierQueue();
       nextWord();
+    }
+
+    function saveProgress() {
+      localStorage.setItem('trainerProgress', JSON.stringify({ words, level }));
+    }
+
+    function loadProgress() {
+      const saved = localStorage.getItem('trainerProgress');
+      if (saved) {
+        const data = JSON.parse(saved);
+        level = data.level || 1;
+        if (data.words && data.words.length === words.length) {
+          words.forEach((w, i) => {
+            Object.assign(w, data.words[i]);
+          });
+        }
+      }
+    }
+
+    function resetProgress() {
+      if (confirm("Are you sure you want to reset all progress?")) {
+        localStorage.removeItem('trainerProgress');
+        location.reload();
+      }
     }
 
     function updateLevelDisplay() {
@@ -80,24 +103,19 @@
       return words.slice(0, level * wordsPerLevel);
     }
 
-    function refillTierQueue() {
-      const activeWords = getActiveWords();
-      let lowestTier = Math.min(...activeWords.map(w => w.correctStreak));
-      currentTier = lowestTier;
-      tierQueue = shuffle(activeWords.filter(w => w.correctStreak === lowestTier));
-    }
-
-    function shuffle(array) {
-      return array.sort(() => Math.random() - 0.5);
+    function selectWordByTier(activeWords) {
+      const minStreak = Math.min(...activeWords.map(w => w.correctStreak));
+      const candidates = activeWords.filter(w => w.correctStreak === minStreak);
+      return candidates[Math.floor(Math.random() * candidates.length)];
     }
 
     function nextWord() {
-      if (tierQueue.length === 0) {
-        refillTierQueue();
-      }
-      currentWord = tierQueue.shift();
+      const activeWords = getActiveWords();
+      currentWord = selectWordByTier(activeWords);
+      currentWord.shownCount++;
+
       document.getElementById('english').textContent = currentWord.english;
-      document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/5`;
+      document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/${masteryThreshold}`;
       document.getElementById('german').value = '';
       document.getElementById('plural').value = '';
       document.getElementById('feedback').textContent = '';
@@ -122,33 +140,32 @@
       document.getElementById('german').focus();
     }
 
-    let pluralEnterCount = 0;
-
     function checkAnswer() {
       const german = document.getElementById('german').value.trim().toLowerCase();
       const plural = document.getElementById('plural').value.trim().toLowerCase();
       let feedback = '';
 
-      if (chosenArticle === currentWord.article &&
-          german === currentWord.german.toLowerCase() &&
-          plural === currentWord.plural.toLowerCase()) {
-        currentWord.correctStreak = Math.min(currentWord.correctStreak + 1, masteryThreshold);
-        feedback = '<span class="correct" style="color:green">Correct!</span>';
+      if (chosenArticle === currentWord.article && german === currentWord.german.toLowerCase() && plural === currentWord.plural.toLowerCase()) {
+        currentWord.correctStreak++;
+        feedback = '<span class="correct">Correct!</span>';
       } else {
         currentWord.correctStreak = 0;
-        feedback = `<span class="wrong" style="color:red">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+        feedback = `<span class="wrong">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
 
-      document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/5`;
       document.getElementById('feedback').innerHTML = feedback;
       document.getElementById('nextBtn').style.display = 'inline-block';
+      document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/${masteryThreshold}`;
 
       const activeWords = getActiveWords();
       const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
       if (allMastered && level * wordsPerLevel < words.length) {
         level++;
+        activeWords.forEach(w => w.correctStreak = 0);
         updateLevelDisplay();
       }
+
+      saveProgress();
     }
 
     // Enter key behavior
@@ -159,6 +176,7 @@
       }
     });
 
+    let pluralEnterCount = 0;
     document.getElementById('plural').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
