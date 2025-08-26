@@ -16,7 +16,7 @@
     button { padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; }
     #feedback { margin-top: 15px; font-size: 1em; }
     #nextBtn { display: none; width: 100%; }
-    #progress { font-size: 0.9em; font-style: italic; margin-top: 5px; color: #555; }
+    .score { font-size: 0.9em; font-style: italic; color: #555; margin-left: 10px; }
     @media (max-width: 400px) {
       .article-btn { width: 32%; font-size: 16px; padding: 12px 0; }
       input { width: 48%; font-size: 14px; padding: 10px; }
@@ -29,8 +29,7 @@
     <h1>German Vocab Trainer</h1>
     <p id="level">Level: 1 (Words 1–25)</p>
     <div class="card">
-      <p><strong>English word:</strong> <span id="english"></span></p>
-      <p id="progress"></p>
+      <p><strong>English word:</strong> <span id="english"></span><span id="score" class="score"></span></p>
 
       <div>
         <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
@@ -72,12 +71,18 @@
       document.getElementById('level').textContent = `Level: ${level} (Words 1–${level * wordsPerLevel})`;
     }
 
-    function updateProgressDisplay() {
-      document.getElementById('progress').textContent = `✅ ${currentWord.correctStreak}/5`;
-    }
-
     function getActiveWords() {
       return words.slice(0, level * wordsPerLevel);
+    }
+
+    function updateWeights(word) {
+      if (word.correctStreak >= masteryThreshold) {
+        word.weight = 0.1; // very low probability
+      } else if (word.correctStreak >= 3) {
+        word.weight = 1;
+      } else {
+        word.weight = 3;
+      }
     }
 
     function weightedRandomWord(activeWords) {
@@ -94,13 +99,13 @@
       const activeWords = getActiveWords();
       currentWord = weightedRandomWord(activeWords);
       document.getElementById('english').textContent = currentWord.english;
+      document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/5`;
       document.getElementById('german').value = '';
       document.getElementById('plural').value = '';
       document.getElementById('feedback').textContent = '';
       document.getElementById('nextBtn').style.display = 'none';
       chosenArticle = '';
       resetArticleButtons();
-      updateProgressDisplay();
       document.getElementById('german').focus();
     }
 
@@ -124,25 +129,23 @@
       const plural = document.getElementById('plural').value.trim().toLowerCase();
       let feedback = '';
 
-      if (chosenArticle === currentWord.article &&
-          german === currentWord.german.toLowerCase() &&
-          plural === currentWord.plural.toLowerCase()) {
+      if (
+        chosenArticle === currentWord.article &&
+        german === currentWord.german.toLowerCase() &&
+        plural === currentWord.plural.toLowerCase()
+      ) {
         currentWord.correctStreak++;
-        if (currentWord.correctStreak >= masteryThreshold) {
-          currentWord.weight = 0.2;
-        } else {
-          currentWord.weight = 1;
-        }
+        updateWeights(currentWord);
         feedback = '<span class="correct" style="color:green;">Correct!</span>';
       } else {
         currentWord.correctStreak = 0;
-        currentWord.weight = 2;
+        updateWeights(currentWord);
         feedback = `<span class="wrong" style="color:red;">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
 
-      updateProgressDisplay();
       document.getElementById('feedback').innerHTML = feedback;
       document.getElementById('nextBtn').style.display = 'inline-block';
+      document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/5`;
 
       const activeWords = getActiveWords();
       const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
