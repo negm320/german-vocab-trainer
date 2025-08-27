@@ -14,11 +14,8 @@
     .selected { background-color: #007bff; color: white; }
     input { width: 48%; padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; }
     button { padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; }
-    #feedback { margin-top: 15px; font-size: 1em; }
+    #feedback { margin-top: 5px; font-size: 1em; }
     #nextBtn { display: none; width: 100%; }
-    .score { font-size: 0.9em; font-style: italic; color: #555; margin-left: 10px; }
-    .correct { color: green; font-weight: bold; }
-    .wrong { color: red; font-weight: bold; }
     @media (max-width: 400px) {
       .article-btn { width: 32%; font-size: 16px; padding: 12px 0; }
       input { width: 48%; font-size: 14px; padding: 10px; }
@@ -31,7 +28,7 @@
     <h1>German Vocab Trainer</h1>
     <p id="level">Level: 1 (Words 1–25)</p>
     <div class="card">
-      <p><strong>English word:</strong> <span id="english"></span><span id="score" class="score"></span></p>
+      <p><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
 
       <div>
         <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
@@ -41,11 +38,12 @@
 
       <input type="text" id="german" placeholder="German word">
       <input type="text" id="plural" placeholder="Plural">
+      <p id="feedback"></p>
+
       <br>
       <button onclick="checkAnswer()">Check</button>
+      <button id="resetBtn" onclick="resetProgress()">Reset Progress</button>
       <button id="nextBtn" onclick="nextWord()">Next word</button>
-      <button onclick="resetProgress()" style="background:#dc3545; color:white;">Reset Progress</button>
-      <p id="feedback"></p>
     </div>
   </div>
 
@@ -64,35 +62,11 @@
       lines.shift();
       words = lines.map(line => {
         const [english, article, german, plural, example] = line.split(',');
-        return { english, article, german, plural, example, correctStreak: 0, weight: 1, shownCount: 0 };
+        return { english, article, german, plural, example, correctStreak: 0, weight: 1, seenCount: 0 };
       });
       loadProgress();
       updateLevelDisplay();
       nextWord();
-    }
-
-    function saveProgress() {
-      localStorage.setItem('trainerProgress', JSON.stringify({ words, level }));
-    }
-
-    function loadProgress() {
-      const saved = localStorage.getItem('trainerProgress');
-      if (saved) {
-        const data = JSON.parse(saved);
-        level = data.level || 1;
-        if (data.words && data.words.length === words.length) {
-          words.forEach((w, i) => {
-            Object.assign(w, data.words[i]);
-          });
-        }
-      }
-    }
-
-    function resetProgress() {
-      if (confirm("Are you sure you want to reset all progress?")) {
-        localStorage.removeItem('trainerProgress');
-        location.reload();
-      }
     }
 
     function updateLevelDisplay() {
@@ -103,19 +77,20 @@
       return words.slice(0, level * wordsPerLevel);
     }
 
-    function selectWordByTier(activeWords) {
+    function getNextWord() {
+      const activeWords = getActiveWords();
       const minStreak = Math.min(...activeWords.map(w => w.correctStreak));
-      const candidates = activeWords.filter(w => w.correctStreak === minStreak);
-      return candidates[Math.floor(Math.random() * candidates.length)];
+      const lowestGroup = activeWords.filter(w => w.correctStreak === minStreak);
+      lowestGroup.sort(() => Math.random() - 0.5);
+      return lowestGroup[0];
     }
 
     function nextWord() {
       const activeWords = getActiveWords();
-      currentWord = selectWordByTier(activeWords);
-      currentWord.shownCount++;
-
+      if (activeWords.length === 0) return;
+      currentWord = getNextWord();
       document.getElementById('english').textContent = currentWord.english;
-      document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/${masteryThreshold}`;
+      document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
       document.getElementById('german').value = '';
       document.getElementById('plural').value = '';
       document.getElementById('feedback').textContent = '';
@@ -145,17 +120,29 @@
       const plural = document.getElementById('plural').value.trim().toLowerCase();
       let feedback = '';
 
-      if (chosenArticle === currentWord.article && german === currentWord.german.toLowerCase() && plural === currentWord.plural.toLowerCase()) {
+      if (chosenArticle === currentWord.article &&
+          german === currentWord.german.toLowerCase() &&
+          plural === currentWord.plural.toLowerCase()) {
         currentWord.correctStreak++;
-        feedback = '<span class="correct">Correct!</span>';
+        if (currentWord.correctStreak >= masteryThreshold) {
+          currentWord.weight = 0.1;
+        } else if (currentWord.correctStreak >= 2) {
+          currentWord.weight = 0.5;
+        } else {
+          currentWord.weight = 1;
+        }
+        feedback = '<span style="color:green">Correct!</span>';
       } else {
         currentWord.correctStreak = 0;
-        feedback = `<span class="wrong">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+        currentWord.weight = 2;
+        feedback = `<span style="color:red">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
 
       document.getElementById('feedback').innerHTML = feedback;
+      document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
       document.getElementById('nextBtn').style.display = 'inline-block';
-      document.getElementById('score').textContent = `✅ ${currentWord.correctStreak}/${masteryThreshold}`;
+
+      saveProgress();
 
       const activeWords = getActiveWords();
       const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
@@ -163,9 +150,36 @@
         level++;
         activeWords.forEach(w => w.correctStreak = 0);
         updateLevelDisplay();
+        saveProgress();
       }
+    }
 
-      saveProgress();
+    function saveProgress() {
+      localStorage.setItem('vocabProgress', JSON.stringify({ words, level }));
+    }
+
+    function loadProgress() {
+      const saved = localStorage.getItem('vocabProgress');
+      if (saved) {
+        const data = JSON.parse(saved);
+        level = data.level || 1;
+        words.forEach((w, i) => {
+          if (data.words[i]) {
+            w.correctStreak = data.words[i].correctStreak || 0;
+            w.weight = data.words[i].weight || 1;
+          }
+        });
+      }
+    }
+
+    function resetProgress() {
+      if (confirm('Are you sure you want to reset progress?')) {
+        localStorage.removeItem('vocabProgress');
+        words.forEach(w => { w.correctStreak = 0; w.weight = 1; });
+        level = 1;
+        updateLevelDisplay();
+        nextWord();
+      }
     }
 
     // Enter key behavior
@@ -180,12 +194,12 @@
     document.getElementById('plural').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        if (pluralEnterCount === 0) {
+        pluralEnterCount++;
+        if (pluralEnterCount === 1) {
           checkAnswer();
-          pluralEnterCount = 1;
-        } else {
-          nextWord();
+        } else if (pluralEnterCount === 2) {
           pluralEnterCount = 0;
+          nextWord();
         }
       }
     });
