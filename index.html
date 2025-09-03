@@ -62,7 +62,7 @@
       lines.shift();
       words = lines.map(line => {
         const [english, article, german, plural, example] = line.split(',');
-        return { english, article, german, plural, example, correctStreak: 0, weight: 1, seenCount: 0 };
+        return { english, article, german, plural, example, correctStreak: 0, weight: 1, seenCount: 0, answeredCorrect: false };
       });
       loadProgress();
       updateLevelDisplay();
@@ -80,15 +80,21 @@
     function getNextWord() {
       const activeWords = getActiveWords();
       const minStreak = Math.min(...activeWords.map(w => w.correctStreak));
-      const lowestGroup = activeWords.filter(w => w.correctStreak === minStreak);
-      lowestGroup.sort(() => Math.random() - 0.5);
-      return lowestGroup[0];
+      const tierWords = activeWords.filter(w => w.correctStreak === minStreak && !w.answeredCorrect);
+      tierWords.sort(() => Math.random() - 0.5);
+      return tierWords[0];
     }
 
     function nextWord() {
       const activeWords = getActiveWords();
       if (activeWords.length === 0) return;
       currentWord = getNextWord();
+      if (!currentWord) {
+        // All words in this tier answered correctly, reset answeredCorrect for tier
+        const minStreak = Math.min(...activeWords.map(w => w.correctStreak));
+        activeWords.filter(w => w.correctStreak === minStreak).forEach(w => w.answeredCorrect = false);
+        currentWord = getNextWord();
+      }
       document.getElementById('english').textContent = currentWord.english;
       document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
       document.getElementById('german').value = '';
@@ -127,6 +133,7 @@
 
       if (chosenArticle === currentWord.article && german === correctGerman && pluralCorrect) {
         currentWord.correctStreak++;
+        currentWord.answeredCorrect = true;
         if (currentWord.correctStreak >= masteryThreshold) {
           currentWord.weight = 0.1;
         } else if (currentWord.correctStreak >= 2) {
@@ -137,6 +144,7 @@
         feedback = '<span style="color:green">Correct!</span>';
       } else {
         currentWord.correctStreak = 0;
+        currentWord.answeredCorrect = false;
         currentWord.weight = 2;
         feedback = `<span style=\"color:red\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
@@ -151,7 +159,7 @@
       const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
       if (allMastered && level * wordsPerLevel < words.length) {
         level++;
-        activeWords.forEach(w => w.correctStreak = 0);
+        activeWords.forEach(w => { w.correctStreak = 0; w.answeredCorrect = false; w.weight = 1; });
         updateLevelDisplay();
         saveProgress();
       }
@@ -170,6 +178,7 @@
           if (data.words[i]) {
             w.correctStreak = data.words[i].correctStreak || 0;
             w.weight = data.words[i].weight || 1;
+            w.answeredCorrect = data.words[i].answeredCorrect || false;
           }
         });
       }
@@ -178,7 +187,7 @@
     function resetProgress() {
       if (confirm('Are you sure you want to reset progress?')) {
         localStorage.removeItem('vocabProgress');
-        words.forEach(w => { w.correctStreak = 0; w.weight = 1; });
+        words.forEach(w => { w.correctStreak = 0; w.weight = 1; w.answeredCorrect = false; });
         level = 1;
         updateLevelDisplay();
         nextWord();
