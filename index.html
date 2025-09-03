@@ -120,9 +120,12 @@
       const plural = document.getElementById('plural').value.trim().toLowerCase();
       let feedback = '';
 
-      if (chosenArticle === currentWord.article &&
-          german === currentWord.german.toLowerCase() &&
-          plural === currentWord.plural.toLowerCase()) {
+      const correctGerman = currentWord.german.toLowerCase();
+      const correctPlural = currentWord.plural.toLowerCase();
+
+      const pluralCorrect = (plural === correctPlural) || (correctPlural === '—' && plural === '');
+
+      if (chosenArticle === currentWord.article && german === correctGerman && pluralCorrect) {
         currentWord.correctStreak++;
         if (currentWord.correctStreak >= masteryThreshold) {
           currentWord.weight = 0.1;
@@ -135,7 +138,7 @@
       } else {
         currentWord.correctStreak = 0;
         currentWord.weight = 2;
-        feedback = `<span style="color:red">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+        feedback = `<span style=\"color:red\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
 
       document.getElementById('feedback').innerHTML = feedback;
