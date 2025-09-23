@@ -1,222 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>German Vocab Trainer</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: #f8f8f8; }
-    .container { max-width: 500px; margin: auto; padding: 10px; }
-    h1 { font-size: 1.8em; text-align: center; margin-bottom: 10px; }
-    #level { text-align: center; margin-bottom: 15px; font-size: 1.1em; }
-    .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
-    .article-btn { width: 30%; padding: 15px 0; font-size: 18px; margin: 5px 1%; border-radius: 10px; cursor: pointer; }
-    .selected { background-color: #007bff; color: white; }
-    input { width: 48%; padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; }
-    button { padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; }
-    #feedback { margin-top: 5px; font-size: 1em; }
-    #nextBtn { display: none; width: 100%; }
-    @media (max-width: 400px) {
-      .article-btn { width: 32%; font-size: 16px; padding: 12px 0; }
-      input { width: 48%; font-size: 14px; padding: 10px; }
-      button { font-size: 14px; padding: 10px; }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>German Vocab Trainer</h1>
-    <p id="level">Level: 1 (Words 1–25)</p>
-    <div class="card">
-      <p><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
+updateLevelDisplay();
+saveProgress();
+}
+}
 
-      <div>
-        <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
-        <button id="btnDie" class="article-btn" onclick="chooseArticle('die')">die</button>
-        <button id="btnDas" class="article-btn" onclick="chooseArticle('das')">das</button>
-      </div>
 
-      <input type="text" id="german" placeholder="German word">
-      <input type="text" id="plural" placeholder="Plural">
-      <p id="feedback"></p>
+function saveProgress() {
+localStorage.setItem('vocabProgress', JSON.stringify({ words, level }));
+}
 
-      <br>
-      <button onclick="checkAnswer()">Check</button>
-      <button id="resetBtn" onclick="resetProgress()">Reset Progress</button>
-      <button id="nextBtn" onclick="nextWord()">Next word</button>
-    </div>
-  </div>
 
-  <script>
-    let words = [];
-    let currentWord = null;
-    let chosenArticle = '';
-    let level = 1;
-    const wordsPerLevel = 25;
-    const masteryThreshold = 3;
+function loadProgress() {
+const saved = localStorage.getItem('vocabProgress');
+if (saved) {
+const data = JSON.parse(saved);
+level = data.level || 1;
+words.forEach((w, i) => {
+if (data.words && data.words[i]) {
+w.correctStreak = data.words[i].correctStreak || 0;
+w.answeredCorrect = data.words[i].answeredCorrect || false;
+}
+});
+}
+}
 
-    async function loadCSV() {
-      const response = await fetch('vocab.csv');
-      const data = await response.text();
-      const lines = data.trim().split('\n');
-      lines.shift();
-      words = lines.map(line => {
-        const [english, article, german, plural, example] = line.split(',');
-        return { english, article, german, plural, example, correctStreak: 0, weight: 1, seenCount: 0, answeredCorrect: false };
-      });
-      loadProgress();
-      updateLevelDisplay();
-      nextWord();
-    }
 
-    function updateLevelDisplay() {
-      document.getElementById('level').textContent = `Level: ${level} (Words 1–${level * wordsPerLevel})`;
-    }
+function resetProgress() {
+if (confirm('Are you sure you want to reset progress?')) {
+localStorage.removeItem('vocabProgress');
+words.forEach(w => { w.correctStreak = 0; w.answeredCorrect = false; });
+level = 1;
+updateLevelDisplay();
+nextWord();
+}
+}
 
-    function getActiveWords() {
-      return words.slice(0, level * wordsPerLevel);
-    }
 
-    function getNextWord() {
-      const activeWords = getActiveWords();
-      const minStreak = Math.min(...activeWords.map(w => w.correctStreak));
-      const tierWords = activeWords.filter(w => w.correctStreak === minStreak && !w.answeredCorrect);
-      tierWords.sort(() => Math.random() - 0.5);
-      return tierWords[0];
-    }
+// Enter key behavior
+document.getElementById('german').addEventListener('keydown', function(e) {
+if (e.key === 'Enter') {
+e.preventDefault();
+document.getElementById('plural').focus();
+}
+});
 
-    function nextWord() {
-      const activeWords = getActiveWords();
-      if (activeWords.length === 0) return;
-      currentWord = getNextWord();
-      if (!currentWord) {
-        // All words in this tier answered correctly, reset answeredCorrect for tier
-        const minStreak = Math.min(...activeWords.map(w => w.correctStreak));
-        activeWords.filter(w => w.correctStreak === minStreak).forEach(w => w.answeredCorrect = false);
-        currentWord = getNextWord();
-      }
-      document.getElementById('english').textContent = currentWord.english;
-      document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
-      document.getElementById('german').value = '';
-      document.getElementById('plural').value = '';
-      document.getElementById('feedback').textContent = '';
-      document.getElementById('nextBtn').style.display = 'none';
-      chosenArticle = '';
-      resetArticleButtons();
-      document.getElementById('german').focus();
-    }
 
-    function resetArticleButtons() {
-      document.getElementById('btnDer').classList.remove('selected');
-      document.getElementById('btnDie').classList.remove('selected');
-      document.getElementById('btnDas').classList.remove('selected');
-    }
+let pluralEnterCount = 0;
+document.getElementById('plural').addEventListener('keydown', function(e) {
+if (e.key === 'Enter') {
+e.preventDefault();
+pluralEnterCount++;
+if (pluralEnterCount === 1) {
+checkAnswer();
+} else if (pluralEnterCount === 2) {
+pluralEnterCount = 0;
+nextWord();
+}
+}
+});
 
-    function chooseArticle(article) {
-      chosenArticle = article;
-      resetArticleButtons();
-      if (article === 'der') document.getElementById('btnDer').classList.add('selected');
-      if (article === 'die') document.getElementById('btnDie').classList.add('selected');
-      if (article === 'das') document.getElementById('btnDas').classList.add('selected');
-      document.getElementById('german').focus();
-    }
 
-    function checkAnswer() {
-      const german = document.getElementById('german').value.trim().toLowerCase();
-      const plural = document.getElementById('plural').value.trim().toLowerCase();
-      let feedback = '';
-
-      const correctGerman = currentWord.german.toLowerCase();
-      const correctPlural = currentWord.plural.toLowerCase();
-
-      const pluralCorrect = (plural === correctPlural) || (correctPlural === '—' && plural === '');
-
-      if (chosenArticle === currentWord.article && german === correctGerman && pluralCorrect) {
-        currentWord.correctStreak++;
-        currentWord.answeredCorrect = true;
-        if (currentWord.correctStreak >= masteryThreshold) {
-          currentWord.weight = 0.1;
-        } else if (currentWord.correctStreak >= 2) {
-          currentWord.weight = 0.5;
-        } else {
-          currentWord.weight = 1;
-        }
-        feedback = '<span style="color:green">Correct!</span>';
-      } else {
-        currentWord.correctStreak = 0;
-        currentWord.answeredCorrect = false;
-        currentWord.weight = 2;
-        feedback = `<span style=\"color:red\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
-      }
-
-      document.getElementById('feedback').innerHTML = feedback;
-      document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
-      document.getElementById('nextBtn').style.display = 'inline-block';
-
-      saveProgress();
-
-      const activeWords = getActiveWords();
-      const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
-      if (allMastered && level * wordsPerLevel < words.length) {
-        level++;
-        activeWords.forEach(w => { w.correctStreak = 0; w.answeredCorrect = false; w.weight = 1; });
-        updateLevelDisplay();
-        saveProgress();
-      }
-    }
-
-    function saveProgress() {
-      localStorage.setItem('vocabProgress', JSON.stringify({ words, level }));
-    }
-
-    function loadProgress() {
-      const saved = localStorage.getItem('vocabProgress');
-      if (saved) {
-        const data = JSON.parse(saved);
-        level = data.level || 1;
-        words.forEach((w, i) => {
-          if (data.words[i]) {
-            w.correctStreak = data.words[i].correctStreak || 0;
-            w.weight = data.words[i].weight || 1;
-            w.answeredCorrect = data.words[i].answeredCorrect || false;
-          }
-        });
-      }
-    }
-
-    function resetProgress() {
-      if (confirm('Are you sure you want to reset progress?')) {
-        localStorage.removeItem('vocabProgress');
-        words.forEach(w => { w.correctStreak = 0; w.weight = 1; w.answeredCorrect = false; });
-        level = 1;
-        updateLevelDisplay();
-        nextWord();
-      }
-    }
-
-    // Enter key behavior
-    document.getElementById('german').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('plural').focus();
-      }
-    });
-
-    let pluralEnterCount = 0;
-    document.getElementById('plural').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        pluralEnterCount++;
-        if (pluralEnterCount === 1) {
-          checkAnswer();
-        } else if (pluralEnterCount === 2) {
-          pluralEnterCount = 0;
-          nextWord();
-        }
-      }
-    });
-
-    loadCSV();
-  </script>
+loadCSV();
+</script>
 </body>
 </html>
