@@ -1,506 +1,359 @@
 english,article,german,plural,Example 1,Example 2,Example 3
-work / job,die,Arbeit,Arbeiten,Ich habe heute viel Arbeit.,Die Arbeit im Büro ist anstrengend.,Er sucht eine neue Arbeit.
-picture,das,Bild,Bilder,Das Bild hängt an der Wand.,Sie malt ein schönes Bild.,Ich habe viele Bilder auf meinem Handy.
-end,das,Ende,Enden,Das Ende des Films war traurig.,Am Ende des Tages war er müde.,Jedes Ende ist auch ein neuer Anfang.
-euro,der,Euro,Euros,Das Buch kostet zehn Euro.,Ich habe nur fünf Euro dabei.,Er bezahlt den Kaffee mit einem Euro.
-question,die,Frage,Fragen,Ich habe eine Frage an dich.,Die Lehrerin beantwortet viele Fragen.,Kannst du mir diese Frage erklären?
-woman,die,Frau,Frauen,Die Frau arbeitet im Krankenhaus.,Er spricht mit einer alten Frau.,Viele Frauen warten vor dem Geschäft.
-house,das,Haus,Häuser,Mein Haus ist sehr groß.,In diesem Haus wohnt meine Familie.,Die alten Häuser sind schön.
-child,das,Kind,Kinder,Das Kind spielt im Garten.,Viele Kinder gehen in die Schule.,Das Kind liest ein Buch.
-country,das,Land,Länder,Deutschland ist ein schönes Land.,Er lebt auf dem Land.,Viele Länder in Europa sprechen Deutsch.
-life,das,Leben,Leben,Das Leben ist schön.,Er erzählt von seinem Leben.,Ohne Musik kann ich nicht leben.
-man,der,Mann,Männer,Der Mann liest eine Zeitung.,Viele Männer arbeiten hier.,Ein alter Mann sitzt im Park.
-person / human,der,Mensch,Menschen,Der Mensch braucht Luft zum Leben.,Alle Menschen sind verschieden.,Der Mensch lernt aus Fehlern.
-million,die,Million,Millionen,Eine Million Menschen leben in der Stadt.,Er hat eine Million Euro gewonnen.,Das kostet fast eine Million.
-place / square,der,Platz,Plätze,Der Platz ist voller Leute.,Kinder spielen auf dem Platz.,Wir treffen uns auf dem Platz.
-page / side,die,Seite,Seiten,Die Seite des Buches ist kaputt.,Bitte schlagen Sie Seite 10 auf.,Die linke Seite des Hauses ist neu.
-game,das,Spiel,Spiele,Das Spiel macht Spaß.,Die Kinder spielen ein Spiel.,Er hat das Spiel gewonnen.
-city,die,Stadt,Städte,Berlin ist eine große Stadt.,Viele Städte haben alte Gebäude.,Die Stadt ist sehr laut.
-day,der,Tag,Tage,Der Tag ist schön.,Am Tag scheint die Sonne.,Viele Tage im Sommer sind warm.
-part,der,Teil,Teile,Jeder Teil ist wichtig.,Ich nehme den ersten Teil.,Der zweite Teil des Films kommt morgen.
-week,die,Woche,Wochen,Die Woche hat sieben Tage.,Nächste Woche fahren wir nach Berlin.,Er arbeitet fünf Wochen im Sommer.
-year,das,Jahr,Jahre,Das Jahr hat zwölf Monate.,Im nächsten Jahr machen wir Urlaub.,Viele Jahre sind vergangen.
-clock,die,Uhr,Uhren,Die Uhr zeigt acht Uhr.,Meine Uhr ist kaputt.,Wir treffen uns um neun Uhr.
-minute,die,Minute,Minuten,Eine Minute ist schnell vorbei.,Warte nur fünf Minuten.,Er braucht noch eine Minute.
-percent,das,Prozent,Prozente,Fünfzig Prozent der Leute sind zufrieden.,Ich habe nur zwanzig Prozent verstanden.,Der Rabatt beträgt zehn Prozent.
-time,die,Zeit,Zeiten,Die Zeit vergeht schnell.,Hast du heute Zeit?,Mit der Zeit lernst du alles.
-work (general),die,Arbeit,Arbeiten,Die Arbeit ist schwer.,Er hat heute viel Arbeit.,Nach der Arbeit gehe ich nach Hause.
-example,das,Beispiel,Beispiele,Das Beispiel ist einfach.,Kannst du mir ein Beispiel geben?,Viele Beispiele stehen im Buch.
-case,der,Fall,Fälle,Der Fall ist kompliziert.,Die Polizei untersucht den Fall.,In diesem Fall hast du recht.
-family,die,Familie,Familien,Meine Familie ist groß.,Die Familie wohnt in München.,Viele Familien essen zusammen.
-film,der,Film,Filme,Der Film ist spannend.,Wir sehen einen Film im Kino.,Dieser Film ist sehr bekannt.
-photo,das,Foto,Fotos,Das Foto ist schön.,Ich mache ein Foto vom Haus.,Viele Fotos hängen an der Wand.
-guest,der,Gast,Gäste,Der Gast kommt morgen.,Viele Gäste sind eingeladen.,Er begrüßt den Gast freundlich.
-money,das,Geld,Gelder,Das Geld liegt auf dem Tisch.,Er spart viel Geld.,Ohne Geld kann man nicht reisen.
-community,die,Gemeinde,Gemeinden,Die Gemeinde baut eine neue Schule.,Viele Menschen helfen in der Gemeinde.,Die Gemeinde liegt am Fluss.
-history / story,die,Geschichte,Geschichten,Die Geschichte ist interessant.,Er erzählt eine alte Geschichte.,Die deutsche Geschichte ist lang.
-reason,der,Grund,Gründe,Der Grund ist wichtig.,Sie nennt keinen Grund.,Viele Gründe sprechen dagegen.
-group,die,Gruppe,Gruppen,Die Gruppe ist klein.,Er arbeitet in einer Gruppe.,Viele Gruppen lernen zusammen.
-church,die,Kirche,Kirchen,Die Kirche ist alt.,Am Sonntag gehen wir in die Kirche.,Viele Kirchen stehen in der Stadt.
-team (official),die,Mannschaft,Mannschaften,Die Mannschaft gewinnt das Spiel.,Unsere Mannschaft trainiert viel.,Er spielt in einer Fußballmannschaft.
-meter,der,Meter,Meter,Der Meter ist eine Maßeinheit.,Das Zimmer ist fünf Meter lang.,Zwei Meter sind mehr als genug.
-member,das,Mitglied,Mitglieder,Das Mitglied zahlt einen Beitrag.,Viele Mitglieder sind anwesend.,Er ist Mitglied im Verein.
-month,der,Monat,Monate,Der Monat hat dreißig Tage.,Im nächsten Monat fahren wir weg.,Viele Monate sind kalt.
-name,der,Name,Namen,Der Name ist schön.,Wie ist dein Name?,Viele Namen stehen auf der Liste.
-place / location,der,Ort,Orte,Der Ort ist klein.,Viele Leute kennen diesen Ort.,Am Ort des Unfalls war viel los.
-police,die,Polizei,—,Die Polizei kommt sofort.,Die Polizei kontrolliert die Autos.,Jemand ruft die Polizei.
-president,der,Präsident,Präsidenten,Der Präsident spricht im Fernsehen.,Viele Präsidenten sind bekannt.,Der Präsident besucht die Stadt.
-problem,das,Problem,Probleme,Das Problem ist groß.,Er löst das Problem schnell.,Viele Probleme sind schwer.
-point,der,Punkt,Punkte,Der Punkt ist wichtig.,Sie macht einen Punkt auf das Papier.,Am Ende des Spiels hatten wir viele Punkte.
-school,die,Schule,Schulen,Die Schule ist neu.,Viele Kinder gehen in die Schule.,Die Schule beginnt um acht Uhr.
-street,die,Straße,Straßen,Die Straße ist lang.,Viele Autos fahren auf der Straße.,Wir wohnen in derselben Straße.
-hour / lesson,die,Stunde,Stunden,Die Stunde ist vorbei.,Er wartet eine Stunde.,Jede Stunde fährt ein Bus.
-team,das,Team,Teams,Das Team gewinnt das Spiel.,Unser Team ist stark.,Viele Teams spielen heute.
-subject / issue,das,Thema,Themen,Das Thema ist interessant.,Er schreibt über ein schwieriges Thema.,Viele Themen sind wichtig.
-company / enterprise,das,Unternehmen,Unternehmen,Das Unternehmen wächst schnell.,Viele Unternehmen stellen neue Leute ein.,Er arbeitet in einem großen Unternehmen.
-club / association,der,Verein,Vereine,Der Verein hat viele Mitglieder.,Im Verein spielen viele Kinder.,Sie ist Mitglied in einem Sportverein.
-way / path,der,Weg,Wege,Der Weg ist kurz.,Viele Wege führen nach Rom.,Er findet einen neuen Weg.
-world,die,Welt,Welten,Die Welt ist schön.,Er reist um die Welt.,Viele Welten gibt es nur in Büchern.
-goal / target,das,Ziel,Ziele,Das Ziel ist klar.,Sie erreicht ihr Ziel.,Viele Ziele sind schwer.
-article,der,Artikel,Artikel,Der Artikel ist interessant.,Ich lese einen Artikel in der Zeitung.,Viele Artikel sind online.
-type / kind / species,die,Art,Arten,Die Art ist selten.,Er erklärt die Art des Problems.,Viele Arten von Tieren leben im Wald.
-beginning / start,der,Anfang,Anfänge,Der Anfang ist schwer.,Am Anfang war alles neu.,Jeder Anfang ist wichtig.
-statement / info,die,Angabe,Angaben,Die Angabe ist richtig.,Er macht genaue Angaben.,Viele Angaben fehlen.
-car,das,Auto,Autos,Das Auto ist neu.,Sie fährt ein rotes Auto.,Viele Autos stehen vor dem Haus.
-volume / tome (book),der,Band,Bände,Das Band hält die Kiste zusammen.,Er trägt ein rotes Band am Arm.,Viele bunte Bänder hängen im Zimmer.
-ribbon / strap,das,Band,Bänder,Die Band spielt heute Abend.,Viele Bands machen Rockmusik.,Er hört eine bekannte Band im Radio.
-area / field,der,Bereich,Bereiche,Der Bereich ist groß.,Dieser Bereich ist verboten.,Viele Bereiche sind wichtig.
+work / job,die,Arbeit,Arbeiten,Ich gehe jeden Tag zur Arbeit.,Die Arbeit macht mir Spaß.,Er sucht eine neue Arbeit.
+picture,das,Bild,Bilder,Das Bild hängt an der Wand.,Sie malt ein schönes Bild.,Ich schaue mir ein Bild an.
+end,das,Ende,Enden,Am Ende des Films war ich traurig.,Jedes Ende ist auch ein Anfang.,Das Ende der Straße ist nah.
+euro,der,Euro,Euros,Das Buch kostet zehn Euro.,"Er bezahlt in bar, fünf Euro.",Ich habe nur einen Euro dabei.
+question,die,Frage,Fragen,Ich habe eine Frage.,Kann ich dir eine Frage stellen?,Die Frage ist schwer.
+woman,die,Frau,Frauen,Die Frau sitzt im Café.,Er spricht mit einer Frau.,Die Frau liest eine Zeitung.
+house,das,Haus,Häuser,Das Haus ist groß.,Wir wohnen in einem Haus.,Vor dem Haus steht ein Baum.
+child,das,Kind,Kinder,Das Kind spielt im Garten.,Viele Kinder gehen in die Schule.,Das Kind schläft ruhig.
+country,das,Land,Länder,Deutschland ist ein Land in Europa.,Er fährt aufs Land.,Jedes Land hat seine eigenen Gesetze.
+life,das,Leben,Leben,Das Leben ist schön.,Er erzählt von seinem Leben.,Im Leben lernt man viel.
+man,der,Mann,Männer,Der Mann liest die Zeitung.,Ein Mann steht vor dem Haus.,Der Mann arbeitet im Büro.
+person / human,der,Mensch,Menschen,Der Mensch braucht Wasser.,Jeder Mensch macht Fehler.,Der Mensch ist müde.
+million,die,Million,Millionen,Er hat eine Million Euro gewonnen.,Eine Million Menschen leben hier.,Das Projekt kostet eine Million Euro.
+place / square,der,Platz,Plätze,Der Platz ist leer.,Wir treffen uns auf dem Platz.,Ich brauche mehr Platz.
+page / side,die,Seite,Seiten,Er liest die erste Seite des Buches.,Bitte schlagen Sie die Seite zehn auf.,Auf der anderen Seite ist ein Bild.
+game,das,Spiel,Spiele,Das Spiel beginnt um acht Uhr.,Kinder lieben das Spiel.,Das Spiel war spannend.
+city,die,Stadt,Städte,Berlin ist eine große Stadt.,Die Stadt hat viele Sehenswürdigkeiten.,Er wohnt in der Stadt.
+day,der,Tag,Tage,Heute ist ein schöner Tag.,Am Tag arbeiten viele Leute.,Ich wünsche dir einen guten Tag.
+part,der,Teil,Teile,Ein Teil fehlt.,Dieser Teil ist wichtig.,Er nimmt an dem Projekt teil.
+week,die,Woche,Wochen,Die Woche hat sieben Tage.,Nächste Woche fahren wir nach Berlin.,Die Woche beginnt am Montag.
+year,das,Jahr,Jahre,Das Jahr hat zwölf Monate.,Frohes neues Jahr!,Er lebt seit einem Jahr in Deutschland.
+clock,die,Uhr,Uhren,Es ist drei Uhr.,Die Uhr hängt an der Wand.,Um acht Uhr beginnt der Film.
+minute,die,Minute,Minuten,Der Bus kommt in einer Minute.,Eine Minute bitte!,Er braucht nur fünf Minuten.
+percent,das,Prozent,Prozente,Das sind hundert Prozent richtig.,Sie sparen zwanzig Prozent.,Nur zehn Prozent machen mit.
+time,die,Zeit,Zeiten,Ich habe keine Zeit.,Die Zeit vergeht schnell.,Er verbringt viel Zeit mit der Familie.
+example,das,Beispiel,Beispiele,Zum Beispiel: Äpfel sind gesund.,Er nennt ein Beispiel.,Kannst du mir ein Beispiel geben?
+case,der,Fall,Fälle,Im besten Fall klappt es.,Für diesen Fall gibt es eine Regel.,Der Fall ist kompliziert.
+family,die,Familie,Familien,Meine Familie lebt in Berlin.,Er besucht seine Familie.,Die Familie ist sehr groß.
+film,der,Film,Filme,Der Film läuft im Kino.,Wir sehen einen Film.,Der Film war spannend.
+photo,das,Foto,Fotos,Ich mache ein Foto.,Sie zeigt mir ein Foto.,Das Foto ist sehr schön.
+guest,der,Gast,Gäste,Der Gast kommt um acht Uhr.,Wir haben heute einen Gast.,Die Gäste sind freundlich.
+money,das,Geld,Gelder,Ich habe kein Geld.,Er verdient viel Geld.,Das Geld liegt auf dem Tisch.
+community,die,Gemeinde,Gemeinden,Die Gemeinde ist klein.,Er arbeitet in der Gemeinde.,Viele Menschen leben in dieser Gemeinde.
+history / story,die,Geschichte,Geschichten,Die Geschichte ist spannend.,Er erzählt eine Geschichte.,Ich lese deutsche Geschichte.
+reason,der,Grund,Gründe,Er nennt den Grund.,Der Grund ist klar.,Es gibt keinen Grund zur Sorge.
+group,die,Gruppe,Gruppen,Die Gruppe ist groß.,Er arbeitet in einer Gruppe.,Die Gruppe trifft sich morgen.
+church,die,Kirche,Kirchen,Die Kirche ist alt.,Wir besuchen die Kirche.,Viele Leute gehen sonntags in die Kirche.
+team (official),die,Mannschaft,Mannschaften,Die Mannschaft trainiert heute.,Unsere Mannschaft hat gewonnen.,Die Mannschaft spielt im Stadion.
+meter,der,Meter,Meter,Das Haus ist zehn Meter hoch.,Er läuft hundert Meter.,Ein Meter hat hundert Zentimeter.
+member,das,Mitglied,Mitglieder,Er ist Mitglied im Verein.,Viele Mitglieder sind da.,Das Mitglied bezahlt den Beitrag.
+month,der,Monat,Monate,Ein Monat hat dreißig Tage.,Sie bleibt einen Monat in Berlin.,Der nächste Monat ist Mai.
+name,der,Name,Namen,Wie ist dein Name?,Er schreibt seinen Namen.,Der Name steht auf der Liste.
+place / location,der,Ort,Orte,Der Ort ist schön.,Wir treffen uns an einem Ort.,Dieser Ort ist bekannt.
+police,die,Polizei,—,Die Polizei kommt schnell.,Ich rufe die Polizei.,Die Polizei kontrolliert das Auto.
+president,der,Präsident,Präsidenten,Der Präsident spricht im Fernsehen.,Viele Leute hören dem Präsidenten zu.,Der Präsident besucht das Land.
+problem,das,Problem,Probleme,Das Problem ist groß.,Er hat ein Problem.,Wir lösen das Problem.
+point,der,Punkt,Punkte,Der Punkt ist wichtig.,Er macht einen Punkt.,Am Ende steht ein Punkt.
+school,die,Schule,Schulen,Die Schule beginnt um acht Uhr.,Viele Kinder gehen zur Schule.,Die Schule ist groß.
+street,die,Straße,Straßen,Die Straße ist lang.,Viele Autos fahren auf der Straße.,Wir wohnen in der gleichen Straße.
+hour / lesson,die,Stunde,Stunden,Der Film dauert zwei Stunden.,Ich warte schon eine Stunde.,Die Stunde ist vorbei.
+team,das,Team,Teams,Das Team arbeitet gut zusammen.,Er spielt im Team.,Unser Team hat gewonnen.
+subject / issue,das,Thema,Themen,Das Thema ist interessant.,Wir sprechen über ein neues Thema.,Er schreibt über dieses Thema.
+company / enterprise,das,Unternehmen,Unternehmen,Das Unternehmen ist groß.,Er arbeitet in einem Unternehmen.,Das Unternehmen hat viele Mitarbeiter.
+club / association,der,Verein,Vereine,Der Verein ist alt.,Viele Kinder spielen im Verein.,Er ist Mitglied in einem Verein.
+way / path,der,Weg,Wege,Der Weg ist lang.,Er geht den Weg nach Hause.,Gibt es einen anderen Weg?
+world,die,Welt,Welten,Die Welt ist groß.,Viele Menschen leben auf der Welt.,Er reist um die Welt.
+goal / target,das,Ziel,Ziele,Er erreicht sein Ziel.,Das Ziel ist klar.,Sie verfolgen ein gemeinsames Ziel.
+article,der,Artikel,Artikel,Ich lese einen Artikel in der Zeitung.,Der Artikel ist interessant.,Der Artikel steht auf Seite fünf.
+type / kind / species,die,Art,Arten,Diese Art von Musik gefällt mir.,Es gibt viele verschiedene Arten.,Welche Art von Arbeit machst du?
+beginning / start,der,Anfang,Anfänge,Am Anfang war es schwer.,Der Anfang ist gemacht.,Der Anfang des Buches ist spannend.
+statement / info,die,Angabe,Angaben,Bitte machen Sie eine Angabe.,Die Angabe ist falsch.,Er hat keine Angabe dazu.
+car,das,Auto,Autos,Das Auto ist neu.,Er fährt ein rotes Auto.,Das Auto steht vor dem Haus.
+volume / tome (book),der,Band,Bände,Er trägt ein rotes Band am Arm.,Das Band hält die Kiste zusammen.,Viele bunte Bänder hängen im Zimmer.
+area / field,der,Bereich,Bereiche,Der Bereich ist groß.,Viele arbeiten in diesem Bereich.,Dieser Bereich ist wichtig.
 book,das,Buch,Bücher,Das Buch liegt auf dem Tisch.,Sie liest ein spannendes Buch.,Viele Bücher stehen im Regal.
-chance,die,Chance,Chancen,Die Chance ist klein.,Er hat eine gute Chance zu gewinnen.,Viele Chancen kommen nur einmal.
-success,der,Erfolg,Erfolge,Der Erfolg macht ihn glücklich.,Sie hat großen Erfolg in der Schule.,Viele Erfolge feiern die Sportler.
-result / outcome,das,Ergebnis,Ergebnisse,Das Ergebnis ist falsch.,Wir warten auf das Ergebnis.,Viele Ergebnisse stehen im Bericht.
-conversation,das,Gespräch,Gespräche,Das Gespräch ist interessant.,Sie führen ein Gespräch im Café.,Viele Gespräche dauern lange.
-hand,die,Hand,Hände,Die Hand ist kalt.,Er hebt die Hand.,Sie schreibt mit der linken Hand.
-information,die,Information,Informationen,Die Information ist wichtig.,Er gibt mir neue Informationen.,Viele Informationen findet man im Internet.
-century,das,Jahrhundert,Jahrhunderte,Das Jahrhundert ist vorbei.,Im 20. Jahrhundert gab es viele Kriege.,Jedes Jahrhundert bringt neue Ideen.
-circle / district,der,Kreis,Kreise,Der Kreis ist rund.,Sie sitzen im Kreis.,Viele Kreise sind bunt.
-music,die,Musik,—,Die Musik ist laut.,Er hört klassische Musik.,Viele Kinder lieben Musik.
-party (political),die,Partei,Parteien,Die Partei hat viele Mitglieder.,Er wählt eine andere Partei.,Neue Parteien entstehen oft.
-price / prize,der,Preis,Preise,Der Preis ist hoch.,Sie gewinnt einen Preis.,Viele Preise sind zu teuer.
-program / show,das,Programm,Programme,Das Programm läuft im Fernsehen.,Er schreibt ein Computerprogramm.,Viele Programme sind kostenlos.
-project,das,Projekt,Projekte,Das Projekt ist groß.,Sie arbeitet an einem neuen Projekt.,Viele Projekte dauern lange.
-government,die,Regierung,Regierungen,Die Regierung beschließt ein Gesetz.,Viele Menschen kritisieren die Regierung.,Die Regierung arbeitet langsam.
-region,die,Region,Regionen,Die Region ist schön.,Viele Regionen sind bergig.,In dieser Region gibt es Wein.
-season,die,Saison,Saisons,Die Saison beginnt im Sommer.,Er spielt in der neuen Saison gut.,Viele Saisons dauern nur ein Jahr.
-victory / win,der,Sieg,Siege,Der Sieg ist wichtig.,Unsere Mannschaft feiert den Sieg.,Viele Siege machen stark.
-state / country,der,Staat,Staaten,Der Staat hilft den Menschen.,Deutschland ist ein moderner Staat.,Viele Staaten haben Probleme.
-title,der,Titel,Titel,Der Titel ist lang.,Er liest den Titel des Buches.,Viele Titel sind interessant.
-gate / goal (sports),das,Tor,Tore,Das Tor ist offen.,Er schießt ein Tor im Spiel.,Viele Tore stehen im Park.
-work / opus / factory,das,Werk,Werke,Das Werk ist bekannt.,Er liest ein literarisches Werk.,Viele Werke sind wichtig.
-word (idea),das,Wort,Worte,Das Wort ist schwer.,Er lernt neue Wörter.,Viele Wörter stehen im Text.
-word (unit),das,Wort,Wörter,Das Wort hat zwei Bedeutungen.,Kannst du das Wort erklären?,Dieses Wort ist alt.
-number,die,Zahl,Zahlen,Die Zahl ist groß.,Er schreibt die Zahl auf.,Viele Zahlen stehen auf dem Blatt.
-future,die,Zukunft,Zukünfte,Die Zukunft ist ungewiss.,In der Zukunft wird alles besser.,Viele Menschen denken an die Zukunft.
-evening,der,Abend,Abende,Der Abend ist schön.,Am Abend gehen wir spazieren.,Viele Abende sind ruhig.
-exhibition,die,Ausstellung,Ausstellungen,Die Ausstellung ist interessant.,Viele Leute besuchen die Ausstellung.,In der Ausstellung hängen Bilder.
-task,die,Aufgabe,Aufgaben,Die Aufgabe ist schwer.,Er macht die Aufgabe schnell.,Viele Aufgaben sind wichtig.
-office,das,Amt,Ämter,Das Amt ist alt.,Er arbeitet im Amt.,Viele Ämter sind geschlossen.
-offer,das,Angebot,Angebote,Das Angebot ist günstig.,Er nimmt das Angebot an.,Viele Angebote stehen im Prospekt.
-contribution,der,Beitrag,Beiträge,Der Beitrag ist interessant.,Er schreibt einen Beitrag für die Zeitung.,Viele Beiträge sind online.
-glance / look,der,Blick,Blicke,Der Blick aus dem Fenster ist schön.,Sie wirft einen kurzen Blick auf das Buch.,Viele Blicke treffen ihn.
-discussion,die,Diskussion,Diskussionen,Die Diskussion ist spannend.,Sie führen eine Diskussion über Politik.,Viele Diskussionen dauern lange.
-effort / commitment,der,Einsatz,Einsätze,Der Einsatz ist hoch.,Der Arzt kommt zum Einsatz.,Viele Einsätze sind gefährlich.
-decision,die,Entscheidung,Entscheidungen,Die Entscheidung ist schwer.,Sie trifft eine gute Entscheidung.,Viele Entscheidungen brauchen Zeit.
-development,die,Entwicklung,Entwicklungen,Die Entwicklung ist positiv.,Kinder zeigen eine schnelle Entwicklung.,Viele Entwicklungen sind neu.
-company / firm,die,Firma,Firmen,Die Firma ist groß.,Er arbeitet in einer Firma.,Viele Firmen suchen neue Mitarbeiter.
-consequence / episode,die,Folge,Folgen,Die Folge ist klar.,Er sieht die neue Folge im Fernsehen.,Viele Folgen sind spannend.
-form / shape,die,Form,Formen,Die Form ist rund.,Er schreibt in schriftlicher Form.,Viele Formen sind möglich.
-soccer / soccer ball,der,Fußball,Fußbälle,Fußball macht Spaß.,Er spielt Fußball mit Freunden.,Viele Kinder lieben Fußball.
-society / organization,die,Gesellschaft,Gesellschaften,Die Gesellschaft ist groß.,Er ist Teil der Gesellschaft.,Viele Gesellschaften haben Regeln.
-help,die,Hilfe,Hilfen,Die Hilfe kommt sofort.,Er braucht dringend Hilfe.,Viele Menschen bieten Hilfe an.
-height / amount,die,Höhe,Höhen,Die Höhe ist beeindruckend.,Der Berg hat eine große Höhe.,Viele Höhen sind schwer zu messen.
-market,der,Markt,Märkte,Der Markt ist voll.,Sie kauft Obst auf dem Markt.,Viele Märkte sind am Sonntag geschlossen.
-measure / action,die,Maßnahme,Maßnahmen,Die Maßnahme ist notwendig.,Die Regierung beschließt neue Maßnahmen.,Viele Maßnahmen helfen der Umwelt.
-middle / center,die,Mitte,Mitten,Die Mitte des Raumes ist frei.,In der Mitte steht ein Tisch.,Viele Städte liegen in der Mitte des Landes.
-possibility / opportunity,die,Möglichkeit,Möglichkeiten,Die Möglichkeit ist klein.,Er hat viele Möglichkeiten.,Diese Möglichkeit gefällt mir.
-night,die,Nacht,Nächte,Die Nacht ist dunkel.,Viele Tiere sind in der Nacht aktiv.,Er arbeitet in der Nacht.
-politics / policy,die,Politik,—,Die Politik ist kompliziert.,Er studiert Politik.,Viele Menschen interessieren sich für Politik.
-space / room / area,der,Raum,Räume,Der Raum ist groß.,Viele Leute sitzen im Raum.,In diesem Raum steht ein Tisch.
-role,die,Rolle,Rollen,Die Rolle ist wichtig.,Er spielt die Hauptrolle im Film.,Viele Rollen sind schwierig.
-matter / thing,die,Sache,Sachen,Die Sache ist klar.,Sie erklärt die ganze Sache.,Viele Sachen liegen auf dem Tisch.
-position / job,die,Stelle,Stellen,Die Stelle ist neu.,Er bekommt eine Stelle in der Firma.,Viele Stellen sind frei.
-piece / play / slice,das,Stück,Stücke,Das Stück ist klein.,Er isst ein Stück Kuchen.,Viele Stücke liegen auf dem Boden.
-phone,das,Telefon,Telefone,Das Telefon klingelt.,Er spricht am Telefon.,Viele Telefone sind heute Smartphones.
-event / session,die,Veranstaltung,Veranstaltungen,Die Veranstaltung ist spannend.,Er besucht eine Veranstaltung in der Stadt.,Viele Veranstaltungen sind kostenlos.
-election / choice,die,Wahl,Wahlen,Die Wahl ist schwer.,Er trifft eine gute Wahl.,Viele Wahlen finden im Herbst statt.
-newspaper,die,Zeitung,Zeitungen,Die Zeitung liegt auf dem Tisch.,Sie liest die Zeitung jeden Morgen.,Viele Zeitungen berichten darüber.
-report,der,Bericht,Berichte,Der Bericht ist interessant.,Sie schreibt einen Bericht für die Schule.,Viele Berichte sind falsch.
-construction,der,Bau,Bauten,Der Bau dauert lange.,Das Bau­projekt ist teuer.,Viele Bauten stehen in der Stadt.
-stage,die,Bühne,Bühnen,Die Bühne ist groß.,Er steht auf der Bühne.,Viele Bühnen sind beleuchtet.
-boss (male),der,Chef,Chefs,Der Chef ist freundlich.,Sie fragt den Chef.,Viele Chefs arbeiten lange.
-boss (female),die,Chefin,Chefinnen,Die Chefin ist streng.,Er spricht mit der Chefin.,Viele Chefinnen sind erfolgreich.
-leadership / guidance,die,Führung,Führungen,Die Führung ist wichtig.,Er übernimmt die Führung.,Viele Führungen dauern eine Stunde.
-idea,die,Idee,Ideen,Die Idee ist gut.,Sie hat viele Ideen.,Diese Idee gefällt mir.
-interest,das,Interesse,Interessen,Das Interesse ist groß.,Viele Studenten zeigen Interesse.,Er hat Interesse an Musik.
-fight / conflict,der,Kampf,Kämpfe,Der Kampf ist hart.,Viele Kämpfe sind gefährlich.,Er gewinnt den Kampf.
-map / card / ticket,die,Karte,Karten,Die Karte ist bunt.,Er kauft eine Fahrkarte.,Viele Karten liegen auf dem Tisch.
-head,der,Kopf,Köpfe,Der Kopf tut weh.,Er trägt einen Hut auf dem Kopf.,Viele Köpfe schauen zu.
-costs / expenses,die,Kosten,—,Die Kosten sind hoch.,Er bezahlt alle Kosten.,Viele Kosten entstehen durch das Projekt.
-strength / power,die,Kraft,Kräfte,Die Kraft ist stark.,Er hat viel Kraft.,Viele Kräfte wirken zusammen.
-war,der,Krieg,Kriege,Der Krieg ist vorbei.,Viele Menschen leiden im Krieg.,Kriege zerstören Länder.
-criticism / review,die,Kritik,Kritiken,Die Kritik ist hart.,Er bekommt viel Kritik.,Viele Kritiken sind unfair.
-customer (male),der,Kunde,Kunden,Der Kunde kauft ein Auto.,Viele Kunden sind zufrieden.,Der Kunde fragt nach dem Preis.
-customer (female),die,Kundin,Kundinnen,Die Kundin bezahlt an der Kasse.,Viele Kundinnen kaufen Kleider.,Die Kundin sucht Beratung.
-art / skill,die,Kunst,Künste,Die Kunst ist schön.,Er studiert Kunst.,Viele Kinder malen Kunstwerke.
-position / situation,die,Lage,Lagen,Die Lage ist ernst.,Er erklärt die Lage.,Viele Lagen sind schwierig.
-achievement / performance,die,Leistung,Leistungen,Die Leistung ist stark.,Er zeigt eine gute Leistung.,Viele Leistungen sind beeindruckend.
-literature,die,Literatur,—,Die Literatur ist alt.,Er liest deutsche Literatur.,Viele Literaturen sind bekannt.
-girl,das,Mädchen,Mädchen,Das Mädchen spielt im Garten.,Viele Mädchen tanzen gern.,Das Mädchen liest ein Buch.
-billion,die,Milliarde,Milliarden,Die Milliarde ist groß.,Er hat eine Milliarde Euro.,Viele Milliarden sind im Umlauf.
-museum,das,Museum,Museen,Das Museum ist interessant.,Viele Leute besuchen das Museum.,Im Museum hängen Bilder.
-victim / sacrifice,das,Opfer,Opfer,Das Opfer ist unschuldig.,Viele Opfer brauchen Hilfe.,Er bringt ein Opfer.
-politician (male),der,Politiker,Politiker,Der Politiker spricht im Parlament.,Viele Politiker reisen viel.,Der Politiker erklärt das Gesetz.
-politician (female),die,Politikerin,Politikerinnen,Die Politikerin gibt ein Interview.,Viele Politikerinnen arbeiten im Bundestag.,Die Politikerin besucht eine Schule.
-audience / public,das,Publikum,—,Das Publikum klatscht laut.,Viele Leute sind im Publikum.,Das Publikum lacht über den Witz.
-source / spring,die,Quelle,Quellen,Die Quelle ist wichtig.,Er nennt die Quelle des Textes.,Viele Quellen sind im Internet.
-frame / framework,der,Rahmen,Rahmen,Der Rahmen ist aus Holz.,Viele Bilder haben einen Rahmen.,Er setzt das Bild in den Rahmen.
-law / right,das,Recht,Rechte,Das Recht ist wichtig.,Jeder Mensch hat Rechte.,Viele Rechte schützen uns.
-direction,die,Richtung,Richtungen,Die Richtung ist falsch.,Er fragt nach der Richtung.,Viele Richtungen sind möglich.
-sentence,der,Satz,Sätze,Der Satz ist kurz.,Viele Sätze stehen im Buch.,Er schreibt einen langen Satz.
-Swiss person (male),der,Schweizer,Schweizer,Der Schweizer wohnt in Zürich.,Viele Schweizer sprechen Deutsch.,Der Schweizer besucht Berlin.
-Swiss person (female),die,Schweizerin,Schweizerinnen,Die Schweizerin arbeitet in Bern.,Viele Schweizerinnen fahren Ski.,Die Schweizerin spricht Französisch.
-sense / meaning,der,Sinn,Sinne,Der Sinn ist klar.,Viele Menschen suchen nach dem Sinn des Lebens.,Der Satz hat keinen Sinn.
-situation,die,Situation,Situationen,Die Situation ist schwierig.,Viele Situationen sind neu für ihn.,Die Situation im Land ist ernst.
-voice / vote,die,Stimme,Stimmen,Die Stimme ist laut.,Viele Stimmen sind unterschiedlich.,Sie hört seine Stimme sofort.
-daughter,die,Tochter,Töchter,Die Tochter spielt im Garten.,Viele Töchter helfen zu Hause.,Er besucht seine Tochter.
-death,der,Tod,Tode,Der Tod macht traurig.,Viele Tode sind im Krieg passiert.,Der Tod ist ein Teil des Lebens.
-university,die,Universität,Universitäten,Die Universität ist groß.,Viele Studenten studieren an der Universität.,Er besucht die Universität jeden Tag.
-regulation / disposal,die,Verfügung,Verfügungen,Die Verfügung ist amtlich.,Er hat die Verfügung gelesen.,Viele Verfügungen gelten ab morgen.
-water,das,Wasser,Wässer,Das Wasser ist kalt.,Viele Kinder spielen im Wasser.,Ich trinke ein Glas Wasser.
-value,der,Wert,Werte,Der Wert ist hoch.,Viele Werte sind wichtig im Leben.,Das Haus hat einen großen Wert.
-economy,die,Wirtschaft,Wirtschaften,Die Wirtschaft wächst schnell.,Viele Länder haben eine starke Wirtschaft.,Die Wirtschaft ist wichtig für den Staat.
+chance,die,Chance,Chancen,Er hat eine gute Chance zu gewinnen.,Die Chance ist klein.,Sie nutzt ihre Chance.
+success,der,Erfolg,Erfolge,Er hat großen Erfolg.,Der Erfolg war überraschend.,Erfolg macht glücklich.
+result / outcome,das,Ergebnis,Ergebnisse,Das Ergebnis ist klar.,Er wartet auf das Ergebnis.,Das Ergebnis steht fest.
+conversation,das,Gespräch,Gespräche,Wir führen ein Gespräch.,Das Gespräch war interessant.,Er beginnt ein Gespräch mit ihr.
+hand,die,Hand,Hände,Er hebt die Hand.,Sie gibt ihm die Hand.,Die Hand ist verletzt.
+information,die,Information,Informationen,Ich brauche mehr Informationen.,Die Information ist falsch.,Sie gibt mir eine Information.
+century,das,Jahrhundert,Jahrhunderte,Im 20. Jahrhundert passierte viel.,Ein Jahrhundert hat hundert Jahre.,Das 21. Jahrhundert beginnt im Jahr 2001.
+circle / district,der,Kreis,Kreise,Wir sitzen im Kreis.,Der Kreis ist rund.,Viele Orte gehören zum Kreis.
+music,die,Musik,—,Ich höre gern Musik.,Die Musik ist laut.,Er macht Musik mit Freunden.
+party (political),die,Partei,Parteien,Die Partei gewinnt die Wahl.,Er ist Mitglied einer Partei.,Viele Parteien diskutieren im Parlament.
+price / prize,der,Preis,Preise,Der Preis ist hoch.,Er fragt nach dem Preis.,Sie gewinnt einen Preis.
+program / show,das,Programm,Programme,Das Programm läuft im Fernsehen.,Er schreibt ein neues Programm.,Das Programm beginnt um acht Uhr.
+project,das,Projekt,Projekte,Das Projekt ist groß.,Er arbeitet an einem Projekt.,Das Projekt dauert ein Jahr.
+government,die,Regierung,Regierungen,Die Regierung plant ein neues Gesetz.,Die Regierung ist stark.,Viele Menschen kritisieren die Regierung.
+region,die,Region,Regionen,Die Region ist bekannt.,Er lebt in einer schönen Region.,Viele Regionen sind betroffen.
+season,die,Saison,Saisons,Die Saison beginnt im Sommer.,Diese Saison war erfolgreich.,Nächste Saison spielen sie besser.
+victory / win,der,Sieg,Siege,Der Sieg war wichtig.,Er feiert den Sieg.,Das Team hat einen großen Sieg errungen.
+state / country,der,Staat,Staaten,Der Staat ist stark.,Der Staat schützt die Bürger.,Jeder Staat hat Gesetze.
+title,der,Titel,Titel,Er liest den Titel des Buches.,Der Titel ist falsch.,Sie trägt den Titel „Doktor“.
+gate / goal (sports),das,Tor,Tore,Er schießt ein Tor.,Das Tor ist offen.,Die Mannschaft freut sich über das Tor.
+work / opus / factory,das,Werk,Werke,Das Werk ist berühmt.,Er liest ein literarisches Werk.,Viele Werke hängen im Museum.
+word (idea),das,Wort,Worte,Er sagt ein Wort.,Ich verstehe kein Wort.,Das letzte Wort ist wichtig.
+number,die,Zahl,Zahlen,,,
+future,die,Zukunft,Zukünfte,Die Zukunft ist ungewiss.,Er denkt an die Zukunft.,Wir planen für die Zukunft.
+evening,der,Abend,Abende,Am Abend gehe ich spazieren.,Der Abend ist schön.,Heute Abend kommt Besuch.
+exhibition,die,Ausstellung,Ausstellungen,Die Ausstellung ist interessant.,Viele Leute besuchen die Ausstellung.,Die Ausstellung öffnet um zehn Uhr.
+task,die,Aufgabe,Aufgaben,Die Aufgabe ist schwer.,Er macht seine Aufgabe.,Jede Aufgabe hat eine Lösung.
+office,das,Amt,Ämter,Er arbeitet im Amt.,Das Amt ist zuständig.,Viele Leute warten im Amt.
+offer,das,Angebot,Angebote,Das Angebot ist günstig.,Er macht ein Angebot.,Heute gibt es ein neues Angebot.
+contribution,der,Beitrag,Beiträge,Er zahlt einen Beitrag.,Der Beitrag ist interessant.,Viele Beiträge stehen in der Zeitung.
+glance / look,der,Blick,Blicke,Er wirft einen Blick auf die Uhr.,Ein kurzer Blick genügt.,Ihr Blick ist freundlich.
+discussion,die,Diskussion,Diskussionen,Die Diskussion ist spannend.,Wir führen eine Diskussion.,Die Diskussion dauert lange.
+effort / commitment,der,Einsatz,Einsätze,Der Einsatz war erfolgreich.,Er zeigt großen Einsatz.,Der Einsatz der Polizei war nötig.
+decision,die,Entscheidung,Entscheidungen,Die Entscheidung ist schwer.,Er trifft eine Entscheidung.,Die Entscheidung steht fest.
+development,die,Entwicklung,Entwicklungen,Die Entwicklung ist positiv.,Kinder sind in der Entwicklung.,Die Entwicklung dauert Jahre.
+company / firm,die,Firma,Firmen,Die Firma ist groß.,Er arbeitet in einer Firma.,Die Firma stellt neue Leute ein.
+consequence / episode,die,Folge,Folgen,Die Folge ist klar.,Er sieht eine neue Folge im Fernsehen.,Jede Handlung hat eine Folge.
+form / shape,die,Form,Formen,Die Form ist rund.,Er füllt eine Form aus.,Diese Form ist typisch.
+soccer / soccer ball,der,Fußball,Fußbälle,Er spielt Fußball.,Fußball ist sehr beliebt.,Wir sehen ein Fußballspiel.
+society / organization,die,Gesellschaft,Gesellschaften,Die Gesellschaft ist groß.,Er lebt in einer modernen Gesellschaft.,Jede Gesellschaft hat Regeln.
+help,die,Hilfe,Hilfen,Danke für deine Hilfe.,Er braucht dringend Hilfe.,Die Hilfe kommt sofort.
+height / amount,die,Höhe,Höhen,Die Höhe ist beeindruckend.,Er hat Angst vor der Höhe.,Die Höhe des Berges ist bekannt.
+market,der,Markt,Märkte,Der Markt ist voll.,Wir kaufen Obst auf dem Markt.,Der Markt öffnet um neun Uhr.
+measure / action,die,Maßnahme,Maßnahmen,Die Maßnahme ist wichtig.,Er trifft eine Maßnahme.,Neue Maßnahmen helfen den Menschen.
+middle / center,die,Mitte,Mitten,Er steht in der Mitte.,Die Stadt liegt in der Mitte des Landes.,In der Mitte des Raumes ist ein Tisch.
+possibility / opportunity,die,Möglichkeit,Möglichkeiten,Er hat keine Möglichkeit.,Es gibt viele Möglichkeiten.,Sie nutzt die Möglichkeit.
+night,die,Nacht,Nächte,In der Nacht ist es still.,Die Nacht ist lang.,Er arbeitet in der Nacht.
+politics / policy,die,Politik,—,Die Politik ist kompliziert.,Viele Menschen interessieren sich für Politik.,Die Politik verändert das Land.
+space / room / area,der,Raum,Räume,Der Raum ist groß.,Wir sitzen im selben Raum.,Der Raum hat viele Fenster.
+role,die,Rolle,Rollen,Er spielt eine wichtige Rolle.,Die Rolle im Film ist schwer.,Jeder hat eine Rolle im Leben.
+matter / thing,die,Sache,Sachen,Die Sache ist kompliziert.,Das ist nicht meine Sache.,Er kümmert sich um die Sache.
+position / job,die,Stelle,Stellen,Er sucht eine neue Stelle.,Die Stelle ist wichtig.,An dieser Stelle hören wir auf.
+piece / play / slice,das,Stück,Stücke,Er isst ein Stück Kuchen.,Ein Stück fehlt.,Das Theaterstück ist spannend.
+phone,das,Telefon,Telefone,Das Telefon klingelt.,Er spricht am Telefon.,Sie hebt das Telefon ab.
+event / session,die,Veranstaltung,Veranstaltungen,Die Veranstaltung beginnt um acht Uhr.,Viele Leute besuchen die Veranstaltung.,Die Veranstaltung war interessant.
+election / choice,die,Wahl,Wahlen,Die Wahl ist wichtig.,Er trifft eine Wahl.,Die Partei gewinnt die Wahl.
+newspaper,die,Zeitung,Zeitungen,Ich lese die Zeitung.,Die Zeitung liegt auf dem Tisch.,Jeden Morgen kommt die Zeitung.
+report,der,Bericht,Berichte,Er schreibt einen Bericht.,Der Bericht ist interessant.,Ich lese den Bericht.
+construction,der,Bau,Bauten,Der Bau des Hauses dauert lange.,Der Bau ist teuer.,Das ist ein moderner Bau.
+stage,die,Bühne,Bühnen,Die Bühne ist hell.,Er steht auf der Bühne.,Viele Schauspieler sind auf der Bühne.
+boss (male),der,Chef,Chefs,Der Chef ist streng.,Er spricht mit dem Chef.,Der Chef entscheidet alles.
+boss (female),die,Chefin,Chefinnen,Die Chefin ist nett.,Sie spricht mit ihrer Chefin.,Die Chefin gibt eine Anweisung.
+leadership / guidance,die,Führung,Führungen,Die Führung durch das Museum war spannend.,Er übernimmt die Führung.,Unter neuer Führung läuft es besser.
+idea,die,Idee,Ideen,Er hat eine gute Idee.,Die Idee gefällt mir.,Sie bringt eine neue Idee.
+interest,das,Interesse,Interessen,Er zeigt großes Interesse.,Das Interesse an Kunst ist hoch.,Sie hat kein Interesse daran.
+fight / conflict,der,Kampf,Kämpfe,Der Kampf ist vorbei.,Viele Tiere sind im Kampf.,Er gewinnt den Kampf.
+map / card / ticket,die,Karte,Karten,Die Karte ist teuer.,Wir spielen mit der Karte.,Er zeigt mir die Karte von Berlin.
+head,der,Kopf,Köpfe,Er schüttelt den Kopf.,Der Kopf tut weh.,Sie trägt einen Hut auf dem Kopf.
+costs / expenses,die,Kosten,—,Die Kosten sind hoch.,Er trägt die Kosten.,Wir teilen die Kosten.
+strength / power,die,Kraft,Kräfte,Er hat keine Kraft mehr.,Mit voller Kraft arbeitet er.,Die Maschine braucht viel Kraft.
+war,der,Krieg,Kriege,Der Krieg ist vorbei.,Im Krieg leiden viele Menschen.,Der Krieg zerstört die Stadt.
+criticism / review,die,Kritik,Kritiken,Die Kritik ist hart.,Er bekommt viel Kritik.,Die Kritik ist berechtigt.
+customer (male),der,Kunde,Kunden,Der Kunde wartet an der Kasse.,Viele Kunden sind zufrieden.,Der Kunde bestellt ein Produkt.
+customer (female),die,Kundin,Kundinnen,Die Kundin kauft ein Kleid.,Viele Kundinnen kommen ins Geschäft.,Die Kundin bezahlt bar.
+art / skill,die,Kunst,Künste,Die Kunst ist schön.,Er studiert Kunst an der Uni.,Sie besucht eine Ausstellung für Kunst.
+position / situation,die,Lage,Lagen,Die Lage ist ernst.,Das Haus hat eine gute Lage.,In dieser Lage braucht er Hilfe.
+achievement / performance,die,Leistung,Leistungen,Die Leistung ist stark.,Er bringt eine gute Leistung.,Die Leistung wird bezahlt.
+literature,die,Literatur,—,Er studiert deutsche Literatur.,Die Literatur ist interessant.,Viele lesen klassische Literatur.
+girl,das,Mädchen,Mädchen,Das Mädchen spielt im Garten.,Das Mädchen liest ein Buch.,Viele Mädchen gehen zur Schule.
+billion,die,Milliarde,Milliarden,Das Projekt kostet eine Milliarde Euro.,Eine Milliarde Menschen leben hier.,Er hat eine Milliarde verloren.
+museum,das,Museum,Museen,Das Museum ist groß.,Wir besuchen das Museum.,Viele Bilder hängen im Museum.
+victim / sacrifice,das,Opfer,Opfer,Das Opfer ist verletzt.,Viele Opfer brauchen Hilfe.,Er ist Opfer eines Unfalls.
+politician (male),der,Politiker,Politiker,Der Politiker spricht im Fernsehen.,Viele Politiker arbeiten im Parlament.,Der Politiker besucht die Stadt.
+politician (female),die,Politikerin,Politikerinnen,Die Politikerin hält eine Rede.,Viele Politikerinnen sitzen im Bundestag.,Die Politikerin ist bekannt.
+audience / public,das,Publikum,—,Das Publikum klatscht.,Viele Leute sitzen im Publikum.,Das Publikum ist begeistert.
+source / spring,die,Quelle,Quellen,Die Quelle ist sauber.,Er liest eine Quelle im Buch.,Die Quelle des Flusses ist bekannt.
+frame / framework,der,Rahmen,Rahmen,Der Rahmen ist aus Holz.,Alles passiert im Rahmen des Gesetzes.,Sie hängt das Bild in einen Rahmen.
+law / right,das,Recht,Rechte,Er hat Recht.,Jedes Kind hat ein Recht auf Bildung.,Im Recht zu sein ist wichtig.
+direction,die,Richtung,Richtungen,Die Richtung ist falsch.,Er geht in die richtige Richtung.,Welche Richtung sollen wir nehmen?
+sentence,der,Satz,Sätze,Der Satz ist lang.,Er schreibt einen deutschen Satz.,Jeder Satz braucht ein Verb.
+Swiss person (male),der,Schweizer,Schweizer,Der Schweizer kommt aus Bern.,Viele Schweizer sprechen Deutsch.,Ein Schweizer arbeitet hier.
+Swiss person (female),die,Schweizerin,Schweizerinnen,Die Schweizerin wohnt in Zürich.,Viele Schweizerinnen sind sportlich.,Eine Schweizerin erzählt ihre Geschichte.
+sense / meaning,der,Sinn,Sinne,Das hat keinen Sinn.,Er versteht den Sinn nicht.,Im Sinn habe ich etwas anderes.
+situation,die,Situation,Situationen,Die Situation ist schwierig.,Er erklärt die Situation.,In dieser Situation braucht man Hilfe.
+voice / vote,die,Stimme,Stimmen,Die Stimme ist schön.,Er hat eine tiefe Stimme.,Die Stimme des Volkes zählt.
+daughter,die,Tochter,Töchter,Meine Tochter ist zehn Jahre alt.,Die Tochter hilft der Mutter.,Er besucht seine Tochter.
+death,der,Tod,Tode,Der Tod macht ihm Angst.,Nach dem Tod beginnt die Trauer.,Der Tod des Königs war überraschend.
+university,die,Universität,Universitäten,Die Universität ist groß.,Viele Studenten studieren an der Universität.,Er bewirbt sich an einer Universität.
+regulation / disposal,die,Verfügung,Verfügungen,Er hat das Auto zur Verfügung.,Die Wohnung steht zur Verfügung.,Die Verfügung tritt morgen in Kraft.
+water,das,Wasser,Wässer,Ich trinke ein Glas Wasser.,Das Wasser ist kalt.,Viele Kinder spielen im Wasser.
+value,der,Wert,Werte,Das Haus hat einen hohen Wert.,Freundschaft hat großen Wert.,Er kennt den Wert des Geldes.
+economy,die,Wirtschaft,Wirtschaften,Die Wirtschaft wächst schnell.,Viele Länder haben eine starke Wirtschaft.,Die Wirtschaft ist wichtig für alle.
 train,der,Zug,Züge,Der Zug kommt pünktlich.,Viele Leute fahren mit dem Zug.,Der Zug hält am Bahnhof.
 viewer / spectator,der,Zuschauer,Zuschauer,Der Zuschauer klatscht laut.,Viele Zuschauer sehen das Spiel.,Die Zuschauer lachen im Theater.
-eye,das,Auge,Augen,Das Auge ist blau.,Viele Augen schauen auf ihn.,Er hat schöne Augen.
-operation / firm,der,Betrieb,Betriebe,Der Betrieb ist groß.,Viele Leute arbeiten im Betrieb.,Der Betrieb stellt neue Produkte her.
-boss (again / for reference),der,Chef,Chefs,Der Chef erklärt die Arbeit.,Viele Chefs sind streng.,Er spricht mit dem Chef.
-dollar,der,Dollar,Dollar(s),Der Dollar steigt im Wert.,Viele Länder benutzen den Dollar.,Er zahlt mit einem Dollar.
-internet,das,Internet,—,Das Internet ist schnell.,Viele Kinder nutzen das Internet.,Im Internet findet man viele Informationen.
-customer (repeat ref),der,Kunde,Kunden,Der Kunde kauft ein Auto.,Viele Kunden sind zufrieden.,Der Kunde fragt nach dem Preis.
-art (as skill / again),die,Kunst,Künste,Die Kunst ist alt.,Viele Kinder lieben Kunst.,Er studiert Kunst an der Uni.
-strength (again),die,Kraft,Kräfte,Die Kraft ist stark.,Er hat viel Kraft.,Viele Kräfte wirken zusammen.
-war (repeat),der,Krieg,Kriege,Der Krieg ist vorbei.,Viele Menschen leiden im Krieg.,Kriege zerstören Länder.
-daughter (again / for recap),die,Tochter,Töchter,Die Tochter hilft der Mutter.,Viele Töchter gehen zur Schule.,Er liebt seine Tochter.
-heart,das,Herz,Herzen,Das Herz schlägt schnell.,Viele Herzen sind gesund.,Sie hat ein gutes Herz.
-speech,die,Rede,Reden,Die Rede ist lang.,Er hält eine Rede im Parlament.,Viele Reden sind langweilig.
-building,das,Gebäude,Gebäude,Das Gebäude ist hoch.,Viele Gebäude stehen in der Stadt.,Das neue Gebäude ist modern.
+eye,das,Auge,Augen,Er hat blaue Augen.,Das Auge tut weh.,Ein Auge sieht alles.
+operation / firm,der,Betrieb,Betriebe,Der Betrieb ist groß.,Er arbeitet im Betrieb.,Der Betrieb stellt neue Leute ein.
+dollar,der,Dollar,Dollar(s),Das Buch kostet zehn Dollar.,Er bezahlt in Dollar.,Ein Dollar ist nicht viel.
+internet,das,Internet,—,Das Internet ist langsam.,Viele Menschen nutzen das Internet.,Ich habe kein Internet.
+heart,das,Herz,Herzen,Sein Herz schlägt schnell.,Sie hat ein gutes Herz.,Das Herz ist gesund.
+speech,die,Rede,Reden,Er hält eine Rede.,Die Rede war lang.,Viele Leute hören seine Rede.
+building,das,Gebäude,Gebäude,Das Gebäude ist hoch.,Viele Gebäude stehen in der Stadt.,Wir arbeiten in diesem Gebäude.
 village,das,Dorf,Dörfer,Das Dorf ist klein.,Viele Dörfer liegen am Fluss.,Er lebt in einem ruhigen Dorf.
-danger,die,Gefahr,Gefahren,Die Gefahr ist groß.,Viele Gefahren sind unsichtbar.,Er warnt vor der Gefahr.
-visit,der,Besuch,Besuche,Der Besuch kommt morgen.,Viele Besuche dauern lange.,Sie freut sich auf den Besuch.
-youth,die,Jugend,—,Die Jugend ist fröhlich.,Viele Jugend­liche treffen sich im Park.,Die Jugend liebt Musik.
-concept,das,Konzept,Konzepte,Das Konzept ist neu.,Viele Konzepte sind spannend.,Er erklärt das Konzept.
-leader (female),die,Leiterin,Leiterinnen,Die Leiterin spricht mit den Kindern.,Viele Leiterinnen sind freundlich.,Die Leiterin organisiert das Treffen.
-leader (male),der,Leiter,Leiter,Der Leiter erklärt die Aufgabe.,Viele Leiter sind streng.,Der Leiter arbeitet im Büro.
-ladder,die,Leiter,Leitern,Die Leiter steht an der Wand.,Er klettert auf die Leiter.,Viele Leitern sind aus Holz.
-route / line,die,Linie,Linien,Die Linie ist gerade.,Viele Linien stehen im Heft.,Er zieht eine Linie mit dem Stift.
-love,die,Liebe,Lieben,Die Liebe ist stark.,Viele Menschen sprechen über die Liebe.,Er zeigt seine Liebe offen.
-middle / means,das,Mittel,Mittel,Das Mittel ist wirksam.,Viele Mittel helfen gegen Schmerzen.,Er benutzt ein neues Mittel.
-defeat / loss,die,Niederlage,Niederlagen,Die Niederlage ist schwer.,Viele Niederlagen tun weh.,Nach der Niederlage lernt man viel.
-speech,die,Rede,Reden,Die Rede war interessant.,Viele Reden dauern lange.,Er hält eine kurze Rede.
-sport,der,Sport,—,Sport macht Spaß.,Viele Kinder treiben Sport.,Er sieht gern Sport im Fernsehen.
-sport type,die,Sportart,Sportarten,Die Sportart ist neu.,Viele Sportarten sind beliebt.,Fußball ist seine Lieblingssportart.
-speaker / announcer (female),die,Sprecherin,Sprecherinnen,Die Sprecherin liest die Nachrichten.,Viele Sprecherinnen arbeiten im Radio.,Die Sprecherin erklärt den Text.
-speaker / announcer (male),der,Sprecher,Sprecher,Der Sprecher hält eine Rede.,Viele Sprecher sind nervös.,Der Sprecher antwortet auf die Frage.
-start / launch,der,Start,Starts,Der Start ist gelungen.,Viele Starts sind schwierig.,Der Start des Flugzeugs war pünktlich.
-system,das,System,Systeme,Das System ist alt.,Viele Systeme funktionieren nicht mehr.,Er erklärt das System.
-union,die,Union,Unionen,Die Union ist stark.,Viele Staaten bilden eine Union.,Er spricht über die Europäische Union.
-comparison,der,Vergleich,Vergleiche,Der Vergleich ist interessant.,Viele Vergleiche zeigen Unterschiede.,Er macht einen Vergleich zwischen zwei Städten.
-suggestion / proposal,der,Vorschlag,Vorschläge,Der Vorschlag ist gut.,Viele Vorschläge kommen von den Studenten.,Er lehnt den Vorschlag ab.
-manner / way,die,Weise,Weisen,Die Weise ist richtig.,Viele Weisen führen zum Ziel.,Er erklärt die Weise des Spiels.
-cooperation / teamwork,die,Zusammenarbeit,Zusammenarbeiten,Die Zusammenarbeit ist wichtig.,Viele Firmen fördern die Zusammenarbeit.,Gute Zusammenarbeit bringt Erfolg.
-action / campaign,die,Aktion,Aktionen,Die Aktion ist erfolgreich.,Viele Aktionen helfen den Menschen.,Er organisiert eine Aktion.
-doctor (male),der,Arzt,Ärzte,Der Arzt untersucht den Patienten.,Viele Ärzte arbeiten im Krankenhaus.,Der Arzt erklärt die Krankheit.
-doctor (female),die,Ärztin,Ärztinnen,Die Ärztin spricht mit dem Kind.,Viele Ärztinnen helfen im Notdienst.,Die Ärztin verschreibt ein Medikament.
-bath / bathroom,das,Bad,Bäder,Das Bad ist warm.,Viele Leute gehen ins Bad.,Er nimmt ein Bad am Abend.
-railway / train,die,Bahn,Bahnen,Die Bahn kommt pünktlich.,Viele Menschen fahren mit der Bahn.,Die Bahn ist voll.
-population,die,Bevölkerung,Bevölkerungen,Die Bevölkerung wächst schnell.,Viele Städte haben eine große Bevölkerung.,Die Bevölkerung ist zufrieden.
-federation / union,der,Bund,Bünde,Der Bund beschließt ein Gesetz.,Viele Vereine gehören zum Bund.,Der Bund ist stark.
-experience,die,Erfahrung,Erfahrungen,Die Erfahrung ist wichtig.,Viele Menschen haben Erfahrung.,Er erzählt von seiner Erfahrung.
-vehicle,das,Fahrzeug,Fahrzeuge,Das Fahrzeug ist neu.,Viele Fahrzeuge stehen auf der Straße.,Er fährt ein großes Fahrzeug.
-building,das,Gebäude,Gebäude,Das Gebäude ist modern.,Viele Gebäude stehen in der Stadt.,Er arbeitet in einem großen Gebäude.
-birthday,der,Geburtstag,Geburtstage,Der Geburtstag ist morgen.,Viele Geburtstage werden gefeiert.,Sie freut sich auf ihren Geburtstag.
-opponent (male),der,Gegner,Gegner,Der Gegner ist stark.,Viele Gegner warten im Spiel.,Er besiegt den Gegner.
-opponent (female),die,Gegnerin,Gegnerinnen,Die Gegnerin spielt gut.,Viele Gegnerinnen sind schnell.,Sie kämpft gegen ihre Gegnerin.
-court / dish,das,Gericht,Gerichte,Das Gericht entscheidet schnell.,Viele Gerichte sind alt.,Er arbeitet am Gericht.
-business / store,das,Geschäft,Geschäfte,Das Geschäft ist klein.,Viele Geschäfte sind geschlossen.,Er kauft etwas im Geschäft.
-law,das,Gesetz,Gesetze,Das Gesetz ist neu.,Viele Gesetze sind kompliziert.,Er erklärt das Gesetz.
-border / boundary,die,Grenze,Grenzen,Die Grenze ist offen.,Viele Grenzen sind geschlossen.,Er wohnt an der Grenze.
-half,die,Hälfte,Hälften,Die Hälfte ist schon weg.,Viele Hälften passen zusammen.,Er isst die Hälfte des Kuchens.
-clue / hint,der,Hinweis,Hinweise,Der Hinweis ist wichtig.,Viele Hinweise stehen im Text.,Er gibt einen Hinweis zur Lösung.
+danger,die,Gefahr,Gefahren,"Achtung, Gefahr!",Die Gefahr ist groß.,Er warnt vor der Gefahr.
+visit,der,Besuch,Besuche,Wir bekommen Besuch.,Der Besuch kommt morgen.,Ihr Besuch dauert eine Stunde.
+youth,die,Jugend,—,Die Jugend ist unsere Zukunft.,In seiner Jugend reiste er viel.,Viele Jugendliche treffen sich im Park.
+concept,das,Konzept,Konzepte,Das Konzept ist neu.,Er erklärt das Konzept.,Viele Konzepte sind möglich.
+leader (female),die,Leiterin,Leiterinnen,Die Leiterin spricht mit den Mitarbeitern.,Die Leiterin ist streng.,Viele hören auf die Leiterin.
+leader (male),der,Leiter,Leiter,Der Leiter ist freundlich.,Der Leiter hält eine Rede.,Der Leiter entscheidet alles.
+route / line,die,Linie,Linien,Die Linie ist gerade.,Er zieht eine Linie.,Welche Linie fährt zum Bahnhof?
+love,die,Liebe,Lieben,Die Liebe ist stark.,Er spricht von seiner Liebe.,Liebe macht glücklich.
+middle / means,das,Mittel,Mittel,Das Mittel ist teuer.,Sie sucht ein Mittel gegen Kopfschmerzen.,Viele Mittel helfen nicht.
+defeat / loss,die,Niederlage,Niederlagen,Die Niederlage war schwer.,Nach der Niederlage ist er traurig.,Das Team spricht über die Niederlage.
+sport,der,Sport,—,Sport ist gesund.,Er treibt viel Sport.,Viele Kinder machen Sport.
+sport type,die,Sportart,Sportarten,Fußball ist meine Lieblingssportart.,Es gibt viele verschiedene Sportarten.,Welche Sportart magst du?
+speaker / announcer (female),die,Sprecherin,Sprecherinnen,Die Sprecherin erklärt die Nachricht.,Viele hören der Sprecherin zu.,Die Sprecherin arbeitet im Radio.
+speaker / announcer (male),der,Sprecher,Sprecher,Der Sprecher redet laut.,Der Sprecher informiert die Presse.,Viele hören dem Sprecher zu.
+start / launch,der,Start,Starts,Der Start war erfolgreich.,Der Start des Projekts ist morgen.,Beim Start gab es Probleme.
+system,das,System,Systeme,Das System ist neu.,Er versteht das System nicht.,Viele Systeme sind kompliziert.
+union,die,Union,Unionen,Die Europäische Union ist stark.,Die Union beschließt ein Gesetz.,Er arbeitet für die Union.
+comparison,der,Vergleich,Vergleiche,Der Vergleich ist interessant.,Sie macht einen Vergleich.,Der Vergleich zeigt Unterschiede.
+suggestion / proposal,der,Vorschlag,Vorschläge,Er macht einen Vorschlag.,Der Vorschlag ist gut.,Viele Vorschläge liegen auf dem Tisch.
+manner / way,die,Weise,Weisen,Auf diese Weise klappt es.,Jede Weise ist möglich.,Er handelt auf kluge Weise.
+cooperation / teamwork,die,Zusammenarbeit,Zusammenarbeiten,Die Zusammenarbeit ist wichtig.,Viele Firmen arbeiten in Zusammenarbeit.,Gute Zusammenarbeit bringt Erfolg.
+action / campaign,die,Aktion,Aktionen,Die Aktion ist erfolgreich.,Viele Aktionen laufen im Sommer.,Er startet eine neue Aktion.
+doctor (male),der,Arzt,Ärzte,Der Arzt untersucht den Patienten.,Sie geht zum Arzt.,Viele Ärzte arbeiten im Krankenhaus.
+doctor (female),die,Ärztin,Ärztinnen,Die Ärztin spricht mit dem Kind.,Viele Ärztinnen arbeiten hier.,Die Ärztin ist sehr freundlich.
+bath / bathroom,das,Bad,Bäder,Das Bad ist groß.,Sie nimmt ein Bad.,Das Kind spielt im Bad.
+railway / train,die,Bahn,Bahnen,Die Bahn kommt pünktlich.,Viele Menschen fahren mit der Bahn.,Die Deutsche Bahn hat Verspätung.
+population,die,Bevölkerung,Bevölkerungen,Die Bevölkerung wächst schnell.,Die Bevölkerung ist alt.,Viele Teile der Bevölkerung sind arm.
+federation / union,der,Bund,Bünde,Der Bund beschließt ein neues Gesetz.,Viele Projekte werden vom Bund bezahlt.,Der Bund arbeitet mit den Ländern zusammen.
+experience,die,Erfahrung,Erfahrungen,Er hat viel Erfahrung.,Die Erfahrung war schön.,Aus Erfahrung lernt man.
+vehicle,das,Fahrzeug,Fahrzeuge,Das Fahrzeug ist neu.,Viele Fahrzeuge stehen auf dem Parkplatz.,Er fährt ein schnelles Fahrzeug.
+birthday,der,Geburtstag,Geburtstage,Heute ist mein Geburtstag.,Er feiert seinen Geburtstag.,Alles Gute zum Geburtstag!
+opponent (male),der,Gegner,Gegner,Der Gegner ist stark.,Sie besiegen den Gegner.,Der Gegner spielt fair.
+opponent (female),die,Gegnerin,Gegnerinnen,Die Gegnerin ist schnell.,Viele Gegnerinnen sind erfahren.,Die Gegnerin gewinnt das Spiel.
+court / dish,das,Gericht,Gerichte,Das Gericht entscheidet.,Er geht vor Gericht.,Das Gericht spricht ein Urteil.
+business / store,das,Geschäft,Geschäfte,Das Geschäft ist klein.,Sie kauft im Geschäft ein.,Das Geschäft öffnet um neun Uhr.
+law,das,Gesetz,Gesetze,Das Gesetz ist neu.,Jedes Land hat Gesetze.,Er kennt das Gesetz nicht.
+border / boundary,die,Grenze,Grenzen,Die Grenze ist offen.,Er fährt über die Grenze.,Die Grenze zwischen den Ländern ist lang.
+half,die,Hälfte,Hälften,Die Hälfte ist weg.,Er isst die Hälfte des Kuchens.,Die Hälfte der Leute fehlt.
+clue / hint,der,Hinweis,Hinweise,Er gibt einen Hinweis.,Der Hinweis ist wichtig.,Sie folgt dem Hinweis.
 boy,der,Junge,Jungen,Der Junge spielt im Garten.,Viele Jungen gehen in die Schule.,Der Junge liest ein Buch.
-club,der,Klub,Klubs,Der Klub ist groß.,Viele Klubs treffen sich am Wochenende.,Er spielt im Fußballklub.
-contact,der,Kontakt,Kontakte,Der Kontakt ist wichtig.,Viele Kontakte helfen im Beruf.,Sie pflegt den Kontakt zu Freunden.
-culture,die,Kultur,Kulturen,Die Kultur ist reich.,Viele Länder haben eine eigene Kultur.,Er interessiert sich für Kultur.
-artist (male),der,Künstler,Künstler,Der Künstler malt ein Bild.,Viele Künstler arbeiten in Ateliers.,Der Künstler ist berühmt.
-artist (female),die,Künstlerin,Künstlerinnen,Die Künstlerin singt ein Lied.,Viele Künstlerinnen spielen Theater.,Die Künstlerin stellt ihre Werke aus.
-list,die,Liste,Listen,Die Liste ist lang.,Viele Namen stehen auf der Liste.,Er schreibt eine Liste für den Einkauf.
-solution,die,Lösung,Lösungen,Die Lösung ist richtig.,Viele Lösungen sind möglich.,Er findet eine gute Lösung.
-opinion,die,Meinung,Meinungen,Die Meinung ist klar.,Viele Meinungen sind unterschiedlich.,Er sagt seine Meinung.
-round / lap,die,Runde,Runden,Der Sommer ist heiß.,Viele Menschen lieben den Sommer.,Im Sommer fahren wir ans Meer.
-step,der,Schritt,Schritte,,,
-summer,der,Sommer,Sommer,,,
-language / speech,die,Sprache,Sprachen,Die Sprache ist schwer.,Viele Menschen lernen eine neue Sprache.,Er spricht drei Sprachen.
-participant,der,Teilnehmer,Teilnehmer,Der Teilnehmer stellt eine Frage.,Viele Teilnehmer hören zu.,Die Teilnehmer schreiben ihre Namen auf.
-text,der,Text,Texte,Der Text ist lang.,Viele Texte stehen im Buch.,Sie liest einen kurzen Text.
-theater,das,Theater,Theater,Das Theater ist voll.,Viele Leute besuchen das Theater.,Er spielt im Theater.
-animal,das,Tier,Tiere,Das Tier läuft schnell.,Viele Tiere leben im Wald.,Er hat ein Haustier.
-support,die,Unterstützung,Unterstützungen,Die Unterstützung ist wichtig.,Viele Menschen geben Unterstützung.,Er bekommt Unterstützung von Freunden.
-publisher,der,Verlag,Verlage,Der Verlag druckt viele Bücher.,Viele Verlage sind bekannt.,Der Verlag veröffentlicht ein neues Werk.
-contract / treaty,der,Vertrag,Verträge,Der Vertrag ist gültig.,Viele Verträge sind kompliziert.,Er unterschreibt den Vertrag.
-representative (male),der,Vertreter,Vertreter,Der Vertreter spricht für die Firma.,Viele Vertreter reisen viel.,Der Vertreter erklärt das Produkt.
-representative (female),die,Vertreterin,Vertreterinnen,Die Vertreterin besucht die Kunden.,Viele Vertreterinnen sind freundlich.,Die Vertreterin arbeitet im Büro.
-board / chair,der,Vorstand,Vorstände,Der Vorstand trifft eine Entscheidung.,Viele Vorstände sind wichtig.,Er spricht mit dem Vorstand.
-apartment / flat,die,Wohnung,Wohnungen,Die Wohnung ist groß.,Viele Wohnungen sind teuer.,Er mietet eine Wohnung in der Stadt.
-graduation / degree,der,Abschluss,Abschlüsse,Der Abschluss ist bald.,Viele Studenten feiern ihren Abschluss.,Der Abschluss des Projekts war erfolgreich.
-complex / attachment,die,Anlage,Anlagen,Die Anlage ist modern.,Viele Anlagen sind teuer.,Er besucht die neue Sportanlage.
-application,der,Antrag,Anträge,Der Antrag ist fertig.,Viele Anträge liegen im Amt.,Er schreibt einen Antrag.
-answer,die,Antwort,Antworten,Die Antwort ist richtig.,Viele Antworten sind falsch.,Er gibt eine schnelle Antwort.
-workplace,der,Arbeitsplatz,Arbeitsplätze,Der Arbeitsplatz ist neu.,Viele Arbeitsplätze entstehen in der Stadt.,Er verliert seinen Arbeitsplatz.
-assignment / job,der,Auftrag,Aufträge,Der Auftrag ist wichtig.,Viele Aufträge kommen von Firmen.,Er erledigt den Auftrag.
-district,der,Bezirk,Bezirke,Der Bezirk ist klein.,Viele Bezirke gehören zur Stadt.,Er wohnt in einem Bezirk von Berlin.
-brother,der,Bruder,Brüder,Der Bruder spielt im Garten.,Viele Brüder streiten sich.,Sie besucht ihren Bruder.
-lady,die,Dame,Damen,Die Dame trägt ein Kleid.,Viele Damen sitzen im Café.,Er spricht mit einer alten Dame.
-date / data,das,Datum,Daten,Das Datum ist wichtig.,Viele Daten stehen im Kalender.,Er schreibt das Datum auf.
-service,der,Dienst,Dienste,Der Dienst beginnt früh.,Viele Dienste dauern acht Stunden.,Er arbeitet im Nachtdienst.
-institution / setup,die,Einrichtung,Einrichtungen,Die Einrichtung ist modern.,Viele Einrichtungen helfen Kindern.,Er besucht eine soziale Einrichtung.
-expert (female),die,Expertin,Expertinnen,Die Expertin erklärt das Problem.,Viele Expertinnen arbeiten an der Uni.,Die Expertin gibt einen Rat.
-expert (male),der,Experte,Experten,Der Experte spricht im Fernsehen.,Viele Experten warnen davor.,Der Experte kennt die Lösung.
-firm / company,die,Firma,Firmen,Die Firma wächst schnell.,Viele Firmen stellen neue Leute ein.,Er arbeitet in einer großen Firma.
-fire department,die,Feuerwehr,Feuerwehren,Die Feuerwehr kommt sofort.,Viele Feuerwehren sind wichtig.,Er ruft die Feuerwehr.
-danger,die,Gefahr,Gefahren,Die Gefahr ist groß.,Viele Gefahren sind unsichtbar.,Er warnt vor der Gefahr.
-god,der,Gott,Götter,Der Gott ist mächtig.,Viele Götter stehen in alten Geschichten.,Er glaubt an Gott.
-heart,das,Herz,Herzen,Das Herz schlägt schnell.,Viele Herzen sind gesund.,Sie hat ein gutes Herz.
-institute,das,Institut,Institute,Das Institut ist bekannt.,Viele Institute forschen in Berlin.,Er arbeitet in einem Institut.
-youth,die,Jugend,—,Die Jugend spielt im Park.,Viele Jugend­liche lernen Sprachen.,Die Jugend hat viele Ideen.
-colleague (male),der,Kollege,Kollegen,Der Kollege hilft im Büro.,Viele Kollegen arbeiten zusammen.,Er spricht mit einem Kollegen.
-colleague (female),die,Kollegin,Kolleginnen,Die Kollegin erklärt die Aufgabe.,Viele Kolleginnen sind freundlich.,Er trinkt Kaffee mit einer Kollegin.
-concept,das,Konzept,Konzepte,Das Konzept ist klar.,Viele Konzepte sind interessant.,Er schreibt ein neues Konzept.
-ladder,die,Leiter,Leitern,Der Leiter spricht mit den Schülern.,Viele Leiter sind streng.,Der Leiter erklärt den Plan.
-leadership / management,die,Leitung,Leitungen,Die Leitung ist wichtig.,Viele Leitungen sind alt.,Er übernimmt die Leitung des Projekts.
-love,die,Liebe,Lieben,Die Liebe ist stark.,Viele Geschichten handeln von Liebe.,Er zeigt seine Liebe offen.
-line / route,die,Linie,Linien,,,
-means / medium,das,Mittel,Mittel,,,
-defeat,die,Niederlage,Niederlagen,,,
-organization,die,Organisation,Organisationen,,,
-speech,die,Rede,Reden,,,
-lock / castle,das,Schloss,Schlösser,,,
-safety / security,die,Sicherheit,Sicherheiten,Die Sicherheit ist wichtig.,Viele Menschen achten auf Sicherheit.,Er sorgt für die Sicherheit seiner Familie.
-female soldier,die,Soldatin,Soldatinnen,Die Soldatin trägt eine Uniform.,Viele Soldatinnen arbeiten im Ausland.,Die Soldatin fährt ins Lager.
-male soldier,der,Soldat,Soldaten,Der Soldat marschiert schnell.,Viele Soldaten kämpfen im Krieg.,Der Soldat schreibt einen Brief.
-sport,der,Sport,—,Der Sport macht Spaß.,Viele Menschen treiben Sport.,Er sieht gern Sport im Fernsehen.
-type of sport,die,Sportart,Sportarten,Die Sportart ist schwer.,Viele Sportarten sind beliebt.,Tennis ist seine Lieblingssportart.
-female speaker/announcer,die,Sprecherin,Sprecherinnen,Die Sprecherin liest die Nachrichten.,Viele Sprecherinnen arbeiten im Radio.,Die Sprecherin erklärt den Bericht.
-male speaker/announcer,der,Sprecher,Sprecher,Der Sprecher antwortet auf die Frage.,Viele Sprecher sind nervös.,Der Sprecher hält eine Rede.
-launch / takeoff,der,Start,Starts,Der Start ist pünktlich.,Viele Starts sind schwierig.,Der Start des Zuges verzögert sich.
-system,das,System,Systeme,Das System ist modern.,Viele Systeme sind alt.,Er erklärt das System.
-union,die,Union,Unionen,Die Union ist stark.,Viele Staaten bilden eine Union.,Er spricht über die Europäische Union.
-comparison,der,Vergleich,Vergleiche,Der Vergleich ist interessant.,Viele Vergleiche zeigen Unterschiede.,Er macht einen Vergleich zwischen zwei Autos.
-proposal / suggestion,der,Vorschlag,Vorschläge,Der Vorschlag ist gut.,Viele Vorschläge kommen von den Schülern.,Er lehnt den Vorschlag ab.
-manner / method,die,Weise,Weisen,Die Weise ist richtig.,Viele Weisen führen zum Ziel.,Er erklärt die Weise des Spiels.
-cooperation,die,Zusammenarbeit,Zusammenarbeiten,Die Zusammenarbeit ist wichtig.,Viele Firmen fördern die Zusammenarbeit.,Gute Zusammenarbeit bringt Erfolg.
-action / initiative,die,Aktion,Aktionen,Die Aktion hilft den Kindern.,Viele Aktionen dauern nur einen Tag.,Er plant eine große Aktion.
-campaign,die,Kampagne,Kampagnen,Die Kampagne beginnt heute.,Viele Kampagnen sind teuer.,Die Kampagne hilft den Menschen.
-accident,der,Unfall,Unfälle,Der Unfall ist schlimm.,Viele Unfälle passieren auf der Straße.,Er hat einen Unfall mit dem Auto.
-patient (male),der,Patient,Patienten,Der Patient wartet im Krankenhaus.,Viele Patienten brauchen Hilfe.,Der Patient spricht mit dem Arzt.
-patient (female),die,Patientin,Patientinnen,Die Patientin bekommt ein Medikament.,Viele Patientinnen sind zufrieden.,Die Patientin wartet auf die Ärztin.
-position / stance,die,Position,Positionen,Die Position ist klar.,Viele Positionen sind offen.,Er findet eine gute Position.
-program / agenda,das,Programm,Programme,Das Programm läuft im Fernsehen.,Viele Programme sind interessant.,Er schreibt ein neues Programm.
-publication,die,Publikation,Publikationen,Die Publikation erscheint morgen.,Viele Publikationen sind wissenschaftlich.,Die Publikation ist online verfügbar.
-reason,der,Grund,Gründe,Der Grund ist klar.,Viele Gründe sind wichtig.,Er nennt den Grund für sein Handeln.
-reality,die,Realität,Realitäten,Die Realität ist hart.,Viele Menschen fliehen vor der Realität.,Er akzeptiert die Realität.
-reaction,die,Reaktion,Reaktionen,Die Reaktion ist positiv.,Viele Reaktionen sind negativ.,Seine Reaktion überrascht alle.
-rule,die,Regel,Regeln,Die Regel ist einfach.,Viele Regeln sind schwer.,Er erklärt die Regel.
-government,die,Regierung,Regierungen,Die Regierung beschließt ein Gesetz.,Viele Regierungen arbeiten langsam.,Die Regierung ist stark.
-report,der,Bericht,Berichte,Der Bericht ist interessant.,Viele Berichte sind falsch.,Er schreibt einen Bericht.
-result,das,Resultat,Resultate,Das Resultat ist klar.,Viele Resultate sind positiv.,Das Resultat gefällt ihm.
-scandal,der,Skandal,Skandale,Der Skandal ist groß.,Viele Skandale sind politisch.,Der Skandal schadet der Firma.
-damage,der,Schaden,Schäden,Der Schaden ist groß.,Viele Schäden entstehen durch das Feuer.,Der Sturm verursacht großen Schaden.
-creation / work (art),das,Werk,Werke,Das Werk ist bekannt.,Viele Werke sind berühmt.,Er liest ein literarisches Werk.
-knowledge,das,Wissen,—,Das Wissen ist wichtig.,Wissen ist Macht.,Viele Studenten haben viel Wissen.
-witness (male),der,Zeuge,Zeugen,Der Zeuge berichtet im Gericht.,Viele Zeugen helfen der Polizei.,Der Zeuge hat alles gesehen.
-witness (female),die,Zeugin,Zeuginnen,Die Zeugin erzählt die Wahrheit.,Viele Zeuginnen sprechen im Prozess.,Die Zeugin erkennt den Mann.
-newspaper,die,Zeitung,Zeitungen,Die Zeitung liegt auf dem Tisch.,Viele Zeitungen berichten darüber.,Sie liest die Zeitung am Morgen.
-intention / purpose,die,Absicht,Absichten,Die Absicht ist klar.,Viele Absichten sind gut gemeint.,Er erklärt seine Absicht.
-department,das,Department,Departments,Das Department ist groß.,Viele Departments arbeiten zusammen.,Er leitet ein Department.
-detail,das,Detail,Details,Das Detail ist wichtig.,Viele Details fehlen noch.,Er erklärt jedes Detail.
-discussion,die,Diskussion,Diskussionen,Die Diskussion ist spannend.,Viele Diskussionen dauern lange.,Er nimmt an der Diskussion teil.
-dispute,der,Streit,Streite / Streits,Der Streit ist laut.,Viele Streits enden schnell.,Er hat einen Streit mit seinem Bruder.
-dream,der,Traum,Träume,Der Traum ist schön.,Viele Träume sind bunt.,Sie hat einen Traum in der Nacht.
-company,die,Gesellschaft,Gesellschaften,Die Gesellschaft ist groß.,Viele Gesellschaften haben Regeln.,Er ist Teil einer Gesellschaft.
-health,die,Gesundheit,—,Die Gesundheit ist wichtig.,Viele Menschen achten auf ihre Gesundheit.,Er hat gute Gesundheit.
-industry,die,Industrie,Industrien,Die Industrie wächst schnell.,Viele Industrien sind modern.,Die Industrie produziert Autos.
-information,die,Information,Informationen,Die Information ist korrekt.,Viele Informationen findet man im Internet.,Er gibt eine neue Information.
-innovation,die,Innovation,Innovationen,Die Innovation ist spannend.,Viele Innovationen kommen aus Deutschland.,Diese Innovation hilft vielen Menschen.
-institute,das,Institut,Institute,Das Institut ist bekannt.,Viele Institute forschen in Berlin.,Er arbeitet in einem Institut.
-intelligence,die,Intelligenz,—,Die Intelligenz ist hoch.,Viele Menschen haben Intelligenz.,Intelligenz hilft beim Lernen.
-interest,das,Interesse,Interessen,Das Interesse ist groß.,Viele Studenten zeigen Interesse.,Er hat Interesse an Kunst.
-internet,das,Internet,—,Das Internet ist schnell.,Viele Kinder nutzen das Internet.,Im Internet findet man viele Informationen.
-interview,das,Interview,Interviews,Das Interview ist interessant.,Viele Interviews stehen in der Zeitung.,Er gibt ein Interview im Fernsehen.
-investment,die,Investition,Investitionen,Die Investition ist groß.,Viele Investitionen sind riskant.,Er macht eine Investition in ein Haus.
-job,der,Job,Jobs,Der Job ist neu.,Viele Jobs sind schwer zu finden.,Er sucht einen Job in Berlin.
-crisis,die,Krise,Krisen,Die Krise ist ernst.,Viele Länder haben eine Krise.,Er spricht über die Krise.
-culture,die,Kultur,Kulturen,Die Kultur ist reich.,Viele Kulturen sind verschieden.,Er interessiert sich für Kultur.
-kitchen,die,Küche,Küchen,Die Küche ist klein.,Viele Küchen sind modern.,Sie kocht gern in der Küche.
-art,die,Kunst,Künste,Die Kunst ist alt.,Viele Kinder lieben Kunst.,Er studiert Kunst.
-course (academic),der,Kurs,Kurse,Der Kurs ist schwer.,Viele Studenten besuchen den Kurs.,Er macht einen Sprachkurs.
-customer,der,Kunde,Kunden,Der Kunde kauft ein Auto.,Viele Kunden sind zufrieden.,Der Kunde fragt nach dem Preis.
-limit,die,Grenze,Grenzen,Die Grenze ist offen.,Viele Grenzen sind geschlossen.,Er wohnt an der Grenze.
-map,die,Karte,Karten,Die Karte ist bunt.,Er kauft eine Fahrkarte.,Viele Karten liegen auf dem Tisch.
-climate,das,Klima,Klimata / Klimas,Das Klima ist warm.,Viele Klimas ändern sich.,Er spricht über das Klima.
-class,die,Klasse,Klassen,Die Klasse ist laut.,Viele Klassen sind groß.,Er besucht die erste Klasse.
-coalition,die,Koalition,Koalitionen,Die Koalition ist stark.,Viele Koalitionen regieren ein Land.,Die Koalition arbeitet zusammen.
-colleague,der,Kollege,Kollegen,Der Kollege hilft im Büro.,Viele Kollegen arbeiten dort.,Er spricht mit seinem Kollegen.
-concept,das,Konzept,Konzepte,Das Konzept ist neu.,Viele Konzepte sind spannend.,Er erklärt das Konzept.
-conflict,der,Konflikt,Konflikte,Der Konflikt ist alt.,Viele Konflikte entstehen durch Missverständnisse.,Er spricht über den Konflikt.
-contact,der,Kontakt,Kontakte,Der Kontakt ist wichtig.,Viele Kontakte helfen im Beruf.,Sie pflegt den Kontakt zu Freunden.
-continent,der,Kontinent,Kontinente,Der Kontinent ist groß.,Afrika ist ein Kontinent.,Viele Kontinente sind verbunden.
-head / boss,der,Kopf,Köpfe,Der Kopf tut weh.,Viele Köpfe schauen zu.,Er trägt einen Hut auf dem Kopf.
-copy,die,Kopie,Kopien,Die Kopie ist klar.,Viele Kopien sind schlecht.,Er macht eine Kopie des Dokuments.
-body,der,Körper,Körper,Der Körper ist stark.,Viele Körper sind gesund.,Er trainiert seinen Körper.
-force / power,die,Kraft,Kräfte,Die Kraft ist groß.,Viele Kräfte wirken zusammen.,Er hat viel Kraft.
-war,der,Krieg,Kriege,Der Krieg ist vorbei.,Viele Menschen leiden im Krieg.,Kriege zerstören Länder.
-criticism,die,Kritik,Kritiken,Die Kritik ist hart.,Viele Kritiken sind unfair.,Er bekommt Kritik von seinem Lehrer.
-art (repeat for reference),die,Kunst,Künste,Die Kunst ist alt.,Viele Menschen lieben Kunst.,Er studiert Kunst an der Uni.
-situation,die,Lage,Lagen,Die Lage ist ernst.,Viele Lagen sind schwierig.,Er erklärt die Lage.
-achievement / performance,die,Leistung,Leistungen,Die Leistung ist stark.,Viele Leistungen sind beeindruckend.,Er zeigt eine gute Leistung.
-literature,die,Literatur,—,Die Literatur ist interessant.,Viele Studenten lesen Literatur.,Deutsche Literatur ist bekannt.
-girl,das,Mädchen,Mädchen,Das Mädchen spielt im Garten.,Viele Mädchen tanzen gern.,Das Mädchen liest ein Buch.
-billion,die,Milliarde,Milliarden,Die Milliarde ist groß.,Er hat eine Milliarde Euro.,Viele Milliarden sind im Umlauf.
-museum,das,Museum,Museen,Das Museum ist interessant.,Viele Menschen besuchen das Museum.,Im Museum hängen Bilder.
-victim / sacrifice,das,Opfer,Opfer,Das Opfer ist unschuldig.,Viele Opfer brauchen Hilfe.,Er bringt ein Opfer.
-politician (male),der,Politiker,Politiker,Der Politiker spricht im Parlament.,Viele Politiker reisen viel.,Der Politiker erklärt das Gesetz.
-politician (female),die,Politikerin,Politikerinnen,Die Politikerin gibt ein Interview.,Viele Politikerinnen arbeiten im Bundestag.,Die Politikerin besucht eine Schule.
-audience,das,Publikum,—,Das Publikum klatscht laut.,Viele Leute sind im Publikum.,Das Publikum lacht über den Witz.
-source,die,Quelle,Quellen,Die Quelle ist wichtig.,Viele Quellen sind im Internet.,Er nennt die Quelle des Textes.
-frame / framework,der,Rahmen,Rahmen,Der Rahmen ist aus Holz.,Viele Bilder haben einen Rahmen.,Er setzt das Bild in den Rahmen.
-right / law,das,Recht,Rechte,Das Recht ist wichtig.,Jeder Mensch hat Rechte.,Viele Rechte schützen uns.
-direction,die,Richtung,Richtungen,Die Richtung ist falsch.,Viele Richtungen sind möglich.,Er fragt nach der Richtung.
-sentence / phrase,der,Satz,Sätze,Der Satz ist kurz.,Viele Sätze stehen im Buch.,Er schreibt einen langen Satz.
-Swiss (male),der,Schweizer,Schweizer,Der Schweizer wohnt in Zürich.,Viele Schweizer sprechen Deutsch.,Der Schweizer besucht Berlin.
-Swiss (female),die,Schweizerin,Schweizerinnen,Die Schweizerin arbeitet in Bern.,Viele Schweizerinnen fahren Ski.,Die Schweizerin spricht Französisch.
-sense / meaning,der,Sinn,Sinne,Der Sinn ist klar.,Viele Menschen suchen nach dem Sinn des Lebens.,Der Satz hat keinen Sinn.
-situation (again),die,Situation,Situationen,Die Situation ist ernst.,Viele Situationen sind schwierig.,Die Situation im Land ist neu.
-voice / vote,die,Stimme,Stimmen,Die Stimme ist laut.,Viele Stimmen sind unterschiedlich.,Sie hört seine Stimme sofort.
-daughter,die,Tochter,Töchter,Die Tochter spielt im Garten.,Viele Töchter helfen zu Hause.,Er besucht seine Tochter.
-death,der,Tod,Tode,Der Tod macht traurig.,Viele Tode sind im Krieg passiert.,Der Tod ist ein Teil des Lebens.
-university,die,Universität,Universitäten,Die Universität ist groß.,Viele Studenten studieren an der Universität.,Er besucht die Universität jeden Tag.
-regulation / provision,die,Verfügung,Verfügungen,Die Verfügung ist amtlich.,Viele Verfügungen gelten ab morgen.,Er hat die Verfügung gelesen.
-water,das,Wasser,Wässer,Das Wasser ist kalt.,Viele Kinder spielen im Wasser.,Ich trinke ein Glas Wasser.
-value,der,Wert,Werte,Der Wert ist hoch.,Viele Werte sind wichtig im Leben.,Das Haus hat einen großen Wert.
-economy,die,Wirtschaft,Wirtschaften,Die Wirtschaft wächst schnell.,Viele Länder haben eine starke Wirtschaft.,Die Wirtschaft ist wichtig für den Staat.
-train,der,Zug,Züge,Der Zug kommt pünktlich.,Viele Leute fahren mit dem Zug.,Der Zug hält am Bahnhof.
-spectator / viewer,der,Zuschauer,Zuschauer,Der Zuschauer klatscht laut.,Viele Zuschauer sehen das Spiel.,Die Zuschauer lachen im Theater.
-user,der,Nutzer,Nutzer,Der Nutzer meldet sich an.,Viele Nutzer haben ein Konto.,Der Nutzer schreibt einen Kommentar.
-number / figure,die,Zahl,Zahlen,Die Zahl ist groß.,Viele Zahlen stehen im Text.,Er schreibt die Zahl an die Tafel.
-interest,das,Interesse,Interessen,Das Interesse ist groß.,Viele Studenten zeigen Interesse.,Er hat Interesse an Kunst.
-problem,das,Problem,Probleme,Das Problem ist schwierig.,Viele Probleme sind lösbar.,Er erklärt das Problem.
-attempt / try,der,Versuch,Versuche,Der Versuch ist spannend.,Viele Versuche sind erfolgreich.,Er startet einen neuen Versuch.
-responsibility,die,Verantwortung,Verantwortungen,Die Verantwortung ist groß.,Viele Menschen tragen Verantwortung.,Er übernimmt die Verantwortung.
-promise,das,Versprechen,Versprechen,Das Versprechen ist wichtig.,Viele Versprechen sind leer.,Er hält sein Versprechen.
-contract,der,Vertrag,Verträge,Der Vertrag ist gültig.,Viele Verträge sind kompliziert.,Er unterschreibt den Vertrag.
-loss,der,Verlust,Verluste,Der Verlust ist groß.,Viele Verluste sind schwer.,Er erklärt den Verlust.
-trust,das,Vertrauen,—,Das Vertrauen ist wichtig.,Viele Menschen haben Vertrauen.,Er verliert das Vertrauen.
-administration,die,Verwaltung,Verwaltungen,Die Verwaltung ist neu.,Viele Verwaltungen arbeiten langsam.,Er arbeitet in der Verwaltung.
-understanding,das,Verständnis,Verständnisse,Das Verständnis ist groß.,Viele Lehrer haben Verständnis.,Sie zeigt Verständnis für das Kind.
-representative,der,Vertreter,Vertreter,Der Vertreter spricht für die Firma.,Viele Vertreter reisen viel.,Der Vertreter erklärt das Produkt.
-distribution,die,Verteilung,Verteilungen,Die Verteilung ist gerecht.,Viele Verteilungen dauern lange.,Er organisiert die Verteilung der Bücher.
-use / application,die,Verwendung,Verwendungen,Die Verwendung ist einfach.,Viele Verwendungen sind möglich.,Er erklärt die Verwendung des Wortes.
-attempt / experiment,der,Versuch,Versuche,Der Versuch ist schwierig.,Viele Versuche scheitern.,Er startet einen letzten Versuch.
-delay,die,Verspätung,Verspätungen,Die Verspätung ist ärgerlich.,Viele Verspätungen passieren bei der Bahn.,Er entschuldigt die Verspätung.
-insurance,die,Versicherung,Versicherungen,Die Versicherung ist teuer.,Viele Versicherungen sind wichtig.,Er schließt eine neue Versicherung ab.
-understanding,das,Verständnis,Verständnisse,Das Verständnis ist wichtig.,Viele Studenten zeigen Verständnis.,Sie hat kein Verständnis für Lügen.
-contract,der,Vertrag,Verträge,Der Vertrag ist lang.,Viele Verträge müssen unterschrieben werden.,Er liest den Vertrag genau.
-administration,die,Verwaltung,Verwaltungen,Die Verwaltung arbeitet langsam.,Viele Verwaltungen haben Probleme.,Er geht zur Verwaltung.
-loss,der,Verlust,Verluste,Der Verlust ist schwer.,Viele Firmen erleiden Verluste.,Der Verlust macht ihn traurig.
-trust,das,Vertrauen,—,Das Vertrauen wächst.,Viele Menschen haben Vertrauen in ihn.,Sie verliert das Vertrauen nicht.
-connection,die,Verbindung,Verbindungen,Die Verbindung ist schlecht.,Viele Verbindungen sind möglich.,Er verliert die Verbindung.
-process,der,Vorgang,Vorgänge,Der Vorgang ist geheim.,Viele Vorgänge dauern lange.,Er beschreibt den Vorgang.
-condition / requirement,die,Voraussetzung,Voraussetzungen,Die Voraussetzung ist klar.,Viele Voraussetzungen fehlen.,Sie erfüllt die Voraussetzung.
-advantage,der,Vorteil,Vorteile,Der Vorteil ist groß.,Viele Vorteile sind sichtbar.,Er erklärt den Vorteil.
-proposal,der,Vorschlag,Vorschläge,Der Vorschlag ist interessant.,Viele Vorschläge kommen von Schülern.,Sie lehnt den Vorschlag ab.
-precaution / provision,die,Vorsorge,Vorsorgen,Die Vorsorge ist wichtig.,Viele Menschen denken an Vorsorge.,Er trifft Vorsorge für später.
-imagination / idea,die,Vorstellung,Vorstellungen,Die Vorstellung beginnt um acht Uhr.,Viele Vorstellungen sind ausverkauft.,Er hat eine klare Vorstellung vom Plan.
-supervisor / presenter,der,Vorsteller,Vorsteller,Der Vorsteller spricht laut.,Viele Vorsteller präsentieren ihre Ideen.,Der Vorsteller erklärt das Projekt.
-election,die,Wahl,Wahlen,Die Wahl ist schwer.,Viele Menschen gehen zur Wahl.,Er trifft eine gute Wahl.
-perception,die,Wahrnehmung,Wahrnehmungen,Die Wahrnehmung ist subjektiv.,Viele Wahrnehmungen sind unterschiedlich.,Er beschreibt seine Wahrnehmung.
-commodity / good,das,Ware,Waren,Die Ware ist teuer.,Viele Waren liegen im Geschäft.,Er kauft die Ware.
-warning,die,Warnung,Warnungen,Die Warnung ist ernst.,Viele Warnungen stehen im Text.,Er gibt eine Warnung.
-change,der,Wechsel,Wechsel,Der Wechsel ist schnell.,Viele Wechsel sind schwer.,Er erklärt den Wechsel.
-contradiction,der,Widerspruch,Widersprüche,Der Widerspruch ist deutlich.,Viele Widersprüche stehen im Text.,Er legt Widerspruch ein.
-resistance,der,Widerstand,Widerstände,Der Widerstand ist stark.,Viele Widerstände sind politisch.,Er organisiert den Widerstand.
-competition,der,Wettbewerb,Wettbewerbe,Der Wettbewerb ist groß.,Viele Wettbewerbe finden im Sommer statt.,Er gewinnt den Wettbewerb.
-economy,die,Wirtschaft,Wirtschaften,Die Wirtschaft wächst schnell.,Viele Länder haben eine starke Wirtschaft.,Die Wirtschaft ist wichtig für den Staat.
-effect,die,Wirkung,Wirkungen,Die Wirkung ist stark.,Viele Wirkungen sind bekannt.,Das Medikament zeigt Wirkung.
-knowledge / wisdom,das,Wissen,—,Das Wissen ist groß.,Wissen ist Macht.,Viele Studenten haben Wissen.
-miracle,das,Wunder,Wunder,Das Wunder ist schön.,Viele Wunder passieren selten.,Er glaubt an ein Wunder.
-goal,das,Ziel,Ziele,Das Ziel ist nah.,Viele Ziele sind schwer zu erreichen.,Er verfolgt ein klares Ziel.
-time,die,Zeit,Zeiten,Die Zeit ist knapp.,Viele Zeiten sind vorbei.,Er hat keine Zeit.
-newspaper,die,Zeitung,Zeitungen,Die Zeitung liegt auf dem Tisch.,Viele Zeitungen berichten darüber.,Sie liest die Zeitung am Morgen.
-certificate,das,Zeugnis,Zeugnisse,Das Zeugnis ist gut.,Viele Zeugnisse sind wichtig für Bewerbungen.,Er zeigt sein Zeugnis.
-room,das,Zimmer,Zimmer,Das Zimmer ist groß.,Viele Zimmer sind hell.,Sie schläft im Zimmer.
-number / digit,die,Ziffer,Ziffern,Die Ziffer ist klein.,Viele Ziffern stehen im Text.,Er schreibt eine Ziffer an die Tafel.
-aim / intention,das,Ziel,Ziele,Das Ziel ist klar.,Viele Ziele sind schwer erreichbar.,Er erreicht sein Ziel.
-interest (again),das,Interesse,Interessen,Das Interesse ist groß.,Viele Studenten zeigen Interesse.,Er hat Interesse an Politik.
-center,das,Zentrum,Zentren,Das Zentrum ist voll.,Viele Menschen treffen sich im Zentrum.,Sie wohnt im Zentrum der Stadt.
-access,der,Zugang,Zugänge,Der Zugang ist frei.,Viele Zugänge sind verschlossen.,Er hat Zugang zum Gebäude.
-train station,der,Bahnhof,Bahnhöfe,Der Bahnhof ist groß.,Viele Züge fahren vom Bahnhof.,Sie wartet am Bahnhof.
-fence,der,Zaun,Zäune,Der Zaun ist hoch.,Viele Zäune sind aus Holz.,Er springt über den Zaun.
-anger,der,Zorn,—,Der Zorn ist stark.,Viele Menschen fühlen Zorn.,Er zeigt seinen Zorn offen.
-tongue,die,Zunge,Zungen,Die Zunge ist rot.,Viele Tiere haben lange Zungen.,Er beißt sich auf die Zunge.
-doubt,der,Zweifel,Zweifel,Der Zweifel ist groß.,Viele Zweifel bleiben offen.,Er hat Zweifel an der Geschichte.
-future,die,Zukunft,Zukünfte,Die Zukunft ist ungewiss.,Viele Menschen planen ihre Zukunft.,Er hofft auf eine gute Zukunft.
-goal line / finish,das,Ziel,Ziele,Das Ziel ist nah.,Viele Ziele sind schwer.,Er verfolgt sein Ziel.
-certificate / document,die,Urkunde,Urkunden,Die Urkunde ist alt.,Viele Urkunden liegen im Archiv.,Er unterschreibt die Urkunde.
-time period,der,Zeitraum,Zeiträume,Der Zeitraum ist kurz.,Viele Zeiträume sind wichtig.,Er wählt einen Zeitraum von drei Tagen.
-newspaper article,der,Zeitungsartikel,Zeitungsartikel,Der Zeitungsartikel ist interessant.,Viele Zeitungsartikel sind lang.,Sie liest den Zeitungsartikel am Morgen.
-bill / invoice,die,Rechnung,Rechnungen,Die Rechnung ist hoch.,Viele Rechnungen kommen per Post.,Er bezahlt die Rechnung sofort.
-speech / address,die,Rede,Reden,Die Rede ist spannend.,Viele Reden dauern lang.,Er hält eine Rede im Parlament.
-journey / trip,die,Reise,Reisen,Die Reise ist kurz.,Viele Reisen sind teuer.,Sie plant eine Reise nach Berlin.
-report / review,der,Bericht,Berichte,Der Bericht ist alt.,Viele Berichte sind falsch.,Er liest den Bericht in der Zeitung.
-series,die,Serie,Serien,Die Serie ist spannend.,Viele Serien laufen im Fernsehen.,Er sieht eine Serie am Abend.
-shadow,der,Schatten,Schatten,Der Schatten ist lang.,Viele Schatten fallen auf die Wand.,Er sieht seinen Schatten.
-actor (male),der,Schauspieler,Schauspieler,Der Schauspieler ist bekannt.,Viele Schauspieler spielen im Film.,Der Schauspieler lacht viel.
-actor (female),die,Schauspielerin,Schauspielerinnen,Die Schauspielerin singt gut.,Viele Schauspielerinnen arbeiten im Theater.,Die Schauspielerin ist jung.
-protection,der,Schutz,—,Der Schutz ist wichtig.,Viele Schutzmaßnahmen helfen.,Er sucht Schutz vor dem Regen.
-victory,der,Sieg,Siege,Der Sieg ist groß.,Viele Siege sind schwer.,Er feiert den Sieg.
-page,die,Seite,Seiten,Die Seite ist lang.,Viele Seiten fehlen im Buch.,Er liest die erste Seite.
-damage,der,Schaden,Schäden,Der Schaden ist groß.,Viele Schäden entstehen bei Unfällen.,Er meldet den Schaden.
-step / level,die,Stufe,Stufen,Die Stufe ist hoch.,Viele Stufen führen nach oben.,Er sitzt auf einer Stufe.
-support,die,Unterstützung,Unterstützungen,Die Unterstützung ist wichtig.,Viele Menschen brauchen Unterstützung.,Er bittet um Unterstützung.
-responsibility,die,Verantwortung,Verantwortungen,Die Verantwortung ist groß.,Viele Menschen übernehmen Verantwortung.,Er trägt Verantwortung im Team.
-event,die,Veranstaltung,Veranstaltungen,Die Veranstaltung ist spannend.,Viele Veranstaltungen finden im Sommer statt.,Er besucht eine Veranstaltung.
-change,die,Veränderung,Veränderungen,Die Veränderung ist stark.,Viele Veränderungen sind positiv.,Er spürt eine Veränderung.
-association,der,Verband,Verbände,Der Verband ist groß.,Viele Verbände arbeiten zusammen.,Der Verband hilft den Menschen.
-arrest,die,Verhaftung,Verhaftungen,Die Verhaftung ist überraschend.,Viele Verhaftungen sind geheim.,Die Polizei meldet eine Verhaftung.
-negotiation,die,Verhandlung,Verhandlungen,Die Verhandlung ist schwer.,Viele Verhandlungen dauern lange.,Er nimmt an der Verhandlung teil.
-publication,die,Veröffentlichung,Veröffentlichungen,Die Veröffentlichung ist neu.,Viele Veröffentlichungen sind online.,Die Veröffentlichung kommt morgen.
-attempt,der,Versuch,Versuche,Der Versuch ist neu.,Viele Versuche sind spannend.,Er macht einen letzten Versuch.
-delay,die,Verspätung,Verspätungen,Die Verspätung ist ärgerlich.,Viele Verspätungen gibt es bei der Bahn.,Er entschuldigt die Verspätung.
-understanding,das,Verständnis,Verständnisse,Das Verständnis ist wichtig.,Viele Menschen zeigen Verständnis.,Er hat Verständnis für Kinder.
-trust,das,Vertrauen,—,Das Vertrauen ist groß.,Viele Menschen haben Vertrauen.,Sie schenkt ihm Vertrauen.
-distribution,die,Verteilung,Verteilungen,Die Verteilung ist gerecht.,Viele Verteilungen dauern lange.,Er macht die Verteilung der Aufgaben.
-relation,das,Verhältnis,Verhältnisse,Das Verhältnis ist gut.,Viele Verhältnisse ändern sich.,Er erklärt das Verhältnis.
-loss,der,Verlust,Verluste,Der Verlust ist schwer.,Viele Firmen haben Verluste.,Der Verlust macht ihn traurig.
-contract,der,Vertrag,Verträge,Der Vertrag ist gültig.,Viele Verträge sind lang.,Er unterschreibt den Vertrag.
-comparison,der,Vergleich,Vergleiche,Der Vergleich ist interessant.,Viele Vergleiche zeigen Unterschiede.,Er macht einen Vergleich.
-association,der,Verein,Vereine,Der Verein ist alt.,Viele Vereine helfen Menschen.,Er spielt im Verein Fußball.
-change,der,Wandel,Wandel,Der Wandel ist stark.,Viele Wandel sind politisch.,Er beschreibt den Wandel.
-perception,die,Wahrnehmung,Wahrnehmungen,Die Wahrnehmung ist unterschiedlich.,Viele Wahrnehmungen sind subjektiv.,Er hat eine klare Wahrnehmung.
-reality,die,Realität,Realitäten,Die Realität ist hart.,Viele Realitäten sind schwer.,Er akzeptiert die Realität.
-knowledge,das,Wissen,—,Das Wissen ist groß.,Wissen ist Macht.,Er sammelt Wissen in der Schule.
-economy,die,Wirtschaft,Wirtschaften,Die Wirtschaft ist stark.,Viele Wirtschaften wachsen schnell.,Die Wirtschaft beeinflusst alle.
-value,der,Wert,Werte,Der Wert ist hoch.,Viele Werte sind wichtig.,Er erklärt den Wert.
-newspaper,die,Zeitung,Zeitungen,Die Zeitung ist alt.,Viele Zeitungen berichten.,Sie liest die Zeitung am Morgen.
-time,die,Zeit,Zeiten,Die Zeit ist knapp.,Viele Zeiten sind vorbei.,Er hat keine Zeit.
-goal,das,Ziel,Ziele,Das Ziel ist nah.,Viele Ziele sind schwer zu erreichen.,Er verfolgt sein Ziel.
-center,das,Zentrum,Zentren,Das Zentrum ist voll.,Viele Zentren sind groß.,Sie wohnt im Zentrum der Stadt.
-fence,der,Zaun,Zäune,Der Zaun ist hoch.,Viele Zäune stehen im Garten.,Er baut einen Zaun.
-future,die,Zukunft,Zukünfte,Die Zukunft ist offen.,Viele Menschen hoffen auf eine gute Zukunft.,Er plant seine Zukunft.
-witness (male),der,Zeuge,Zeugen,Der Zeuge erzählt alles.,Viele Zeugen helfen im Gericht.,Der Zeuge erkennt den Mann.
-witness (female),die,Zeugin,Zeuginnen,Die Zeugin spricht im Prozess.,Viele Zeuginnen helfen der Polizei.,Die Zeugin berichtet genau.
-certificate,das,Zeugnis,Zeugnisse,Das Zeugnis ist gut.,Viele Zeugnisse sind wichtig.,Er zeigt sein Zeugnis.
-number,die,Zahl,Zahlen,Die Zahl ist groß.,Viele Zahlen fehlen noch.,Er schreibt die Zahl auf.
-anger,der,Zorn,—,Der Zorn ist stark.,Viele Menschen fühlen Zorn.,Er zeigt seinen Zorn.
-doubt,der,Zweifel,Zweifel,Der Zweifel ist groß.,Viele Zweifel bleiben.,Er hat Zweifel an der Sache.
-tongue,die,Zunge,Zungen,Die Zunge ist lang.,Viele Tiere haben Zungen.,Er spricht mit klarer Zunge.
-room,das,Zimmer,Zimmer,Das Zimmer ist klein.,Viele Zimmer sind hell.,Sie schläft im Zimmer.
+club,der,Klub,Klubs,Er ist Mitglied in einem Klub.,Der Klub trifft sich am Freitag.,Viele Klubs gibt es in der Stadt.
+contact,der,Kontakt,Kontakte,Er hat Kontakt mit ihr.,Viele Menschen suchen Kontakt.,Der Kontakt ist wichtig.
+culture,die,Kultur,Kulturen,Die Kultur ist reich.,Er interessiert sich für Kultur.,Jedes Land hat seine eigene Kultur.
+artist (male),der,Künstler,Künstler,Der Künstler malt ein Bild.,Viele Künstler leben in Berlin.,Der Künstler ist bekannt.
+artist (female),die,Künstlerin,Künstlerinnen,Die Künstlerin singt ein Lied.,Viele Künstlerinnen arbeiten im Theater.,Die Künstlerin malt abstrakt.
+list,die,Liste,Listen,Er schreibt eine Liste.,Die Liste ist lang.,Viele Namen stehen auf der Liste.
+solution,die,Lösung,Lösungen,Die Lösung ist einfach.,Er sucht nach einer Lösung.,Jede Aufgabe hat eine Lösung.
+opinion,die,Meinung,Meinungen,Er sagt seine Meinung.,Die Meinung ist wichtig.,Viele Menschen haben eine andere Meinung.
+round / lap,die,Runde,Runden,Wir spielen eine Runde Karten.,Die Runde ist vorbei.,In der nächsten Runde gewinnt er.
+step,der,Schritt,Schritte,Er macht einen Schritt nach vorn.,Schritt für Schritt lernt man.,Der Schritt ist klein.
+summer,der,Sommer,Sommer,Der Sommer ist heiß.,Im Sommer fahren wir ans Meer.,Der Sommer beginnt im Juni.
+language / speech,die,Sprache,Sprachen,Die deutsche Sprache ist schwer.,Er lernt eine neue Sprache.,Sprache verbindet Menschen.
+participant,der,Teilnehmer,Teilnehmer,Die Teilnehmer sind pünktlich.,Jeder Teilnehmer bekommt ein Heft.,Viele Teilnehmer sind da.
+text,der,Text,Texte,Der Text ist lang.,Sie liest den Text laut.,Er schreibt einen Text.
+theater,das,Theater,Theater,Das Theater ist voll.,Wir gehen ins Theater.,Das Theaterstück war spannend.
+animal,das,Tier,Tiere,Das Tier schläft.,Viele Tiere leben im Zoo.,Er füttert ein Tier.
+support,die,Unterstützung,Unterstützungen,Er braucht Unterstützung.,Vielen Dank für deine Unterstützung.,Die Unterstützung kommt sofort.
+publisher,der,Verlag,Verlage,Das Buch erscheint im Verlag.,Der Verlag ist bekannt.,Viele Verlage gibt es in Deutschland.
+contract / treaty,der,Vertrag,Verträge,Der Vertrag ist gültig.,Er unterschreibt den Vertrag.,Der Vertrag endet morgen.
+representative (male),der,Vertreter,Vertreter,Der Vertreter besucht die Firma.,Viele Vertreter reisen viel.,Er spricht mit dem Vertreter.
+representative (female),die,Vertreterin,Vertreterinnen,Die Vertreterin erklärt das Produkt.,Viele Vertreterinnen arbeiten hier.,Die Vertreterin ist freundlich.
+board / chair,der,Vorstand,Vorstände,Der Vorstand trifft eine Entscheidung.,Viele Mitglieder sitzen im Vorstand.,Der Vorstand ist neu gewählt.
+apartment / flat,die,Wohnung,Wohnungen,Die Wohnung ist groß.,Er sucht eine neue Wohnung.,Viele Wohnungen sind teuer.
+graduation / degree,der,Abschluss,Abschlüsse,Der Abschluss ist geschafft.,Sie feiert ihren Abschluss.,Der Abschluss der Arbeit war schwer.
+complex / attachment,die,Anlage,Anlagen,Die Anlage ist modern.,Er investiert in eine Anlage.,Die Anlage produziert Strom.
+application,der,Antrag,Anträge,Er stellt einen Antrag.,Der Antrag ist genehmigt.,Viele Anträge liegen auf dem Tisch.
+answer,die,Antwort,Antworten,Er gibt eine Antwort.,Die Antwort ist richtig.,Ich warte auf deine Antwort.
+workplace,der,Arbeitsplatz,Arbeitsplätze,Der Arbeitsplatz ist sicher.,Er verliert seinen Arbeitsplatz.,Der Arbeitsplatz liegt in der Stadt.
+assignment / job,der,Auftrag,Aufträge,Er bekommt einen Auftrag.,Der Auftrag ist wichtig.,Der Auftrag wird erledigt.
+district,der,Bezirk,Bezirke,Der Bezirk ist groß.,Viele Menschen wohnen in diesem Bezirk.,Der Bezirk wählt einen neuen Bürgermeister.
+brother,der,Bruder,Brüder,Mein Bruder ist älter.,Der Bruder hilft mir.,Viele Brüder leben zusammen.
+lady,die,Dame,Damen,Die Dame trägt ein Kleid.,Eine alte Dame sitzt im Park.,Die Dame spricht leise.
+date / data,das,Datum,Daten,Das Datum steht im Kalender.,Welches Datum haben wir heute?,Bitte schreiben Sie das Datum auf.
+service,der,Dienst,Dienste,Er hat heute Dienst.,Der Dienst beginnt um acht Uhr.,Nach dem Dienst geht er nach Hause.
+institution / setup,die,Einrichtung,Einrichtungen,Die Einrichtung ist modern.,Er arbeitet in einer sozialen Einrichtung.,Viele Einrichtungen helfen Menschen.
+expert (female),die,Expertin,Expertinnen,Die Expertin erklärt das Problem.,Viele Expertinnen arbeiten hier.,Er fragt die Expertin um Rat.
+expert (male),der,Experte,Experten,Der Experte kennt die Antwort.,Viele Experten sind da.,Der Experte gibt einen Tipp.
+fire department,die,Feuerwehr,Feuerwehren,Die Feuerwehr kommt schnell.,Er ruft die Feuerwehr.,Die Feuerwehr löscht das Feuer.
+god,der,Gott,Götter,Er glaubt an Gott.,Gott sei Dank!,Viele Menschen beten zu Gott.
+institute,das,Institut,Institute,Er arbeitet in einem Institut.,Das Institut ist bekannt.,Viele Studenten forschen im Institut.
+colleague (male),der,Kollege,Kollegen,Er spricht mit einem Kollegen.,Der Kollege hilft ihm.,Viele Kollegen sind freundlich.
+colleague (female),die,Kollegin,Kolleginnen,Die Kollegin erklärt die Aufgabe.,Er arbeitet mit einer Kollegin.,Viele Kolleginnen sind fleißig.
+leadership / management,die,Leitung,Leitungen,Die Leitung übernimmt Frau Müller.,Die Leitung des Projekts ist schwer.,Die Leitung trifft eine Entscheidung.
+organization,die,Organisation,Organisationen,Die Organisation ist international.,Viele Organisationen helfen Menschen.,Die Organisation arbeitet gut.
+lock / castle,das,Schloss,Schlösser,Das Schloss ist alt.,Viele Touristen besuchen das Schloss.,Das Schloss liegt am Fluss.
+safety / security,die,Sicherheit,Sicherheiten,Die Sicherheit ist wichtig.,Er sorgt für Sicherheit.,Das Kind braucht Sicherheit.
+female soldier,die,Soldatin,Soldatinnen,Die Soldatin trägt eine Uniform.,Viele Soldatinnen arbeiten im Ausland.,Die Soldatin spricht mit der Presse.
+male soldier,der,Soldat,Soldaten,Der Soldat marschiert.,Viele Soldaten sind im Einsatz.,Der Soldat trägt eine Waffe.
+campaign,die,Kampagne,Kampagnen,Die Kampagne beginnt heute.,Viele Menschen unterstützen die Kampagne.,Die Kampagne ist politisch.
+accident,der,Unfall,Unfälle,Der Unfall passiert auf der Straße.,Beim Unfall gab es Verletzte.,Er hatte einen schweren Unfall.
+patient (male),der,Patient,Patienten,Der Patient wartet im Krankenhaus.,Viele Patienten sind krank.,Der Patient spricht mit dem Arzt.
+patient (female),die,Patientin,Patientinnen,Die Patientin liegt im Bett.,Die Patientin fühlt sich besser.,Viele Patientinnen kommen heute.
+position / stance,die,Position,Positionen,Die Position ist wichtig.,Er sucht eine neue Position.,Die Position im Team ist klar.
+publication,die,Publikation,Publikationen,Die Publikation erscheint morgen.,Viele Publikationen sind online.,Er liest eine wissenschaftliche Publikation.
+reality,die,Realität,Realitäten,Die Realität ist hart.,Er kennt die Realität.,Viele träumen von einer anderen Realität.
+reaction,die,Reaktion,Reaktionen,Die Reaktion war schnell.,Er zeigt keine Reaktion.,Viele lachen über seine Reaktion.
+rule,die,Regel,Regeln,Die Regel ist wichtig.,Jede Schule hat Regeln.,Er erklärt die Regel.
+result,das,Resultat,Resultate,Das Resultat ist klar.,Er wartet auf das Resultat.,Das Resultat ist überraschend.
+scandal,der,Skandal,Skandale,Der Skandal ist groß.,Alle Zeitungen berichten über den Skandal.,Der Skandal betrifft viele Politiker.
+damage,der,Schaden,Schäden,Der Schaden ist groß.,Er meldet den Schaden.,Der Unfall verursacht viel Schaden.
+knowledge,das,Wissen,—,Wissen ist Macht.,Er hat viel Wissen.,Das Wissen hilft ihm.
+witness (male),der,Zeuge,Zeugen,Der Zeuge erzählt die Wahrheit.,Die Polizei befragt den Zeugen.,Der Zeuge erkennt den Täter.
+witness (female),die,Zeugin,Zeuginnen,Die Zeugin berichtet alles.,Viele Zeuginnen sind im Gericht.,Die Polizei schützt die Zeugin.
+intention / purpose,die,Absicht,Absichten,Er hat die Absicht zu helfen.,Die Absicht ist klar.,Mit guter Absicht beginnt er das Projekt.
+department,das,Department,Departments,Das Department ist groß.,Er arbeitet im Department.,Viele Studenten gehören zu diesem Department.
+detail,das,Detail,Details,Das Detail ist wichtig.,Er erklärt jedes Detail.,Viele Details fehlen noch.
+dispute,der,Streit,Streite / Streits,Der Streit ist laut.,Viele Kinder haben einen Streit.,Der Streit endet schnell.
+dream,der,Traum,Träume,Ich habe einen Traum.,Der Traum war schön.,Viele Menschen verfolgen einen Traum.
+health,die,Gesundheit,—,Die Gesundheit ist wichtig.,Er achtet auf seine Gesundheit.,Sport stärkt die Gesundheit.
+industry,die,Industrie,Industrien,Die Industrie wächst schnell.,Viele Menschen arbeiten in der Industrie.,Die Industrie produziert Waren.
+innovation,die,Innovation,Innovationen,Die Innovation ist neu.,Viele Firmen fördern Innovation.,Innovation bringt Fortschritt.
+intelligence,die,Intelligenz,—,Intelligenz ist wichtig.,Er zeigt hohe Intelligenz.,Tiere besitzen auch Intelligenz.
+interview,das,Interview,Interviews,Das Interview ist im Fernsehen.,Er gibt ein Interview.,Das Interview dauert zehn Minuten.
+investment,die,Investition,Investitionen,Die Investition ist hoch.,Er macht eine Investition.,Viele Investitionen lohnen sich.
+job,der,Job,Jobs,Er sucht einen Job.,Der Job ist interessant.,Viele Studenten haben einen Job.
+crisis,die,Krise,Krisen,Die Krise ist groß.,Viele Länder haben eine Krise.,Er spricht über die Krise.
+kitchen,die,Küche,Küchen,Die Küche ist sauber.,Er arbeitet in der Küche.,Italienische Küche ist beliebt.
+course (academic),der,Kurs,Kurse,Der Kurs beginnt morgen.,Viele Studenten besuchen den Kurs.,Der Kurs ist interessant.
+climate,das,Klima,Klimata / Klimas,Das Klima ist warm.,Viele Länder haben ein anderes Klima.,Das Klima verändert sich.
+class,die,Klasse,Klassen,Die Klasse ist laut.,Viele Kinder sind in der Klasse.,Er lernt mit seiner Klasse.
+coalition,die,Koalition,Koalitionen,Die Koalition regiert das Land.,Die Parteien bilden eine Koalition.,Die Koalition arbeitet zusammen.
+conflict,der,Konflikt,Konflikte,Der Konflikt ist alt.,Der Konflikt dauert lange.,Beide Seiten wollen den Konflikt lösen.
+continent,der,Kontinent,Kontinente,Europa ist ein Kontinent.,Afrika ist ein großer Kontinent.,Jeder Kontinent hat viele Länder.
+copy,die,Kopie,Kopien,Ich mache eine Kopie.,Die Kopie ist klar.,Er braucht eine Kopie des Dokuments.
+body,der,Körper,Körper,Der Körper ist stark.,Er bewegt seinen Körper.,Der Körper braucht Ruhe.
+user,der,Nutzer,Nutzer,Der Nutzer meldet sich an.,Viele Nutzer sind online.,Der Nutzer hat ein Problem.
+attempt / try,der,Versuch,Versuche,Der Versuch ist gelungen.,Er macht einen Versuch.,Der Versuch war wichtig.
+responsibility,die,Verantwortung,Verantwortungen,Er trägt Verantwortung.,Die Verantwortung ist groß.,Jeder hat Verantwortung.
+promise,das,Versprechen,Versprechen,Er gibt ein Versprechen.,Das Versprechen ist wichtig.,Viele halten ihr Versprechen nicht.
+loss,der,Verlust,Verluste,Der Verlust ist groß.,Sie weint über den Verlust.,Der Verlust kostet viel Geld.
+trust,das,Vertrauen,—,Er hat Vertrauen in sie.,Vertrauen ist wichtig.,Sie verliert das Vertrauen.
+administration,die,Verwaltung,Verwaltungen,Die Verwaltung ist langsam.,Er arbeitet in der Verwaltung.,Die Verwaltung des Hauses ist gut.
+understanding,das,Verständnis,Verständnisse,Er zeigt Verständnis.,Vielen Dank für Ihr Verständnis.,Verständnis ist wichtig.
+distribution,die,Verteilung,Verteilungen,Die Verteilung ist fair.,Er kümmert sich um die Verteilung.,Die Verteilung dauert lange.
+use / application,die,Verwendung,Verwendungen,Die Verwendung ist einfach.,Er erklärt die Verwendung.,Viele Geräte haben keine Verwendung mehr.
+delay,die,Verspätung,Verspätungen,Der Zug hat Verspätung.,Wegen der Verspätung kommt er zu spät.,Die Verspätung dauert lange.
+insurance,die,Versicherung,Versicherungen,Ich habe eine neue Versicherung abgeschlossen.,Die Versicherung übernimmt den Schaden.,Er arbeitet bei einer Versicherung.
+connection,die,Verbindung,Verbindungen,Die Verbindung ist gerade sehr schlecht.,Wir stehen in Verbindung.,Es gibt eine direkte Verbindung nach Hamburg.
+process,der,Vorgang,Vorgänge,Der Vorgang wird noch bearbeitet.,Bitte dokumentieren Sie den Vorgang.,Der Vorgang dauert nur wenige Minuten.
+condition / requirement,die,Voraussetzung,Voraussetzungen,Deutschkenntnisse sind eine wichtige Voraussetzung.,Er erfüllt alle Voraussetzungen.,Teamarbeit ist Voraussetzung für den Job.
+advantage,der,Vorteil,Vorteile,"Der Vorteil ist, dass es schnell geht.",Sie hat einen klaren Vorteil.,Das ist für uns von Vorteil.
+precaution / provision,die,Vorsorge,Vorsorgen,Er trifft Vorsorge für das Alter.,Sie geht zur Vorsorgeuntersuchung.,Finanzielle Vorsorge ist wichtig.
+imagination / idea,die,Vorstellung,Vorstellungen,Die Vorstellung beginnt um acht Uhr.,Er hat eine falsche Vorstellung.,Die Vorstellung im Theater war toll.
+supervisor / presenter,der,Vorsteller,Vorsteller,Der Vorsteller erklärt das Projekt.,Der Vorsteller spricht vor vielen Leuten.,Der Vorsteller beantwortet Fragen.
+perception,die,Wahrnehmung,Wahrnehmungen,Die Wahrnehmung ist subjektiv.,Kinder haben eine andere Wahrnehmung.,Er verliert die Wahrnehmung der Zeit.
+commodity / good,das,Ware,Waren,Die Ware ist teuer.,Viele Waren liegen im Regal.,Die Ware kommt aus dem Ausland.
+warning,die,Warnung,Warnungen,Er gibt eine Warnung.,Die Warnung ist ernst.,Viele ignorieren die Warnung.
+change,der,Wechsel,Wechsel,Der Wechsel ist schwer.,Er macht einen Wechsel.,Der Wechselkurs ist hoch.
+contradiction,der,Widerspruch,Widersprüche,Es gibt einen Widerspruch.,Er legt Widerspruch ein.,Der Widerspruch ist deutlich.
+resistance,der,Widerstand,Widerstände,Der Widerstand ist stark.,Viele Menschen leisten Widerstand.,Der Widerstand bricht zusammen.
+competition,der,Wettbewerb,Wettbewerbe,Der Wettbewerb ist hart.,Viele nehmen am Wettbewerb teil.,Der Wettbewerb findet jährlich statt.
+effect,die,Wirkung,Wirkungen,Die Wirkung ist stark.,Das Medikament hat eine Wirkung.,Viele spüren die Wirkung sofort.
+miracle,das,Wunder,Wunder,Es ist ein Wunder.,Viele hoffen auf ein Wunder.,Ein kleines Wunder passiert.
+certificate,das,Zeugnis,Zeugnisse,Er bekommt ein gutes Zeugnis.,Das Zeugnis ist wichtig.,Viele Schüler warten auf ihr Zeugnis.
+room,das,Zimmer,Zimmer,Das Zimmer ist groß.,Sie schläft im Zimmer.,Das Zimmer hat ein Fenster.
+number / digit,die,Ziffer,Ziffern,Die Ziffer ist klein.,Er schreibt die Ziffer fünf.,Viele Ziffern stehen an der Tafel.
+center,das,Zentrum,Zentren,Die Stadt hat ein Zentrum.,Im Zentrum gibt es viele Geschäfte.,Wir treffen uns im Zentrum.
+access,der,Zugang,Zugänge,Der Zugang ist frei.,Er hat keinen Zugang zum Internet.,Der Zugang zum Gebäude ist gesperrt.
+train station,der,Bahnhof,Bahnhöfe,Der Zug kommt am Bahnhof an.,Viele Leute warten am Bahnhof.,Wir treffen uns am Bahnhof.
+fence,der,Zaun,Zäune,Der Zaun ist hoch.,Er springt über den Zaun.,Der Hund läuft am Zaun entlang.
+anger,der,Zorn,—,Er spricht mit Zorn.,Sein Zorn ist groß.,Zorn macht blind.
+tongue,die,Zunge,Zungen,Die Zunge ist rot.,Er zeigt die Zunge.,Mit der Zunge schmeckt man.
+doubt,der,Zweifel,Zweifel,Er hat Zweifel.,Viele Zweifel bleiben.,Ohne Zweifel ist das wahr.
+certificate / document,die,Urkunde,Urkunden,Er bekommt eine Urkunde.,Die Urkunde hängt an der Wand.,Jede Urkunde ist unterschrieben.
+time period,der,Zeitraum,Zeiträume,Der Zeitraum ist kurz.,Im Zeitraum von zwei Jahren.,Der Zeitraum endet bald.
+newspaper article,der,Zeitungsartikel,Zeitungsartikel,Der Zeitungsartikel ist interessant.,Sie liest den Zeitungsartikel.,Viele Zeitungsartikel sind lang.
+bill / invoice,die,Rechnung,Rechnungen,Die Rechnung ist hoch.,Er bezahlt die Rechnung.,Die Rechnung kommt per Post.
+journey / trip,die,Reise,Reisen,Die Reise dauert lange.,Er macht eine Reise nach Berlin.,Die Reise war schön.
+series,die,Serie,Serien,Die Serie ist spannend.,Er schaut eine Serie im Fernsehen.,Viele Serien sind beliebt.
+shadow,der,Schatten,Schatten,Der Schatten ist lang.,Ein Baum wirft Schatten.,Im Schatten ist es kühl.
+actor (male),der,Schauspieler,Schauspieler,Der Schauspieler ist bekannt.,Viele Schauspieler leben in Hollywood.,Der Schauspieler spielt gut.
+actor (female),die,Schauspielerin,Schauspielerinnen,Die Schauspielerin ist jung.,Viele Schauspielerinnen arbeiten im Theater.,Die Schauspielerin lacht.
+protection,der,Schutz,—,Der Schutz ist wichtig.,Er sucht Schutz vor dem Regen.,Schutz ist nötig.
+step / level,die,Stufe,Stufen,Die Stufe ist hoch.,Er steht auf der ersten Stufe.,Viele Stufen führen nach oben.
+change,die,Veränderung,Veränderungen,Die Veränderung ist groß.,Er bemerkt eine Veränderung.,Viele haben Angst vor Veränderung.
+association,der,Verband,Verbände,Der Verband ist stark.,Er trägt einen Verband.,Viele Firmen sind im Verband.
+arrest,die,Verhaftung,Verhaftungen,Die Verhaftung war überraschend.,Die Polizei meldet eine Verhaftung.,Nach der Verhaftung kommt der Prozess.
+negotiation,die,Verhandlung,Verhandlungen,Die Verhandlung dauert lange.,Die Verhandlung beginnt morgen.,Beide Parteien führen eine Verhandlung.
+publication,die,Veröffentlichung,Veröffentlichungen,Die Veröffentlichung ist neu.,Das Buch steht vor der Veröffentlichung.,Viele warten auf die Veröffentlichung.
+relation,das,Verhältnis,Verhältnisse,Das Verhältnis ist gut.,Er erklärt das Verhältnis.,Viele haben ein schlechtes Verhältnis.
+change,der,Wandel,Wandel,Der Wandel ist deutlich.,Er erlebt einen Wandel.,Gesellschaftlicher Wandel ist wichtig.
