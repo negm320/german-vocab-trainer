@@ -65,6 +65,14 @@
       <button id="resetBtn">Reset Progress</button>
       <button id="nextBtn">Next word</button>
       <div id="status"></div>
+      <details id="tests" style="margin-top:8px;color:var(--muted)">
+        <summary>Dev tests</summary>
+        <pre id="testlog"></pre>
+      </details>
+      <details id="tests" style="margin-top:8px;color:var(--muted)">
+        <summary>Dev tests</summary>
+        <pre id="testlog"></pre>
+      </details>
     </div>
   </div>
 
@@ -77,12 +85,11 @@
     const wordsPerLevel = 25;
     const masteryThreshold = 3;
     let pluralEnterCount = 0;
-    let lastFocusedInput = 'german';
 
     const statusEl = document.getElementById('status');
     function status(msg){ statusEl.textContent = msg; }
 
-    // ===== CSV Parser (fixed newlines) =====
+    // ===== CSV Parser (correct newline handling) =====
     function parseCSV(text) {
       const rows = [];
       let row = [];
@@ -94,9 +101,17 @@
           if (inQuotes && text[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = !inQuotes; }
         } else if (c === ',' && !inQuotes) {
           row.push(cur); cur = '';
-        } else if ((c === '
-' || c === '
-') && !inQuotes) {
+        } else if ((c === '\n' || c === '\r') && !inQuotes) {
+          if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
+        } else {
+          cur += c;
+        }
+      }
+      if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+      return rows;
+    } else if (c === ',' && !inQuotes) {
+          row.push(cur); cur = '';
+        } else if ((c === '\\n' || c === '\\r') && !inQuotes) {
           if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
         } else {
           cur += c;
@@ -132,8 +147,7 @@
         nextWord();
         status('');
       } catch (e) {
-        console.error(e); status('Error: '+e.message+"
-Make sure vocab.csv is in the same folder and GitHub Pages is serving it.");
+        console.error(e); status('Error: '+e.message+'\nMake sure vocab.csv is in the same folder and GitHub Pages is serving it.');
       }
     }
 
@@ -189,11 +203,8 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.");
       if (article === 'der') document.getElementById('btnDer').classList.add('selected');
       if (article === 'die') document.getElementById('btnDie').classList.add('selected');
       if (article === 'das') document.getElementById('btnDas').classList.add('selected');
-      // Ensure the on-screen keyboard stays or comes back up on mobile
-      setTimeout(()=>{
-        const target = document.getElementById(lastFocusedInput) || document.getElementById('german');
-        target.focus();
-      },0);
+      // Always bring up keyboard by refocusing German field (reliable on iOS)
+      setTimeout(()=>{ document.getElementById('german').focus(); }, 0);
     }
 
     function randomExample(examples) {
@@ -204,9 +215,9 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.");
 
     function checkAnswer() {
       if (!currentWord) return;
-      // Require article selection before submitting
+      // Block submit if no article selected
       if (!chosenArticle) {
-        document.getElementById('feedback').innerHTML = '<span style="color: var(--bad)">Please select an article (der / die / das) before checking.</span>';
+        document.getElementById('feedback').innerHTML = '<span style="color: var(--bad)">Please select an article (der / die / das) first.</span>';
         return;
       }
       const german = document.getElementById('german').value.trim().toLowerCase();
@@ -222,28 +233,6 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.");
         currentWord.answeredCorrect = true;
         feedback = '<span style="color: var(--ok)">Correct!</span>';
       } else {
-        currentWord.correctStreak = 0;
-        currentWord.answeredCorrect = false;
-        feedback = `<span style=\"color: var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
-      }
-
-      document.getElementById('feedback').innerHTML = feedback;
-      document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
-      const ex = randomExample(currentWord.examples);
-      document.getElementById('example').textContent = ex ? `📝 ${ex}` : '';
-      document.getElementById('nextBtn').style.display = 'inline-block';
-
-      saveProgress();
-
-      const activeWords = getActiveWords();
-      const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
-      if (allMastered && level * wordsPerLevel < words.length) {
-        level++;
-        activeWords.forEach(w => { w.correctStreak = 0; w.answeredCorrect = false; });
-        updateLevelDisplay();
-        saveProgress();
-      }
-    } else {
         currentWord.correctStreak = 0;
         currentWord.answeredCorrect = false;
         feedback = `<span style=\"color: var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
@@ -297,7 +286,7 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.");
       }
     }
 
-    // ===== Wire up UI (no inline handlers needed) =====
+    // ===== Wire up UI (no inline handlers) =====
     document.getElementById('btnDer').addEventListener('click', () => chooseArticle('der'));
     document.getElementById('btnDie').addEventListener('click', () => chooseArticle('die'));
     document.getElementById('btnDas').addEventListener('click', () => chooseArticle('das'));
@@ -306,17 +295,12 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.");
     document.getElementById('nextBtn').addEventListener('click', nextWord);
 
     // Enter key handlers
-    document.getElementById('german').addEventListener('focus', ()=>{ lastFocusedInput='german'; });
-    document.getElementById('plural').addEventListener('focus', ()=>{ lastFocusedInput='plural'; });
-
     document.getElementById('german').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') { e.preventDefault(); document.getElementById('plural').focus(); }
-    }); document.getElementById('plural').focus(); }
     });
     document.getElementById('plural').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        // If no article chosen, prompt and do nothing else
         if (!chosenArticle) {
           document.getElementById('feedback').innerHTML = '<span style="color: var(--bad)">Please select an article (der / die / das) first.</span>';
           pluralEnterCount = 0;
@@ -327,13 +311,18 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.");
         else if (pluralEnterCount === 2) { pluralEnterCount = 0; nextWord(); }
       }
     });
-        pluralEnterCount++;
-        if (pluralEnterCount === 1) { checkAnswer(); }
-        else if (pluralEnterCount === 2) { pluralEnterCount = 0; nextWord(); }
-      }
-    });
+
+    // Tiny parser tests (non-blocking)
+    function runTests(){
+      const log=[]; const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+      const t1='a,b\r\n1,2\r\n'; const p1=parseCSV(t1); log.push(p1.length===2&&p1[1][0]==='1'?'Test1 CRLF ✅':'Test1 CRLF ❌');
+      const t2='a,b\n"hello, world",x\n'; const p2=parseCSV(t2); log.push(eq(p2,[['a','b'],['hello, world','x']])?'Test2 quotes ✅':'Test2 quotes ❌');
+      const t3='a,b,c\n1,2,3\n'; const p3=parseCSV(t3); log.push(p3.length===2&&p3[1][2]==='3'?'Test3 trailing ✅':'Test3 trailing ❌');
+      const box=document.getElementById('testlog'); if (box) box.textContent=log.join('\n');
+    }
 
     // Start
+    runTests();
     loadCSV();
   </script>
 </body>
