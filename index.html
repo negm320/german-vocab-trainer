@@ -5,34 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>German Vocab Trainer</title>
   <style>
-    :root { --bg:#0f1115; --text:#eaeaea; --muted:#94a3b8; --card:#171b23; --card2:#1b202a; --border:#2a3240; --input:#0f1620; --accent:#3b82f6; }
+    /* Dark mode palette */
+    :root {
+      --bg:#0f1115; --card:#171b23; --card-2:#1b202a; --text:#eaeaea; --muted:#a3b1c6; --border:#2a3240; --input:#0f1620;
+      --green:#22c55e; --red:#f97373;
+      --btn:#243042; --btn-hover:#2a3a50;
+      --placeholder:#7b879a;
+      /* Pastel article colors */
+      --der:#7fb3ff; --der-text:#0b2139;
+      --die:#ff9aa2; --die-text:#3a0b12;
+      --das:#9be7a1; --das-text:#0d2a14;
+    }
     * { box-sizing: border-box; }
     body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: var(--bg); color: var(--text); }
     .container { max-width: 500px; margin: auto; padding: 10px; }
     h1 { font-size: 1.8em; text-align: center; margin-bottom: 10px; color: var(--text); }
     #level { text-align: center; margin-bottom: 15px; font-size: 1.1em; color: var(--muted); }
-    .card { background: var(--card2); border-radius: 12px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); border: 1px solid var(--border); }
+    .card { background: var(--card-2); border-radius: 12px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); border: 1px solid var(--border); }
 
-    /* Article buttons */
-    .article-btn { width: 30%; padding: 15px 0; font-size: 18px; margin: 5px 1%; border-radius: 10px; cursor: pointer; border: 1px solid var(--border); background: #202734; color: var(--text); transition: transform .02s ease, background .2s ease; }
+    .article-btn { width: 30%; padding: 15px 0; font-size: 18px; margin: 5px 1%; border-radius: 10px; cursor: pointer; border: 1px solid var(--border); background: #202734; color: var(--text); transition: transform .02s ease, background .2s ease, color .2s ease; }
     .article-btn:active { transform: translateY(1px); }
-    .selected-der { background: #7fb3ff; color: #0b2139; border-color: #6aa6ff; }
-    .selected-die { background: #ff9aa2; color: #3a0b12; border-color: #ff8a93; }
-    .selected-das { background: #9be7a1; color: #0d2a14; border-color: #86d892; }
+    /* Selected pastel highlight per button */
+    #btnDer.selected { background: var(--der); color: var(--der-text); border-color: #6aa6ff; }
+    #btnDie.selected { background: var(--die); color: var(--die-text); border-color: #ff8a93; }
+    #btnDas.selected { background: var(--das); color: var(--das-text); border-color: #86d892; }
 
     input { width: 48%; padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--input); color: var(--text); }
-    input::placeholder { color: #748198; }
+    input::placeholder { color: var(--placeholder); }
     input:focus { outline: 2px solid #3b82f680; border-color: #3b82f6; }
 
-    button { padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; border: 1px solid var(--border); background: #243042; color: var(--text); cursor: pointer; }
-    button:hover { filter: brightness(1.05); }
+    button { padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--btn); color: var(--text); cursor: pointer; }
+    button:hover { background: var(--btn-hover); }
 
-    #feedback { margin-top: 10px; font-size: 1em; }
-    #feedback .correct { color: #22c55e; }
-    #feedback .wrong { color: #f97373; }
+    #feedback { margin-top: 5px; font-size: 1em; }
+    #feedback span[style*="green"], #feedback .correct { color: var(--green) !important; }
+    #feedback span[style*="red"], #feedback .wrong { color: var(--red) !important; }
+    #example { margin-top: 6px; font-size: 0.95em; color: var(--muted); }
 
     #nextBtn { display: none; width: 100%; }
-
     @media (max-width: 400px) {
       .article-btn { width: 32%; font-size: 16px; padding: 12px 0; }
       input { width: 48%; font-size: 14px; padding: 10px; }
