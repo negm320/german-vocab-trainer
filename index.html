@@ -26,9 +26,9 @@
     .article-btn { width: 30%; padding: 15px 0; font-size: 18px; margin: 5px 1%; border-radius: 10px; cursor: pointer; border: 1px solid var(--border); background: #202734; color: var(--text); transition: transform .02s ease, background .2s ease, color .2s ease; }
     .article-btn:active { transform: translateY(1px); }
     /* Selected pastel highlight per button */
-    #btnDer.selected { background: var(--der); color: var(--der-text); border-color: #6aa6ff; }
-    #btnDie.selected { background: var(--die); color: var(--die-text); border-color: #ff8a93; }
-    #btnDas.selected { background: var(--das); color: var(--das-text); border-color: #86d892; }
+    #btnDer.selected-der { background: var(--der); color: var(--der-text); border-color: #6aa6ff; }
+    #btnDie.selected-die { background: var(--die); color: var(--die-text); border-color: #ff8a93; }
+    #btnDas.selected-das { background: var(--das); color: var(--das-text); border-color: #86d892; }
 
     input { width: 48%; padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--input); color: var(--text); }
     input::placeholder { color: var(--placeholder); }
@@ -194,12 +194,6 @@
       const list = (pool.length ? pool : activeWords);
       currentWord = list[Math.floor(Math.random() * list.length)];
 
-      const imgEl = document.getElementById('wordImage');
-      const candidates = candidateImageList(currentWord);
-      attachImageFallback(imgEl, candidates);
-      imgEl.src = candidates[0];
-      imgEl.alt = currentWord.english || currentWord.german;
-
       document.getElementById('english').textContent = currentWord.english;
       document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
       document.getElementById('german').value = '';
@@ -209,6 +203,8 @@
       document.getElementById('nextBtn').style.display = 'none';
       chosenArticle = '';
       resetArticleButtons();
+      // reset Enter key state for plural field
+      pluralEnterCount = 0;
       document.getElementById('german').focus();
     }
 
@@ -216,22 +212,21 @@
       const der = document.getElementById('btnDer');
       const die = document.getElementById('btnDie');
       const das = document.getElementById('btnDas');
-      der.classList.remove('selected-der');
-      die.classList.remove('selected-die');
-      das.classList.remove('selected-das');
+      der.classList.remove('selected','selected-der');
+      die.classList.remove('selected','selected-die');
+      das.classList.remove('selected','selected-das');
     }
 
     function chooseArticle(article) {
-      // remember which input was focused to keep the keyboard up on mobile
+      // keep the keyboard open on mobile
       const active = document.activeElement && (document.activeElement.id === 'german' || document.activeElement.id === 'plural') ? document.activeElement.id : null;
 
       chosenArticle = article;
       resetArticleButtons();
-      if (article === 'der') document.getElementById('btnDer').classList.add('selected-der');
-      if (article === 'die') document.getElementById('btnDie').classList.add('selected-die');
-      if (article === 'das') document.getElementById('btnDas').classList.add('selected-das');
+      if (article === 'der') document.getElementById('btnDer').classList.add('selected','selected-der');
+      if (article === 'die') document.getElementById('btnDie').classList.add('selected','selected-die');
+      if (article === 'das') document.getElementById('btnDas').classList.add('selected','selected-das');
 
-      // restore focus so the on-screen keyboard doesn't collapse
       if (active) document.getElementById(active).focus();
     }
 
