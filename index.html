@@ -1,26 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>German Vocab Trainer</title>
   <style>
-    /* --- Dark mode look only; logic unchanged --- */
+    /* Dark mode + pastel article highlights */
     :root {
       --bg:#0f1115; --text:#eaeaea; --muted:#9aa6b2; --card:#171b23; --border:#2a3240; --input:#0f1620;
-      --btn:#243042; --btn-hover:#2a3a50;
-      /* Pastel highlights */
+      --btn:#243042; --btn-hover:#2a3a50; --ok:#22c55e; --bad:#f97373;
       --der:#7fb3ff; --der-text:#0b2139; --die:#ff9aa2; --die-text:#3a0b12; --das:#9be7a1; --das-text:#0d2a14;
     }
     * { box-sizing: border-box; }
     body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: var(--bg); color: var(--text); }
     .container { max-width: 500px; margin: auto; padding: 10px; }
-    h1 { font-size: 1.8em; text-align: center; margin-bottom: 10px; color: var(--text); }
+    h1 { font-size: 1.8em; text-align: center; margin-bottom: 10px; }
     #level { text-align: center; margin-bottom: 15px; font-size: 1.1em; color: var(--muted); }
     .card { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); border: 1px solid var(--border); }
 
     .article-btn { width: 30%; padding: 15px 0; font-size: 18px; margin: 5px 1%; border-radius: 10px; cursor: pointer; border: 1px solid var(--border); background: #202734; color: var(--text); transition: background .2s ease, color .2s ease; }
-    /* Selected state uses the SAME .selected class your JS already toggles */
     #btnDer.selected { background: var(--der); color: var(--der-text); border-color: #6aa6ff; }
     #btnDie.selected { background: var(--die); color: var(--die-text); border-color: #ff8a93; }
     #btnDas.selected { background: var(--das); color: var(--das-text); border-color: #86d892; }
@@ -35,6 +33,7 @@
     #feedback { margin-top: 5px; font-size: 1em; }
     #example  { margin-top: 6px; font-size: 0.95em; color: var(--muted); }
     #nextBtn  { display: none; width: 100%; }
+    #status   { margin-top: 10px; font-size: 0.9em; color: var(--muted); white-space: pre-wrap; }
 
     @media (max-width: 400px) {
       .article-btn { width: 32%; font-size: 16px; padding: 12px 0; }
@@ -51,32 +50,38 @@
       <p><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
 
       <div>
-        <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
-        <button id="btnDie" class="article-btn" onclick="chooseArticle('die')">die</button>
-        <button id="btnDas" class="article-btn" onclick="chooseArticle('das')">das</button>
+        <button id="btnDer" class="article-btn">der</button>
+        <button id="btnDie" class="article-btn">die</button>
+        <button id="btnDas" class="article-btn">das</button>
       </div>
 
-      <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-      <input type="text" id="plural" placeholder="Plural" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+      <input type="text" id="plural" placeholder="Plural" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
       <p id="feedback"></p>
       <p id="example"></p>
 
-      <br>
-      <button onclick="checkAnswer()">Check</button>
-      <button id="resetBtn" onclick="resetProgress()">Reset Progress</button>
-      <button id="nextBtn" onclick="nextWord()">Next word</button>
+      <br />
+      <button id="checkBtn">Check</button>
+      <button id="resetBtn">Reset Progress</button>
+      <button id="nextBtn">Next word</button>
+      <div id="status"></div>
     </div>
   </div>
 
   <script>
+    // ===== State =====
     let words = [];
     let currentWord = null;
     let chosenArticle = '';
     let level = 1;
     const wordsPerLevel = 25;
     const masteryThreshold = 3;
+    let pluralEnterCount = 0;
 
-    // Robust CSV parser (handles commas and quotes)
+    const statusEl = document.getElementById('status');
+    function status(msg){ statusEl.textContent = msg; }
+
+    // ===== CSV Parser (fixed newlines) =====
     function parseCSV(text) {
       const rows = [];
       let row = [];
@@ -85,12 +90,10 @@
       for (let i = 0; i < text.length; i++) {
         const c = text[i];
         if (c === '"') {
-          if (inQuotes && text[i+1] === '"') { cur += '"'; i++; } else { inQuotes = !inQuotes; }
+          if (inQuotes && text[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = !inQuotes; }
         } else if (c === ',' && !inQuotes) {
           row.push(cur); cur = '';
-        } else if ((c === '
-' || c === '
-') && !inQuotes) {
+        } else if ((c === '\n' || c === '\r') && !inQuotes) {
           if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
         } else {
           cur += c;
@@ -100,30 +103,33 @@
       return rows;
     }
 
+    // ===== Data loading =====
     async function loadCSV() {
       try {
-        const response = await fetch('vocab.csv');
-        if (!response.ok) throw new Error('Failed to load vocab.csv');
+        const response = await fetch('vocab.csv', {cache: 'no-store'});
+        if (!response.ok) throw new Error('Failed to load vocab.csv ('+response.status+')');
         const data = await response.text();
         const lines = parseCSV(data.trim());
-        if (lines.length === 0) return;
-        const header = lines.shift();
+        if (lines.length === 0) { status('vocab.csv is empty'); return; }
+        lines.shift(); // header
         words = lines.map(cols => {
           const english = cols[0] || '';
           const article = cols[1] || '';
-          const german = cols[2] || '';
-          const plural = cols[3] || '';
+          const german  = cols[2] || '';
+          const plural  = cols[3] || '';
           const ex1 = cols[4] || '';
           const ex2 = cols[5] || '';
           const ex3 = cols[6] || '';
           const examples = [ex1, ex2, ex3].filter(x => x && x.trim() !== '');
           return { english, article, german, plural, examples, correctStreak: 0, answeredCorrect: false };
         });
+        if (words.length === 0){ status('No rows in vocab.csv beyond header'); }
         loadProgress();
         updateLevelDisplay();
         nextWord();
+        status('');
       } catch (e) {
-        console.error(e);
+        console.error(e); status('Error: '+e.message+"\nMake sure vocab.csv is in the same folder and GitHub Pages is serving it.");
       }
     }
 
@@ -163,6 +169,7 @@
       document.getElementById('nextBtn').style.display = 'none';
       chosenArticle = '';
       resetArticleButtons();
+      pluralEnterCount = 0; // reset enter flow
       document.getElementById('german').focus();
     }
 
@@ -173,12 +180,13 @@
     }
 
     function chooseArticle(article) {
+      const active = document.activeElement && (document.activeElement.id === 'german' || document.activeElement.id === 'plural') ? document.activeElement.id : null;
       chosenArticle = article;
       resetArticleButtons();
       if (article === 'der') document.getElementById('btnDer').classList.add('selected');
       if (article === 'die') document.getElementById('btnDie').classList.add('selected');
       if (article === 'das') document.getElementById('btnDas').classList.add('selected');
-      document.getElementById('german').focus();
+      if (active) document.getElementById(active).focus();
     }
 
     function randomExample(examples) {
@@ -188,22 +196,23 @@
     }
 
     function checkAnswer() {
+      if (!currentWord) return;
       const german = document.getElementById('german').value.trim().toLowerCase();
       const plural = document.getElementById('plural').value.trim().toLowerCase();
       let feedback = '';
 
-      const correctGerman = currentWord.german.toLowerCase();
-      const correctPlural = currentWord.plural.toLowerCase();
+      const correctGerman = (currentWord.german || '').toLowerCase();
+      const correctPlural = (currentWord.plural || '').toLowerCase();
       const pluralCorrect = (plural === correctPlural) || (correctPlural === '—' && plural === '');
 
       if (chosenArticle === currentWord.article && german === correctGerman && pluralCorrect) {
         currentWord.correctStreak++;
         currentWord.answeredCorrect = true;
-        feedback = '<span style="color:green">Correct!</span>';
+        feedback = '<span style="color: var(--ok)">Correct!</span>';
       } else {
         currentWord.correctStreak = 0;
         currentWord.answeredCorrect = false;
-        feedback = `<span style=\"color:red\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+        feedback = `<span style=\"color: var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
 
       document.getElementById('feedback').innerHTML = feedback;
@@ -225,26 +234,28 @@
     }
 
     function saveProgress() {
-      localStorage.setItem('vocabProgress', JSON.stringify({ words, level }));
+      try { localStorage.setItem('vocabProgress', JSON.stringify({ words, level })); } catch {}
     }
 
     function loadProgress() {
-      const saved = localStorage.getItem('vocabProgress');
-      if (saved) {
-        const data = JSON.parse(saved);
-        level = data.level || 1;
-        words.forEach((w, i) => {
-          if (data.words && data.words[i]) {
-            w.correctStreak = data.words[i].correctStreak || 0;
-            w.answeredCorrect = data.words[i].answeredCorrect || false;
-          }
-        });
-      }
+      try {
+        const saved = localStorage.getItem('vocabProgress');
+        if (saved) {
+          const data = JSON.parse(saved);
+          level = data.level || 1;
+          words.forEach((w, i) => {
+            if (data.words && data.words[i]) {
+              w.correctStreak = data.words[i].correctStreak || 0;
+              w.answeredCorrect = data.words[i].answeredCorrect || false;
+            }
+          });
+        }
+      } catch {}
     }
 
     function resetProgress() {
       if (confirm('Are you sure you want to reset progress?')) {
-        localStorage.removeItem('vocabProgress');
+        try { localStorage.removeItem('vocabProgress'); } catch {}
         words.forEach(w => { w.correctStreak = 0; w.answeredCorrect = false; });
         level = 1;
         updateLevelDisplay();
@@ -252,28 +263,28 @@
       }
     }
 
-    // Enter key behavior (unchanged)
-    document.getElementById('german').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('plural').focus();
-      }
-    });
+    // ===== Wire up UI (no inline handlers needed) =====
+    document.getElementById('btnDer').addEventListener('click', () => chooseArticle('der'));
+    document.getElementById('btnDie').addEventListener('click', () => chooseArticle('die'));
+    document.getElementById('btnDas').addEventListener('click', () => chooseArticle('das'));
+    document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+    document.getElementById('resetBtn').addEventListener('click', resetProgress);
+    document.getElementById('nextBtn').addEventListener('click', nextWord);
 
-    let pluralEnterCount = 0;
+    // Enter key handlers
+    document.getElementById('german').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('plural').focus(); }
+    });
     document.getElementById('plural').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
         pluralEnterCount++;
-        if (pluralEnterCount === 1) {
-          checkAnswer();
-        } else if (pluralEnterCount === 2) {
-          pluralEnterCount = 0;
-          nextWord();
-        }
+        if (pluralEnterCount === 1) { checkAnswer(); }
+        else if (pluralEnterCount === 2) { pluralEnterCount = 0; nextWord(); }
       }
     });
 
+    // Start
     loadCSV();
   </script>
 </body>
