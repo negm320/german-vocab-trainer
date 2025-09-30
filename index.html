@@ -77,6 +77,7 @@
     const wordsPerLevel = 25;
     const masteryThreshold = 3;
     let pluralEnterCount = 0;
+    let lastFocusedInput = 'german';
 
     const statusEl = document.getElementById('status');
     function status(msg){ statusEl.textContent = msg; }
@@ -93,7 +94,9 @@
           if (inQuotes && text[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = !inQuotes; }
         } else if (c === ',' && !inQuotes) {
           row.push(cur); cur = '';
-        } else if ((c === '\n' || c === '\r') && !inQuotes) {
+        } else if ((c === '
+' || c === '
+') && !inQuotes) {
           if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
         } else {
           cur += c;
@@ -129,7 +132,8 @@
         nextWord();
         status('');
       } catch (e) {
-        console.error(e); status('Error: '+e.message+"\nMake sure vocab.csv is in the same folder and GitHub Pages is serving it.");
+        console.error(e); status('Error: '+e.message+"
+Make sure vocab.csv is in the same folder and GitHub Pages is serving it.");
       }
     }
 
@@ -180,13 +184,16 @@
     }
 
     function chooseArticle(article) {
-      const active = document.activeElement && (document.activeElement.id === 'german' || document.activeElement.id === 'plural') ? document.activeElement.id : null;
       chosenArticle = article;
       resetArticleButtons();
       if (article === 'der') document.getElementById('btnDer').classList.add('selected');
       if (article === 'die') document.getElementById('btnDie').classList.add('selected');
       if (article === 'das') document.getElementById('btnDas').classList.add('selected');
-      if (active) document.getElementById(active).focus();
+      // Ensure the on-screen keyboard stays or comes back up on mobile
+      setTimeout(()=>{
+        const target = document.getElementById(lastFocusedInput) || document.getElementById('german');
+        target.focus();
+      },0);
     }
 
     function randomExample(examples) {
@@ -197,6 +204,11 @@
 
     function checkAnswer() {
       if (!currentWord) return;
+      // Require article selection before submitting
+      if (!chosenArticle) {
+        document.getElementById('feedback').innerHTML = '<span style="color: var(--bad)">Please select an article (der / die / das) before checking.</span>';
+        return;
+      }
       const german = document.getElementById('german').value.trim().toLowerCase();
       const plural = document.getElementById('plural').value.trim().toLowerCase();
       let feedback = '';
@@ -210,6 +222,28 @@
         currentWord.answeredCorrect = true;
         feedback = '<span style="color: var(--ok)">Correct!</span>';
       } else {
+        currentWord.correctStreak = 0;
+        currentWord.answeredCorrect = false;
+        feedback = `<span style=\"color: var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+      }
+
+      document.getElementById('feedback').innerHTML = feedback;
+      document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
+      const ex = randomExample(currentWord.examples);
+      document.getElementById('example').textContent = ex ? `📝 ${ex}` : '';
+      document.getElementById('nextBtn').style.display = 'inline-block';
+
+      saveProgress();
+
+      const activeWords = getActiveWords();
+      const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
+      if (allMastered && level * wordsPerLevel < words.length) {
+        level++;
+        activeWords.forEach(w => { w.correctStreak = 0; w.answeredCorrect = false; });
+        updateLevelDisplay();
+        saveProgress();
+      }
+    } else {
         currentWord.correctStreak = 0;
         currentWord.answeredCorrect = false;
         feedback = `<span style=\"color: var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
@@ -272,12 +306,27 @@
     document.getElementById('nextBtn').addEventListener('click', nextWord);
 
     // Enter key handlers
+    document.getElementById('german').addEventListener('focus', ()=>{ lastFocusedInput='german'; });
+    document.getElementById('plural').addEventListener('focus', ()=>{ lastFocusedInput='plural'; });
+
     document.getElementById('german').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') { e.preventDefault(); document.getElementById('plural').focus(); }
+    }); document.getElementById('plural').focus(); }
     });
     document.getElementById('plural').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
+        // If no article chosen, prompt and do nothing else
+        if (!chosenArticle) {
+          document.getElementById('feedback').innerHTML = '<span style="color: var(--bad)">Please select an article (der / die / das) first.</span>';
+          pluralEnterCount = 0;
+          return;
+        }
+        pluralEnterCount++;
+        if (pluralEnterCount === 1) { checkAnswer(); }
+        else if (pluralEnterCount === 2) { pluralEnterCount = 0; nextWord(); }
+      }
+    });
         pluralEnterCount++;
         if (pluralEnterCount === 1) { checkAnswer(); }
         else if (pluralEnterCount === 2) { pluralEnterCount = 0; nextWord(); }
