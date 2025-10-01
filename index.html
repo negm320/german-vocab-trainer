@@ -47,9 +47,9 @@
       <p><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
 
       <div>
-        <button id="btnDer" class="article-btn">der</button>
-        <button id="btnDie" class="article-btn">die</button>
-        <button id="btnDas" class="article-btn">das</button>
+        <button id="btnDer" class="article-btn" tabindex="-1">der</button>
+        <button id="btnDie" class="article-btn" tabindex="-1">die</button>
+        <button id="btnDas" class="article-btn" tabindex="-1">das</button>
       </div>
 
       <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
@@ -79,11 +79,15 @@
     const wordsPerLevel = 25;
     const masteryThreshold = 3;
     let pluralEnterCount = 0;
+    // Track last focused input to re-focus after article tap
+    let lastFocusedInput = 'german';
 
     const statusEl = document.getElementById('status');
     function status(msg){ statusEl.textContent = msg; }
 
-    // ===== CSV Parser (fixed; use '\n' / '\r') =====
+    // ===== CSV Parser (fixed; use '
+' / '
+') =====
     function parseCSV(text) {
       const rows = [];
       let row = [];
@@ -95,7 +99,9 @@
           if (inQuotes && text[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = !inQuotes; }
         } else if (c === ',' && !inQuotes) {
           row.push(cur); cur = '';
-        } else if ((c === '\n' || c === '\r') && !inQuotes) {
+        } else if ((c === '
+' || c === '
+') && !inQuotes) {
           if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
         } else {
           cur += c;
@@ -132,7 +138,8 @@
         status('');
       } catch (e) {
         console.error(e);
-        status('Error: '+e.message+'\nMake sure vocab.csv is in the same folder and GitHub Pages is serving it.');
+        status('Error: '+e.message+'
+Make sure vocab.csv is in the same folder and GitHub Pages is serving it.');
       }
     }
 
@@ -188,8 +195,13 @@
       if (article === 'der') document.getElementById('btnDer').classList.add('selected');
       if (article === 'die') document.getElementById('btnDie').classList.add('selected');
       if (article === 'das') document.getElementById('btnDas').classList.add('selected');
-      // Always bring up keyboard by refocusing German field (reliable on iOS)
-      setTimeout(()=>{ document.getElementById('german').focus(); }, 0);
+      // Keep the on-screen keyboard up: do not let buttons steal focus
+      // If input was already focused, it stays; otherwise re-focus the last input
+      setTimeout(()=>{
+        const el = document.getElementById(lastFocusedInput) || document.getElementById('german');
+        if (document.activeElement !== el) el.focus();
+      }, 0);
+    }, 0);
     }
 
     function randomExample(examples) {
@@ -272,6 +284,15 @@
     }
 
     // ===== Wire up UI (no inline handlers) =====
+    // Prevent buttons from stealing focus on iOS (keeps keyboard open)
+    const preventFocusSteal = (el) => {
+      el.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
+      el.addEventListener('touchstart', (e)=>{ e.preventDefault(); }, {passive:false});
+    };
+    preventFocusSteal(document.getElementById('btnDer'));
+    preventFocusSteal(document.getElementById('btnDie'));
+    preventFocusSteal(document.getElementById('btnDas'));
+
     document.getElementById('btnDer').addEventListener('click', () => chooseArticle('der'));
     document.getElementById('btnDie').addEventListener('click', () => chooseArticle('die'));
     document.getElementById('btnDas').addEventListener('click', () => chooseArticle('das'));
@@ -280,6 +301,9 @@
     document.getElementById('nextBtn').addEventListener('click', nextWord);
 
     // Enter key handlers
+    document.getElementById('german').addEventListener('focus', ()=>{ lastFocusedInput='german'; });
+    document.getElementById('plural').addEventListener('focus', ()=>{ lastFocusedInput='plural'; });
+
     document.getElementById('german').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') { e.preventDefault(); document.getElementById('plural').focus(); }
     });
@@ -300,10 +324,17 @@
     // Tiny parser tests (non-blocking)
     function runTests(){
       const log=[]; const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-      const t1='a,b\n1,2\n'; const p1=parseCSV(t1); log.push(p1.length===2&&p1[1][0]==='1'?'Test1 CRLF ✅':'Test1 CRLF ❌');
-      const t2='a,b\n"hello, world",x\n'; const p2=parseCSV(t2); log.push(eq(p2,[["a","b"],["hello, world","x"]])?'Test2 quotes ✅':'Test2 quotes ❌');
-      const t3='a,b,c\n1,2,3\n'; const p3=parseCSV(t3); log.push(p3.length===2&&p3[1][2]==='3'?'Test3 trailing ✅':'Test3 trailing ❌');
-      const box=document.getElementById('testlog'); if (box) box.textContent=log.join('\n');
+      const t1='a,b
+1,2
+'; const p1=parseCSV(t1); log.push(p1.length===2&&p1[1][0]==='1'?'Test1 CRLF ✅':'Test1 CRLF ❌');
+      const t2='a,b
+"hello, world",x
+'; const p2=parseCSV(t2); log.push(eq(p2,[["a","b"],["hello, world","x"]])?'Test2 quotes ✅':'Test2 quotes ❌');
+      const t3='a,b,c
+1,2,3
+'; const p3=parseCSV(t3); log.push(p3.length===2&&p3[1][2]==='3'?'Test3 trailing ✅':'Test3 trailing ❌');
+      const box=document.getElementById('testlog'); if (box) box.textContent=log.join('
+');
     }
 
     // Start
