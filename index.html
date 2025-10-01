@@ -35,11 +35,8 @@
     #nextBtn  { display: none; width: 100%; }
     #status   { margin-top: 10px; font-size: 0.9em; color: var(--muted); white-space: pre-wrap; }
 
-    @media (max-width: 400px) {
-      .article-btn { width: 32%; font-size: 16px; padding: 12px 0; }
-      input { width: 48%; font-size: 14px; padding: 10px; }
-      button { font-size: 14px; padding: 10px; }
-    }
+    details#tests { margin-top: 8px; color: var(--muted); }
+    details#tests summary { cursor: pointer; }
   </style>
 </head>
 <body>
@@ -65,11 +62,8 @@
       <button id="resetBtn">Reset Progress</button>
       <button id="nextBtn">Next word</button>
       <div id="status"></div>
-      <details id="tests" style="margin-top:8px;color:var(--muted)">
-        <summary>Dev tests</summary>
-        <pre id="testlog"></pre>
-      </details>
-      <details id="tests" style="margin-top:8px;color:var(--muted)">
+
+      <details id="tests">
         <summary>Dev tests</summary>
         <pre id="testlog"></pre>
       </details>
@@ -89,7 +83,7 @@
     const statusEl = document.getElementById('status');
     function status(msg){ statusEl.textContent = msg; }
 
-    // ===== CSV Parser (correct newline handling) =====
+    // ===== CSV Parser (fixed; use '\n' / '\r') =====
     function parseCSV(text) {
       const rows = [];
       let row = [];
@@ -102,16 +96,6 @@
         } else if (c === ',' && !inQuotes) {
           row.push(cur); cur = '';
         } else if ((c === '\n' || c === '\r') && !inQuotes) {
-          if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
-        } else {
-          cur += c;
-        }
-      }
-      if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
-      return rows;
-    } else if (c === ',' && !inQuotes) {
-          row.push(cur); cur = '';
-        } else if ((c === '\\n' || c === '\\r') && !inQuotes) {
           if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
         } else {
           cur += c;
@@ -147,7 +131,8 @@
         nextWord();
         status('');
       } catch (e) {
-        console.error(e); status('Error: '+e.message+'\nMake sure vocab.csv is in the same folder and GitHub Pages is serving it.');
+        console.error(e);
+        status('Error: '+e.message+'\nMake sure vocab.csv is in the same folder and GitHub Pages is serving it.');
       }
     }
 
@@ -187,7 +172,7 @@
       document.getElementById('nextBtn').style.display = 'none';
       chosenArticle = '';
       resetArticleButtons();
-      pluralEnterCount = 0; // reset enter flow
+      pluralEnterCount = 0;
       document.getElementById('german').focus();
     }
 
@@ -315,8 +300,8 @@
     // Tiny parser tests (non-blocking)
     function runTests(){
       const log=[]; const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-      const t1='a,b\r\n1,2\r\n'; const p1=parseCSV(t1); log.push(p1.length===2&&p1[1][0]==='1'?'Test1 CRLF ✅':'Test1 CRLF ❌');
-      const t2='a,b\n"hello, world",x\n'; const p2=parseCSV(t2); log.push(eq(p2,[['a','b'],['hello, world','x']])?'Test2 quotes ✅':'Test2 quotes ❌');
+      const t1='a,b\n1,2\n'; const p1=parseCSV(t1); log.push(p1.length===2&&p1[1][0]==='1'?'Test1 CRLF ✅':'Test1 CRLF ❌');
+      const t2='a,b\n"hello, world",x\n'; const p2=parseCSV(t2); log.push(eq(p2,[["a","b"],["hello, world","x"]])?'Test2 quotes ✅':'Test2 quotes ❌');
       const t3='a,b,c\n1,2,3\n'; const p3=parseCSV(t3); log.push(p3.length===2&&p3[1][2]==='3'?'Test3 trailing ✅':'Test3 trailing ❌');
       const box=document.getElementById('testlog'); if (box) box.textContent=log.join('\n');
     }
