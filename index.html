@@ -284,18 +284,21 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.');
     }
 
     // ===== Wire up UI (no inline handlers) =====
-    // Prevent buttons from stealing focus on iOS (keeps keyboard open)
-    const preventFocusSteal = (el) => {
-      el.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
-      el.addEventListener('touchstart', (e)=>{ e.preventDefault(); }, {passive:false});
-    };
-    preventFocusSteal(document.getElementById('btnDer'));
-    preventFocusSteal(document.getElementById('btnDie'));
-    preventFocusSteal(document.getElementById('btnDas'));
-
-    document.getElementById('btnDer').addEventListener('click', () => chooseArticle('der'));
-    document.getElementById('btnDie').addEventListener('click', () => chooseArticle('die'));
-    document.getElementById('btnDas').addEventListener('click', () => chooseArticle('das'));
+    // Bind article buttons so they don't blur inputs on iOS and still trigger immediately
+    function bindArticleButton(id, article){
+      const btn = document.getElementById(id);
+      const handler = (e) => {
+        if (e && e.cancelable) e.preventDefault();
+        chooseArticle(article);
+      };
+      btn.addEventListener('pointerdown', handler);
+      btn.addEventListener('touchstart', handler, {passive:false});
+      btn.addEventListener('mousedown', handler);
+      btn.addEventListener('click', handler);
+    }
+    bindArticleButton('btnDer','der');
+    bindArticleButton('btnDie','die');
+    bindArticleButton('btnDas','das');
     document.getElementById('checkBtn').addEventListener('click', checkAnswer);
     document.getElementById('resetBtn').addEventListener('click', resetProgress);
     document.getElementById('nextBtn').addEventListener('click', nextWord);
