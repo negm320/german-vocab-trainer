@@ -5,20 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>German Vocab Trainer</title>
   <style>
-    /* Dark mode + pastel article highlights */
+    /* --- Dark mode look; logic fixed --- */
     :root {
       --bg:#0f1115; --text:#eaeaea; --muted:#9aa6b2; --card:#171b23; --border:#2a3240; --input:#0f1620;
-      --btn:#243042; --btn-hover:#2a3a50; --ok:#22c55e; --bad:#f97373;
+      --btn:#243042; --btn-hover:#2a3a50;
+      /* Pastel highlights */
       --der:#7fb3ff; --der-text:#0b2139; --die:#ff9aa2; --die-text:#3a0b12; --das:#9be7a1; --das-text:#0d2a14;
+      --ok:#22c55e; --bad:#f97373;
     }
     * { box-sizing: border-box; }
     body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: var(--bg); color: var(--text); }
     .container { max-width: 500px; margin: auto; padding: 10px; }
-    h1 { font-size: 1.8em; text-align: center; margin-bottom: 10px; }
+    h1 { font-size: 1.8em; text-align: center; margin-bottom: 10px; color: var(--text); }
     #level { text-align: center; margin-bottom: 15px; font-size: 1.1em; color: var(--muted); }
     .card { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); border: 1px solid var(--border); }
 
     .article-btn { width: 30%; padding: 15px 0; font-size: 18px; margin: 5px 1%; border-radius: 10px; cursor: pointer; border: 1px solid var(--border); background: #202734; color: var(--text); transition: background .2s ease, color .2s ease; }
+    /* Selected state uses the SAME .selected class your JS toggles */
     #btnDer.selected { background: var(--der); color: var(--der-text); border-color: #6aa6ff; }
     #btnDie.selected { background: var(--die); color: var(--die-text); border-color: #ff8a93; }
     #btnDas.selected { background: var(--das); color: var(--das-text); border-color: #86d892; }
@@ -33,10 +36,17 @@
     #feedback { margin-top: 5px; font-size: 1em; }
     #example  { margin-top: 6px; font-size: 0.95em; color: var(--muted); }
     #nextBtn  { display: none; width: 100%; }
-    #status   { margin-top: 10px; font-size: 0.9em; color: var(--muted); white-space: pre-wrap; }
 
-    details#tests { margin-top: 8px; color: var(--muted); }
+    details#tests { margin-top: 14px; color: var(--muted); }
     details#tests summary { cursor: pointer; }
+    .pass { color: var(--ok); }
+    .fail { color: var(--bad); }
+
+    @media (max-width: 400px) {
+      .article-btn { width: 32%; font-size: 16px; padding: 12px 0; }
+      input { width: 48%; font-size: 14px; padding: 10px; }
+      button { font-size: 14px; padding: 10px; }
+    }
   </style>
 </head>
 <body>
@@ -47,9 +57,9 @@
       <p><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
 
       <div>
-        <button id="btnDer" class="article-btn" tabindex="-1">der</button>
-        <button id="btnDie" class="article-btn" tabindex="-1">die</button>
-        <button id="btnDas" class="article-btn" tabindex="-1">das</button>
+        <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
+        <button id="btnDie" class="article-btn" onclick="chooseArticle('die')">die</button>
+        <button id="btnDas" class="article-btn" onclick="chooseArticle('das')">das</button>
       </div>
 
       <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
@@ -58,10 +68,9 @@
       <p id="example"></p>
 
       <br />
-      <button id="checkBtn">Check</button>
-      <button id="resetBtn">Reset Progress</button>
-      <button id="nextBtn">Next word</button>
-      <div id="status"></div>
+      <button onclick="checkAnswer()">Check</button>
+      <button id="resetBtn" onclick="resetProgress()">Reset Progress</button>
+      <button id="nextBtn" onclick="nextWord()">Next word</button>
 
       <details id="tests">
         <summary>Dev tests</summary>
@@ -79,15 +88,8 @@
     const wordsPerLevel = 25;
     const masteryThreshold = 3;
     let pluralEnterCount = 0;
-    // Track last focused input to re-focus after article tap
-    let lastFocusedInput = 'german';
 
-    const statusEl = document.getElementById('status');
-    function status(msg){ statusEl.textContent = msg; }
-
-    // ===== CSV Parser (fixed; use '
-' / '
-') =====
+    // ===== CSV Parser (fixed newlines) =====
     function parseCSV(text) {
       const rows = [];
       let row = [];
@@ -99,9 +101,7 @@
           if (inQuotes && text[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = !inQuotes; }
         } else if (c === ',' && !inQuotes) {
           row.push(cur); cur = '';
-        } else if ((c === '
-' || c === '
-') && !inQuotes) {
+        } else if ((c === '\n' || c === '\r') && !inQuotes) {
           if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
         } else {
           cur += c;
@@ -114,11 +114,11 @@
     // ===== Data loading =====
     async function loadCSV() {
       try {
-        const response = await fetch('vocab.csv', {cache: 'no-store'});
-        if (!response.ok) throw new Error('Failed to load vocab.csv ('+response.status+')');
+        const response = await fetch('vocab.csv');
+        if (!response.ok) throw new Error('Failed to load vocab.csv');
         const data = await response.text();
         const lines = parseCSV(data.trim());
-        if (lines.length === 0) { status('vocab.csv is empty'); return; }
+        if (lines.length === 0) return;
         lines.shift(); // header
         words = lines.map(cols => {
           const english = cols[0] || '';
@@ -131,15 +131,11 @@
           const examples = [ex1, ex2, ex3].filter(x => x && x.trim() !== '');
           return { english, article, german, plural, examples, correctStreak: 0, answeredCorrect: false };
         });
-        if (words.length === 0){ status('No rows in vocab.csv beyond header'); }
         loadProgress();
         updateLevelDisplay();
         nextWord();
-        status('');
       } catch (e) {
         console.error(e);
-        status('Error: '+e.message+'
-Make sure vocab.csv is in the same folder and GitHub Pages is serving it.');
       }
     }
 
@@ -179,7 +175,7 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.');
       document.getElementById('nextBtn').style.display = 'none';
       chosenArticle = '';
       resetArticleButtons();
-      pluralEnterCount = 0;
+      pluralEnterCount = 0; // ensure Enter flow starts fresh for each word
       document.getElementById('german').focus();
     }
 
@@ -190,18 +186,14 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.');
     }
 
     function chooseArticle(article) {
+      // keep keyboard open on mobile
+      const active = document.activeElement && (document.activeElement.id === 'german' || document.activeElement.id === 'plural') ? document.activeElement.id : null;
       chosenArticle = article;
       resetArticleButtons();
       if (article === 'der') document.getElementById('btnDer').classList.add('selected');
       if (article === 'die') document.getElementById('btnDie').classList.add('selected');
       if (article === 'das') document.getElementById('btnDas').classList.add('selected');
-      // Keep the on-screen keyboard up: do not let buttons steal focus
-      // If input was already focused, it stays; otherwise re-focus the last input
-      setTimeout(()=>{
-        const el = document.getElementById(lastFocusedInput) || document.getElementById('german');
-        if (document.activeElement !== el) el.focus();
-      }, 0);
-    }, 0);
+      if (active) document.getElementById(active).focus();
     }
 
     function randomExample(examples) {
@@ -212,11 +204,6 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.');
 
     function checkAnswer() {
       if (!currentWord) return;
-      // Block submit if no article selected
-      if (!chosenArticle) {
-        document.getElementById('feedback').innerHTML = '<span style="color: var(--bad)">Please select an article (der / die / das) first.</span>';
-        return;
-      }
       const german = document.getElementById('german').value.trim().toLowerCase();
       const plural = document.getElementById('plural').value.trim().toLowerCase();
       let feedback = '';
@@ -228,11 +215,11 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.');
       if (chosenArticle === currentWord.article && german === correctGerman && pluralCorrect) {
         currentWord.correctStreak++;
         currentWord.answeredCorrect = true;
-        feedback = '<span style="color: var(--ok)">Correct!</span>';
+        feedback = '<span class="ok" style="color: var(--ok)">Correct!</span>';
       } else {
         currentWord.correctStreak = 0;
         currentWord.answeredCorrect = false;
-        feedback = `<span style=\"color: var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+        feedback = `<span class=\"bad\" style=\"color: var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
 
       document.getElementById('feedback').innerHTML = feedback;
@@ -283,64 +270,49 @@ Make sure vocab.csv is in the same folder and GitHub Pages is serving it.');
       }
     }
 
-    // ===== Wire up UI (no inline handlers) =====
-    // Bind article buttons so they don't blur inputs on iOS and still trigger immediately
-    function bindArticleButton(id, article){
-      const btn = document.getElementById(id);
-      const handler = (e) => {
-        if (e && e.cancelable) e.preventDefault();
-        chooseArticle(article);
-      };
-      btn.addEventListener('pointerdown', handler);
-      btn.addEventListener('touchstart', handler, {passive:false});
-      btn.addEventListener('mousedown', handler);
-      btn.addEventListener('click', handler);
-    }
-    bindArticleButton('btnDer','der');
-    bindArticleButton('btnDie','die');
-    bindArticleButton('btnDas','das');
-    document.getElementById('checkBtn').addEventListener('click', checkAnswer);
-    document.getElementById('resetBtn').addEventListener('click', resetProgress);
-    document.getElementById('nextBtn').addEventListener('click', nextWord);
-
-    // Enter key handlers
-    document.getElementById('german').addEventListener('focus', ()=>{ lastFocusedInput='german'; });
-    document.getElementById('plural').addEventListener('focus', ()=>{ lastFocusedInput='plural'; });
-
+    // ===== Key handlers =====
     document.getElementById('german').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') { e.preventDefault(); document.getElementById('plural').focus(); }
     });
     document.getElementById('plural').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        if (!chosenArticle) {
-          document.getElementById('feedback').innerHTML = '<span style="color: var(--bad)">Please select an article (der / die / das) first.</span>';
-          pluralEnterCount = 0;
-          return;
-        }
         pluralEnterCount++;
         if (pluralEnterCount === 1) { checkAnswer(); }
         else if (pluralEnterCount === 2) { pluralEnterCount = 0; nextWord(); }
       }
     });
 
-    // Tiny parser tests (non-blocking)
-    function runTests(){
-      const log=[]; const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-      const t1='a,b
-1,2
-'; const p1=parseCSV(t1); log.push(p1.length===2&&p1[1][0]==='1'?'Test1 CRLF ✅':'Test1 CRLF ❌');
-      const t2='a,b
-"hello, world",x
-'; const p2=parseCSV(t2); log.push(eq(p2,[["a","b"],["hello, world","x"]])?'Test2 quotes ✅':'Test2 quotes ❌');
-      const t3='a,b,c
-1,2,3
-'; const p3=parseCSV(t3); log.push(p3.length===2&&p3[1][2]==='3'?'Test3 trailing ✅':'Test3 trailing ❌');
-      const box=document.getElementById('testlog'); if (box) box.textContent=log.join('
-');
+    // Expose functions for inline onclick handlers
+    window.chooseArticle = chooseArticle;
+    window.checkAnswer = checkAnswer;
+    window.resetProgress = resetProgress;
+    window.nextWord = nextWord;
+
+    // ===== Tiny tests (won't affect UI) =====
+    function runTests() {
+      const log = [];
+      const eq = (a,b)=>JSON.stringify(a)===JSON.stringify(b);
+
+      // Test 1: simple CSV with CRLF
+      const t1 = 'english,article,german,plural\r\ncat,die,Katze,Katzen\r\ndog,der,Hund,Hunde\r\n';
+      const p1 = parseCSV(t1); // includes header + 2 rows
+      log.push((p1.length===3 && p1[1][0]==='cat' && p1[2][2]==='Hund')? 'Test1 ✅' : 'Test1 ❌');
+
+      // Test 2: quoted comma
+      const t2 = 'a,b\n"hello, world",x\n';
+      const p2 = parseCSV(t2);
+      log.push(eq(p2,[['a','b'],['hello, world','x']])? 'Test2 ✅' : 'Test2 ❌');
+
+      // Test 3: trailing newline only
+      const t3 = 'a,b,c\n1,2,3\n';
+      const p3 = parseCSV(t3);
+      log.push((p3.length===2 && p3[1][2]==='3')? 'Test3 ✅' : 'Test3 ❌');
+
+      document.getElementById('testlog').textContent = log.join('\n');
     }
 
-    // Start
+    // Kickoff
     runTests();
     loadCSV();
   </script>
