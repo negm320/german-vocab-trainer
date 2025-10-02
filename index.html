@@ -18,7 +18,9 @@
     #level { text-align: center; margin-bottom: 15px; font-size: 1.1em; color: var(--muted); }
     .card { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); border: 1px solid var(--border); }
 
-    .article-btn { width: 28%; padding: 12px 0; font-size: 16px; margin: 5px 1%; border-radius: 10px; cursor: pointer; border: 1px solid var(--border); background: #202734; color: var(--text); transition: background .2s ease, color .2s ease; }
+    /* One-line article buttons: responsive flex with equal widths */
+    .button-row { display: flex; gap: 8px; align-items: stretch; justify-content: space-between; }
+    .article-btn { flex: 1 1 0; min-width: 0; padding: 12px 0; font-size: 16px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border); background: #202734; color: var(--text); transition: background .2s ease, color .2s ease; }
     #btnDer.selected { background: var(--der); color: var(--der-text); border-color: #6aa6ff; }
     #btnDie.selected { background: var(--die); color: var(--die-text); border-color: #ff8a93; }
     #btnDas.selected { background: var(--das); color: var(--das-text); border-color: #86d892; }
@@ -37,6 +39,10 @@
 
     details#tests { margin-top: 8px; color: var(--muted); }
     details#tests summary { cursor: pointer; }
+
+    @media (max-width: 400px) {
+      .article-btn { padding: 10px 0; font-size: 15px; }
+    }
   </style>
 </head>
 <body>
@@ -46,10 +52,10 @@
     <div class="card">
       <p><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
 
-      <div>
-        <button id="btnDer" class="article-btn" tabindex="-1">der</button>
-        <button id="btnDie" class="article-btn" tabindex="-1">die</button>
-        <button id="btnDas" class="article-btn" tabindex="-1">das</button>
+      <div class="button-row">
+        <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
+        <button id="btnDie" class="article-btn" onclick="chooseArticle('die')">die</button>
+        <button id="btnDas" class="article-btn" onclick="chooseArticle('das')">das</button>
       </div>
 
       <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
@@ -58,9 +64,9 @@
       <p id="example"></p>
 
       <br />
-      <button id="checkBtn">Check</button>
-      <button id="resetBtn">Reset Progress</button>
-      <button id="nextBtn">Next word</button>
+      <button onclick="checkAnswer()">Check</button>
+      <button id="resetBtn" onclick="resetProgress()">Reset Progress</button>
+      <button id="nextBtn" onclick="nextWord()">Next word</button>
       <div id="status"></div>
 
       <details id="tests">
@@ -71,7 +77,233 @@
   </div>
 
   <script>
-    // JS remains the same as before (omitted for brevity)
+    // ===== State =====
+    let words = [];
+    let currentWord = null;
+    let chosenArticle = '';
+    let level = 1;
+    const wordsPerLevel = 25;
+    const masteryThreshold = 3;
+    let pluralEnterCount = 0;
+
+    // ===== CSV Parser (correct newlines) =====
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (c === '"') {
+          if (inQuotes && text[i+1] === '"') { cur += '"'; i++; } else { inQuotes = !inQuotes; }
+        } else if (c === ',' && !inQuotes) {
+          row.push(cur); cur = '';
+        } else if ((c === '\n' || c === '\r') && !inQuotes) {
+          if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
+        } else {
+          cur += c;
+        }
+      }
+      if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+      return rows;
+    }
+
+    // ===== Data loading =====
+    async function loadCSV() {
+      try {
+        const response = await fetch('vocab.csv', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Failed to load vocab.csv');
+        const data = await response.text();
+        const lines = parseCSV(data.trim());
+        if (lines.length === 0) return;
+        lines.shift(); // header
+        words = lines.map(cols => {
+          const english = cols[0] || '';
+          const article = cols[1] || '';
+          const german  = cols[2] || '';
+          const plural  = cols[3] || '';
+          const ex1 = cols[4] || '';
+          const ex2 = cols[5] || '';
+          const ex3 = cols[6] || '';
+          const examples = [ex1, ex2, ex3].filter(x => x && x.trim() !== '');
+          return { english, article, german, plural, examples, correctStreak: 0, answeredCorrect: false };
+        });
+        loadProgress();
+        updateLevelDisplay();
+        nextWord();
+      } catch (e) { console.error(e); }
+    }
+
+    function updateLevelDisplay() {
+      document.getElementById('level').textContent = `Level: ${level} (Words 1–${level * wordsPerLevel})`;
+    }
+
+    function getActiveWords() { return words.slice(0, level * wordsPerLevel); }
+
+    function getTierWords() {
+      const active = getActiveWords();
+      if (active.length === 0) return [];
+      const minStreak = Math.min(...active.map(w => w.correctStreak));
+      return active.filter(w => w.correctStreak === minStreak && !w.answeredCorrect);
+    }
+
+    function nextWord() {
+      const activeWords = getActiveWords();
+      if (activeWords.length === 0) return;
+
+      let tierWords = getTierWords();
+      if (tierWords.length === 0) {
+        const minStreak = Math.min(...activeWords.map(w => w.correctStreak));
+        activeWords.filter(w => w.correctStreak === minStreak).forEach(w => w.answeredCorrect = false);
+        tierWords = getTierWords();
+      }
+
+      const list = (tierWords.length ? tierWords : activeWords);
+      currentWord = list[Math.floor(Math.random() * list.length)];
+
+      document.getElementById('english').textContent = currentWord.english;
+      document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
+      document.getElementById('german').value = '';
+      document.getElementById('plural').value = '';
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('example').textContent = '';
+      document.getElementById('nextBtn').style.display = 'none';
+      chosenArticle = '';
+      resetArticleButtons();
+      pluralEnterCount = 0;
+      document.getElementById('german').focus();
+    }
+
+    function resetArticleButtons() {
+      document.getElementById('btnDer').classList.remove('selected');
+      document.getElementById('btnDie').classList.remove('selected');
+      document.getElementById('btnDas').classList.remove('selected');
+    }
+
+    function chooseArticle(article) {
+      chosenArticle = article;
+      resetArticleButtons();
+      if (article === 'der') document.getElementById('btnDer').classList.add('selected');
+      if (article === 'die') document.getElementById('btnDie').classList.add('selected');
+      if (article === 'das') document.getElementById('btnDas').classList.add('selected');
+      document.getElementById('german').focus();
+    }
+
+    function randomExample(examples) {
+      if (!examples || examples.length === 0) return '';
+      const i = Math.floor(Math.random() * examples.length);
+      return examples[i];
+    }
+
+    function checkAnswer() {
+      if (!currentWord) return;
+      const german = document.getElementById('german').value.trim().toLowerCase();
+      const plural = document.getElementById('plural').value.trim().toLowerCase();
+      let feedback = '';
+
+      const correctGerman = (currentWord.german || '').toLowerCase();
+      const correctPlural = (currentWord.plural || '').toLowerCase();
+      const pluralCorrect = (plural === correctPlural) || (correctPlural === '—' && plural === '');
+
+      if (chosenArticle === currentWord.article && german === correctGerman && pluralCorrect) {
+        currentWord.correctStreak++;
+        currentWord.answeredCorrect = true;
+        feedback = '<span style="color: var(--ok)">Correct!</span>';
+      } else {
+        currentWord.correctStreak = 0;
+        currentWord.answeredCorrect = false;
+        feedback = `<span style=\"color: var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+      }
+
+      document.getElementById('feedback').innerHTML = feedback;
+      document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
+      const ex = randomExample(currentWord.examples);
+      document.getElementById('example').textContent = ex ? `📝 ${ex}` : '';
+      document.getElementById('nextBtn').style.display = 'inline-block';
+
+      saveProgress();
+
+      const activeWords = getActiveWords();
+      const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
+      if (allMastered && level * wordsPerLevel < words.length) {
+        level++;
+        activeWords.forEach(w => { w.correctStreak = 0; w.answeredCorrect = false; });
+        updateLevelDisplay();
+        saveProgress();
+      }
+    }
+
+    function saveProgress() {
+      try { localStorage.setItem('vocabProgress', JSON.stringify({ words, level })); } catch {}
+    }
+
+    function loadProgress() {
+      try {
+        const saved = localStorage.getItem('vocabProgress');
+        if (saved) {
+          const data = JSON.parse(saved);
+          level = data.level || 1;
+          words.forEach((w, i) => {
+            if (data.words && data.words[i]) {
+              w.correctStreak = data.words[i].correctStreak || 0;
+              w.answeredCorrect = data.words[i].answeredCorrect || false;
+            }
+          });
+        }
+      } catch {}
+    }
+
+    function resetProgress() {
+      if (confirm('Are you sure you want to reset progress?')) {
+        try { localStorage.removeItem('vocabProgress'); } catch {}
+        words.forEach(w => { w.correctStreak = 0; w.answeredCorrect = false; });
+        level = 1;
+        updateLevelDisplay();
+        nextWord();
+      }
+    }
+
+    // Enter key behavior
+    document.getElementById('german').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('plural').focus();
+      }
+    });
+
+    document.getElementById('plural').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        pluralEnterCount++;
+        if (pluralEnterCount === 1) {
+          checkAnswer();
+        } else if (pluralEnterCount === 2) {
+          pluralEnterCount = 0;
+          nextWord();
+        }
+      }
+    });
+
+    // Expose for inline handlers (safety)
+    window.chooseArticle = chooseArticle;
+    window.checkAnswer = checkAnswer;
+    window.resetProgress = resetProgress;
+    window.nextWord = nextWord;
+
+    // Tiny parser tests
+    function runTests(){
+      const log=[]; const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+      const t1='english,article,german,plural\ncat,die,Katze,Katzen\ndog,der,Hund,Hunde\n';
+      const p1=parseCSV(t1); log.push(p1.length===3&&p1[1][0]==='cat'?'Test1 CRLF ✅':'Test1 CRLF ❌');
+      const t2='a,b\n"hello, world",x\n';
+      const p2=parseCSV(t2); log.push(eq(p2,[['a','b'],['hello, world','x']])?'Test2 quotes ✅':'Test2 quotes ❌');
+      const t3='a,b,c\n1,2,3\n';
+      const p3=parseCSV(t3); log.push(p3.length===2&&p3[1][2]==='3'?'Test3 trailing ✅':'Test3 trailing ❌');
+      const box=document.getElementById('testlog'); if (box) box.textContent=log.join('\n');
+    }
+
+    runTests();
+    loadCSV();
   </script>
 </body>
 </html>
