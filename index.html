@@ -11,7 +11,7 @@
       --der:#7fb3ff; --der-text:#0b2139; --die:#ff9aa2; --die-text:#3a0b12; --das:#9be7a1; --das-text:#0d2a14;
     }
     *{box-sizing:border-box}
-    body{font-family:Arial, sans-serif;margin:0;padding:10px;background:var(--bg);color:var(--text)}
+    body{font-family:Arial,sans-serif;margin:0;padding:10px;background:var(--bg);color:var(--text)}
     .container{max-width:500px;margin:auto;padding:10px}
     h1{font-size:1.8em;text-align:center;margin-bottom:10px}
     #level{text-align:center;margin-bottom:15px;font-size:1.1em;color:var(--muted)}
@@ -34,8 +34,6 @@
     #example{margin-top:6px;font-size:.95em;color:var(--muted)}
     #nextBtn{display:none;width:100%}
     #status{margin-top:10px;font-size:.9em;color:var(--muted);white-space:pre-wrap}
-
-    @media(max-width:400px){.article-btn{padding:10px 0;font-size:15px}}
   </style>
 </head>
 <body>
@@ -46,6 +44,7 @@
     <div class="card">
       <!-- English ABOVE image -->
       <p id="englishRow"><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
+
       <!-- Image -->
       <div id="media" style="margin-bottom:8px;">
         <img id="wordImage" alt="vocab image" style="display:none;width:100%;max-height:220px;object-fit:contain;background:#0d0f14;border:1px solid var(--border);border-radius:10px;padding:8px;" />
@@ -91,17 +90,20 @@
 
     function status(msg){ if(statusEl) statusEl.textContent = msg; }
 
-    // ===== CSV Parser (robust newlines) =====
+    // ===== CSV Parser (robust newlines; DO NOT change '\n'/'\r') =====
     function parseCSV(text){
       const rows=[]; let row=[]; let cur=''; let inQuotes=false;
       for(let i=0;i<text.length;i++){
         const c=text[i];
-        if(c==='"'){ if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; } }
-        else if(c===',' && !inQuotes){ row.push(cur); cur=''; }
-        else if((c==='
-' || c==='
-') && !inQuotes){ if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; } }
-        else { cur+=c; }
+        if(c==='"'){
+          if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; }
+        } else if(c===',' && !inQuotes){
+          row.push(cur); cur='';
+        } else if((c==='\n' || c==='\r') && !inQuotes){
+          if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
+        } else {
+          cur+=c;
+        }
       }
       if(cur!=='' || row.length){ row.push(cur); rows.push(row); }
       return rows;
@@ -176,17 +178,13 @@
     }
 
     function chooseArticle(article){
-      chosenArticle = article;
-      resetArticleButtons();
+      chosenArticle=article; resetArticleButtons();
       if(article==='der') document.getElementById('btnDer').classList.add('selected');
       if(article==='die') document.getElementById('btnDie').classList.add('selected');
       if(article==='das') document.getElementById('btnDas').classList.add('selected');
-      // Always shift focus to the German field to keep keyboard open on mobile
-      const germanEl = document.getElementById('german');
-      if (germanEl){
-        lastFocusId = 'german';
-        setTimeout(()=>{ germanEl.focus(); }, 0);
-      }
+      // Always shift focus to the German field to keep keyboard up
+      const germanEl=document.getElementById('german');
+      if(germanEl){ lastFocusId='german'; setTimeout(()=>{ germanEl.focus(); },0); }
     }
 
     function randomExample(examples){ if(!examples||examples.length===0) return ''; const i=Math.floor(Math.random()*examples.length); return examples[i]; }
@@ -217,18 +215,20 @@
       }
     }
 
-    function saveProgress(){ try{ localStorage.setItem('vocabProgress', JSON.stringify({ words, level, showEnglish: document.getElementById('toggleEnglish').checked })); }catch{} }
+    function saveProgress(){
+      try{ localStorage.setItem('vocabProgress', JSON.stringify({ words, level, showEnglish: document.getElementById('toggleEnglish').checked })); }catch{}
+    }
 
     function loadProgress(){
       try{
         const saved=localStorage.getItem('vocabProgress');
+        const cb=document.getElementById('toggleEnglish');
         if(saved){
           const data=JSON.parse(saved);
           level=data.level||1;
-          const show = (data.showEnglish!==undefined)? !!data.showEnglish : true;
-          const cb=document.getElementById('toggleEnglish'); if(cb) cb.checked=show;
+          if(cb) cb.checked = (data.showEnglish!==undefined)? !!data.showEnglish : true;
           words.forEach((w,i)=>{ if(data.words && data.words[i]){ w.correctStreak=data.words[i].correctStreak||0; w.answeredCorrect=data.words[i].answeredCorrect||false; } });
-        }
+        } else { if(cb) cb.checked = true; }
       }catch{}
     }
 
@@ -239,11 +239,10 @@
       }
     }
 
-    // Keep track of last focused field
+    // Track focus + Enter behavior
     document.getElementById('german').addEventListener('focus', ()=>{ lastFocusId='german'; });
     document.getElementById('plural').addEventListener('focus', ()=>{ lastFocusId='plural'; });
 
-    // Enter behavior
     document.getElementById('german').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('plural').focus(); }});
     document.getElementById('plural').addEventListener('keydown', e=>{
       if(e.key==='Enter'){
@@ -287,8 +286,8 @@
     // English toggle
     function applyEnglishVisibility(){
       const cb=document.getElementById('toggleEnglish');
-      if(!cb||!englishRowEl) return;
-      englishRowEl.style.display = cb.checked ? '' : 'none';
+      if(!englishRowEl) return;
+      englishRowEl.style.display = cb && cb.checked ? '' : 'none';
     }
     document.getElementById('toggleEnglish').addEventListener('change', ()=>{ applyEnglishVisibility(); saveProgress(); });
 
