@@ -66,15 +66,7 @@
       <button id="resetBtn" onclick="resetProgress()">Reset Progress</button>
       <button id="nextBtn" onclick="nextWord()">Next word</button>
       <div id="status"></div>
-      <div style="margin-top:8px; font-size:0.9em; color:var(--muted);">
-        <label style="cursor:pointer;">
-          <input type="file" id="csvLocal" accept=".csv" style="margin-right:8px;" /> Load CSV from device (fallback)
-        </label>
-      </div>
-    </div>
-  </div>
 
-  <!-- Toggle under frame -->
   <label style="display:flex;align-items:center;gap:8px;margin:10px auto 0;max-width:500px;color:var(--muted);font-size:.95em;">
     <input type="checkbox" id="toggleEnglish" checked /> Show English word
   </label>
@@ -121,46 +113,24 @@
     // ===== Data loading =====
     async function loadCSV(){
       try{
-        // Cache-bust on GitHub Pages and show better diagnostics
-        const url = 'vocab.csv?ts=' + Date.now();
-        const res = await fetch(url);
-        if(!res.ok) throw new Error('Failed to load vocab.csv (HTTP ' + res.status + ')');
-        const data = await res.text();
-        if(!data || !data.trim()) { status('vocab.csv is empty'); return; }
+        const abs = new URL('vocab.csv', window.location.href).href;
+        const url = abs + (abs.includes('?') ? '&' : '?') + 'ts=' + Date.now();
+        const res = await fetch(url, { cache: 'no-store' });
+        if(!res.ok) throw new Error('HTTP ' + res.status + ' fetching ' + url);
+        const raw = await res.text();
+        const data = raw.replace(/^\uFEFF/, '');
+        if(!data || !data.trim()) { status('vocab.csv is empty at ' + url); return; }
         initFromCSVText(data);
-        status('');
-      }catch(e){ console.error(e); status('Error loading CSV: '+e.message+"\nCheck that vocab.csv exists at the repo root next to index.html (case-sensitive)."); }
-    }
-
-    function initFromCSVText(csvText){
-      const lines = parseCSV(csvText.trim());
-      if(lines.length === 0){ status('CSV had no rows'); return; }
-      const header = lines[0] || [];
-      // Basic header sanity check
-      const expected0 = (header[0]||'').toLowerCase();
-      if(expected0 !== 'english' && expected0 !== 'englisch'){ /* continue anyway */ }
-      lines.shift();
-      words = lines.map(cols => {
-        const english=cols[0]||''; const article=cols[1]||''; const german=cols[2]||''; const plural=cols[3]||'';
-        const ex1=cols[4]||''; const ex2=cols[5]||''; const ex3=cols[6]||'';
-        const examples=[ex1,ex2,ex3].filter(x=>x&&x.trim()!=='');
-        return { english, article, german, plural, examples, correctStreak:0, answeredCorrect:false };
-      });
-      loadProgress();
-      updateLevelDisplay();
-      nextWord();
+        status('Loaded vocab.csv (' + data.length + ' chars)');
+      }catch(e){
+        console.error(e);
+        status('Error loading CSV: ' + e.message + '\nCheck that vocab.csv is next to index.html and publicly reachable.');
+      }
+    }catch(e){
+        console.error(e);
+        status('Error loading CSV: ' + e.message + '\nCheck that vocab.csv is next to index.html and publicly reachable.');
+      }
     });
-        if(!res.ok) throw new Error('Failed to load vocab.csv');
-        const data = await res.text();
-        const lines = parseCSV(data.trim());
-        if(lines.length===0){ status('vocab.csv is empty'); return; }
-        lines.shift();
-        words = lines.map(cols=>{
-          const english=cols[0]||''; const article=cols[1]||''; const german=cols[2]||''; const plural=cols[3]||'';
-          const ex1=cols[4]||''; const ex2=cols[5]||''; const ex3=cols[6]||'';
-          const examples=[ex1,ex2,ex3].filter(x=>x&&x.trim()!=='');
-          return { english, article, german, plural, examples, correctStreak:0, answeredCorrect:false };
-        });
         loadProgress();
         updateLevelDisplay();
         nextWord();
@@ -342,22 +312,6 @@
 
     // Keep focus in the German field when tapping article buttons (iOS-safe)
     
-
-    // Local CSV fallback loader
-    (function(){
-      const fi = document.getElementById('csvLocal');
-      if(fi){
-        fi.addEventListener('change', async (e)=>{
-          const f = e.target.files && e.target.files[0];
-          if(!f) return;
-          try{
-            const text = await f.text();
-            initFromCSVText(text);
-            status('Loaded local CSV from device.');
-          }catch(err){ status('Failed to read local CSV: ' + err.message); }
-        });
-      }
-    })();
 
     // Start
     loadCSV();
