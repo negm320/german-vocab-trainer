@@ -98,7 +98,9 @@
         const c=text[i];
         if(c==='"'){ if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; } }
         else if(c===',' && !inQuotes){ row.push(cur); cur=''; }
-        else if((c==='\n' || c==='\r') && !inQuotes){ if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; } }
+        else if((c==='
+' || c==='
+') && !inQuotes){ if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; } }
         else { cur+=c; }
       }
       if(cur!=='' || row.length){ row.push(cur); rows.push(row); }
@@ -174,12 +176,17 @@
     }
 
     function chooseArticle(article){
-      chosenArticle=article; resetArticleButtons();
+      chosenArticle = article;
+      resetArticleButtons();
       if(article==='der') document.getElementById('btnDer').classList.add('selected');
       if(article==='die') document.getElementById('btnDie').classList.add('selected');
       if(article==='das') document.getElementById('btnDas').classList.add('selected');
-      // restore previous input focus on the next tick (prevents iOS keyboard collapse)
-      if(lastFocusId){ const el=document.getElementById(lastFocusId); setTimeout(()=>{ if(el) el.focus(); },0); }
+      // Always shift focus to the German field to keep keyboard open on mobile
+      const germanEl = document.getElementById('german');
+      if (germanEl){
+        lastFocusId = 'german';
+        setTimeout(()=>{ germanEl.focus(); }, 0);
+      }
     }
 
     function randomExample(examples){ if(!examples||examples.length===0) return ''; const i=Math.floor(Math.random()*examples.length); return examples[i]; }
