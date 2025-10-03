@@ -90,7 +90,9 @@
 
     function status(msg){ if(statusEl) statusEl.textContent = msg; }
 
-    // ===== CSV Parser (robust newlines; DO NOT change '\n'/'\r') =====
+    // ===== CSV Parser (robust newlines; DO NOT change '
+'/'
+') =====
     function parseCSV(text){
       const rows=[]; let row=[]; let cur=''; let inQuotes=false;
       for(let i=0;i<text.length;i++){
@@ -99,7 +101,9 @@
           if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; }
         } else if(c===',' && !inQuotes){
           row.push(cur); cur='';
-        } else if((c==='\n' || c==='\r') && !inQuotes){
+        } else if((c==='
+' || c==='
+') && !inQuotes){
           if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
         } else {
           cur+=c;
@@ -296,6 +300,27 @@
     window.checkAnswer=checkAnswer;
     window.resetProgress=resetProgress;
     window.nextWord=nextWord;
+
+    // Keep focus in the German field when tapping article buttons (iOS-safe)
+    function initArticleButtonsFocusHack(){
+      const ids = [ ['btnDer','der'], ['btnDie','die'], ['btnDas','das'] ];
+      ids.forEach(([id, art])=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        // prevent the button from stealing focus
+        el.setAttribute('tabindex','-1');
+        const handler = (e)=>{ try{ e.preventDefault(); }catch{} chooseArticle(art); };
+        // Use early events to beat the browser's focus change on mobile
+        ['touchstart','pointerdown','mousedown'].forEach(evt=>{
+          el.addEventListener(evt, handler, { passive:false });
+        });
+        // Fallback for desktop click
+        el.addEventListener('click', handler);
+      });
+    }
+
+    // initialize the focus hack immediately (elements already exist)
+    initArticleButtonsFocusHack();
 
     // Start
     loadCSV();
