@@ -307,14 +307,28 @@
       ids.forEach(([id, art])=>{
         const el = document.getElementById(id);
         if(!el) return;
-        // prevent the button from stealing focus
         el.setAttribute('tabindex','-1');
-        const handler = (e)=>{ try{ e.preventDefault(); }catch{} chooseArticle(art); };
-        // Use early events to beat the browser's focus change on mobile
+        const handler = (e)=>{
+          try { e.preventDefault(); } catch {}
+          const g = document.getElementById('german');
+          if (g) {
+            lastFocusId = 'german';
+            // Try to grab focus immediately inside the user gesture
+            try { g.focus({ preventScroll:true }); } catch { try { g.focus(); } catch {} }
+            try { const L = g.value.length; g.setSelectionRange(L, L); } catch {}
+          }
+          chooseArticle(art);
+          // Reinforce focus on next frames (iOS can drop it)
+          requestAnimationFrame(()=>{
+            if (g) { try { g.focus({ preventScroll:true }); } catch { try { g.focus(); } catch {} } }
+          });
+          setTimeout(()=>{
+            if (g) { try { g.focus({ preventScroll:true }); } catch { try { g.focus(); } catch {} } }
+          }, 60);
+        };
         ['touchstart','pointerdown','mousedown'].forEach(evt=>{
           el.addEventListener(evt, handler, { passive:false });
         });
-        // Fallback for desktop click
         el.addEventListener('click', handler);
       });
     }
