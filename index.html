@@ -50,7 +50,13 @@
     <h1>German Vocab Trainer</h1>
     <p id="level">Level: 1 (Words 1–25)</p>
     <div class="card">
-      <p><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
+      <div id="media" style="margin-bottom:8px;">
+        <img id="wordImage" alt="vocab image" style="display:none; width:100%; max-height:220px; object-fit:contain; background:#0d0f14; border:1px solid var(--border); border-radius:10px; padding:8px;" />
+      </div>
+      <p id="englishRow"><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
+      <label style="display:flex;align-items:center;gap:8px;margin:6px 0 10px 0;color:var(--muted);font-size:0.95em;">
+        <input type="checkbox" id="toggleEnglish" checked /> Show English word
+      </label>
 
       <div class="button-row">
         <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
@@ -98,7 +104,21 @@
           if (inQuotes && text[i+1] === '"') { cur += '"'; i++; } else { inQuotes = !inQuotes; }
         } else if (c === ',' && !inQuotes) {
           row.push(cur); cur = '';
-        } else if ((c === '\n' || c === '\r') && !inQuotes) {
+        } else if ((c === '
+' || c === '
+') && !inQuotes) {
+          if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
+        } else {
+          cur += c;
+        }
+      }
+      if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+      return rows;
+    } else if (c === ',' && !inQuotes) {
+          row.push(cur); cur = '';
+        } else if ((c === '
+' || c === '
+') && !inQuotes) {
           if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
         } else {
           cur += c;
@@ -171,6 +191,10 @@
       chosenArticle = '';
       resetArticleButtons();
       pluralEnterCount = 0;
+
+      // load image for this word
+      loadImageForCurrent();
+
       document.getElementById('german').focus();
     }
 
@@ -290,16 +314,73 @@
     window.resetProgress = resetProgress;
     window.nextWord = nextWord;
 
+    // === Image loading ===
+    function replaceUmlauts(s){
+      return s
+        .replaceAll('ä','ae').replaceAll('Ä','Ae')
+        .replaceAll('ö','oe').replaceAll('Ö','Oe')
+        .replaceAll('ü','ue').replaceAll('Ü','Ue')
+        .replaceAll('ß','ss');
+    }
+    function buildCandidates(german){
+      const baseRaw = (german||'').trim();
+      const bases = [];
+      if (baseRaw){
+        bases.push(baseRaw);
+        bases.push(baseRaw.toLowerCase());
+        bases.push(baseRaw.replaceAll(' ','-'));
+        bases.push(baseRaw.toLowerCase().replaceAll(' ','-'));
+        const uml = replaceUmlauts(baseRaw);
+        bases.push(uml);
+        bases.push(uml.toLowerCase());
+        bases.push(uml.replaceAll(' ','-'));
+        bases.push(uml.toLowerCase().replaceAll(' ','-'));
+      }
+      const exts = ['jpg','jpeg','png','webp'];
+      const out = [];
+      bases.forEach(b => exts.forEach(ext => out.push('img/' + encodeURIComponent(b) + '.' + ext)));
+      return out;
+    }
+    function loadImageForCurrent(){
+      const img = document.getElementById('wordImage');
+      img.style.display = 'none';
+      if (!currentWord || !currentWord.german){ img.removeAttribute('src'); return; }
+      const candidates = buildCandidates(currentWord.german);
+      let i = 0;
+      function tryNext(){
+        if (i >= candidates.length){ img.removeAttribute('src'); img.style.display='none'; return; }
+        const src = candidates[i++];
+        img.onerror = tryNext;
+        img.onload = () => { img.style.display='block'; };
+        img.src = src + '?v=' + Date.now();
+      }
+      tryNext();
+    }
+
+    // Toggle English visibility
+    const toggle = document.getElementById('toggleEnglish');
+    toggle.addEventListener('change', ()=>{
+      document.getElementById('englishRow').style.display = toggle.checked ? '' : 'none';
+    });
+
     // Tiny parser tests
     function runTests(){
       const log=[]; const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-      const t1='english,article,german,plural\ncat,die,Katze,Katzen\ndog,der,Hund,Hunde\n';
+      const t1='english,article,german,plural
+cat,die,Katze,Katzen
+dog,der,Hund,Hunde
+';
       const p1=parseCSV(t1); log.push(p1.length===3&&p1[1][0]==='cat'?'Test1 CRLF ✅':'Test1 CRLF ❌');
-      const t2='a,b\n"hello, world",x\n';
+      const t2='a,b
+"hello, world",x
+';
       const p2=parseCSV(t2); log.push(eq(p2,[['a','b'],['hello, world','x']])?'Test2 quotes ✅':'Test2 quotes ❌');
-      const t3='a,b,c\n1,2,3\n';
+      const t3='a,b,c
+1,2,3
+';
       const p3=parseCSV(t3); log.push(p3.length===2&&p3[1][2]==='3'?'Test3 trailing ✅':'Test3 trailing ❌');
-      const box=document.getElementById('testlog'); if (box) box.textContent=log.join('\n');
+      const box=document.getElementById('testlog'); if (box) box.textContent = log.join('
+');
     }
 
     runTests();
