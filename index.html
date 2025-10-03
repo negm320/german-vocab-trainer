@@ -5,58 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>German Vocab Trainer</title>
   <style>
-    /* Dark mode + pastel article highlights */
-    :root {
+    :root{
       --bg:#0f1115; --text:#eaeaea; --muted:#9aa6b2; --card:#171b23; --border:#2a3240; --input:#0f1620;
       --btn:#243042; --btn-hover:#2a3a50; --ok:#22c55e; --bad:#f97373;
       --der:#7fb3ff; --der-text:#0b2139; --die:#ff9aa2; --die-text:#3a0b12; --das:#9be7a1; --das-text:#0d2a14;
     }
-    * { box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: var(--bg); color: var(--text); }
-    .container { max-width: 500px; margin: auto; padding: 10px; }
-    h1 { font-size: 1.8em; text-align: center; margin-bottom: 10px; }
-    #level { text-align: center; margin-bottom: 15px; font-size: 1.1em; color: var(--muted); }
-    .card { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); border: 1px solid var(--border); }
+    *{box-sizing:border-box}
+    body{font-family:Arial, sans-serif;margin:0;padding:10px;background:var(--bg);color:var(--text)}
+    .container{max-width:500px;margin:auto;padding:10px}
+    h1{font-size:1.8em;text-align:center;margin-bottom:10px}
+    #level{text-align:center;margin-bottom:15px;font-size:1.1em;color:var(--muted)}
+    .card{background:var(--card);border-radius:12px;padding:15px;box-shadow:0 2px 6px rgba(0,0,0,.35);border:1px solid var(--border)}
 
-    /* One-line article buttons: responsive flex with equal widths */
-    .button-row { display: flex; gap: 8px; align-items: stretch; justify-content: space-between; }
-    .article-btn { flex: 1 1 0; min-width: 0; padding: 12px 0; font-size: 16px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border); background: #202734; color: var(--text); transition: background .2s ease, color .2s ease; }
-    #btnDer.selected { background: var(--der); color: var(--der-text); border-color: #6aa6ff; }
-    #btnDie.selected { background: var(--die); color: var(--die-text); border-color: #ff8a93; }
-    #btnDas.selected { background: var(--das); color: var(--das-text); border-color: #86d892; }
+    .button-row{display:flex;gap:8px}
+    .article-btn{flex:1 1 0;padding:12px 0;font-size:16px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:#202734;color:var(--text)}
+    #btnDer.selected{background:var(--der);color:var(--der-text);border-color:#6aa6ff}
+    #btnDie.selected{background:var(--die);color:var(--die-text);border-color:#ff8a93}
+    #btnDas.selected{background:var(--das);color:var(--das-text);border-color:#86d892}
 
-    input { width: 48%; padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--input); color: var(--text); }
-    input::placeholder { color: #7b879a; }
-    input:focus { outline: 2px solid #3b82f680; border-color: #3b82f6; }
+    input{width:48%;padding:12px;margin:5px 1%;font-size:16px;border-radius:8px;border:1px solid var(--border);background:var(--input);color:var(--text)}
+    input::placeholder{color:#7b879a}
+    input:focus{outline:2px solid #3b82f680;border-color:#3b82f6}
 
-    button { padding: 12px; margin: 5px 1%; font-size: 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--btn); color: var(--text); cursor: pointer; }
-    button:hover { background: var(--btn-hover); }
+    button{padding:12px;margin:5px 1%;font-size:16px;border-radius:8px;border:1px solid var(--border);background:var(--btn);color:var(--text);cursor:pointer}
+    button:hover{background:var(--btn-hover)}
 
-    #feedback { margin-top: 5px; font-size: 1em; }
-    #example  { margin-top: 6px; font-size: 0.95em; color: var(--muted); }
-    #nextBtn  { display: none; width: 100%; }
-    #status   { margin-top: 10px; font-size: 0.9em; color: var(--muted); white-space: pre-wrap; }
+    #feedback{margin-top:5px;font-size:1em}
+    #example{margin-top:6px;font-size:.95em;color:var(--muted)}
+    #nextBtn{display:none;width:100%}
+    #status{margin-top:10px;font-size:.9em;color:var(--muted);white-space:pre-wrap}
 
-    details#tests { margin-top: 8px; color: var(--muted); }
-    details#tests summary { cursor: pointer; }
-
-    @media (max-width: 400px) {
-      .article-btn { padding: 10px 0; font-size: 15px; }
-    }
+    @media(max-width:400px){.article-btn{padding:10px 0;font-size:15px}}
   </style>
 </head>
 <body>
   <div class="container">
     <h1>German Vocab Trainer</h1>
     <p id="level">Level: 1 (Words 1–25)</p>
+
     <div class="card">
-      <div id="media" style="margin-bottom:8px;">
-        <img id="wordImage" alt="vocab image" style="display:none; width:100%; max-height:220px; object-fit:contain; background:#0d0f14; border:1px solid var(--border); border-radius:10px; padding:8px;" />
-      </div>
+      <!-- English ABOVE image -->
       <p id="englishRow"><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
-      <label style="display:flex;align-items:center;gap:8px;margin:6px 0 10px 0;color:var(--muted);font-size:0.95em;">
-        <input type="checkbox" id="toggleEnglish" checked /> Show English word
-      </label>
+      <!-- Image -->
+      <div id="media" style="margin-bottom:8px;">
+        <img id="wordImage" alt="vocab image" style="display:none;width:100%;max-height:220px;object-fit:contain;background:#0d0f14;border:1px solid var(--border);border-radius:10px;padding:8px;" />
+      </div>
 
       <div class="button-row">
         <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
@@ -74,13 +67,13 @@
       <button id="resetBtn" onclick="resetProgress()">Reset Progress</button>
       <button id="nextBtn" onclick="nextWord()">Next word</button>
       <div id="status"></div>
-
-      <details id="tests">
-        <summary>Dev tests</summary>
-        <pre id="testlog"></pre>
-      </details>
     </div>
   </div>
+
+  <!-- Toggle under frame -->
+  <label style="display:flex;align-items:center;gap:8px;margin:10px auto 0;max-width:500px;color:var(--muted);font-size:.95em;">
+    <input type="checkbox" id="toggleEnglish" checked /> Show English word
+  </label>
 
   <script>
     // ===== State =====
@@ -91,310 +84,214 @@
     const wordsPerLevel = 25;
     const masteryThreshold = 3;
     let pluralEnterCount = 0;
-    // Track last focused input so article buttons never steal focus on mobile
-    let lastFocusId = 'german';
+    let lastFocusId = 'german'; // keep keyboard up on mobile
 
-    // ===== CSV Parser (correct newlines) =====
-    function parseCSV(text) {
-      const rows = [];
-      let row = [];
-      let cur = '';
-      let inQuotes = false;
-      for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        if (c === '"') {
-          if (inQuotes && text[i+1] === '"') { cur += '"'; i++; } else { inQuotes = !inQuotes; }
-        } else if (c === ',' && !inQuotes) {
-          row.push(cur); cur = '';
-        } else if ((c === '
-' || c === '
-') && !inQuotes) {
-          if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
-        } else {
-          cur += c;
-        }
+    const statusEl = document.getElementById('status');
+    const englishRowEl = document.getElementById('englishRow');
+
+    function status(msg){ if(statusEl) statusEl.textContent = msg; }
+
+    // ===== CSV Parser (robust newlines) =====
+    function parseCSV(text){
+      const rows=[]; let row=[]; let cur=''; let inQuotes=false;
+      for(let i=0;i<text.length;i++){
+        const c=text[i];
+        if(c==='"'){ if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; } }
+        else if(c===',' && !inQuotes){ row.push(cur); cur=''; }
+        else if((c==='\n' || c==='\r') && !inQuotes){ if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; } }
+        else { cur+=c; }
       }
-      if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
-      return rows;
-    } else if (c === ',' && !inQuotes) {
-          row.push(cur); cur = '';
-        } else if ((c === '
-' || c === '
-') && !inQuotes) {
-          if (cur !== '' || row.length) { row.push(cur); rows.push(row); row = []; cur = ''; }
-        } else {
-          cur += c;
-        }
-      }
-      if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+      if(cur!=='' || row.length){ row.push(cur); rows.push(row); }
       return rows;
     }
 
     // ===== Data loading =====
-    async function loadCSV() {
-      try {
-        const response = await fetch('vocab.csv', { cache: 'no-store' });
-        if (!response.ok) throw new Error('Failed to load vocab.csv');
-        const data = await response.text();
+    async function loadCSV(){
+      try{
+        const res = await fetch('vocab.csv', {cache:'no-store'});
+        if(!res.ok) throw new Error('Failed to load vocab.csv');
+        const data = await res.text();
         const lines = parseCSV(data.trim());
-        if (lines.length === 0) return;
-        lines.shift(); // header
-        words = lines.map(cols => {
-          const english = cols[0] || '';
-          const article = cols[1] || '';
-          const german  = cols[2] || '';
-          const plural  = cols[3] || '';
-          const ex1 = cols[4] || '';
-          const ex2 = cols[5] || '';
-          const ex3 = cols[6] || '';
-          const examples = [ex1, ex2, ex3].filter(x => x && x.trim() !== '');
-          return { english, article, german, plural, examples, correctStreak: 0, answeredCorrect: false };
+        if(lines.length===0){ status('vocab.csv is empty'); return; }
+        lines.shift();
+        words = lines.map(cols=>{
+          const english=cols[0]||''; const article=cols[1]||''; const german=cols[2]||''; const plural=cols[3]||'';
+          const ex1=cols[4]||''; const ex2=cols[5]||''; const ex3=cols[6]||'';
+          const examples=[ex1,ex2,ex3].filter(x=>x&&x.trim()!=='');
+          return { english, article, german, plural, examples, correctStreak:0, answeredCorrect:false };
         });
         loadProgress();
         updateLevelDisplay();
         nextWord();
-      } catch (e) { console.error(e); }
+        status('');
+      }catch(e){ console.error(e); status('Error: '+e.message); }
     }
 
-    function updateLevelDisplay() {
-      document.getElementById('level').textContent = `Level: ${level} (Words 1–${level * wordsPerLevel})`;
+    function updateLevelDisplay(){
+      document.getElementById('level').textContent = `Level: ${level} (Words 1–${level*wordsPerLevel})`;
     }
 
-    function getActiveWords() { return words.slice(0, level * wordsPerLevel); }
+    function getActiveWords(){ return words.slice(0, level*wordsPerLevel); }
 
-    function getTierWords() {
-      const active = getActiveWords();
-      if (active.length === 0) return [];
-      const minStreak = Math.min(...active.map(w => w.correctStreak));
-      return active.filter(w => w.correctStreak === minStreak && !w.answeredCorrect);
+    function getTierWords(){
+      const active=getActiveWords(); if(active.length===0) return [];
+      const minStreak=Math.min(...active.map(w=>w.correctStreak));
+      return active.filter(w=>w.correctStreak===minStreak && !w.answeredCorrect);
     }
 
-    function nextWord() {
-      const activeWords = getActiveWords();
-      if (activeWords.length === 0) return;
-
-      let tierWords = getTierWords();
-      if (tierWords.length === 0) {
-        const minStreak = Math.min(...activeWords.map(w => w.correctStreak));
-        activeWords.filter(w => w.correctStreak === minStreak).forEach(w => w.answeredCorrect = false);
-        tierWords = getTierWords();
+    function nextWord(){
+      const activeWords=getActiveWords(); if(activeWords.length===0) return;
+      let tierWords=getTierWords();
+      if(tierWords.length===0){
+        const minStreak=Math.min(...activeWords.map(w=>w.correctStreak));
+        activeWords.filter(w=>w.correctStreak===minStreak).forEach(w=>w.answeredCorrect=false);
+        tierWords=getTierWords();
       }
+      const list=(tierWords.length?tierWords:activeWords);
+      currentWord=list[Math.floor(Math.random()*list.length)];
 
-      const list = (tierWords.length ? tierWords : activeWords);
-      currentWord = list[Math.floor(Math.random() * list.length)];
-
-      document.getElementById('english').textContent = currentWord.english;
-      document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
-      document.getElementById('german').value = '';
-      document.getElementById('plural').value = '';
-      document.getElementById('feedback').textContent = '';
-      document.getElementById('example').textContent = '';
-      document.getElementById('nextBtn').style.display = 'none';
-      chosenArticle = '';
+      document.getElementById('english').textContent=currentWord.english;
+      document.getElementById('streakDisplay').textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
+      document.getElementById('german').value='';
+      document.getElementById('plural').value='';
+      document.getElementById('feedback').textContent='';
+      document.getElementById('example').textContent='';
+      document.getElementById('nextBtn').style.display='none';
+      chosenArticle='';
       resetArticleButtons();
-      pluralEnterCount = 0;
+      pluralEnterCount=0;
 
-      // load image for this word
       loadImageForCurrent();
+      applyEnglishVisibility();
 
       document.getElementById('german').focus();
     }
 
-    function resetArticleButtons() {
+    function resetArticleButtons(){
       document.getElementById('btnDer').classList.remove('selected');
       document.getElementById('btnDie').classList.remove('selected');
       document.getElementById('btnDas').classList.remove('selected');
     }
 
-    function chooseArticle(article) {
-      chosenArticle = article;
-      resetArticleButtons();
-      if (article === 'der') document.getElementById('btnDer').classList.add('selected');
-      if (article === 'die') document.getElementById('btnDie').classList.add('selected');
-      if (article === 'das') document.getElementById('btnDas').classList.add('selected');
-      // Restore focus to whichever text field the user was typing in
-      if (lastFocusId) {
-        const el = document.getElementById(lastFocusId);
-        // Delay focus restore to the next tick so iOS doesn’t collapse the keyboard
-        setTimeout(() => { if (el) el.focus(); }, 0);
-      }
+    function chooseArticle(article){
+      chosenArticle=article; resetArticleButtons();
+      if(article==='der') document.getElementById('btnDer').classList.add('selected');
+      if(article==='die') document.getElementById('btnDie').classList.add('selected');
+      if(article==='das') document.getElementById('btnDas').classList.add('selected');
+      // restore previous input focus on the next tick (prevents iOS keyboard collapse)
+      if(lastFocusId){ const el=document.getElementById(lastFocusId); setTimeout(()=>{ if(el) el.focus(); },0); }
     }
 
-    function randomExample(examples) {
-      if (!examples || examples.length === 0) return '';
-      const i = Math.floor(Math.random() * examples.length);
-      return examples[i];
-    }
+    function randomExample(examples){ if(!examples||examples.length===0) return ''; const i=Math.floor(Math.random()*examples.length); return examples[i]; }
 
-    function checkAnswer() {
-      if (!currentWord) return;
-      const german = document.getElementById('german').value.trim().toLowerCase();
-      const plural = document.getElementById('plural').value.trim().toLowerCase();
-      let feedback = '';
-
-      const correctGerman = (currentWord.german || '').toLowerCase();
-      const correctPlural = (currentWord.plural || '').toLowerCase();
-      const pluralCorrect = (plural === correctPlural) || (correctPlural === '—' && plural === '');
-
-      if (chosenArticle === currentWord.article && german === correctGerman && pluralCorrect) {
-        currentWord.correctStreak++;
-        currentWord.answeredCorrect = true;
-        feedback = '<span style="color: var(--ok)">Correct!</span>';
+    function checkAnswer(){
+      if(!currentWord) return;
+      const german=document.getElementById('german').value.trim().toLowerCase();
+      const plural=document.getElementById('plural').value.trim().toLowerCase();
+      let feedback='';
+      const correctGerman=(currentWord.german||'').toLowerCase();
+      const correctPlural=(currentWord.plural||'').toLowerCase();
+      const pluralCorrect=(plural===correctPlural) || (correctPlural==='—' && plural==='');
+      if(chosenArticle===currentWord.article && german===correctGerman && pluralCorrect){
+        currentWord.correctStreak++; currentWord.answeredCorrect=true; feedback='<span style="color:var(--ok)">Correct!</span>';
       } else {
-        currentWord.correctStreak = 0;
-        currentWord.answeredCorrect = false;
-        feedback = `<span style=\"color: var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+        currentWord.correctStreak=0; currentWord.answeredCorrect=false; feedback=`<span style=\"color:var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
-
-      document.getElementById('feedback').innerHTML = feedback;
-      document.getElementById('streakDisplay').textContent = `(${currentWord.correctStreak}/${masteryThreshold})`;
-      const ex = randomExample(currentWord.examples);
-      document.getElementById('example').textContent = ex ? `📝 ${ex}` : '';
-      document.getElementById('nextBtn').style.display = 'inline-block';
-
+      document.getElementById('feedback').innerHTML=feedback;
+      document.getElementById('streakDisplay').textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
+      const ex=randomExample(currentWord.examples); document.getElementById('example').textContent=ex?`📝 ${ex}`:'';
+      document.getElementById('nextBtn').style.display='inline-block';
       saveProgress();
 
-      const activeWords = getActiveWords();
-      const allMastered = activeWords.every(w => w.correctStreak >= masteryThreshold);
-      if (allMastered && level * wordsPerLevel < words.length) {
-        level++;
-        activeWords.forEach(w => { w.correctStreak = 0; w.answeredCorrect = false; });
-        updateLevelDisplay();
-        saveProgress();
+      const activeWords=getActiveWords();
+      const allMastered=activeWords.every(w=>w.correctStreak>=masteryThreshold);
+      if(allMastered && level*wordsPerLevel<words.length){
+        level++; activeWords.forEach(w=>{w.correctStreak=0; w.answeredCorrect=false;}); updateLevelDisplay(); saveProgress();
       }
     }
 
-    function saveProgress() {
-      try { localStorage.setItem('vocabProgress', JSON.stringify({ words, level })); } catch {}
-    }
+    function saveProgress(){ try{ localStorage.setItem('vocabProgress', JSON.stringify({ words, level, showEnglish: document.getElementById('toggleEnglish').checked })); }catch{} }
 
-    function loadProgress() {
-      try {
-        const saved = localStorage.getItem('vocabProgress');
-        if (saved) {
-          const data = JSON.parse(saved);
-          level = data.level || 1;
-          words.forEach((w, i) => {
-            if (data.words && data.words[i]) {
-              w.correctStreak = data.words[i].correctStreak || 0;
-              w.answeredCorrect = data.words[i].answeredCorrect || false;
-            }
-          });
+    function loadProgress(){
+      try{
+        const saved=localStorage.getItem('vocabProgress');
+        if(saved){
+          const data=JSON.parse(saved);
+          level=data.level||1;
+          const show = (data.showEnglish!==undefined)? !!data.showEnglish : true;
+          const cb=document.getElementById('toggleEnglish'); if(cb) cb.checked=show;
+          words.forEach((w,i)=>{ if(data.words && data.words[i]){ w.correctStreak=data.words[i].correctStreak||0; w.answeredCorrect=data.words[i].answeredCorrect||false; } });
         }
-      } catch {}
+      }catch{}
     }
 
-    function resetProgress() {
-      if (confirm('Are you sure you want to reset progress?')) {
-        try { localStorage.removeItem('vocabProgress'); } catch {}
-        words.forEach(w => { w.correctStreak = 0; w.answeredCorrect = false; });
-        level = 1;
-        updateLevelDisplay();
-        nextWord();
+    function resetProgress(){
+      if(confirm('Are you sure you want to reset progress?')){
+        try{ localStorage.removeItem('vocabProgress'); }catch{}
+        words.forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; }); level=1; updateLevelDisplay(); nextWord();
       }
     }
 
-    // Enter key behavior
-    document.getElementById('german').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('plural').focus();
-      }
-    });
-    // remember which input had focus
-    document.getElementById('german').addEventListener('focus', function(){ lastFocusId = 'german'; });
+    // Keep track of last focused field
+    document.getElementById('german').addEventListener('focus', ()=>{ lastFocusId='german'; });
+    document.getElementById('plural').addEventListener('focus', ()=>{ lastFocusId='plural'; });
 
-    document.getElementById('plural').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
+    // Enter behavior
+    document.getElementById('german').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('plural').focus(); }});
+    document.getElementById('plural').addEventListener('keydown', e=>{
+      if(e.key==='Enter'){
         e.preventDefault();
         pluralEnterCount++;
-        if (pluralEnterCount === 1) {
-          checkAnswer();
-        } else if (pluralEnterCount === 2) {
-          pluralEnterCount = 0;
-          nextWord();
-        }
+        if(pluralEnterCount===1) checkAnswer();
+        else if(pluralEnterCount===2){ pluralEnterCount=0; nextWord(); }
       }
     });
-    // remember which input had focus
-    document.getElementById('plural').addEventListener('focus', function(){ lastFocusId = 'plural'; });
 
-    // Expose for inline handlers (safety)
-    window.chooseArticle = chooseArticle;
-    window.checkAnswer = checkAnswer;
-    window.resetProgress = resetProgress;
-    window.nextWord = nextWord;
-
-    // === Image loading ===
+    // Image helpers
     function replaceUmlauts(s){
-      return s
+      return (s||'')
         .replaceAll('ä','ae').replaceAll('Ä','Ae')
         .replaceAll('ö','oe').replaceAll('Ö','Oe')
         .replaceAll('ü','ue').replaceAll('Ü','Ue')
         .replaceAll('ß','ss');
     }
     function buildCandidates(german){
-      const baseRaw = (german||'').trim();
-      const bases = [];
-      if (baseRaw){
-        bases.push(baseRaw);
-        bases.push(baseRaw.toLowerCase());
-        bases.push(baseRaw.replaceAll(' ','-'));
-        bases.push(baseRaw.toLowerCase().replaceAll(' ','-'));
-        const uml = replaceUmlauts(baseRaw);
-        bases.push(uml);
-        bases.push(uml.toLowerCase());
-        bases.push(uml.replaceAll(' ','-'));
-        bases.push(uml.toLowerCase().replaceAll(' ','-'));
+      const baseRaw=(german||'').trim(); const bases=[];
+      if(baseRaw){
+        bases.push(baseRaw, baseRaw.toLowerCase(), baseRaw.replaceAll(' ','-'), baseRaw.toLowerCase().replaceAll(' ','-'));
+        const uml=replaceUmlauts(baseRaw);
+        bases.push(uml, uml.toLowerCase(), uml.replaceAll(' ','-'), uml.toLowerCase().replaceAll(' ','-'));
       }
-      const exts = ['jpg','jpeg','png','webp'];
-      const out = [];
-      bases.forEach(b => exts.forEach(ext => out.push('img/' + encodeURIComponent(b) + '.' + ext)));
+      const exts=['jpg','jpeg','png','webp']; const out=[];
+      bases.forEach(b=>exts.forEach(ext=>out.push('img/'+encodeURIComponent(b)+'.'+ext)));
       return out;
     }
     function loadImageForCurrent(){
-      const img = document.getElementById('wordImage');
-      img.style.display = 'none';
-      if (!currentWord || !currentWord.german){ img.removeAttribute('src'); return; }
-      const candidates = buildCandidates(currentWord.german);
-      let i = 0;
+      const img=document.getElementById('wordImage'); img.style.display='none';
+      if(!currentWord||!currentWord.german){ img.removeAttribute('src'); return; }
+      const candidates=buildCandidates(currentWord.german); let i=0;
       function tryNext(){
-        if (i >= candidates.length){ img.removeAttribute('src'); img.style.display='none'; return; }
-        const src = candidates[i++];
-        img.onerror = tryNext;
-        img.onload = () => { img.style.display='block'; };
-        img.src = src + '?v=' + Date.now();
+        if(i>=candidates.length){ img.removeAttribute('src'); img.style.display='none'; return; }
+        const src=candidates[i++]; img.onerror=tryNext; img.onload=()=>{ img.style.display='block'; }; img.src=src+'?v='+Date.now();
       }
       tryNext();
     }
 
-    // Toggle English visibility
-    const toggle = document.getElementById('toggleEnglish');
-    toggle.addEventListener('change', ()=>{
-      document.getElementById('englishRow').style.display = toggle.checked ? '' : 'none';
-    });
-
-    // Tiny parser tests
-    function runTests(){
-      const log=[]; const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-      const t1='english,article,german,plural
-cat,die,Katze,Katzen
-dog,der,Hund,Hunde
-';
-      const p1=parseCSV(t1); log.push(p1.length===3&&p1[1][0]==='cat'?'Test1 CRLF ✅':'Test1 CRLF ❌');
-      const t2='a,b
-"hello, world",x
-';
-      const p2=parseCSV(t2); log.push(eq(p2,[['a','b'],['hello, world','x']])?'Test2 quotes ✅':'Test2 quotes ❌');
-      const t3='a,b,c
-1,2,3
-';
-      const p3=parseCSV(t3); log.push(p3.length===2&&p3[1][2]==='3'?'Test3 trailing ✅':'Test3 trailing ❌');
-      const box=document.getElementById('testlog'); if (box) box.textContent = log.join('
-');
+    // English toggle
+    function applyEnglishVisibility(){
+      const cb=document.getElementById('toggleEnglish');
+      if(!cb||!englishRowEl) return;
+      englishRowEl.style.display = cb.checked ? '' : 'none';
     }
+    document.getElementById('toggleEnglish').addEventListener('change', ()=>{ applyEnglishVisibility(); saveProgress(); });
 
-    runTests();
+    // Expose for inline handlers
+    window.chooseArticle=chooseArticle;
+    window.checkAnswer=checkAnswer;
+    window.resetProgress=resetProgress;
+    window.nextWord=nextWord;
+
+    // Start
     loadCSV();
   </script>
 </body>
