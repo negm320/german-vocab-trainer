@@ -182,13 +182,19 @@
     }
 
     function chooseArticle(article){
-      chosenArticle=article; resetArticleButtons();
+      chosenArticle = article;
+      resetArticleButtons();
       if(article==='der') document.getElementById('btnDer').classList.add('selected');
       if(article==='die') document.getElementById('btnDie').classList.add('selected');
       if(article==='das') document.getElementById('btnDas').classList.add('selected');
-      // Always shift focus to the German field to keep keyboard up
-      const germanEl=document.getElementById('german');
-      if(germanEl){ lastFocusId='german'; setTimeout(()=>{ germanEl.focus(); },0); }
+      // Focus the German field reliably on mobile
+      const g = document.getElementById('german');
+      if (g){
+        try { g.focus({ preventScroll:true }); } catch { try { g.focus(); } catch {} }
+        try { const L = g.value.length; g.setSelectionRange(L, L); } catch {}
+        // reinforce once next frame for iOS
+        requestAnimationFrame(()=>{ try { g.focus({ preventScroll:true }); } catch { try { g.focus(); } catch {} } });
+      }
     }
 
     function randomExample(examples){ if(!examples||examples.length===0) return ''; const i=Math.floor(Math.random()*examples.length); return examples[i]; }
@@ -302,39 +308,7 @@
     window.nextWord=nextWord;
 
     // Keep focus in the German field when tapping article buttons (iOS-safe)
-    function initArticleButtonsFocusHack(){
-      const ids = [ ['btnDer','der'], ['btnDie','die'], ['btnDas','das'] ];
-      ids.forEach(([id, art])=>{
-        const el = document.getElementById(id);
-        if(!el) return;
-        el.setAttribute('tabindex','-1');
-        const handler = (e)=>{
-          try { e.preventDefault(); } catch {}
-          const g = document.getElementById('german');
-          if (g) {
-            lastFocusId = 'german';
-            // Try to grab focus immediately inside the user gesture
-            try { g.focus({ preventScroll:true }); } catch { try { g.focus(); } catch {} }
-            try { const L = g.value.length; g.setSelectionRange(L, L); } catch {}
-          }
-          chooseArticle(art);
-          // Reinforce focus on next frames (iOS can drop it)
-          requestAnimationFrame(()=>{
-            if (g) { try { g.focus({ preventScroll:true }); } catch { try { g.focus(); } catch {} } }
-          });
-          setTimeout(()=>{
-            if (g) { try { g.focus({ preventScroll:true }); } catch { try { g.focus(); } catch {} } }
-          }, 60);
-        };
-        ['touchstart','pointerdown','mousedown'].forEach(evt=>{
-          el.addEventListener(evt, handler, { passive:false });
-        });
-        el.addEventListener('click', handler);
-      });
-    }
-
-    // initialize the focus hack immediately (elements already exist)
-    initArticleButtonsFocusHack();
+    
 
     // Start
     loadCSV();
