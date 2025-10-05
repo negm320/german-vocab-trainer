@@ -95,6 +95,8 @@
     function status(msg){ if(statusEl) statusEl.textContent = msg; }
 
     // ===== CSV Parser (robust newlines; DO NOT change '\n'/'\r') =====
+'/'
+') =====
     function parseCSV(text){
       const rows=[]; let row=[]; let cur=''; let inQuotes=false;
       for(let i=0;i<text.length;i++){
@@ -103,7 +105,9 @@
           if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; }
         } else if(c===',' && !inQuotes){
           row.push(cur); cur='';
-        } else if((c==='\n' || c==='\r') && !inQuotes){
+        } else if((c==='
+' || c==='
+') && !inQuotes){
           if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
         } else {
           cur+=c;
@@ -283,3 +287,122 @@
     }
 
     // === REPLACED: center-scroll when choosing article
+    function chooseArticle(article){
+      chosenArticle=article; resetArticleButtons();
+      if(article==='der') document.getElementById('btnDer').classList.add('selected');
+      if(article==='die') document.getElementById('btnDie').classList.add('selected');
+      if(article==='das') document.getElementById('btnDas').classList.add('selected');
+
+      const germanEl=document.getElementById('german');
+      if(germanEl){
+        lastFocusId='german';
+        setTimeout(()=>{
+          germanEl.focus();
+          try{ germanEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch{}
+        },0);
+      }
+    }
+
+    function randomExample(examples){ if(!examples||examples.length===0) return ''; const i=Math.floor(Math.random()*examples.length); return examples[i]; }
+
+    function checkAnswer(){
+      if(!currentWord) return;
+      const german=document.getElementById('german').value.trim().toLowerCase();
+      const plural=document.getElementById('plural').value.trim().toLowerCase();
+      let feedback='';
+      const correctGerman=(currentWord.german||'').toLowerCase();
+      const correctPlural=(currentWord.plural||'').toLowerCase();
+      const pluralCorrect=(plural===correctPlural) || (correctPlural==='—' && plural==='');
+      if(chosenArticle===currentWord.article && german===correctGerman && pluralCorrect){
+        currentWord.correctStreak++; currentWord.answeredCorrect=true; feedback='<span style="color:var(--ok)">Correct!</span>';
+      } else {
+        currentWord.correctStreak=0; currentWord.answeredCorrect=false; feedback=`<span style=\"color:var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+      }
+      document.getElementById('feedback').innerHTML=feedback;
+      document.getElementById('streakDisplay').textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
+      const ex=randomExample(currentWord.examples); document.getElementById('example').textContent=ex?`📝 ${ex}`:'';
+      document.getElementById('nextBtn').style.display='inline-block';
+      saveProgress();
+
+      const activeWords=getActiveWords();
+      const allMastered=activeWords.every(w=>w.correctStreak>=masteryThreshold);
+      if(allMastered && level*wordsPerLevel<words.length){
+        level++; activeWords.forEach(w=>{w.correctStreak=0; w.answeredCorrect=false;}); updateLevelDisplay(); saveProgress();
+      }
+    }
+
+    function saveProgress(){
+      try{ localStorage.setItem('vocabProgress', JSON.stringify({ words, level, showEnglish: document.getElementById('toggleEnglish').checked })); }catch{}
+    }
+
+    function loadProgress(){
+      try{
+        const saved=localStorage.getItem('vocabProgress');
+        const cb=document.getElementById('toggleEnglish');
+        if(saved){
+          const data=JSON.parse(saved);
+          level=data.level||1;
+          if(cb) cb.checked = (data.showEnglish!==undefined)? !!data.showEnglish : true;
+          words.forEach((w,i)=>{ if(data.words && data.words[i]){ w.correctStreak=data.words[i].correctStreak||0; w.answeredCorrect=data.words[i].answeredCorrect||false; } });
+        } else { if(cb) cb.checked = true; }
+      }catch{}
+    }
+
+    function resetProgress(){
+      if(confirm('Are you sure you want to reset progress?')){
+        try{ localStorage.removeItem('vocabProgress'); }catch{}
+        words.forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; }); level=1; updateLevelDisplay(); nextWord();
+      }
+    }
+
+    // Track focus + Enter behavior
+    document.getElementById('german').addEventListener('focus', ()=>{ lastFocusId='german'; });
+    document.getElementById('plural').addEventListener('focus', ()=>{ lastFocusId='plural'; });
+
+    document.getElementById('german').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('plural').focus(); }});
+    document.getElementById('plural').addEventListener('keydown', e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        pluralEnterCount++;
+        if(pluralEnterCount===1) checkAnswer();
+        else if(pluralEnterCount===2){ pluralEnterCount=0; nextWord(); }
+      }
+    });
+
+    // English toggle
+    function applyEnglishVisibility(){
+      const cb=document.getElementById('toggleEnglish');
+      if(!englishRowEl) return;
+      englishRowEl.style.display = cb && cb.checked ? '' : 'none';
+    }
+    document.getElementById('toggleEnglish').addEventListener('change', ()=>{ applyEnglishVisibility(); saveProgress(); });
+
+    // Expose for inline handlers
+    window.chooseArticle=chooseArticle;
+    window.checkAnswer=checkAnswer;
+    window.resetProgress=resetProgress;
+    window.nextWord=nextWord;
+
+    // Keep focus in the German field when tapping article buttons (iOS-safe)
+    function initArticleButtonsFocusHack(){
+      const ids = [ ['btnDer','der'], ['btnDie','die'], ['btnDas','das'] ];
+      ids.forEach(([id, art])=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.setAttribute('tabindex','-1');
+        const handler = (e)=>{ try{ e.preventDefault(); }catch{} chooseArticle(art); };
+        ['touchstart','pointerdown','mousedown'].forEach(evt=>{
+          el.addEventListener(evt, handler, { passive:false });
+        });
+        el.addEventListener('click', handler);
+      });
+    }
+
+    // initialize the focus hack immediately (elements already exist)
+    initArticleButtonsFocusHack();
+
+    // Start
+    loadCSV();
+  </script>
+</body>
+</html>
