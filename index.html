@@ -66,7 +66,10 @@
       <button id="resetBtn" onclick="resetProgress()">Reset Progress</button>
       <button id="nextBtn" onclick="nextWord()">Next word</button>
       <div id="status"></div>
+    </div>
+  </div>
 
+  <!-- Toggle under frame -->
   <label style="display:flex;align-items:center;gap:8px;margin:10px auto 0;max-width:500px;color:var(--muted);font-size:.95em;">
     <input type="checkbox" id="toggleEnglish" checked /> Show English word
   </label>
@@ -82,7 +85,7 @@
     let pluralEnterCount = 0;
     let lastFocusId = 'german'; // keep keyboard up on mobile
 
-    const statusEl = document.getElementById('status'); // status area for errors/info
+    const statusEl = document.getElementById('status');
     const englishRowEl = document.getElementById('englishRow');
 
     function status(msg){ if(statusEl) statusEl.textContent = msg; }
@@ -108,41 +111,19 @@
 
     // ===== Data loading =====
     async function loadCSV(){
-      const tried = [];
-      function add(url){ const u = new URL(url, window.location.href).href; return u + (u.includes('?') ? '&' : '?') + 'ts=' + Date.now(); }
-      const candidates = [
-        add('vocab.csv'),
-        add('./vocab.csv'),
-        add('/vocab.csv'),
-        // path directory + vocab.csv (safety if index is nested)
-        add(window.location.pathname.replace(/[^/]*$/, '') + 'vocab.csv')
-      ];
-      let data = null, lastErr = null, okUrl = null;
-      for (const url of candidates){
-        try{
-          const res = await fetch(url, { cache:'no-store' });
-          if(!res.ok) { tried.push(url + ' → HTTP ' + res.status); continue; }
-          const raw = await res.text();
-          const txt = raw.replace(/^\uFEFF/, ''); // strip BOM
-          if (!txt.trim()) { tried.push(url + ' → empty'); continue; }
-          data = txt; okUrl = url; break;
-        }catch(e){ lastErr = e; tried.push(url + ' → ' + e.message); }
-      }
-      if(!data){
-        console.error('All CSV fetch attempts failed:', tried);
-        status('Error: could not fetch vocab.csv from any candidate.\n' + tried.join('\n'));
-        // Emergency fallback so the app is still usable
-        const SAMPLE = 'english,article,german,plural\nwoman,die,Frau,Frauen\nhouse,das,Haus,Häuser\nman,der,Mann,Männer\n';
-        initFromCSVText(SAMPLE);
-        return;
-      }
-      status('Loaded ' + data.length + ' chars from ' + okUrl);
-      initFromCSVText(data);
-    }catch(e){
-        console.error(e);
-        status('Error loading CSV: ' + e.message + '\nCheck that vocab.csv is next to index.html and publicly reachable.');
-      }
-    });
+      try{
+        const res = await fetch('vocab.csv', {cache:'no-store'});
+        if(!res.ok) throw new Error('Failed to load vocab.csv');
+        const data = await res.text();
+        const lines = parseCSV(data.trim());
+        if(lines.length===0){ status('vocab.csv is empty'); return; }
+        lines.shift();
+        words = lines.map(cols=>{
+          const english=cols[0]||''; const article=cols[1]||''; const german=cols[2]||''; const plural=cols[3]||'';
+          const ex1=cols[4]||''; const ex2=cols[5]||''; const ex3=cols[6]||'';
+          const examples=[ex1,ex2,ex3].filter(x=>x&&x.trim()!=='');
+          return { english, article, german, plural, examples, correctStreak:0, answeredCorrect:false };
+        });
         loadProgress();
         updateLevelDisplay();
         nextWord();
@@ -197,19 +178,13 @@
     }
 
     function chooseArticle(article){
-      chosenArticle = article;
-      resetArticleButtons();
+      chosenArticle=article; resetArticleButtons();
       if(article==='der') document.getElementById('btnDer').classList.add('selected');
       if(article==='die') document.getElementById('btnDie').classList.add('selected');
       if(article==='das') document.getElementById('btnDas').classList.add('selected');
-      // Focus the German field reliably on mobile
-      const g = document.getElementById('german');
-      if (g){
-        try { g.focus({ preventScroll:true }); } catch { try { g.focus(); } catch {} }
-        try { const L = g.value.length; g.setSelectionRange(L, L); } catch {}
-        // reinforce once next frame for iOS
-        requestAnimationFrame(()=>{ try { g.focus({ preventScroll:true }); } catch { try { g.focus(); } catch {} } });
-      }
+      // Always shift focus to the German field to keep keyboard up
+      const germanEl=document.getElementById('german');
+      if(germanEl){ lastFocusId='german'; setTimeout(()=>{ germanEl.focus(); },0); }
     }
 
     function randomExample(examples){ if(!examples||examples.length===0) return ''; const i=Math.floor(Math.random()*examples.length); return examples[i]; }
@@ -323,7 +298,25 @@
     window.nextWord=nextWord;
 
     // Keep focus in the German field when tapping article buttons (iOS-safe)
-    
+    function initArticleButtonsFocusHack(){
+      const ids = [ ['btnDer','der'], ['btnDie','die'], ['btnDas','das'] ];
+      ids.forEach(([id, art])=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        // prevent the button from stealing focus
+        el.setAttribute('tabindex','-1');
+        const handler = (e)=>{ try{ e.preventDefault(); }catch{} chooseArticle(art); };
+        // Use early events to beat the browser's focus change on mobile
+        ['touchstart','pointerdown','mousedown'].forEach(evt=>{
+          el.addEventListener(evt, handler, { passive:false });
+        });
+        // Fallback for desktop click
+        el.addEventListener('click', handler);
+      });
+    }
+
+    // initialize the focus hack immediately (elements already exist)
+    initArticleButtonsFocusHack();
 
     // Start
     loadCSV();
