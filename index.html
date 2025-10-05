@@ -87,9 +87,7 @@
 
     function status(msg){ if(statusEl) statusEl.textContent = msg; }
 
-    // ===== CSV Parser (robust newlines; DO NOT change '
-'/'
-') =====
+    // ===== CSV Parser (robust newlines; DO NOT change '\n'/'\r') =====
     function parseCSV(text){
       const rows=[]; let row=[]; let cur=''; let inQuotes=false;
       for(let i=0;i<text.length;i++){
@@ -98,9 +96,7 @@
           if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; }
         } else if(c===',' && !inQuotes){
           row.push(cur); cur='';
-        } else if((c==='
-' || c==='
-') && !inQuotes){
+        } else if((c==='\n' || c==='\r') && !inQuotes){
           if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
         } else {
           cur+=c;
@@ -112,20 +108,36 @@
 
     // ===== Data loading =====
     async function loadCSV(){
-      try{
-        const abs = new URL('vocab.csv', window.location.href).href;
-        const url = abs + (abs.includes('?') ? '&' : '?') + 'ts=' + Date.now();
-        const res = await fetch(url, { cache: 'no-store' });
-        if(!res.ok) throw new Error('HTTP ' + res.status + ' fetching ' + url);
-        const raw = await res.text();
-        const data = raw.replace(/^\uFEFF/, '');
-        if(!data || !data.trim()) { status('vocab.csv is empty at ' + url); return; }
-        initFromCSVText(data);
-        status('Loaded vocab.csv (' + data.length + ' chars)');
-      }catch(e){
-        console.error(e);
-        status('Error loading CSV: ' + e.message + '\nCheck that vocab.csv is next to index.html and publicly reachable.');
+      const tried = [];
+      function add(url){ const u = new URL(url, window.location.href).href; return u + (u.includes('?') ? '&' : '?') + 'ts=' + Date.now(); }
+      const candidates = [
+        add('vocab.csv'),
+        add('./vocab.csv'),
+        add('/vocab.csv'),
+        // path directory + vocab.csv (safety if index is nested)
+        add(window.location.pathname.replace(/[^/]*$/, '') + 'vocab.csv')
+      ];
+      let data = null, lastErr = null, okUrl = null;
+      for (const url of candidates){
+        try{
+          const res = await fetch(url, { cache:'no-store' });
+          if(!res.ok) { tried.push(url + ' → HTTP ' + res.status); continue; }
+          const raw = await res.text();
+          const txt = raw.replace(/^\uFEFF/, ''); // strip BOM
+          if (!txt.trim()) { tried.push(url + ' → empty'); continue; }
+          data = txt; okUrl = url; break;
+        }catch(e){ lastErr = e; tried.push(url + ' → ' + e.message); }
       }
+      if(!data){
+        console.error('All CSV fetch attempts failed:', tried);
+        status('Error: could not fetch vocab.csv from any candidate.\n' + tried.join('\n'));
+        // Emergency fallback so the app is still usable
+        const SAMPLE = 'english,article,german,plural\nwoman,die,Frau,Frauen\nhouse,das,Haus,Häuser\nman,der,Mann,Männer\n';
+        initFromCSVText(SAMPLE);
+        return;
+      }
+      status('Loaded ' + data.length + ' chars from ' + okUrl);
+      initFromCSVText(data);
     }catch(e){
         console.error(e);
         status('Error loading CSV: ' + e.message + '\nCheck that vocab.csv is next to index.html and publicly reachable.');
