@@ -42,18 +42,16 @@
     <p id="level">Level: 1 (Words 1–25)</p>
 
     <div class="card">
-      <!-- English ABOVE image -->
       <p id="englishRow"><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
 
-      <!-- Image -->
       <div id="media" style="margin-bottom:8px;">
         <img id="wordImage" alt="vocab image" style="display:none;width:100%;max-height:220px;object-fit:contain;background:#0d0f14;border:1px solid var(--border);border-radius:10px;padding:8px;" />
       </div>
 
       <div class="button-row">
-        <button id="btnDer" class="article-btn" onclick="chooseArticle('der')">der</button>
-        <button id="btnDie" class="article-btn" onclick="chooseArticle('die')">die</button>
-        <button id="btnDas" class="article-btn" onclick="chooseArticle('das')">das</button>
+        <button id="btnDer" class="article-btn">der</button>
+        <button id="btnDie" class="article-btn">die</button>
+        <button id="btnDas" class="article-btn">das</button>
       </div>
 
       <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
@@ -62,19 +60,19 @@
       <p id="example"></p>
 
       <br />
-      <button onclick="checkAnswer()">Check</button>
-      <button id="resetBtn" onclick="resetProgress()">Reset Progress</button>
-      <button id="nextBtn" onclick="nextWord()">Next word</button>
+      <button id="checkBtn">Check</button>
+      <button id="resetBtn">Reset Progress</button>
+      <button id="nextBtn">Next word</button>
       <div id="status"></div>
     </div>
   </div>
 
-  <!-- Toggle under frame -->
   <label style="display:flex;align-items:center;gap:8px;margin:10px auto 0;max-width:500px;color:var(--muted);font-size:.95em;">
     <input type="checkbox" id="toggleEnglish" checked /> Show English word
   </label>
 
   <script>
+  document.addEventListener('DOMContentLoaded', () => {
     // ===== State =====
     let words = [];
     let currentWord = null;
@@ -88,15 +86,18 @@
     const statusEl = document.getElementById('status');
     const englishRowEl = document.getElementById('englishRow');
 
-    // === NEW: lightweight image cache & preloader ===
+    // Debug helper: show any uncaught JS error in the UI
+    window.addEventListener('error', (e) => {
+      if (statusEl) statusEl.textContent = '⚠️ JS error: ' + (e.error?.message || e.message || String(e));
+    });
+
+    // === Lightweight image cache & preloader ===
     let imageCache = new Map(); // key: german string -> best src or null
     let preloadedNext = null;   // { word, src } best-effort next image
 
-    function status(msg){ if(statusEl) statusEl.textContent = msg; }
+    function status(msg){ if(statusEl) statusEl.textContent = msg || ''; }
 
-    // ===== CSV Parser (robust newlines; DO NOT change '\n'/'\r') =====
-'/'
-') =====
+    // ===== CSV Parser (robust newlines) =====
     function parseCSV(text){
       const rows=[]; let row=[]; let cur=''; let inQuotes=false;
       for(let i=0;i<text.length;i++){
@@ -105,9 +106,7 @@
           if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; }
         } else if(c===',' && !inQuotes){
           row.push(cur); cur='';
-        } else if((c==='
-' || c==='
-') && !inQuotes){
+        } else if((c==='\n' || c==='\r') && !inQuotes){
           if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
         } else {
           cur+=c;
@@ -120,6 +119,7 @@
     // ===== Data loading =====
     async function loadCSV(){
       try{
+        status('Loading vocab.csv…');
         const res = await fetch('vocab.csv', {cache:'no-store'});
         if(!res.ok) throw new Error('Failed to load vocab.csv');
         const data = await res.text();
@@ -134,13 +134,14 @@
         });
         loadProgress();
         updateLevelDisplay();
-        await nextWord(); // now async
+        await nextWord(); // async
         status('');
       }catch(e){ console.error(e); status('Error: '+e.message); }
     }
 
     function updateLevelDisplay(){
-      document.getElementById('level').textContent = `Level: ${level} (Words 1–${level*wordsPerLevel})`;
+      const el = document.getElementById('level');
+      if (el) el.textContent = `Level: ${level} (Words 1–${level*wordsPerLevel})`;
     }
 
     function getActiveWords(){ return words.slice(0, level*wordsPerLevel); }
@@ -151,7 +152,7 @@
       return active.filter(w=>w.correctStreak===minStreak && !w.answeredCorrect);
     }
 
-    // === NEW: resolve best local image src & preloading ===
+    // ===== Image helpers (with preload) =====
     function replaceUmlauts(s){
       return (s||'')
         .replaceAll('ä','ae').replaceAll('Ä','Ae')
@@ -171,7 +172,6 @@
       return out;
     }
 
-    // --- NEW
     function resolveImageSrcForGerman(german){
       return new Promise((resolve)=>{
         if(!german){ resolve(null); return; }
@@ -193,26 +193,23 @@
       });
     }
 
-    // --- NEW
     async function preloadWordImage(word){
       if(!word || !word.german) return { word, src: null };
       const src = await resolveImageSrcForGerman(word.german);
       return { word, src };
     }
 
-    // === REPLACED: smarter image load for current word
     async function loadImageForCurrent(waitMs = 120){
       const img=document.getElementById('wordImage');
+      if(!img) return;
       img.style.display='none';
       img.removeAttribute('src');
       if(!currentWord || !currentWord.german) return;
 
-      // Use preloaded if matches; otherwise resolve now
       let src = (preloadedNext && preloadedNext.word === currentWord) ? preloadedNext.src : null;
       if(!src){ src = await resolveImageSrcForGerman(currentWord.german); }
       if(!src){ return; }
 
-      // tiny wait to reduce flicker of English-before-image
       await new Promise(r => setTimeout(r, waitMs));
 
       img.onload = ()=>{ img.style.display='block'; };
@@ -220,7 +217,6 @@
       img.src = src;
     }
 
-    // === NEW: pick next candidate & schedule preloading
     function pickNextCandidateWord(){
       const active = getActiveWords();
       if(active.length === 0) return null;
@@ -238,7 +234,6 @@
       preloadedNext = await preloadWordImage(candidate);
     }
 
-    // === REPLACED: async, integrates image load + preload + center scroll
     async function nextWord(){
       const activeWords=getActiveWords(); if(activeWords.length===0) return;
 
@@ -251,27 +246,31 @@
       const list=(tierWords.length?tierWords:activeWords);
       currentWord=list[Math.floor(Math.random()*list.length)];
 
-      document.getElementById('english').textContent=currentWord.english;
-      document.getElementById('streakDisplay').textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
-      document.getElementById('german').value='';
-      document.getElementById('plural').value='';
-      document.getElementById('feedback').textContent='';
-      document.getElementById('example').textContent='';
-      document.getElementById('nextBtn').style.display='none';
+      const englishEl = document.getElementById('english');
+      const streakEl  = document.getElementById('streakDisplay');
+      const germanEl  = document.getElementById('german');
+      const pluralEl  = document.getElementById('plural');
+      const feedbackEl= document.getElementById('feedback');
+      const exampleEl = document.getElementById('example');
+      const nextBtn   = document.getElementById('nextBtn');
+
+      if(englishEl) englishEl.textContent=currentWord.english;
+      if(streakEl)  streakEl.textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
+      if(germanEl)  germanEl.value='';
+      if(pluralEl)  pluralEl.value='';
+      if(feedbackEl)feedbackEl.textContent='';
+      if(exampleEl) exampleEl.textContent='';
+      if(nextBtn)   nextBtn.style.display='none';
+
       chosenArticle='';
       resetArticleButtons();
       pluralEnterCount=0;
 
       applyEnglishVisibility();
 
-      // Load current image first (with small wait to reduce flicker)
       await loadImageForCurrent(120);
-
-      // Preload likely next image in background
       schedulePreloadNext();
 
-      // Focus & center the German field
-      const germanEl=document.getElementById('german');
       if(germanEl){
         setTimeout(()=>{
           germanEl.focus();
@@ -281,17 +280,19 @@
     }
 
     function resetArticleButtons(){
-      document.getElementById('btnDer').classList.remove('selected');
-      document.getElementById('btnDie').classList.remove('selected');
-      document.getElementById('btnDas').classList.remove('selected');
+      const a=document.getElementById('btnDer');
+      const b=document.getElementById('btnDie');
+      const c=document.getElementById('btnDas');
+      if(a) a.classList.remove('selected');
+      if(b) b.classList.remove('selected');
+      if(c) c.classList.remove('selected');
     }
 
-    // === REPLACED: center-scroll when choosing article
     function chooseArticle(article){
       chosenArticle=article; resetArticleButtons();
-      if(article==='der') document.getElementById('btnDer').classList.add('selected');
-      if(article==='die') document.getElementById('btnDie').classList.add('selected');
-      if(article==='das') document.getElementById('btnDas').classList.add('selected');
+      if(article==='der') document.getElementById('btnDer')?.classList.add('selected');
+      if(article==='die') document.getElementById('btnDie')?.classList.add('selected');
+      if(article==='das') document.getElementById('btnDas')?.classList.add('selected');
 
       const germanEl=document.getElementById('german');
       if(germanEl){
@@ -307,8 +308,8 @@
 
     function checkAnswer(){
       if(!currentWord) return;
-      const german=document.getElementById('german').value.trim().toLowerCase();
-      const plural=document.getElementById('plural').value.trim().toLowerCase();
+      const german=(document.getElementById('german')?.value || '').trim().toLowerCase();
+      const plural=(document.getElementById('plural')?.value || '').trim().toLowerCase();
       let feedback='';
       const correctGerman=(currentWord.german||'').toLowerCase();
       const correctPlural=(currentWord.plural||'').toLowerCase();
@@ -316,12 +317,17 @@
       if(chosenArticle===currentWord.article && german===correctGerman && pluralCorrect){
         currentWord.correctStreak++; currentWord.answeredCorrect=true; feedback='<span style="color:var(--ok)">Correct!</span>';
       } else {
-        currentWord.correctStreak=0; currentWord.answeredCorrect=false; feedback=`<span style=\"color:var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+        currentWord.correctStreak=0; currentWord.answeredCorrect=false; feedback=`<span style="color:var(--bad)">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
       }
-      document.getElementById('feedback').innerHTML=feedback;
-      document.getElementById('streakDisplay').textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
-      const ex=randomExample(currentWord.examples); document.getElementById('example').textContent=ex?`📝 ${ex}`:'';
-      document.getElementById('nextBtn').style.display='inline-block';
+      const feedbackEl=document.getElementById('feedback');
+      if(feedbackEl) feedbackEl.innerHTML=feedback;
+      const streakEl=document.getElementById('streakDisplay');
+      if(streakEl) streakEl.textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
+      const ex=randomExample(currentWord.examples);
+      const exampleEl=document.getElementById('example');
+      if(exampleEl) exampleEl.textContent=ex?`📝 ${ex}`:'';
+      const nextBtn=document.getElementById('nextBtn');
+      if(nextBtn) nextBtn.style.display='inline-block';
       saveProgress();
 
       const activeWords=getActiveWords();
@@ -332,7 +338,7 @@
     }
 
     function saveProgress(){
-      try{ localStorage.setItem('vocabProgress', JSON.stringify({ words, level, showEnglish: document.getElementById('toggleEnglish').checked })); }catch{}
+      try{ localStorage.setItem('vocabProgress', JSON.stringify({ words, level, showEnglish: document.getElementById('toggleEnglish')?.checked })); }catch{}
     }
 
     function loadProgress(){
@@ -355,12 +361,12 @@
       }
     }
 
-    // Track focus + Enter behavior
-    document.getElementById('german').addEventListener('focus', ()=>{ lastFocusId='german'; });
-    document.getElementById('plural').addEventListener('focus', ()=>{ lastFocusId='plural'; });
+    // Input focus + Enter behavior
+    document.getElementById('german')?.addEventListener('focus', ()=>{ lastFocusId='german'; });
+    document.getElementById('plural')?.addEventListener('focus', ()=>{ lastFocusId='plural'; });
 
-    document.getElementById('german').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('plural').focus(); }});
-    document.getElementById('plural').addEventListener('keydown', e=>{
+    document.getElementById('german')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('plural')?.focus(); }});
+    document.getElementById('plural')?.addEventListener('keydown', e=>{
       if(e.key==='Enter'){
         e.preventDefault();
         pluralEnterCount++;
@@ -369,40 +375,26 @@
       }
     });
 
+    // Button bindings (no early-event hacks)
+    document.getElementById('btnDer')?.addEventListener('click', ()=>chooseArticle('der'));
+    document.getElementById('btnDie')?.addEventListener('click', ()=>chooseArticle('die'));
+    document.getElementById('btnDas')?.addEventListener('click', ()=>chooseArticle('das'));
+    document.getElementById('checkBtn')?.addEventListener('click', checkAnswer);
+    document.getElementById('resetBtn')?.addEventListener('click', resetProgress);
+    document.getElementById('nextBtn')?.addEventListener('click', nextWord);
+
     // English toggle
     function applyEnglishVisibility(){
       const cb=document.getElementById('toggleEnglish');
       if(!englishRowEl) return;
       englishRowEl.style.display = cb && cb.checked ? '' : 'none';
     }
-    document.getElementById('toggleEnglish').addEventListener('change', ()=>{ applyEnglishVisibility(); saveProgress(); });
-
-    // Expose for inline handlers
-    window.chooseArticle=chooseArticle;
-    window.checkAnswer=checkAnswer;
-    window.resetProgress=resetProgress;
-    window.nextWord=nextWord;
-
-    // Keep focus in the German field when tapping article buttons (iOS-safe)
-    function initArticleButtonsFocusHack(){
-      const ids = [ ['btnDer','der'], ['btnDie','die'], ['btnDas','das'] ];
-      ids.forEach(([id, art])=>{
-        const el = document.getElementById(id);
-        if(!el) return;
-        el.setAttribute('tabindex','-1');
-        const handler = (e)=>{ try{ e.preventDefault(); }catch{} chooseArticle(art); };
-        ['touchstart','pointerdown','mousedown'].forEach(evt=>{
-          el.addEventListener(evt, handler, { passive:false });
-        });
-        el.addEventListener('click', handler);
-      });
-    }
-
-    // initialize the focus hack immediately (elements already exist)
-    initArticleButtonsFocusHack();
+    document.getElementById('toggleEnglish')?.addEventListener('change', ()=>{ applyEnglishVisibility(); saveProgress(); });
 
     // Start
+    applyEnglishVisibility();
     loadCSV();
+  });
   </script>
 </body>
 </html>
