@@ -88,6 +88,10 @@
     const statusEl = document.getElementById('status');
     const englishRowEl = document.getElementById('englishRow');
 
+    // === NEW: lightweight image cache & preloader ===
+    let imageCache = new Map(); // key: german string -> best src or null
+    let preloadedNext = null;   // { word, src } best-effort next image
+
     function status(msg){ if(statusEl) statusEl.textContent = msg; }
 
     // ===== CSV Parser (robust newlines; DO NOT change '\n'/'\r') =====
@@ -126,7 +130,7 @@
         });
         loadProgress();
         updateLevelDisplay();
-        nextWord();
+        await nextWord(); // now async
         status('');
       }catch(e){ console.error(e); status('Error: '+e.message); }
     }
@@ -143,8 +147,97 @@
       return active.filter(w=>w.correctStreak===minStreak && !w.answeredCorrect);
     }
 
-    function nextWord(){
+    // === NEW: resolve best local image src & preloading ===
+    function replaceUmlauts(s){
+      return (s||'')
+        .replaceAll('ä','ae').replaceAll('Ä','Ae')
+        .replaceAll('ö','oe').replaceAll('Ö','Oe')
+        .replaceAll('ü','ue').replaceAll('Ü','Ue')
+        .replaceAll('ß','ss');
+    }
+    function buildCandidates(german){
+      const baseRaw=(german||'').trim(); const bases=[];
+      if(baseRaw){
+        bases.push(baseRaw, baseRaw.toLowerCase(), baseRaw.replaceAll(' ','-'), baseRaw.toLowerCase().replaceAll(' ','-'));
+        const uml=replaceUmlauts(baseRaw);
+        bases.push(uml, uml.toLowerCase(), uml.replaceAll(' ','-'), uml.toLowerCase().replaceAll(' ','-'));
+      }
+      const exts=['jpg','jpeg','png','webp']; const out=[];
+      bases.forEach(b=>exts.forEach(ext=>out.push('img/'+encodeURIComponent(b)+'.'+ext)));
+      return out;
+    }
+
+    // --- NEW
+    function resolveImageSrcForGerman(german){
+      return new Promise((resolve)=>{
+        if(!german){ resolve(null); return; }
+        if(imageCache.has(german)){ resolve(imageCache.get(german)); return; }
+
+        const candidates = buildCandidates(german);
+        let i = 0, done = false;
+
+        const tryNext = ()=>{
+          if(done) return;
+          if(i >= candidates.length){ done = true; imageCache.set(german, null); resolve(null); return; }
+          const src = candidates[i++];
+          const probe = new Image();
+          probe.onload = ()=>{ if(done) return; done = true; imageCache.set(german, src); resolve(src); };
+          probe.onerror = tryNext;
+          probe.src = src;
+        };
+        tryNext();
+      });
+    }
+
+    // --- NEW
+    async function preloadWordImage(word){
+      if(!word || !word.german) return { word, src: null };
+      const src = await resolveImageSrcForGerman(word.german);
+      return { word, src };
+    }
+
+    // === REPLACED: smarter image load for current word
+    async function loadImageForCurrent(waitMs = 120){
+      const img=document.getElementById('wordImage');
+      img.style.display='none';
+      img.removeAttribute('src');
+      if(!currentWord || !currentWord.german) return;
+
+      // Use preloaded if matches; otherwise resolve now
+      let src = (preloadedNext && preloadedNext.word === currentWord) ? preloadedNext.src : null;
+      if(!src){ src = await resolveImageSrcForGerman(currentWord.german); }
+      if(!src){ return; }
+
+      // tiny wait to reduce flicker of English-before-image
+      await new Promise(r => setTimeout(r, waitMs));
+
+      img.onload = ()=>{ img.style.display='block'; };
+      img.onerror = ()=>{ img.style.display='none'; };
+      img.src = src;
+    }
+
+    // === NEW: pick next candidate & schedule preloading
+    function pickNextCandidateWord(){
+      const active = getActiveWords();
+      if(active.length === 0) return null;
+
+      const minStreak = Math.min(...active.map(w => w.correctStreak));
+      let tier = active.filter(w => w.correctStreak === minStreak && !w.answeredCorrect);
+      if(tier.length === 0) tier = active.filter(w => w.correctStreak === minStreak);
+      if(tier.length === 0) tier = active;
+
+      return tier[Math.floor(Math.random()*tier.length)];
+    }
+    async function schedulePreloadNext(){
+      const candidate = pickNextCandidateWord();
+      if(!candidate){ preloadedNext = null; return; }
+      preloadedNext = await preloadWordImage(candidate);
+    }
+
+    // === REPLACED: async, integrates image load + preload + center scroll
+    async function nextWord(){
       const activeWords=getActiveWords(); if(activeWords.length===0) return;
+
       let tierWords=getTierWords();
       if(tierWords.length===0){
         const minStreak=Math.min(...activeWords.map(w=>w.correctStreak));
@@ -165,10 +258,22 @@
       resetArticleButtons();
       pluralEnterCount=0;
 
-      loadImageForCurrent();
       applyEnglishVisibility();
 
-      document.getElementById('german').focus();
+      // Load current image first (with small wait to reduce flicker)
+      await loadImageForCurrent(120);
+
+      // Preload likely next image in background
+      schedulePreloadNext();
+
+      // Focus & center the German field
+      const germanEl=document.getElementById('german');
+      if(germanEl){
+        setTimeout(()=>{
+          germanEl.focus();
+          try{ germanEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch{}
+        },0);
+      }
     }
 
     function resetArticleButtons(){
@@ -177,149 +282,4 @@
       document.getElementById('btnDas').classList.remove('selected');
     }
 
-    function chooseArticle(article){
-      chosenArticle=article; resetArticleButtons();
-      if(article==='der') document.getElementById('btnDer').classList.add('selected');
-      if(article==='die') document.getElementById('btnDie').classList.add('selected');
-      if(article==='das') document.getElementById('btnDas').classList.add('selected');
-      // Always shift focus to the German field to keep keyboard up
-      const germanEl=document.getElementById('german');
-      if(germanEl){ lastFocusId='german'; setTimeout(()=>{ germanEl.focus(); },0); }
-    }
-
-    function randomExample(examples){ if(!examples||examples.length===0) return ''; const i=Math.floor(Math.random()*examples.length); return examples[i]; }
-
-    function checkAnswer(){
-      if(!currentWord) return;
-      const german=document.getElementById('german').value.trim().toLowerCase();
-      const plural=document.getElementById('plural').value.trim().toLowerCase();
-      let feedback='';
-      const correctGerman=(currentWord.german||'').toLowerCase();
-      const correctPlural=(currentWord.plural||'').toLowerCase();
-      const pluralCorrect=(plural===correctPlural) || (correctPlural==='—' && plural==='');
-      if(chosenArticle===currentWord.article && german===correctGerman && pluralCorrect){
-        currentWord.correctStreak++; currentWord.answeredCorrect=true; feedback='<span style="color:var(--ok)">Correct!</span>';
-      } else {
-        currentWord.correctStreak=0; currentWord.answeredCorrect=false; feedback=`<span style=\"color:var(--bad)\">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
-      }
-      document.getElementById('feedback').innerHTML=feedback;
-      document.getElementById('streakDisplay').textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
-      const ex=randomExample(currentWord.examples); document.getElementById('example').textContent=ex?`📝 ${ex}`:'';
-      document.getElementById('nextBtn').style.display='inline-block';
-      saveProgress();
-
-      const activeWords=getActiveWords();
-      const allMastered=activeWords.every(w=>w.correctStreak>=masteryThreshold);
-      if(allMastered && level*wordsPerLevel<words.length){
-        level++; activeWords.forEach(w=>{w.correctStreak=0; w.answeredCorrect=false;}); updateLevelDisplay(); saveProgress();
-      }
-    }
-
-    function saveProgress(){
-      try{ localStorage.setItem('vocabProgress', JSON.stringify({ words, level, showEnglish: document.getElementById('toggleEnglish').checked })); }catch{}
-    }
-
-    function loadProgress(){
-      try{
-        const saved=localStorage.getItem('vocabProgress');
-        const cb=document.getElementById('toggleEnglish');
-        if(saved){
-          const data=JSON.parse(saved);
-          level=data.level||1;
-          if(cb) cb.checked = (data.showEnglish!==undefined)? !!data.showEnglish : true;
-          words.forEach((w,i)=>{ if(data.words && data.words[i]){ w.correctStreak=data.words[i].correctStreak||0; w.answeredCorrect=data.words[i].answeredCorrect||false; } });
-        } else { if(cb) cb.checked = true; }
-      }catch{}
-    }
-
-    function resetProgress(){
-      if(confirm('Are you sure you want to reset progress?')){
-        try{ localStorage.removeItem('vocabProgress'); }catch{}
-        words.forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; }); level=1; updateLevelDisplay(); nextWord();
-      }
-    }
-
-    // Track focus + Enter behavior
-    document.getElementById('german').addEventListener('focus', ()=>{ lastFocusId='german'; });
-    document.getElementById('plural').addEventListener('focus', ()=>{ lastFocusId='plural'; });
-
-    document.getElementById('german').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('plural').focus(); }});
-    document.getElementById('plural').addEventListener('keydown', e=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        pluralEnterCount++;
-        if(pluralEnterCount===1) checkAnswer();
-        else if(pluralEnterCount===2){ pluralEnterCount=0; nextWord(); }
-      }
-    });
-
-    // Image helpers
-    function replaceUmlauts(s){
-      return (s||'')
-        .replaceAll('ä','ae').replaceAll('Ä','Ae')
-        .replaceAll('ö','oe').replaceAll('Ö','Oe')
-        .replaceAll('ü','ue').replaceAll('Ü','Ue')
-        .replaceAll('ß','ss');
-    }
-    function buildCandidates(german){
-      const baseRaw=(german||'').trim(); const bases=[];
-      if(baseRaw){
-        bases.push(baseRaw, baseRaw.toLowerCase(), baseRaw.replaceAll(' ','-'), baseRaw.toLowerCase().replaceAll(' ','-'));
-        const uml=replaceUmlauts(baseRaw);
-        bases.push(uml, uml.toLowerCase(), uml.replaceAll(' ','-'), uml.toLowerCase().replaceAll(' ','-'));
-      }
-      const exts=['jpg','jpeg','png','webp']; const out=[];
-      bases.forEach(b=>exts.forEach(ext=>out.push('img/'+encodeURIComponent(b)+'.'+ext)));
-      return out;
-    }
-    function loadImageForCurrent(){
-      const img=document.getElementById('wordImage'); img.style.display='none';
-      if(!currentWord||!currentWord.german){ img.removeAttribute('src'); return; }
-      const candidates=buildCandidates(currentWord.german); let i=0;
-      function tryNext(){
-        if(i>=candidates.length){ img.removeAttribute('src'); img.style.display='none'; return; }
-        const src=candidates[i++]; img.onerror=tryNext; img.onload=()=>{ img.style.display='block'; }; img.src=src+'?v='+Date.now();
-      }
-      tryNext();
-    }
-
-    // English toggle
-    function applyEnglishVisibility(){
-      const cb=document.getElementById('toggleEnglish');
-      if(!englishRowEl) return;
-      englishRowEl.style.display = cb && cb.checked ? '' : 'none';
-    }
-    document.getElementById('toggleEnglish').addEventListener('change', ()=>{ applyEnglishVisibility(); saveProgress(); });
-
-    // Expose for inline handlers
-    window.chooseArticle=chooseArticle;
-    window.checkAnswer=checkAnswer;
-    window.resetProgress=resetProgress;
-    window.nextWord=nextWord;
-
-    // Keep focus in the German field when tapping article buttons (iOS-safe)
-    function initArticleButtonsFocusHack(){
-      const ids = [ ['btnDer','der'], ['btnDie','die'], ['btnDas','das'] ];
-      ids.forEach(([id, art])=>{
-        const el = document.getElementById(id);
-        if(!el) return;
-        // prevent the button from stealing focus
-        el.setAttribute('tabindex','-1');
-        const handler = (e)=>{ try{ e.preventDefault(); }catch{} chooseArticle(art); };
-        // Use early events to beat the browser's focus change on mobile
-        ['touchstart','pointerdown','mousedown'].forEach(evt=>{
-          el.addEventListener(evt, handler, { passive:false });
-        });
-        // Fallback for desktop click
-        el.addEventListener('click', handler);
-      });
-    }
-
-    // initialize the focus hack immediately (elements already exist)
-    initArticleButtonsFocusHack();
-
-    // Start
-    loadCSV();
-  </script>
-</body>
-</html>
+    // === REPLACED: center-scroll when choosing article
