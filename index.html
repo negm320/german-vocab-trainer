@@ -45,7 +45,9 @@
       <p id="englishRow"><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
 
       <div id="media" style="margin-bottom:8px;">
-        <img id="wordImage" alt="vocab image" style="display:none;width:100%;max-height:220px;object-fit:contain;background:#0d0f14;border:1px solid var(--border);border-radius:10px;padding:8px;" />
+        <!-- Faster image: async decode + high fetch priority -->
+        <img id="wordImage" alt="vocab image" decoding="async" fetchpriority="high"
+             style="display:none;width:100%;max-height:220px;object-fit:contain;background:#0d0f14;border:1px solid var(--border);border-radius:10px;padding:8px;" />
       </div>
 
       <div class="button-row">
@@ -81,23 +83,23 @@
     const wordsPerLevel = 25;
     const masteryThreshold = 3;
     let pluralEnterCount = 0;
-    let lastFocusId = 'german'; // keep keyboard up on mobile
+    let lastFocusId = 'german';
 
     const statusEl = document.getElementById('status');
     const englishRowEl = document.getElementById('englishRow');
 
-    // Debug helper: show any uncaught JS error in the UI
+    // Show any uncaught error in the UI (helps diagnose blank screens)
     window.addEventListener('error', (e) => {
       if (statusEl) statusEl.textContent = '⚠️ JS error: ' + (e.error?.message || e.message || String(e));
     });
 
-    // === Lightweight image cache & preloader ===
-    let imageCache = new Map(); // key: german string -> best src or null
-    let preloadedNext = null;   // { word, src } best-effort next image
+    // === Image cache & preload ===
+    let imageCache = new Map(); // german -> best src or null
+    let preloadedNext = null;   // { word, src }
 
     function status(msg){ if(statusEl) statusEl.textContent = msg || ''; }
 
-    // ===== CSV Parser (robust newlines) =====
+    // ===== CSV Parser =====
     function parseCSV(text){
       const rows=[]; let row=[]; let cur=''; let inQuotes=false;
       for(let i=0;i<text.length;i++){
@@ -134,7 +136,8 @@
         });
         loadProgress();
         updateLevelDisplay();
-        await nextWord(); // async
+        await nextWord();          // show first word
+        schedulePreloadNext();     // start preloading immediately
         status('');
       }catch(e){ console.error(e); status('Error: '+e.message); }
     }
@@ -152,7 +155,7 @@
       return active.filter(w=>w.correctStreak===minStreak && !w.answeredCorrect);
     }
 
-    // ===== Image helpers (with preload) =====
+    // ===== Image helpers =====
     function replaceUmlauts(s){
       return (s||'')
         .replaceAll('ä','ae').replaceAll('Ä','Ae')
@@ -199,9 +202,11 @@
       return { word, src };
     }
 
-    async function loadImageForCurrent(waitMs = 120){
+    // Faster image: no artificial wait
+    async function loadImageForCurrent(waitMs = 0){
       const img=document.getElementById('wordImage');
       if(!img) return;
+
       img.style.display='none';
       img.removeAttribute('src');
       if(!currentWord || !currentWord.german) return;
@@ -210,7 +215,7 @@
       if(!src){ src = await resolveImageSrcForGerman(currentWord.german); }
       if(!src){ return; }
 
-      await new Promise(r => setTimeout(r, waitMs));
+      if(waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
 
       img.onload = ()=>{ img.style.display='block'; };
       img.onerror = ()=>{ img.style.display='none'; };
@@ -268,7 +273,8 @@
 
       applyEnglishVisibility();
 
-      await loadImageForCurrent(120);
+      // Begin resolving image ASAP, then show it
+      await loadImageForCurrent(0);
       schedulePreloadNext();
 
       if(germanEl){
@@ -375,10 +381,25 @@
       }
     });
 
-    // Button bindings (no early-event hacks)
-    document.getElementById('btnDer')?.addEventListener('click', ()=>chooseArticle('der'));
-    document.getElementById('btnDie')?.addEventListener('click', ()=>chooseArticle('die'));
-    document.getElementById('btnDas')?.addEventListener('click', ()=>chooseArticle('das'));
+    // ===== Article buttons — keep keyboard up =====
+    function bindArticleButton(id, article){
+      const el = document.getElementById(id);
+      if(!el) return;
+
+      // Prevent the button from stealing focus (so keyboard stays open)
+      const early = (e)=>{ 
+        try { e.preventDefault(); } catch {}
+        chooseArticle(article);
+      };
+      el.addEventListener('pointerdown', early);
+      el.addEventListener('mousedown', early);
+      el.addEventListener('click', (e)=>{ e.preventDefault(); chooseArticle(article); });
+    }
+    bindArticleButton('btnDer','der');
+    bindArticleButton('btnDie','die');
+    bindArticleButton('btnDas','das');
+
+    // Other buttons
     document.getElementById('checkBtn')?.addEventListener('click', checkAnswer);
     document.getElementById('resetBtn')?.addEventListener('click', resetProgress);
     document.getElementById('nextBtn')?.addEventListener('click', nextWord);
