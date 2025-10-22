@@ -99,6 +99,37 @@
     body.dark .result-ok { border-color: #2fa97b !important; background: #0f1b16 !important; }
     body.dark .result-bad { border-color: #e66b6b !important; background: #1a1111 !important; }
   </style>
+  
+  <style>
+    /* Vertical two-column label/input layout */
+    .praesens-list {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      row-gap: 10px;
+      column-gap: 12px;
+      margin: 12px 0;
+      align-items: center;
+    }
+    .praesens-list label { opacity: 0.9; }
+  
+    /* Make verbs buttons dark (override whites) */
+    body.dark #verbs-actions button {
+      background: #12151a !important;
+      border-color: #2a2f36 !important;
+      color: #e8eaed !important;
+    }
+    body.dark #verbs-actions button:hover {
+      background: #162036 !important;
+      border-color: #3b6ad9 !important;
+    }
+  
+    /* Ensure inputs match dark styling */
+    body.dark #verbs-card input {
+      background: #111418;
+      color: #e8eaed;
+      border: 1px solid #2a2f36;
+    }
+  </style>
 </head>
 <body>
     <div id="mode-switch">
@@ -120,13 +151,18 @@
       <span id="verbs-aux-badge" class="badge" style="display:none;"></span>
     </div>
 
-    <div class="praesens-grid">
-      <div>ich <input id="verbs-p-ich" autocomplete="off"></div>
-      <div>du <input id="verbs-p-du" autocomplete="off"></div>
-      <div>er/sie/es <input id="verbs-p-er" autocomplete="off"></div>
-      <div>wir <input id="verbs-p-wir" autocomplete="off"></div>
-      <div>ihr <input id="verbs-p-ihr" autocomplete="off"></div>
-      <div>sie/Sie <input id="verbs-p-sie" autocomplete="off"></div>
+    <div class="praesens-list">
+      <label for="verbs-p-ich">ich</label>
+      <input id="verbs-p-ich" autocomplete="off">
+    
+      <label for="verbs-p-du">du</label>
+      <input id="verbs-p-du" autocomplete="off">
+    
+      <label for="verbs-p-er">er/sie/es</label>
+      <input id="verbs-p-er" autocomplete="off">
+    
+      <label for="verbs-p-ihr">ihr</label>
+      <input id="verbs-p-ihr" autocomplete="off">
     </div>
 
     <div class="perfekt">
@@ -554,10 +590,7 @@
   const pIch = document.getElementById('verbs-p-ich');
   const pDu  = document.getElementById('verbs-p-du');
   const pEr  = document.getElementById('verbs-p-er');
-  const pWir = document.getElementById('verbs-p-wir');
-  const pIhr = document.getElementById('verbs-p-ihr');
-  const pSie = document.getElementById('verbs-p-sie');
-  const elPart = document.getElementById('verbs-partizip');
+  const pIhr = document.getElementById('verbs-p-ihr');  const elPart = document.getElementById('verbs-partizip');
   const elCheck = document.getElementById('verbs-check');
   const elNext  = document.getElementById('verbs-next');
   const elFeedback = document.getElementById('verbs-feedback');
@@ -678,7 +711,7 @@
   }
   
   function clearFieldStyles(){
-    [elInf, pIch, pDu, pEr, pWir, pIhr, pSie, elPart].forEach(el=>el?.classList.remove('result-ok','result-bad'));
+    [elInf, pIch, pDu, pEr, pIhr, elPart].forEach(el=>el?.classList.remove('result-ok','result-bad'));
   }
   
   function renderVerbsCard(){
@@ -688,7 +721,7 @@
     elEnglish.textContent = v.english || '';
     elInf.value = '';
     elPart.value = '';
-    [pIch,pDu,pEr,pWir,pIhr,pSie].forEach(el=>{ if(el) el.value=''; });
+    [pIch,pDu,pEr,pIhr].forEach(el=>{ if(el) el.value=''; });
     // aux UI reset
     elAuxBtns.forEach(btn=>btn.classList.remove('selected'));
     elAuxBadge.style.display='none';
@@ -720,9 +753,7 @@
     const okIch  = norm(pIch.value)    === norm(v.ich);
     const okDu   = norm(pDu.value)     === norm(v.du);
     const okEr   = norm(pEr.value)     === norm(v.er);
-    const okWir  = norm(pWir.value)    === norm(v.wir);
     const okIhr  = norm(pIhr.value)    === norm(v.ihr);
-    const okSie  = norm(pSie.value)    === norm(v.sie);
     const okPart = norm(elPart.value)  === norm(v.partizip);
   
     // mark fields
@@ -730,7 +761,7 @@
     elAuxBtns.forEach(b=>b.classList.toggle('result-ok', okAux));
     elAuxBtns.forEach(b=>b.classList.toggle('result-bad', !okAux));
     mark(pIch, okIch); mark(pDu, okDu); mark(pEr, okEr);
-    mark(pWir, okWir); mark(pIhr, okIhr); mark(pSie, okSie);
+    mark(pIhr, okIhr); 
     mark(elPart, okPart);
   
     const allOK = okInf && okAux && okIch && okDu && okEr && okWir && okIhr && okSie && okPart;
