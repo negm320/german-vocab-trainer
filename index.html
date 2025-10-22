@@ -37,30 +37,67 @@
   </style>
   
   <style>
-  /* === Additive styles for Verbs UI === */
-  #mode-switch { margin: 12px 0; display: flex; gap: 8px; flex-wrap: wrap; }
-  #mode-switch .mode-btn { padding: 6px 10px; border: 1px solid #ccc; background: #f8f8f8; cursor: pointer; border-radius: 6px; }
-  #mode-switch .mode-btn.active { background: #e8f2ff; border-color: #5b9cff; }
-
-  #verbs-card { border: 1px solid #e5e5e5; border-radius: 10px; padding: 16px; margin: 8px 0 16px; background: #fff; }
-  #verbs-card[hidden] { display: none; }
-  #verbs-card .prompt { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-
-  .aux-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
-  .aux-btn { padding: 6px 10px; border: 1px solid #ccc; background: #fafafa; border-radius: 6px; cursor: pointer; }
-  .aux-btn.selected { background: #e8f2ff; border-color: #5b9cff; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #5b9cff; color: #1b62cf; font-size: 12px; }
-
-  .praesens-grid { display: grid; grid-template-columns: repeat(2, minmax(200px, 1fr)); gap: 8px 16px; margin: 10px 0; }
-  .praesens-grid div { display: flex; align-items: center; gap: 6px; }
-  .praesens-grid input, #verbs-inf, #verbs-partizip { width: 100%; padding: 6px 8px; }
-
-  .result-ok { border-color: #29a36a !important; background: #f0fff7 !important; }
-  .result-bad { border-color: #d9534f !important; background: #fff5f5 !important; }
-
-  #verbs-actions { display: flex; gap: 8px; margin-top: 12px; }
-  #verbs-actions button { padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; background: #f8f8f8; cursor: pointer; }
-  #verbs-feedback { margin-top: 10px; font-size: 14px; }
+    /* === Additive styles for Verbs UI === */
+    #mode-switch { margin: 12px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+    #mode-switch .mode-btn { padding: 6px 10px; border: 1px solid #ccc; background: #f8f8f8; cursor: pointer; border-radius: 6px; }
+    #mode-switch .mode-btn.active { background: #e8f2ff; border-color: #5b9cff; }
+  
+    #verbs-card { border: 1px solid #e5e5e5; border-radius: 10px; padding: 16px; margin: 8px 0 16px; background: #fff; }
+    #verbs-card[hidden] { display: none; }
+    #verbs-card .prompt { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  
+    .aux-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+    .aux-btn { padding: 6px 10px; border: 1px solid #ccc; background: #fafafa; border-radius: 6px; cursor: pointer; }
+    .aux-btn.selected { background: #e8f2ff; border-color: #5b9cff; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #5b9cff; color: #1b62cf; font-size: 12px; }
+  
+    .praesens-grid { display: grid; grid-template-columns: repeat(2, minmax(200px, 1fr)); gap: 8px 16px; margin: 10px 0; }
+    .praesens-grid div { display: flex; align-items: center; gap: 6px; }
+    .praesens-grid input, #verbs-inf, #verbs-partizip { width: 100%; padding: 6px 8px; }
+  
+    .result-ok { border-color: #29a36a !important; background: #f0fff7 !important; }
+    .result-bad { border-color: #d9534f !important; background: #fff5f5 !important; }
+  
+    #verbs-actions { display: flex; gap: 8px; margin-top: 12px; }
+    #verbs-actions button { padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; background: #f8f8f8; cursor: pointer; }
+    #verbs-feedback { margin-top: 10px; font-size: 14px; }
+  </style>
+  
+  <style>
+    /* ===== Global dark theme (opt-in via .dark on <body>) ===== */
+    body.dark { background: #0b0d10; color: #e8eaed; }
+  
+    /* try to harmonize common elements if they exist */
+    body.dark input, body.dark select, body.dark button, body.dark textarea {
+      background: #111418; color: #e8eaed; border: 1px solid #2a2f36;
+    }
+    body.dark .card, body.dark .panel, body.dark .box {
+      background: #0f1216; border: 1px solid #2a2f36; color: #e8eaed;
+    }
+    body.dark a { color: #96b7ff; }
+  
+    /* ===== Verbs UI dark styles ===== */
+    body.dark #mode-switch .mode-btn {
+      background: #12151a; border-color: #2a2f36; color: #e8eaed;
+    }
+    body.dark #mode-switch .mode-btn.active {
+      background: #162036; border-color: #3b6ad9;
+    }
+    body.dark #verbs-card {
+      background: #0f1216; border-color: #2a2f36;
+    }
+    body.dark .aux-btn {
+      background: #12151a; border-color: #2a2f36; color: #e8eaed;
+    }
+    body.dark .aux-btn.selected {
+      background: #162036; border-color: #3b6ad9;
+    }
+    body.dark .badge {
+      border-color: #3b6ad9; color: #9bb8ff;
+    }
+    /* check result colors tuned for dark bg */
+    body.dark .result-ok { border-color: #2fa97b !important; background: #0f1b16 !important; }
+    body.dark .result-bad { border-color: #e66b6b !important; background: #1a1111 !important; }
   </style>
 </head>
 <body>
@@ -107,32 +144,33 @@
   <div class="container">
     <h1>German Vocab Trainer</h1>
     <p id="level">Level: 1 (Words 1–25)</p>
-
-    <div class="card">
-      <p id="englishRow"><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
-
-      <div id="media" style="margin-bottom:8px;">
-        <!-- Faster image: async decode + high fetch priority -->
-        <img id="wordImage" alt="vocab image" decoding="async" fetchpriority="high"
-             style="display:none;width:100%;max-height:220px;object-fit:contain;background:#0d0f14;border:1px solid var(--border);border-radius:10px;padding:8px;" />
+    <div id="vocab-wrapper">
+      <div class="card">
+        <p id="englishRow"><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
+  
+        <div id="media" style="margin-bottom:8px;">
+          <!-- Faster image: async decode + high fetch priority -->
+          <img id="wordImage" alt="vocab image" decoding="async" fetchpriority="high"
+               style="display:none;width:100%;max-height:220px;object-fit:contain;background:#0d0f14;border:1px solid var(--border);border-radius:10px;padding:8px;" />
+        </div>
+  
+        <div class="button-row">
+          <button id="btnDer" class="article-btn">der</button>
+          <button id="btnDie" class="article-btn">die</button>
+          <button id="btnDas" class="article-btn">das</button>
+        </div>
+  
+        <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <input type="text" id="plural" placeholder="Plural" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <p id="feedback"></p>
+        <p id="example"></p>
+  
+        <br />
+        <button id="checkBtn">Check</button>
+        <button id="resetBtn">Reset Progress</button>
+        <button id="nextBtn">Next word</button>
+        <div id="status"></div>
       </div>
-
-      <div class="button-row">
-        <button id="btnDer" class="article-btn">der</button>
-        <button id="btnDie" class="article-btn">die</button>
-        <button id="btnDas" class="article-btn">das</button>
-      </div>
-
-      <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-      <input type="text" id="plural" placeholder="Plural" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-      <p id="feedback"></p>
-      <p id="example"></p>
-
-      <br />
-      <button id="checkBtn">Check</button>
-      <button id="resetBtn">Reset Progress</button>
-      <button id="nextBtn">Next word</button>
-      <div id="status"></div>
     </div>
   </div>
 
@@ -540,13 +578,28 @@
   function getMode(){ return localStorage.getItem(MODE_KEY) || 'vocab'; }
   function setMode(m){ localStorage.setItem(MODE_KEY, m); renderMode(); }
   function renderMode(){
-    const mode = getMode();
-    // toggle button active styles
-    document.querySelectorAll('#mode-switch .mode-btn').forEach(b=>{
-      b.classList.toggle('active', b.dataset.mode===mode);
+    const mode = localStorage.getItem(MODE_KEY) || 'vocab';
+  
+    // Highlight the active mode button
+    document.querySelectorAll('#mode-switch .mode-btn').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.mode === mode);
     });
-    // show verbs card only in verbs mode
-    elVerbsCard.hidden = (mode !== 'verbs');
+  
+    // Sections we want to show/hide
+    const vocab = document.getElementById('vocab-wrapper'); // <- the wrapper you just added
+    const verbs = document.getElementById('verbs-card');
+  
+    // Show Verbs card only in "verbs" mode
+    if (verbs) verbs.hidden = (mode !== 'verbs');
+  
+    // Show Vocab only in "vocab" or "mix" (hide when "verbs")
+    if (vocab) vocab.style.display = (mode === 'vocab' || mode === 'mix') ? '' : 'none';
+  
+    // If entering verbs, (re)render a fresh card
+    if (mode === 'verbs') {
+      chosenAux = null;          // from the verbs add-on state
+      renderVerbsCard?.();       // safe call in case it’s not defined yet
+    }
   }
   elModeSwitch?.addEventListener('click', (e)=>{
     if(e.target.matches('.mode-btn')){
@@ -748,6 +801,8 @@
   
   /* Boot */
   (async function initVerbs(){
+    document.body.classList.add('dark'); // enables black mode
+    
     await loadVerbsData();
     initVerbsState();
     renderMode();
