@@ -152,7 +152,7 @@
     </div>
 
     <div class="praesens-list">
-      <label for="verbs-p-ich">ich <span id="ich-aux" class="badge" style="display:none;"></span></label>
+      <label for="verbs-p-ich">ich</label>
       <input id="verbs-p-ich" autocomplete="off">
     
       <label for="verbs-p-du">du</label>
@@ -739,12 +739,6 @@
       elAuxBadge.style.display='inline-block';
       elAuxBadge.textContent = chosenAux;
       elAuxFixed.textContent = chosenAux;
-          // 👇 show "habe" or "bin" beside ich
-      const ichAux = document.getElementById('ich-aux');
-      if (ichAux) {
-        ichAux.style.display = 'inline-block';
-        ichAux.textContent = (chosenAux === 'haben') ? 'habe' : 'bin';
-      }
     });
   });
   
