@@ -734,11 +734,17 @@
   let chosenAux = null;
   elAuxBtns.forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      chosenAux = btn.dataset.aux;
+      chosenAux = btn.dataset.aux; // "haben" or "sein"
+  
+      // UI selection
       elAuxBtns.forEach(b=>b.classList.toggle('selected', b===btn));
+  
+      // Small badge near the buttons still shows the infinitive (haben/sein)
       elAuxBadge.style.display='inline-block';
       elAuxBadge.textContent = chosenAux;
-      elAuxFixed.textContent = chosenAux;
+  
+      // 👇 Perfekt line shows the conjugated form for ich
+      elAuxFixed.textContent = (chosenAux === 'haben') ? 'habe' : 'bin';
     });
   });
   
