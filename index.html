@@ -658,14 +658,14 @@
   let lastInputFocus = null;
   
   // Remember which text input is active (so buttons won't steal focus)
-  [elInf, pIch, pDu, pEr, pIhr, elPart, inpPrep].forEach(el=>{
+  [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].forEach(el=>{
     el?.addEventListener('focus', ()=> { lastInputFocus = el; });
   });
 
     // The order you want to tab through with Enter:
     function focusChain(){
     // Only include visible & enabled inputs
-    return [elInf, pIch, pDu, pEr, pIhr, elPart, inpPrep].filter(el => el && !el.disabled && el.offsetParent !== null);
+    return [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].filter(el => el && !el.disabled && el.offsetParent !== null);
   }
   function focusNextFrom(current){
     const list = focusChain();
