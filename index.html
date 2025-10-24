@@ -99,6 +99,20 @@
     body.dark .result-ok { border-color: #2fa97b !important; background: #0f1b16 !important; }
     body.dark .result-bad { border-color: #e66b6b !important; background: #1a1111 !important; }
   </style>
+
+  <style>
+    #verbs-gov { margin: 10px 0 6px; display: grid; gap: 10px; }
+    #verbs-gov .gov-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; }
+    .refl-toggle { display: flex; gap: 8px; align-items: center; }
+    .refl-btn { padding: 6px 10px; border: 1px solid #ccc; background: #fafafa; border-radius: 6px; cursor: pointer; }
+    .refl-btn.selected { background: #e8f2ff; border-color: #5b9cff; }
+  
+    /* dark mode versions */
+    body.dark #verbs-gov select,
+    body.dark .refl-btn { background: #12151a; border-color: #2a2f36; color: #e8eaed; }
+    body.dark .refl-btn.selected { background: #162036; border-color: #3b6ad9; }
+  </style>
+
   
   <style>
     /* Vertical two-column label/input layout */
@@ -151,6 +165,46 @@
       <span id="verbs-aux-badge" class="badge" style="display:none;"></span>
     </div>
 
+    <!-- === Verb governance (preposition + reflexive) === -->
+    <div id="verbs-gov">
+      <div class="gov-row">
+        <label for="verbs-prep">Preposition</label>
+        <select id="verbs-prep">
+          <option value="">— none —</option>
+          <option value="an|Akk">an + Akk</option>
+          <option value="an|Dat">an + Dat</option>
+          <option value="auf|Akk">auf + Akk</option>
+          <option value="auf|Dat">auf + Dat</option>
+          <option value="aus|Dat">aus + Dat</option>
+          <option value="bei|Dat">bei + Dat</option>
+          <option value="für|Akk">für + Akk</option>
+          <option value="gegen|Akk">gegen + Akk</option>
+          <option value="in|Akk">in + Akk</option>
+          <option value="in|Dat">in + Dat</option>
+          <option value="mit|Dat">mit + Dat</option>
+          <option value="nach|Dat">nach + Dat</option>
+          <option value="über|Akk">über + Akk</option>
+          <option value="über|Dat">über + Dat</option>
+          <option value="um|Akk">um + Akk</option>
+          <option value="von|Dat">von + Dat</option>
+          <option value="zu|Dat">zu + Dat</option>
+        </select>
+      </div>
+    
+      <div class="gov-row">
+        <label>Reflexive?</label>
+        <div class="refl-toggle">
+          <button type="button" class="refl-btn" data-refl="no">No</button>
+          <button type="button" class="refl-btn" data-refl="yes">Yes</button>
+          <select id="verbs-refl-case" disabled>
+            <option value="Akk">Akkusativ</option>
+            <option value="Dat">Dativ</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    
     <div class="praesens-list">
       <label for="verbs-p-ich">ich</label>
       <input id="verbs-p-ich" autocomplete="off">
@@ -594,7 +648,12 @@
   const elCheck = document.getElementById('verbs-check');
   const elNext  = document.getElementById('verbs-next');
   const elFeedback = document.getElementById('verbs-feedback');
-  
+  const selPrep = document.getElementById('verbs-prep');
+  const reflBtns = Array.from(document.querySelectorAll('.refl-btn'));
+  const selReflCase = document.getElementById('verbs-refl-case');
+  let chosenRefl = null; // 'yes' | 'no' | null
+
+    
   /* Helpers */
   function lsGet(key, fallback) {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
@@ -722,6 +781,16 @@
     elInf.value = '';
     elPart.value = '';
     [pIch,pDu,pEr,pIhr].forEach(el=>{ if(el) el.value=''; });
+    
+    // Reset preposition & reflexive UI (new feature)
+    if (selPrep) selPrep.value = '';               // reset preposition dropdown
+    chosenRefl = null;                             // forget previous yes/no choice
+    reflBtns.forEach(b=>b.classList.remove('selected'));  // unselect both buttons
+    if (selReflCase) { 
+      selReflCase.value = 'Akk';                   // set default case to Akkusativ
+      selReflCase.disabled = true;                 // keep it disabled until "Yes" is clicked
+    }
+
     // aux UI reset
     elAuxBtns.forEach(btn=>btn.classList.remove('selected'));
     elAuxBadge.style.display='none';
@@ -747,6 +816,15 @@
       elAuxFixed.textContent = (chosenAux === 'haben') ? 'habe' : 'bin';
     });
   });
+
+    reflBtns.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        chosenRefl = btn.dataset.refl; // 'yes' or 'no'
+        reflBtns.forEach(b=>b.classList.toggle('selected', b===btn));
+        selReflCase.disabled = (chosenRefl !== 'yes');
+      });
+    });
+
   
   /* Check logic: full card must be correct to increment streak (3x target) */
   function checkVerbsCard(){
@@ -761,6 +839,42 @@
     const okEr   = norm(pEr.value)     === norm(v.er);
     const okIhr  = norm(pIhr.value)    === norm(v.ihr);
     const okPart = norm(elPart.value)  === norm(v.partizip);
+
+    // --- Preposition check ---
+    let okPrep = true; // default true if no prepositions are listed for this verb
+    const rawPreps = (v.preps || '').trim(); // get what the CSV says
+    if (rawPreps) {
+      const allowed = rawPreps.split(';').map(s=>s.trim().toLowerCase()); // e.g. ["auf|akk","über|akk"]
+      const chosen = (selPrep?.value || '').trim().toLowerCase();        // what you picked
+      okPrep = allowed.includes(chosen);
+      if (selPrep) { // color it green/red
+        selPrep.classList.remove('result-ok','result-bad');
+        selPrep.classList.add(okPrep ? 'result-ok' : 'result-bad');
+      }
+    }
+    
+    // --- Reflexive check ---
+    let okRefl = true; // default true if no reflexive rule
+    const needRefl = (v.reflexive || '').toLowerCase();       // yes/no from CSV
+    const needCase = (v.reflexive_case || '').toLowerCase();  // akk/dat from CSV
+    if (needRefl === 'yes') {
+      const userRefl = (chosenRefl || '').toLowerCase();
+      const userCase = (selReflCase?.value || '').toLowerCase();
+      okRefl = (userRefl === 'yes') && (!needCase || userCase === needCase);
+    } else if (needRefl === 'no') {
+      okRefl = (chosenRefl === 'no'); // must select "No"
+    }
+    
+    // color the buttons to show correct/wrong
+    reflBtns.forEach(b=>{
+      b.classList.remove('result-ok','result-bad');
+      if (needRefl) b.classList.add(okRefl ? 'result-ok' : 'result-bad');
+    });
+    if (selReflCase && chosenRefl==='yes' && needCase) {
+      selReflCase.classList.remove('result-ok','result-bad');
+      selReflCase.classList.add(okRefl ? 'result-ok' : 'result-bad');
+    }
+
   
     // mark fields
     mark(elInf, okInf);
@@ -770,7 +884,16 @@
     mark(pIhr, okIhr); 
     mark(elPart, okPart);
   
-    const allOK = okInf && okAux && okIch && okDu && okEr && okWir && okIhr && okSie && okPart;
+    const allOK =
+      okInf && okAux &&
+      okIch && okDu && okEr && okIhr &&
+      okPart && okPrep && okRefl;
+    
+    // dynamic total for optional fields
+    let total = 7; // base fields we already check
+    if ((v.preps||'').trim()) total += 1;          // need preposition
+    if ((v.reflexive||'').trim()) total += 1;      // need reflexive
+
   
     // streak update (per-item)
     const id = v.id;
