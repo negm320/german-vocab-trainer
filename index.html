@@ -113,6 +113,34 @@
     body.dark .refl-btn.selected { background: #162036; border-color: #3b6ad9; }
   </style>
 
+  <style>
+    /* Make verbs inputs truly full width */
+    #verbs-card .praesens-list { 
+      grid-template-columns: 70px 1fr;  /* slimmer label column, more room for input */
+    }
+  
+    /* Force width for all text inputs inside the verbs card */
+    #verbs-card input[type="text"],
+    #verbs-card input[list],
+    #verbs-card input:not([type]),
+    #verbs-gov input,
+    #verbs-card .praesens-list input {
+      width: 100% !important;
+      box-sizing: border-box;
+    }
+  
+    /* Optional: make the preposition row align perfectly */
+    #verbs-gov .gov-row { 
+      grid-template-columns: 110px 1fr; 
+    }
+  
+    /* If some global CSS sets small widths, this beats it */
+    #verbs-card input { 
+      min-width: 0; 
+      display: block; 
+    }
+  </style>
+
   
   <style>
     /* Vertical two-column label/input layout */
