@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>German Vocab Trainer</title>
+  <title>German Trainer</title>
   <style>
     :root{
       --bg:#0f1115; --text:#eaeaea; --muted:#9aa6b2; --card:#171b23; --border:#2a3240; --input:#0f1620;
@@ -113,6 +113,17 @@
     body.dark .refl-btn.selected { background: #162036; border-color: #3b6ad9; }
   </style>
 
+  <style>    
+    /* Adj/Adv card styles (reuse look of verbs) */
+    #adjadv-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 8px 0 16px; background: var(--card); }
+    #adjadv-card[hidden] { display: none; }
+    #adjadv-card .prompt { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+    #adjadv-card input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--input); color: var(--text); }
+    #adjadv-card .result-ok { border-color: #29a36a !important; background: #0f1b16 !important; }
+    #adjadv-card .result-bad { border-color: #d9534f !important; background: #1a1111 !important; }
+    .muted { color: var(--muted); }
+  </style>
+
   <style>
     /* Make verbs inputs truly full width */
     #verbs-card .praesens-list { 
@@ -177,6 +188,7 @@
     <div id="mode-switch">
     <button class="mode-btn" data-mode="vocab">Vocab</button>
     <button class="mode-btn" data-mode="verbs">Verbs</button>
+    <button class="mode-btn" data-mode="adjadv">Adj/Adv</button>
     <button class="mode-btn" data-mode="mix">Mix</button>
   </div>
 
@@ -259,6 +271,24 @@
 
     <div id="verbs-feedback"></div>
   </div>
+  
+  <div id="adjadv-card" hidden>
+    <div class="prompt" id="adjadv-english">beautiful</div>
+  
+    <label for="adjadv-german">German word</label>
+    <input id="adjadv-german" autocomplete="off" placeholder="z. B. schön" />
+  
+    <p id="adjadv-example" class="muted"></p>
+  
+    <div id="adjadv-actions" style="display:flex;gap:8px;margin-top:12px;">
+      <button id="adjadv-check">Check</button>
+      <button id="adjadv-next">Next</button>
+    </div>
+  
+    <div id="adjadv-feedback" style="margin-top:10px;font-size:14px;"></div>
+  </div>
+
+  
   <div class="container">
     <div id="vocab-wrapper">
     <h1>German Vocab Trainer</h1>
@@ -641,433 +671,694 @@
   });
   </script>
   <script>
-  /* =======================
-     Verbs Trainer (ADD-ON)
-     ======================= */
-  
-  /* LocalStorage keys (namespaced) */
-  const MODE_KEY = 'mode'; // shared selector; defaults to 'vocab'
-  const VERBS_LEVEL_KEY = 'verbs_level';
-  const VERBS_UNLOCKED_KEY = 'verbs_unlocked_count';
-  const VERBS_STREAKS_KEY = 'verbs_streaks';
-  const VERBS_INDEX_KEY = 'verbs_index';
-  
-  /* State */
-  const verbsState = {
-    data: [],      // array of verbs
-    index: 0,      // pointer within unlocked pool
-    level: 1,      // 25 items per level
-    unlocked: 25,  // how many available = level * 25
-    streaks: {}    // id -> 0..3
-  };
-  
-  /* DOM refs */
-  const elModeSwitch = document.getElementById('mode-switch');
-  const elVerbsCard  = document.getElementById('verbs-card');
-  const elEnglish    = document.getElementById('verbs-english');
-  const elInf        = document.getElementById('verbs-inf');
-  const elAuxBtns    = Array.from(document.querySelectorAll('.aux-btn'));
-  const elAuxBadge   = document.getElementById('verbs-aux-badge');
-  const elAuxFixed   = document.getElementById('verbs-aux-fixed');
-  const pIch = document.getElementById('verbs-p-ich');
-  const pDu  = document.getElementById('verbs-p-du');
-  const pEr  = document.getElementById('verbs-p-er');
-  const pIhr = document.getElementById('verbs-p-ihr');  const elPart = document.getElementById('verbs-partizip');
-  const elCheck = document.getElementById('verbs-check');
-  const elNext  = document.getElementById('verbs-next');
-  const elFeedback = document.getElementById('verbs-feedback');
-  const selPrep = document.getElementById('verbs-prep');
-  const reflBtns = Array.from(document.querySelectorAll('.refl-btn'));
-  const selReflCase = document.getElementById('verbs-refl-case');
-  let chosenRefl = null; // 'yes' | 'no' | null
-
-  // NEW: preposition input reference + last focused input tracker
-  const inpPrep = document.getElementById('verbs-prep');
-  let lastInputFocus = null;
-  
-  // Remember which text input is active (so buttons won't steal focus)
-  [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].forEach(el=>{
-    el?.addEventListener('focus', ()=> { lastInputFocus = el; });
-  });
-
-    // The order you want to tab through with Enter:
-    function focusChain(){
-    // Only include visible & enabled inputs
-    return [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].filter(el => el && !el.disabled && el.offsetParent !== null);
-  }
-  function focusNextFrom(current){
-    const list = focusChain();
-    const i = list.indexOf(current);
-    if (i >= 0 && i < list.length - 1) {
-      list[i+1].focus({preventScroll:true});
-    } else {
-      // last field -> press Check
-      elCheck?.click();
-    }
-  }
-  // Add Enter key handler to each input
-  [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].forEach(el=>{
-    el?.addEventListener('keydown', (e)=>{
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        focusNextFrom(e.target);
-      }
-    });
-  });
-
-    
-  /* Helpers */
-  function lsGet(key, fallback) {
-    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
-  }
-  function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
-  function lsGetInt(key, fallback) {
-    const v = localStorage.getItem(key); const n = v===null?NaN:parseInt(v,10); return Number.isFinite(n)?n:fallback;
-  }
-  function lsSetInt(key, n) { try { localStorage.setItem(key, String(n)); } catch {} }
-  function norm(s){ return (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
-  function mark(el, ok){ el?.classList.remove('result-ok','result-bad'); el?.classList.add(ok?'result-ok':'result-bad'); }
-  
-  /* Mode switch (non-destructive) */
-  function getMode(){ return localStorage.getItem(MODE_KEY) || 'vocab'; }
-  function setMode(m){ localStorage.setItem(MODE_KEY, m); renderMode(); }
-  function renderMode(){
-    const mode = localStorage.getItem(MODE_KEY) || 'vocab';
-  
-    // Highlight the active mode button
-    document.querySelectorAll('#mode-switch .mode-btn').forEach(btn=>{
-      btn.classList.toggle('active', btn.dataset.mode === mode);
-    });
-  
-    // Sections we want to show/hide
-    const vocab = document.getElementById('vocab-wrapper'); // <- the wrapper you just added
-    const verbs = document.getElementById('verbs-card');
-  
-    // Show Verbs card only in "verbs" mode
-    if (verbs) verbs.hidden = (mode !== 'verbs');
-  
-    // Show Vocab only in "vocab" or "mix" (hide when "verbs")
-    if (vocab) vocab.style.display = (mode === 'vocab' || mode === 'mix') ? '' : 'none';
-  
-    // If entering verbs, (re)render a fresh card
-    if (mode === 'verbs') {
-      chosenAux = null;          // from the verbs add-on state
-      renderVerbsCard?.();       // safe call in case it’s not defined yet
-    }
-  }
-  elModeSwitch?.addEventListener('click', (e)=>{
-    if(e.target.matches('.mode-btn')){
-      setMode(e.target.dataset.mode);
-    }
-  });
-  
-  /* Load verbs data
-     - Tries verbs.csv (same folder) with header:
-       id,lemma,english,aux,ich,du,er,wir,ihr,sie,partizip
-     - If not found, uses a small mock so you can test UI immediately.
-  */
-  async function loadVerbsData(){
-    let rows = null;
-    try {
-      const res = await fetch('verbs.csv', { cache: 'no-store' });
-      if (res.ok) {
-        const csv = await res.text();
-        rows = parseCSV(csv);
-      }
-    } catch(_) {}
-    if (!rows || rows.length===0) {
-      rows = [
-        { id:'v001', lemma:'gehen',  english:'to go',    aux:'sein',  ich:'gehe', du:'gehst', er:'geht', wir:'gehen', ihr:'geht', sie:'gehen', partizip:'gegangen' },
-        { id:'v002', lemma:'machen', english:'to make',  aux:'haben', ich:'mache', du:'machst', er:'macht', wir:'machen', ihr:'macht', sie:'machen', partizip:'gemacht' },
-        { id:'v003', lemma:'kommen', english:'to come',  aux:'sein',  ich:'komme', du:'kommst', er:'kommt', wir:'kommen', ihr:'kommt', sie:'kommen', partizip:'gekommen' },
-      ];
-    }
-    verbsState.data = rows;
-  }
-  
-  /* Tiny CSV parser (no deps) */
-  function parseCSV(text){
-    const lines = text.trim().split(/\r?\n/);
-    const headers = lines.shift().split(',').map(h=>h.trim());
-    return lines.map(line=>{
-      const cells = [];
-      let cur = '', inQ=false;
-      for (let i=0;i<line.length;i++){
-        const ch=line[i];
-        if (ch==='\"'){ inQ = !inQ; continue; }
-        if (ch===',' && !inQ){ cells.push(cur); cur=''; continue; }
-        cur += ch;
-      }
-      cells.push(cur);
-      const obj={};
-      headers.forEach((h,i)=>obj[h]= (cells[i]||'').trim());
-      // ensure id exists
-      if (!obj.id) obj.id = 'v_' + obj.lemma + '_' + Math.random().toString(36).slice(2,7);
-      return obj;
-    });
-  }
-  
-  /* Initialize state from LS */
-  function initVerbsState(){
-    verbsState.level   = lsGetInt(VERBS_LEVEL_KEY, 1);
-    verbsState.unlocked= lsGetInt(VERBS_UNLOCKED_KEY, verbsState.level*25);
-    verbsState.index   = lsGetInt(VERBS_INDEX_KEY, 0);
-    verbsState.streaks = lsGet(VERBS_STREAKS_KEY, {});
-  }
-  
-  /* Save state to LS */
-  function saveVerbsState(){
-    lsSetInt(VERBS_LEVEL_KEY, verbsState.level);
-    lsSetInt(VERBS_UNLOCKED_KEY, verbsState.unlocked);
-    lsSetInt(VERBS_INDEX_KEY, verbsState.index);
-    lsSet(VERBS_STREAKS_KEY, verbsState.streaks);
-  }
-  
-  /* Render current verb card */
-  function currentVerb(){
-    const pool = verbsState.data.slice(0, Math.min(verbsState.unlocked, verbsState.data.length));
-    if (pool.length===0) return null;
-    const i = Math.max(0, Math.min(verbsState.index % pool.length, pool.length-1));
-    return pool[i];
-  }
-  
-  function clearFieldStyles(){
-    [elInf, pIch, pDu, pEr, pIhr, elPart].forEach(el=>el?.classList.remove('result-ok','result-bad'));
-  }
-  
-  function renderVerbsCard(){
-    const v = currentVerb();
-    if (!v) { elVerbsCard.hidden = true; return; }
-    clearFieldStyles();
-    elEnglish.textContent = v.english || '';
-    elInf.value = '';
-    elPart.value = '';
-    [pIch,pDu,pEr,pIhr].forEach(el=>{ if(el) el.value=''; });
-
-    if (inpPrep) inpPrep.value = '';
-
-    
-    // Reset preposition & reflexive UI (new feature)
-    if (selPrep) selPrep.value = '';               // reset preposition dropdown
-    chosenRefl = null;                             // forget previous yes/no choice
-    reflBtns.forEach(b=>b.classList.remove('selected'));  // unselect both buttons
-    if (selReflCase) { 
-      selReflCase.value = 'Akk';                   // set default case to Akkusativ
-      selReflCase.disabled = true;                 // keep it disabled until "Yes" is clicked
-    }
-
-    // aux UI reset
-    elAuxBtns.forEach(btn=>btn.classList.remove('selected'));
-    elAuxBadge.style.display='none';
-    elAuxBadge.textContent='';
-    elAuxFixed.textContent='—';
-    elFeedback.textContent='';
-  }
-  
-  // Function to select auxiliary (haben/sein)
-  function selectAux(aux){ // 'haben' or 'sein'
-    chosenAux = aux;
-    elAuxBtns.forEach(b=>b.classList.toggle('selected', b.dataset.aux === aux));
-    elAuxBadge.style.display='inline-block';
-    elAuxBadge.textContent = aux;
-    elAuxFixed.textContent = (aux === 'haben') ? 'habe' : 'bin';
-  }
-  
-  // Make sure clicking buttons doesn’t close the keyboard
-  elAuxBtns.forEach(btn=>{
-    // On touch or click, prevent the input from losing focus
-    btn.addEventListener('mousedown', (e)=>{ 
-      e.preventDefault();            // stop losing focus
-      selectAux(btn.dataset.aux);    // handle logic
-      if (lastInputFocus) lastInputFocus.focus({preventScroll:true}); // refocus
-    });
-    btn.addEventListener('touchstart', (e)=>{ 
-      e.preventDefault(); 
-      selectAux(btn.dataset.aux);
-      if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
-    }, {passive:false});
-    // Also handle desktop clicks normally
-    btn.addEventListener('click', ()=> selectAux(btn.dataset.aux));
-  });
-
-    // Function to choose reflexive yes/no
-    function selectRefl(val){ // 'yes' or 'no'
-      chosenRefl = val;
-      reflBtns.forEach(b=>b.classList.toggle('selected', b.dataset.refl === val));
-      selReflCase.disabled = (val !== 'yes');
-    }
-    
-      // Prevent losing focus so keyboard stays up
-      reflBtns.forEach(btn=>{
-        btn.addEventListener('mousedown', (e)=>{ 
-          e.preventDefault();
-          selectRefl(btn.dataset.refl);
-          if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
+        /* =======================
+           Verbs Trainer (ADD-ON)
+           ======================= */
+        
+        /* LocalStorage keys (namespaced) */
+        const MODE_KEY = 'mode'; // shared selector; defaults to 'vocab'
+        const VERBS_LEVEL_KEY = 'verbs_level';
+        const VERBS_UNLOCKED_KEY = 'verbs_unlocked_count';
+        const VERBS_STREAKS_KEY = 'verbs_streaks';
+        const VERBS_INDEX_KEY = 'verbs_index';
+        
+        /* State */
+        const verbsState = {
+          data: [],      // array of verbs
+          index: 0,      // pointer within unlocked pool
+          level: 1,      // 25 items per level
+          unlocked: 25,  // how many available = level * 25
+          streaks: {}    // id -> 0..3
+        };
+        
+        /* DOM refs */
+        const elModeSwitch = document.getElementById('mode-switch');
+        const elVerbsCard  = document.getElementById('verbs-card');
+        const elEnglish    = document.getElementById('verbs-english');
+        const elInf        = document.getElementById('verbs-inf');
+        const elAuxBtns    = Array.from(document.querySelectorAll('.aux-btn'));
+        const elAuxBadge   = document.getElementById('verbs-aux-badge');
+        const elAuxFixed   = document.getElementById('verbs-aux-fixed');
+        const pIch = document.getElementById('verbs-p-ich');
+        const pDu  = document.getElementById('verbs-p-du');
+        const pEr  = document.getElementById('verbs-p-er');
+        const pIhr = document.getElementById('verbs-p-ihr');  const elPart = document.getElementById('verbs-partizip');
+        const elCheck = document.getElementById('verbs-check');
+        const elNext  = document.getElementById('verbs-next');
+        const elFeedback = document.getElementById('verbs-feedback');
+        const selPrep = document.getElementById('verbs-prep');
+        const reflBtns = Array.from(document.querySelectorAll('.refl-btn'));
+        const selReflCase = document.getElementById('verbs-refl-case');
+        let chosenRefl = null; // 'yes' | 'no' | null
+      
+        // NEW: preposition input reference + last focused input tracker
+        const inpPrep = document.getElementById('verbs-prep');
+        let lastInputFocus = null;
+        
+        // Remember which text input is active (so buttons won't steal focus)
+        [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].forEach(el=>{
+          el?.addEventListener('focus', ()=> { lastInputFocus = el; });
         });
-        btn.addEventListener('touchstart', (e)=>{ 
-          e.preventDefault();
-          selectRefl(btn.dataset.refl);
-          if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
-        }, {passive:false});
-        btn.addEventListener('click', ()=> selectRefl(btn.dataset.refl));
-      });
+      
+          // The order you want to tab through with Enter:
+          function focusChain(){
+          // Only include visible & enabled inputs
+          return [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].filter(el => el && !el.disabled && el.offsetParent !== null);
+        }
+        function focusNextFrom(current){
+          const list = focusChain();
+          const i = list.indexOf(current);
+          if (i >= 0 && i < list.length - 1) {
+            list[i+1].focus({preventScroll:true});
+          } else {
+            // last field -> press Check
+            elCheck?.click();
+          }
+        }
+        // Add Enter key handler to each input
+        [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].forEach(el=>{
+          el?.addEventListener('keydown', (e)=>{
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              focusNextFrom(e.target);
+            }
+          });
+        });
+      
+          
+        /* Helpers */
+        function lsGet(key, fallback) {
+          try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+        }
+        function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+        function lsGetInt(key, fallback) {
+          const v = localStorage.getItem(key); const n = v===null?NaN:parseInt(v,10); return Number.isFinite(n)?n:fallback;
+        }
+        function lsSetInt(key, n) { try { localStorage.setItem(key, String(n)); } catch {} }
+        function norm(s){ return (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
+        function mark(el, ok){ el?.classList.remove('result-ok','result-bad'); el?.classList.add(ok?'result-ok':'result-bad'); }
+        
+        /* Mode switch (non-destructive) */
+        function getMode(){ return localStorage.getItem(MODE_KEY) || 'vocab'; }
+        function setMode(m){ localStorage.setItem(MODE_KEY, m); renderMode(); }
+        function renderMode(){
+          const mode = localStorage.getItem(MODE_KEY) || 'vocab';
+        
+          // Highlight the active mode button
+          document.querySelectorAll('#mode-switch .mode-btn').forEach(btn=>{
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+          });
+        
+          // Sections we want to show/hide
+          const vocab = document.getElementById('vocab-wrapper'); // <- the wrapper you just added
+          const verbs = document.getElementById('verbs-card');
+        
+          // Show Verbs card only in "verbs" mode
+          if (verbs) verbs.hidden = (mode !== 'verbs');
+        
+          // Show Vocab only in "vocab" or "mix" (hide when "verbs")
+          if (vocab) vocab.style.display = (mode === 'vocab' || mode === 'mix') ? '' : 'none';
+        
+          // If entering verbs, (re)render a fresh card
+          if (mode === 'verbs') {
+            chosenAux = null;          // from the verbs add-on state
+            renderVerbsCard?.();       // safe call in case it’s not defined yet
+          }
+        }
+        elModeSwitch?.addEventListener('click', (e)=>{
+          if(e.target.matches('.mode-btn')){
+            setMode(e.target.dataset.mode);
+          }
+        });
+        
+        /* Load verbs data
+           - Tries verbs.csv (same folder) with header:
+             id,lemma,english,aux,ich,du,er,wir,ihr,sie,partizip
+           - If not found, uses a small mock so you can test UI immediately.
+        */
+        async function loadVerbsData(){
+          let rows = null;
+          try {
+            const res = await fetch('verbs.csv', { cache: 'no-store' });
+            if (res.ok) {
+              const csv = await res.text();
+              rows = parseCSV(csv);
+            }
+          } catch(_) {}
+          if (!rows || rows.length===0) {
+            rows = [
+              { id:'v001', lemma:'gehen',  english:'to go',    aux:'sein',  ich:'gehe', du:'gehst', er:'geht', wir:'gehen', ihr:'geht', sie:'gehen', partizip:'gegangen' },
+              { id:'v002', lemma:'machen', english:'to make',  aux:'haben', ich:'mache', du:'machst', er:'macht', wir:'machen', ihr:'macht', sie:'machen', partizip:'gemacht' },
+              { id:'v003', lemma:'kommen', english:'to come',  aux:'sein',  ich:'komme', du:'kommst', er:'kommt', wir:'kommen', ihr:'kommt', sie:'kommen', partizip:'gekommen' },
+            ];
+          }
+          verbsState.data = rows;
+        }
+        
+        /* Tiny CSV parser (no deps) */
+        function parseCSV(text){
+          const lines = text.trim().split(/\r?\n/);
+          const headers = lines.shift().split(',').map(h=>h.trim());
+          return lines.map(line=>{
+            const cells = [];
+            let cur = '', inQ=false;
+            for (let i=0;i<line.length;i++){
+              const ch=line[i];
+              if (ch==='\"'){ inQ = !inQ; continue; }
+              if (ch===',' && !inQ){ cells.push(cur); cur=''; continue; }
+              cur += ch;
+            }
+            cells.push(cur);
+            const obj={};
+            headers.forEach((h,i)=>obj[h]= (cells[i]||'').trim());
+            // ensure id exists
+            if (!obj.id) obj.id = 'v_' + obj.lemma + '_' + Math.random().toString(36).slice(2,7);
+            return obj;
+          });
+        }
+        
+        /* Initialize state from LS */
+        function initVerbsState(){
+          verbsState.level   = lsGetInt(VERBS_LEVEL_KEY, 1);
+          verbsState.unlocked= lsGetInt(VERBS_UNLOCKED_KEY, verbsState.level*25);
+          verbsState.index   = lsGetInt(VERBS_INDEX_KEY, 0);
+          verbsState.streaks = lsGet(VERBS_STREAKS_KEY, {});
+        }
+        
+        /* Save state to LS */
+        function saveVerbsState(){
+          lsSetInt(VERBS_LEVEL_KEY, verbsState.level);
+          lsSetInt(VERBS_UNLOCKED_KEY, verbsState.unlocked);
+          lsSetInt(VERBS_INDEX_KEY, verbsState.index);
+          lsSet(VERBS_STREAKS_KEY, verbsState.streaks);
+        }
+        
+        /* Render current verb card */
+        function currentVerb(){
+          const pool = verbsState.data.slice(0, Math.min(verbsState.unlocked, verbsState.data.length));
+          if (pool.length===0) return null;
+          const i = Math.max(0, Math.min(verbsState.index % pool.length, pool.length-1));
+          return pool[i];
+        }
+        
+        function clearFieldStyles(){
+          [elInf, pIch, pDu, pEr, pIhr, elPart].forEach(el=>el?.classList.remove('result-ok','result-bad'));
+        }
+        
+        function renderVerbsCard(){
+          const v = currentVerb();
+          if (!v) { elVerbsCard.hidden = true; return; }
+          clearFieldStyles();
+          elEnglish.textContent = v.english || '';
+          elInf.value = '';
+          elPart.value = '';
+          [pIch,pDu,pEr,pIhr].forEach(el=>{ if(el) el.value=''; });
+      
+          if (inpPrep) inpPrep.value = '';
+      
+          
+          // Reset preposition & reflexive UI (new feature)
+          if (selPrep) selPrep.value = '';               // reset preposition dropdown
+          chosenRefl = null;                             // forget previous yes/no choice
+          reflBtns.forEach(b=>b.classList.remove('selected'));  // unselect both buttons
+          if (selReflCase) { 
+            selReflCase.value = 'Akk';                   // set default case to Akkusativ
+            selReflCase.disabled = true;                 // keep it disabled until "Yes" is clicked
+          }
+      
+          // aux UI reset
+          elAuxBtns.forEach(btn=>btn.classList.remove('selected'));
+          elAuxBadge.style.display='none';
+          elAuxBadge.textContent='';
+          elAuxFixed.textContent='—';
+          elFeedback.textContent='';
+        }
+        
+        // Function to select auxiliary (haben/sein)
+        function selectAux(aux){ // 'haben' or 'sein'
+          chosenAux = aux;
+          elAuxBtns.forEach(b=>b.classList.toggle('selected', b.dataset.aux === aux));
+          elAuxBadge.style.display='inline-block';
+          elAuxBadge.textContent = aux;
+          elAuxFixed.textContent = (aux === 'haben') ? 'habe' : 'bin';
+        }
+        
+        // Make sure clicking buttons doesn’t close the keyboard
+        elAuxBtns.forEach(btn=>{
+          // On touch or click, prevent the input from losing focus
+          btn.addEventListener('mousedown', (e)=>{ 
+            e.preventDefault();            // stop losing focus
+            selectAux(btn.dataset.aux);    // handle logic
+            if (lastInputFocus) lastInputFocus.focus({preventScroll:true}); // refocus
+          });
+          btn.addEventListener('touchstart', (e)=>{ 
+            e.preventDefault(); 
+            selectAux(btn.dataset.aux);
+            if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
+          }, {passive:false});
+          // Also handle desktop clicks normally
+          btn.addEventListener('click', ()=> selectAux(btn.dataset.aux));
+        });
+      
+          // Function to choose reflexive yes/no
+          function selectRefl(val){ // 'yes' or 'no'
+            chosenRefl = val;
+            reflBtns.forEach(b=>b.classList.toggle('selected', b.dataset.refl === val));
+            selReflCase.disabled = (val !== 'yes');
+          }
+          
+            // Prevent losing focus so keyboard stays up
+            reflBtns.forEach(btn=>{
+              btn.addEventListener('mousedown', (e)=>{ 
+                e.preventDefault();
+                selectRefl(btn.dataset.refl);
+                if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
+              });
+              btn.addEventListener('touchstart', (e)=>{ 
+                e.preventDefault();
+                selectRefl(btn.dataset.refl);
+                if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
+              }, {passive:false});
+              btn.addEventListener('click', ()=> selectRefl(btn.dataset.refl));
+            });
+      
+      
+        
+        /* Check logic: full card must be correct to increment streak (3x target) */
+        function checkVerbsCard(){
+          const v = currentVerb();
+          if (!v) return;
+        
+          // comparisons
+          const okInf  = norm(elInf.value)   === norm(v.lemma);
+          const okAux  = (chosenAux === (v.aux||'').toLowerCase());
+          const okIch  = norm(pIch.value)    === norm(v.ich);
+          const okDu   = norm(pDu.value)     === norm(v.du);
+          const okEr   = norm(pEr.value)     === norm(v.er);
+          const okIhr  = norm(pIhr.value)    === norm(v.ihr);
+          const okPart = norm(elPart.value)  === norm(v.partizip);
+      
+          // --- Preposition check (input + datalist) ---
+          let okPrep = true; // default true if no prepositions listed for this verb
+          const rawPreps = (v.preps || '').trim(); // e.g., "auf|Akk;über|Akk"
+          if (rawPreps) {
+            const allowed = rawPreps.split(';').map(s=>s.trim().toLowerCase()); // ["auf|akk","über|akk"]
+            // normalize user input "auf + Akk" -> "auf|Akk"
+            const raw = (inpPrep?.value || '').trim();
+            const normalized = raw.replace(/\s*\+\s*/,'|').replace(/\s+/g,' ').trim();
+            const chosen = normalized.toLowerCase(); // "auf|akk"
+            okPrep = allowed.includes(chosen);
+            if (inpPrep) { 
+              inpPrep.classList.remove('result-ok','result-bad'); 
+              inpPrep.classList.add(okPrep ? 'result-ok' : 'result-bad'); 
+            }
+          }
+      
+          
+          // --- Reflexive check ---
+          let okRefl = true; // default true if no reflexive rule
+          const needRefl = (v.reflexive || '').toLowerCase();       // yes/no from CSV
+          const needCase = (v.reflexive_case || '').toLowerCase();  // akk/dat from CSV
+          if (needRefl === 'yes') {
+            const userRefl = (chosenRefl || '').toLowerCase();
+            const userCase = (selReflCase?.value || '').toLowerCase();
+            okRefl = (userRefl === 'yes') && (!needCase || userCase === needCase);
+          } else if (needRefl === 'no') {
+            okRefl = (chosenRefl === 'no'); // must select "No"
+          }
+          
+          // color the buttons to show correct/wrong
+          reflBtns.forEach(b=>{
+            b.classList.remove('result-ok','result-bad');
+            if (needRefl) b.classList.add(okRefl ? 'result-ok' : 'result-bad');
+          });
+          if (selReflCase && chosenRefl==='yes' && needCase) {
+            selReflCase.classList.remove('result-ok','result-bad');
+            selReflCase.classList.add(okRefl ? 'result-ok' : 'result-bad');
+          }
+      
+        
+          // mark fields
+          mark(elInf, okInf);
+          elAuxBtns.forEach(b=>b.classList.toggle('result-ok', okAux));
+          elAuxBtns.forEach(b=>b.classList.toggle('result-bad', !okAux));
+          mark(pIch, okIch); mark(pDu, okDu); mark(pEr, okEr);
+          mark(pIhr, okIhr); 
+          mark(elPart, okPart);
+        
+          const allOK =
+            okInf && okAux &&
+            okIch && okDu && okEr && okIhr &&
+            okPart && okPrep && okRefl;
+          
+          // dynamic total for optional fields
+          let total = 7; // base fields we already check
+          if ((v.preps||'').trim()) total += 1;          // need preposition
+          if ((v.reflexive||'').trim()) total += 1;      // need reflexive
+      
+        
+          // streak update (per-item)
+          const id = v.id;
+          const cur = verbsState.streaks[id] || 0;
+          verbsState.streaks[id] = allOK ? Math.min(3, cur + 1) : 0;
+        
+          // unlock next level if needed (every 25)
+          maybeUnlockNextVerbsLevel();
+        
+          saveVerbsState();
+        
+          // feedback
+          const streakNow = verbsState.streaks[id];
+          elFeedback.textContent = allOK
+            ? `✅ Perfect! Streak for "${v.lemma}" is now ${streakNow}/3.`
+            : `❌ Not quite. Streak for "${v.lemma}" reset to 0.`;
+        
+          // (OPTIONAL) if you have a global XP/streak function, call it here safely:
+          try {
+            if (typeof updateStreak === 'function') {
+              updateStreak({ mode: 'verbs', passed: allOK, correctFields: allOK?9:0, totalFields: 9 });
+            }
+          } catch(_) {}
+        }
+        
+        /* Unlock logic identical shape to your vocab levels */
+        function allVerbsInCurrentLevelComplete(){
+          const need = verbsState.level * 25;
+          const ids = verbsState.data.slice(0, Math.min(need, verbsState.data.length)).map(v=>v.id);
+          return ids.length>0 && ids.every(id => (verbsState.streaks[id]||0) >= 3);
+        }
+        function maybeUnlockNextVerbsLevel(){
+          if (allVerbsInCurrentLevelComplete()){
+            verbsState.level += 1;
+            verbsState.unlocked = Math.min(verbsState.level * 25, verbsState.data.length);
+            // You can show a toast here if you have one
+          }
+        }
+        
+        /* Navigation */
+        function nextVerb(){
+          // Prefer items that are < 3 streak within unlocked set
+          const pool = verbsState.data.slice(0, Math.min(verbsState.unlocked, verbsState.data.length));
+          if (pool.length===0) return;
+        
+          let nextIdx = (verbsState.index + 1) % pool.length;
+        
+          // Try to find a verb with streak < 3
+          const start = nextIdx;
+          do {
+            const id = pool[nextIdx].id;
+            if ((verbsState.streaks[id]||0) < 3) break;
+            nextIdx = (nextIdx + 1) % pool.length;
+          } while(nextIdx !== start);
+        
+          verbsState.index = nextIdx;
+          saveVerbsState();
+          chosenAux = null;
+          renderVerbsCard();
+        }
+        
+        /* Wire buttons */
+        elCheck?.addEventListener('click', checkVerbsCard);
+        elNext ?.addEventListener('click', nextVerb);
+        
+        /* Boot */
+        (async function initVerbs(){
+          document.body.classList.add('dark'); // enables black mode
+          
+          await loadVerbsData();
+          initVerbsState();
+          renderMode();
+        
+          // If first time and no mode saved, keep your site behavior (vocab default).
+          if (!localStorage.getItem(MODE_KEY)) localStorage.setItem(MODE_KEY, 'vocab');
+        
+          if (getMode() === 'verbs') renderVerbsCard();
+        
+          // Re-render verbs card whenever switching to verbs mode
+          const obs = new MutationObserver(()=>{ if(getMode()==='verbs') renderVerbsCard(); });
+          obs.observe(document.getElementById('mode-switch'), { attributes:true, childList:true, subtree:true });
+        })();
 
+        <script>
+     /* ============================================
+     Adjectives & Adverbs (Adj/Adv) — simple trainer
+     ============================================= */
+        
+        /* LocalStorage keys */
+        const ADJADV_LEVEL_KEY   = 'adjadv_level';
+        const ADJADV_UNLOCKED_KEY= 'adjadv_unlocked_count';
+        const ADJADV_INDEX_KEY   = 'adjadv_index';
+        const ADJADV_STREAKS_KEY = 'adjadv_streaks';
+        
+        /* State */
+        const adjadvState = {
+          data: [],     // {id, english, german, example}
+          index: 0,
+          level: 1,     // 25 per level
+          unlocked: 25,
+          streaks: {}   // id -> 0..3
+        };
+        
+        /* DOM refs */
+        const elAdjAdvCard   = document.getElementById('adjadv-card');
+        const elAdjAdvEn     = document.getElementById('adjadv-english');
+        const elAdjAdvDe     = document.getElementById('adjadv-german');
+        const elAdjAdvEx     = document.getElementById('adjadv-example');
+        const elAdjAdvCheck  = document.getElementById('adjadv-check');
+        const elAdjAdvNext   = document.getElementById('adjadv-next');
+        const elAdjAdvFb     = document.getElementById('adjadv-feedback');
+        
+        /* Helpers */
+        function aa_lsGet(key, fallback){ try{const v=localStorage.getItem(key); return v?JSON.parse(v):fallback;}catch{ return fallback; } }
+        function aa_lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
+        function aa_lsGetInt(key, fallback){ const v=localStorage.getItem(key); const n=v===null?NaN:parseInt(v,10); return Number.isFinite(n)?n:fallback; }
+        function aa_lsSetInt(key, n){ try{ localStorage.setItem(key, String(n)); }catch{} }
+        function aa_norm(s){ return (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
+        
+        function aa_initState(){
+          adjadvState.level    = aa_lsGetInt(ADJADV_LEVEL_KEY, 1);
+          adjadvState.unlocked = aa_lsGetInt(ADJADV_UNLOCKED_KEY, 25);
+          adjadvState.index    = aa_lsGetInt(ADJADV_INDEX_KEY, 0);
+          adjadvState.streaks  = aa_lsGet(ADJADV_STREAKS_KEY, {});
+        }
+        function aa_saveState(){
+          aa_lsSetInt(ADJADV_LEVEL_KEY, adjadvState.level);
+          aa_lsSetInt(ADJADV_UNLOCKED_KEY, adjadvState.unlocked);
+          aa_lsSetInt(ADJADV_INDEX_KEY, adjadvState.index);
+          aa_lsSet(ADJADV_STREAKS_KEY, adjadvState.streaks);
+        }
+        
+        /* Load data from adjadv.csv (english,german,example) */
+        async function aa_loadData(){
+          try{
+            const res = await fetch('adjadv.csv', { cache:'no-store' });
+            if(res.ok){
+              const csv = await res.text();
+              const rows = parseCSV(csv); // we reuse the verbs parseCSV helper
+              // Expect headers: english,german,example
+              // If user CSV has headers, parseCSV returns objects already.
+              // But our parseCSV returns array-of-objects only when a header line exists.
+              // So handle both cases:
+              if(Array.isArray(rows) && rows.length && typeof rows[0]==='object' && rows[0].english!==undefined){
+                adjadvState.data = rows.map((r,i)=>({
+                  id: r.id || ('aa_'+(r.german||r.english||('i'+i)).replace(/\s+/g,'_')+'_'+i),
+                  english: r.english || '',
+                  german:  r.german  || '',
+                  example: r.example || ''
+                }));
+              } else {
+                // Simple fallback if the CSV had no header or parse failed:
+                adjadvState.data = [
+                  { id:'aa001', english:'beautiful', german:'schön', example:'Das ist ein schönes Haus.' },
+                  { id:'aa002', english:'slow',      german:'langsam', example:'Er fährt langsam.' },
+                  { id:'aa003', english:'quickly',   german:'schnell', example:'Sie läuft schnell.' },
+                  { id:'aa004', english:'angry',     german:'wütend', example:'Er ist sehr wütend.' },
+                  { id:'aa005', english:'carefully', german:'vorsichtig', example:'Er arbeitet vorsichtig.' },
+                ];
+              }
+            } else {
+              // No CSV file -> use small demo list
+              adjadvState.data = [
+                { id:'aa001', english:'beautiful', german:'schön', example:'Das ist ein schönes Haus.' },
+                { id:'aa002', english:'slow',      german:'langsam', example:'Er fährt langsam.' },
+                { id:'aa003', english:'quickly',   german:'schnell', example:'Sie läuft schnell.' },
+              ];
+            }
+          } catch {
+            adjadvState.data = [
+              { id:'aa001', english:'beautiful', german:'schön', example:'Das ist ein schönes Haus.' },
+              { id:'aa002', english:'slow',      german:'langsam', example:'Er fährt langsam.' },
+            ];
+          }
+        }
+        
+        /* Current item helpers */
+        function aa_pool(){
+          return adjadvState.data.slice(0, Math.min(adjadvState.unlocked, adjadvState.data.length));
+        }
+        function aa_current(){
+          const p = aa_pool(); if(!p.length) return null;
+          const i = Math.max(0, Math.min(adjadvState.index % p.length, p.length-1));
+          return p[i];
+        }
+        
+        /* Render & actions */
+        function aa_clearStyles(){ elAdjAdvDe?.classList.remove('result-ok','result-bad'); }
+        function aa_render(){
+          const it = aa_current();
+          if(!it){ elAdjAdvCard.hidden = true; return; }
+          aa_clearStyles();
+          elAdjAdvCard.hidden = false;
+          elAdjAdvEn.textContent = it.english || '';
+          elAdjAdvDe.value = '';
+          elAdjAdvEx.textContent = it.example ? '📝 ' + it.example : '';
+          elAdjAdvFb.textContent = '';
+          setTimeout(()=>{ elAdjAdvDe?.focus(); }, 0);
+        }
+        
+        function aa_allInLevelMastered(){
+          const need = adjadvState.level * 25;
+          const ids = adjadvState.data.slice(0, Math.min(need, adjadvState.data.length)).map(x=>x.id);
+          return ids.length>0 && ids.every(id => (adjadvState.streaks[id]||0) >= 3);
+        }
+        function aa_maybeUnlockNext(){
+          if(aa_allInLevelMastered()){
+            adjadvState.level += 1;
+            adjadvState.unlocked = Math.min(adjadvState.level * 25, adjadvState.data.length);
+          }
+        }
+        
+        function aa_check(){
+          const it = aa_current(); if(!it) return;
+          const ok = aa_norm(elAdjAdvDe.value) === aa_norm(it.german);
+          elAdjAdvDe.classList.add(ok ? 'result-ok' : 'result-bad');
+          const cur = adjadvState.streaks[it.id] || 0;
+          adjadvState.streaks[it.id] = ok ? Math.min(3, cur+1) : 0;
+          aa_maybeUnlockNext();
+          aa_saveState();
+          elAdjAdvFb.textContent = ok
+            ? `✅ Correct! Streak for "${it.german}" is now ${adjadvState.streaks[it.id]}/3.`
+            : `❌ Wrong. Correct: ${it.german}`;
+        }
+        function aa_next(){
+          const p = aa_pool(); if(!p.length) return;
+          // Prefer items with streak < 3
+          let next = (adjadvState.index + 1) % p.length;
+          const start = next;
+          do{
+            const id = p[next].id;
+            if ((adjadvState.streaks[id]||0) < 3) break;
+            next = (next + 1) % p.length;
+          }while(next !== start);
+          adjadvState.index = next;
+          aa_saveState();
+          aa_render();
+        }
+        
+        /* Wire buttons */
+        elAdjAdvCheck?.addEventListener('click', aa_check);
+        elAdjAdvNext ?.addEventListener('click', ()=>{
+          aa_next();
+          // if MIX mode, after moving within this pool, switch to a random section
+          if (getMode()==='mix') pickRandomSectionAndRender();
+        });
+        elAdjAdvDe?.addEventListener('keydown', (e)=>{
+          if(e.key==='Enter'){ e.preventDefault(); aa_check(); }
+        });
+        
+        /* ===== Mix integration =====
+           When in MIX, we show one section at a time (vocab/verbs/adjadv).
+           - On entering MIX -> pick random section and render.
+           - On any "Next" click of the visible section -> advance that pool, then randomly switch section.
+        */
+        const MIX_SECTIONS = ['vocab','verbs','adjadv'];
+        function pickRandomSection(){
+          return MIX_SECTIONS[Math.floor(Math.random()*MIX_SECTIONS.length)];
+        }
+        function showOnly(section){ // hide/show sections
+          const vocab = document.getElementById('vocab-wrapper');
+          const verbs = document.getElementById('verbs-card');
+          const adjad = document.getElementById('adjadv-card');
+          if (section==='vocab'){
+            if(vocab) vocab.style.display='';
+            if(verbs) verbs.hidden=true;
+            if(adjad) adjad.hidden=true;
+          } else if (section==='verbs'){
+            if(vocab) vocab.style.display='none';
+            if(verbs) verbs.hidden=false;
+            if(adjad) adjad.hidden=true;
+          } else if (section==='adjadv'){
+            if(vocab) vocab.style.display='none';
+            if(verbs) verbs.hidden=true;
+            if(adjad) adjad.hidden=false;
+          }
+        }
+        function renderForSection(section){
+          if (section==='vocab'){
+            // reuse your existing nextWord() to ensure a word is visible
+            try { nextWord(); } catch {}
+          } else if (section==='verbs'){
+            try { renderVerbsCard(); } catch {}
+          } else if (section==='adjadv'){
+            aa_render();
+          }
+          showOnly(section);
+        }
+        function pickRandomSectionAndRender(){
+          const s = pickRandomSection();
+          renderForSection(s);
+        }
+        
+        /* Extend existing renderMode to include adjadv + mix */
+        const _origRenderMode = renderMode;
+        renderMode = function(){
+          _origRenderMode(); // keeps original show/hide for vocab & verbs
+          const mode = getMode();
+        
+          const vocab = document.getElementById('vocab-wrapper');
+          const verbs = document.getElementById('verbs-card');
+          const adjad = document.getElementById('adjadv-card');
+        
+          // Show Adj/Adv only in "adjadv" mode
+          if (adjad) adjad.hidden = !(mode==='adjadv' || mode==='mix');
+        
+          // For "vocab": (keep original) -> vocab visible, others hidden by original code
+          // For "verbs": (keep original) -> verbs visible
+          // For "adjadv": hide vocab & verbs, show adjadv
+          if (mode==='adjadv'){
+            if(vocab) vocab.style.display='none';
+            if(verbs) verbs.hidden = true;
+            if(adjad) { adjad.hidden = false; aa_render(); }
+          }
+        
+          // For "mix": pick one section randomly and render only that
+          if (mode==='mix'){
+            const section = pickRandomSection();
+            renderForSection(section);
+        
+            // Also tweak each card's Next to jump to a new random section after it advances:
+            // (Vocab) — hook its Next button (id="nextBtn")
+            const vbNext = document.getElementById('nextBtn');
+            if (vbNext && !vbNext._mixHooked){
+              vbNext._mixHooked = true;
+              const orig = vbNext.onclick;
+              vbNext.addEventListener('click', ()=>{
+                setTimeout(()=>{ if(getMode()==='mix') pickRandomSectionAndRender(); }, 0);
+              });
+            }
+            // (Verbs) — already hooked above in elNext listener (added set for mix)
+            // (Adj/Adv) — already hooked above in elAdjAdvNext listener
+          }
+        };
+        
+        /* Boot Adj/Adv together with verbs init */
+        (async function initAdjAdv(){
+          await aa_loadData();
+          aa_initState();
+          // If user switches to adjadv later, aa_render() will run via renderMode().
+        })();
+    </script>
 
-  
-  /* Check logic: full card must be correct to increment streak (3x target) */
-  function checkVerbsCard(){
-    const v = currentVerb();
-    if (!v) return;
-  
-    // comparisons
-    const okInf  = norm(elInf.value)   === norm(v.lemma);
-    const okAux  = (chosenAux === (v.aux||'').toLowerCase());
-    const okIch  = norm(pIch.value)    === norm(v.ich);
-    const okDu   = norm(pDu.value)     === norm(v.du);
-    const okEr   = norm(pEr.value)     === norm(v.er);
-    const okIhr  = norm(pIhr.value)    === norm(v.ihr);
-    const okPart = norm(elPart.value)  === norm(v.partizip);
-
-    // --- Preposition check (input + datalist) ---
-    let okPrep = true; // default true if no prepositions listed for this verb
-    const rawPreps = (v.preps || '').trim(); // e.g., "auf|Akk;über|Akk"
-    if (rawPreps) {
-      const allowed = rawPreps.split(';').map(s=>s.trim().toLowerCase()); // ["auf|akk","über|akk"]
-      // normalize user input "auf + Akk" -> "auf|Akk"
-      const raw = (inpPrep?.value || '').trim();
-      const normalized = raw.replace(/\s*\+\s*/,'|').replace(/\s+/g,' ').trim();
-      const chosen = normalized.toLowerCase(); // "auf|akk"
-      okPrep = allowed.includes(chosen);
-      if (inpPrep) { 
-        inpPrep.classList.remove('result-ok','result-bad'); 
-        inpPrep.classList.add(okPrep ? 'result-ok' : 'result-bad'); 
-      }
-    }
-
-    
-    // --- Reflexive check ---
-    let okRefl = true; // default true if no reflexive rule
-    const needRefl = (v.reflexive || '').toLowerCase();       // yes/no from CSV
-    const needCase = (v.reflexive_case || '').toLowerCase();  // akk/dat from CSV
-    if (needRefl === 'yes') {
-      const userRefl = (chosenRefl || '').toLowerCase();
-      const userCase = (selReflCase?.value || '').toLowerCase();
-      okRefl = (userRefl === 'yes') && (!needCase || userCase === needCase);
-    } else if (needRefl === 'no') {
-      okRefl = (chosenRefl === 'no'); // must select "No"
-    }
-    
-    // color the buttons to show correct/wrong
-    reflBtns.forEach(b=>{
-      b.classList.remove('result-ok','result-bad');
-      if (needRefl) b.classList.add(okRefl ? 'result-ok' : 'result-bad');
-    });
-    if (selReflCase && chosenRefl==='yes' && needCase) {
-      selReflCase.classList.remove('result-ok','result-bad');
-      selReflCase.classList.add(okRefl ? 'result-ok' : 'result-bad');
-    }
-
-  
-    // mark fields
-    mark(elInf, okInf);
-    elAuxBtns.forEach(b=>b.classList.toggle('result-ok', okAux));
-    elAuxBtns.forEach(b=>b.classList.toggle('result-bad', !okAux));
-    mark(pIch, okIch); mark(pDu, okDu); mark(pEr, okEr);
-    mark(pIhr, okIhr); 
-    mark(elPart, okPart);
-  
-    const allOK =
-      okInf && okAux &&
-      okIch && okDu && okEr && okIhr &&
-      okPart && okPrep && okRefl;
-    
-    // dynamic total for optional fields
-    let total = 7; // base fields we already check
-    if ((v.preps||'').trim()) total += 1;          // need preposition
-    if ((v.reflexive||'').trim()) total += 1;      // need reflexive
-
-  
-    // streak update (per-item)
-    const id = v.id;
-    const cur = verbsState.streaks[id] || 0;
-    verbsState.streaks[id] = allOK ? Math.min(3, cur + 1) : 0;
-  
-    // unlock next level if needed (every 25)
-    maybeUnlockNextVerbsLevel();
-  
-    saveVerbsState();
-  
-    // feedback
-    const streakNow = verbsState.streaks[id];
-    elFeedback.textContent = allOK
-      ? `✅ Perfect! Streak for "${v.lemma}" is now ${streakNow}/3.`
-      : `❌ Not quite. Streak for "${v.lemma}" reset to 0.`;
-  
-    // (OPTIONAL) if you have a global XP/streak function, call it here safely:
-    try {
-      if (typeof updateStreak === 'function') {
-        updateStreak({ mode: 'verbs', passed: allOK, correctFields: allOK?9:0, totalFields: 9 });
-      }
-    } catch(_) {}
-  }
-  
-  /* Unlock logic identical shape to your vocab levels */
-  function allVerbsInCurrentLevelComplete(){
-    const need = verbsState.level * 25;
-    const ids = verbsState.data.slice(0, Math.min(need, verbsState.data.length)).map(v=>v.id);
-    return ids.length>0 && ids.every(id => (verbsState.streaks[id]||0) >= 3);
-  }
-  function maybeUnlockNextVerbsLevel(){
-    if (allVerbsInCurrentLevelComplete()){
-      verbsState.level += 1;
-      verbsState.unlocked = Math.min(verbsState.level * 25, verbsState.data.length);
-      // You can show a toast here if you have one
-    }
-  }
-  
-  /* Navigation */
-  function nextVerb(){
-    // Prefer items that are < 3 streak within unlocked set
-    const pool = verbsState.data.slice(0, Math.min(verbsState.unlocked, verbsState.data.length));
-    if (pool.length===0) return;
-  
-    let nextIdx = (verbsState.index + 1) % pool.length;
-  
-    // Try to find a verb with streak < 3
-    const start = nextIdx;
-    do {
-      const id = pool[nextIdx].id;
-      if ((verbsState.streaks[id]||0) < 3) break;
-      nextIdx = (nextIdx + 1) % pool.length;
-    } while(nextIdx !== start);
-  
-    verbsState.index = nextIdx;
-    saveVerbsState();
-    chosenAux = null;
-    renderVerbsCard();
-  }
-  
-  /* Wire buttons */
-  elCheck?.addEventListener('click', checkVerbsCard);
-  elNext ?.addEventListener('click', nextVerb);
-  
-  /* Boot */
-  (async function initVerbs(){
-    document.body.classList.add('dark'); // enables black mode
-    
-    await loadVerbsData();
-    initVerbsState();
-    renderMode();
-  
-    // If first time and no mode saved, keep your site behavior (vocab default).
-    if (!localStorage.getItem(MODE_KEY)) localStorage.setItem(MODE_KEY, 'vocab');
-  
-    if (getMode() === 'verbs') renderVerbsCard();
-  
-    // Re-render verbs card whenever switching to verbs mode
-    const obs = new MutationObserver(()=>{ if(getMode()==='verbs') renderVerbsCard(); });
-    obs.observe(document.getElementById('mode-switch'), { attributes:true, childList:true, subtree:true });
-  })();
   </script>
 </body>
 </html>
