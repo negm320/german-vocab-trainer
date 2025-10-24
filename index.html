@@ -183,16 +183,7 @@
       border: 1px solid #2a2f36;
     }
   </style>
-  <!-- === Prepositions Trainer Card (no +Akk/+Dat) === -->
-  <style>
-    #preps-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 8px 0 16px; background: var(--card); }
-    #preps-card[hidden] { display: none; }
-    #preps-sentence { font-size: 20px; line-height: 1.6; margin-bottom: 10px; }
-    #preps-input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--input); color: var(--text); min-width: 80px; display: inline-block; text-align:center; }
-    #preps-input.result-ok { border-color: #29a36a !important; background: #0f1b16 !important; }
-    #preps-input.result-bad { border-color: #d9534f !important; background: #1a1111 !important; }
-    #preps-english { color: var(--muted); margin: 6px 0 0; }
-  </style>
+
 </head>
 <body>
     <div id="mode-switch">
@@ -343,9 +334,29 @@
           <button id="preps-check">Check</button>
           <button id="preps-next">Next</button>
         </div>
+      <!-- === Prepositions Trainer Card (simple: just the preposition) === -->
+      <style>
+        #preps-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 8px 0 16px; background: var(--card); }
+        #preps-card[hidden] { display: none; }
+        #preps-sentence { font-size: 20px; line-height: 1.6; margin-bottom: 10px; }
+        #preps-input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--input); color: var(--text); min-width: 80px; display: inline-block; text-align:center; }
+        #preps-input.result-ok { border-color: #29a36a !important; background: #0f1b16 !important; }
+        #preps-input.result-bad { border-color: #d9534f !important; background: #1a1111 !important; }
+        #preps-english { color: var(--muted); margin: 6px 0 0; }
+      </style>
+      
+      <div id="preps-card" hidden>
+        <div id="preps-sentence"></div>
+        <p id="preps-english" class="muted"></p>
+      
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <button id="preps-check">Check</button>
+          <button id="preps-next">Next</button>
+        </div>
       
         <div id="preps-feedback" style="margin-top:10px;font-size:14px;"></div>
       
+        <!-- Autocomplete list (plain prepositions, no + Akk/+ Dat) -->
         <datalist id="preps-options">
           <option value="an"></option>
           <option value="auf"></option>
@@ -366,6 +377,7 @@
           <option value="trotz"></option>
         </datalist>
       </div>
+
     </div>
   </div>
 
