@@ -678,7 +678,7 @@
     }
   }
   // Add Enter key handler to each input
-  [elInf, pIch, pDu, pEr, pIhr, elPart, inpPrep].forEach(el=>{
+  [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].forEach(el=>{
     el?.addEventListener('keydown', (e)=>{
       if (e.key === 'Enter') {
         e.preventDefault();
