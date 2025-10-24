@@ -1406,13 +1406,12 @@
   
   <script>
     /* ============================================
-       Prepositions Trainer — type-in with autocomplete
-       CSV file: prepositions.csv
+       Prepositions Trainer — type the preposition (no +Akk/+Dat)
+       CSV: prepositions.csv
        Columns: german_sentence,english_translation,correct_prep,options
-       Notes:
-       - Put "___" where the blank should appear in the German sentence.
-       - correct_prep MUST be in the form "auf + Akk" or "mit + Dat" etc.
-       - options is optional: "auf + Akk;an + Dat;bei + Dat"
+       - Put "___" where the blank is in the German sentence.
+       - correct_prep: just the word (e.g., "auf", "bei").
+       - options (optional): "auf;an;bei"
     ============================================ */
     
     const PREPS_LEVEL_KEY    = 'preps_level';
@@ -1420,13 +1419,7 @@
     const PREPS_INDEX_KEY    = 'preps_index';
     const PREPS_STREAKS_KEY  = 'preps_streaks';
     
-    const prepsState = {
-      data: [],      // {id, de, en, correct, options[]}
-      index: 0,
-      level: 1,
-      unlocked: 25,
-      streaks: {}    // id -> 0..3
-    };
+    const prepsState = { data: [], index: 0, level: 1, unlocked: 25, streaks: {} };
     
     const elPrepsCard   = document.getElementById('preps-card');
     const elPrepsSentence = document.getElementById('preps-sentence');
@@ -1439,7 +1432,6 @@
     function pp_lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
     function pp_lsGetInt(key, fallback){ const v=localStorage.getItem(key); const n=v===null?NaN:parseInt(v,10); return Number.isFinite(n)?n:fallback; }
     function pp_lsSetInt(key, n){ try{ localStorage.setItem(key, String(n)); }catch{} }
-    
     function pp_norm(s){ return (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
     
     function pp_initState(){
@@ -1455,6 +1447,7 @@
       pp_lsSet(PREPS_STREAKS_KEY, prepsState.streaks);
     }
     
+    /* Load data */
     async function pp_loadData(){
       let rows = null;
       try{
@@ -1465,11 +1458,11 @@
         }
       }catch(_){}
       if(!rows || !rows.length){
-        // Small demo if CSV missing
+        // Safe demo items if CSV missing
         rows = [
-          { german_sentence:'Ich warte ___ den Bus.', english_translation:'I am waiting for the bus.', correct_prep:'auf + Akk', options:'auf + Akk;an + Dat;bei + Dat' },
-          { german_sentence:'Er interessiert sich ___ Musik.', english_translation:'He is interested in music.', correct_prep:'für + Akk', options:'für + Akk;bei + Dat;mit + Dat' },
-          { german_sentence:'Wir sprechen ___ das Problem.', english_translation:'We are talking about the problem.', correct_prep:'über + Akk', options:'über + Akk;auf + Dat;mit + Dat' },
+          { german_sentence:'Ich warte ___ den Bus.', english_translation:'I am waiting for the bus.', correct_prep:'auf', options:'auf;an;bei' },
+          { german_sentence:'Er interessiert sich ___ Musik.', english_translation:'He is interested in music.', correct_prep:'für', options:'für;bei;mit' },
+          { german_sentence:'Wir sprechen ___ das Problem.', english_translation:'We are talking about the problem.', correct_prep:'über', options:'über;auf;mit' },
         ];
       }
       prepsState.data = rows.map((r,i)=>({
@@ -1481,13 +1474,12 @@
       }));
     }
     
-    /* Simple CSV -> objects using the provided headers in line 1 */
+    /* CSV to objects */
     function pp_parseCSVtoObjects(text){
       const lines = text.trim().split(/\r?\n/);
       if(!lines.length) return [];
       const headers = lines[0].split(',').map(h=>h.trim());
       return lines.slice(1).map(line=>{
-        // minimal CSV (handles commas, not complex quotes); good enough for our simple file
         const cells = []; let cur = '', inQ=false;
         for(let i=0;i<line.length;i++){
           const ch=line[i];
@@ -1517,20 +1509,17 @@
       elPrepsFb.textContent = '';
       elPrepsEn.textContent = it.en ? ('📝 ' + it.en) : '';
     
-      // Split at the blank "___" and place the input in the middle
       const parts = (it.de || '').split('___');
       const left = parts[0] || '';
       const right = parts[1] || '';
     
-      // Build the input
       const input = document.createElement('input');
       input.id = 'preps-input';
       input.setAttribute('list', 'preps-options');
       input.setAttribute('autocomplete', 'off');
-      input.placeholder = 'auf + Akk';
+      input.placeholder = 'auf';
       input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); pp_check(); } });
     
-      // If this item provides its own options, add them to a temporary datalist
       if (it.options && it.options.length){
         const dlId = 'preps-options-dyn';
         let dl = document.getElementById(dlId);
@@ -1542,18 +1531,11 @@
         dl.innerHTML = it.options.map(o=>`<option value="${o}"></option>`).join('');
         input.setAttribute('list', dlId);
       } else {
-        // fall back to global #preps-options
         input.setAttribute('list', 'preps-options');
       }
     
-      // Clear and rebuild the sentence area
       elPrepsSentence.innerHTML = '';
-      elPrepsSentence.append(
-        document.createTextNode(left),
-        input,
-        document.createTextNode(right)
-      );
-    
+      elPrepsSentence.append(document.createTextNode(left), input, document.createTextNode(right));
       setTimeout(()=>{ input.focus(); }, 0);
     }
     
@@ -1573,7 +1555,7 @@
       const it = pp_current(); if(!it) return;
       const input = document.getElementById('preps-input');
       const val = (input?.value || '').trim();
-      const ok = pp_norm(val) === pp_norm(it.correct.split(' ')[0]);
+      const ok = pp_norm(val) === pp_norm(it.correct.split(' ')[0]); // only the word
       input?.classList.remove('result-ok','result-bad');
       input?.classList.add(ok ? 'result-ok' : 'result-bad');
     
@@ -1609,15 +1591,12 @@
     (async function initPreps(){
       await pp_loadData();
       pp_initState();
-      // will render when switching to "preps" mode below
     })();
     
-    /* ===== Add to mode switch =====
-       We extend your existing renderMode() (which was already extended for Adj/Adv/Mix).
-    */
-    const _renderMode_preps = renderMode;
+    /* Hook into your renderMode() so 'preps' shows the card */
+    const _renderMode_preps = renderMode;  // keep previous behavior (vocab/verbs/adjadv/mix)
     renderMode = function(){
-      _renderMode_preps(); // keep existing behavior
+      _renderMode_preps();
     
       const mode = getMode();
       const vocab = document.getElementById('vocab-wrapper');
@@ -1635,6 +1614,7 @@
       }
     };
   </script>
+
 
   
 </body>
