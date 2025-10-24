@@ -290,51 +290,7 @@
     <div id="adjadv-feedback" style="margin-top:10px;font-size:14px;"></div>
   </div>
 
-  
-  <div class="container">
-    <div id="vocab-wrapper">
-    <h1>German Vocab Trainer</h1>
-    <p id="level">Level: 1 (Words 1–25)</p>
-      <div class="card">
-        <p id="englishRow"><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
-  
-        <div id="media" style="margin-bottom:8px;">
-          <!-- Faster image: async decode + high fetch priority -->
-          <img id="wordImage" alt="vocab image" decoding="async" fetchpriority="high"
-               style="display:none;width:100%;max-height:220px;object-fit:contain;background:#0d0f14;border:1px solid var(--border);border-radius:10px;padding:8px;" />
-        </div>
-  
-        <div class="button-row">
-          <button id="btnDer" class="article-btn">der</button>
-          <button id="btnDie" class="article-btn">die</button>
-          <button id="btnDas" class="article-btn">das</button>
-        </div>
-  
-        <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-        <input type="text" id="plural" placeholder="Plural" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-        <p id="feedback"></p>
-        <p id="example"></p>
-  
-        <br />
-        <button id="checkBtn">Check</button>
-        <button id="resetBtn">Reset Progress</button>
-        <button id="nextBtn">Next word</button>
-        <div id="status"></div>
-
-        <label style="display:flex;align-items:center;gap:8px;margin:10px auto 0;max-width:500px;color:var(--muted);font-size:.95em;">
-          <input type="checkbox" id="toggleEnglish" checked /> Show English word
-        </label>
-      </div>
-
-      <div id="preps-card" hidden>
-        <div id="preps-sentence"></div>
-        <p id="preps-english" class="muted"></p>
-      
-        <div style="display:flex; gap:8px; margin-top:12px;">
-          <button id="preps-check">Check</button>
-          <button id="preps-next">Next</button>
-        </div>
-      <!-- === Prepositions Trainer Card (simple: just the preposition) === -->
+   <!-- === Prepositions Trainer Card (simple: just the preposition) === -->
       <style>
         #preps-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 8px 0 16px; background: var(--card); }
         #preps-card[hidden] { display: none; }
@@ -378,6 +334,41 @@
         </datalist>
       </div>
 
+  
+  <div class="container">
+    <div id="vocab-wrapper">
+    <h1>German Vocab Trainer</h1>
+    <p id="level">Level: 1 (Words 1–25)</p>
+      <div class="card">
+        <p id="englishRow"><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
+  
+        <div id="media" style="margin-bottom:8px;">
+          <!-- Faster image: async decode + high fetch priority -->
+          <img id="wordImage" alt="vocab image" decoding="async" fetchpriority="high"
+               style="display:none;width:100%;max-height:220px;object-fit:contain;background:#0d0f14;border:1px solid var(--border);border-radius:10px;padding:8px;" />
+        </div>
+  
+        <div class="button-row">
+          <button id="btnDer" class="article-btn">der</button>
+          <button id="btnDie" class="article-btn">die</button>
+          <button id="btnDas" class="article-btn">das</button>
+        </div>
+  
+        <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <input type="text" id="plural" placeholder="Plural" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <p id="feedback"></p>
+        <p id="example"></p>
+  
+        <br />
+        <button id="checkBtn">Check</button>
+        <button id="resetBtn">Reset Progress</button>
+        <button id="nextBtn">Next word</button>
+        <div id="status"></div>
+
+        <label style="display:flex;align-items:center;gap:8px;margin:10px auto 0;max-width:500px;color:var(--muted);font-size:.95em;">
+          <input type="checkbox" id="toggleEnglish" checked /> Show English word
+        </label>
+      </div>
     </div>
   </div>
 
