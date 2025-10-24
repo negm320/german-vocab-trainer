@@ -169,26 +169,26 @@
     <div id="verbs-gov">
       <div class="gov-row">
         <label for="verbs-prep">Preposition</label>
-        <select id="verbs-prep">
-          <option value="">— none —</option>
-          <option value="an|Akk">an + Akk</option>
-          <option value="an|Dat">an + Dat</option>
-          <option value="auf|Akk">auf + Akk</option>
-          <option value="auf|Dat">auf + Dat</option>
-          <option value="aus|Dat">aus + Dat</option>
-          <option value="bei|Dat">bei + Dat</option>
-          <option value="für|Akk">für + Akk</option>
-          <option value="gegen|Akk">gegen + Akk</option>
-          <option value="in|Akk">in + Akk</option>
-          <option value="in|Dat">in + Dat</option>
-          <option value="mit|Dat">mit + Dat</option>
-          <option value="nach|Dat">nach + Dat</option>
-          <option value="über|Akk">über + Akk</option>
-          <option value="über|Dat">über + Dat</option>
-          <option value="um|Akk">um + Akk</option>
-          <option value="von|Dat">von + Dat</option>
-          <option value="zu|Dat">zu + Dat</option>
-        </select>
+        <input id="verbs-prep" list="verbs-prep-options" placeholder="e.g., auf + Akk" autocomplete="off" />
+        <datalist id="verbs-prep-options">
+          <option value="an + Akk"></option>
+          <option value="an + Dat"></option>
+          <option value="auf + Akk"></option>
+          <option value="auf + Dat"></option>
+          <option value="aus + Dat"></option>
+          <option value="bei + Dat"></option>
+          <option value="für + Akk"></option>
+          <option value="gegen + Akk"></option>
+          <option value="in + Akk"></option>
+          <option value="in + Dat"></option>
+          <option value="mit + Dat"></option>
+          <option value="nach + Dat"></option>
+          <option value="über + Akk"></option>
+          <option value="über + Dat"></option>
+          <option value="um + Akk"></option>
+          <option value="von + Dat"></option>
+          <option value="zu + Dat"></option>
+        </datalist>
       </div>
     
       <div class="gov-row">
@@ -653,6 +653,40 @@
   const selReflCase = document.getElementById('verbs-refl-case');
   let chosenRefl = null; // 'yes' | 'no' | null
 
+  // NEW: preposition input reference + last focused input tracker
+  const inpPrep = document.getElementById('verbs-prep');
+  let lastInputFocus = null;
+  
+  // Remember which text input is active (so buttons won't steal focus)
+  [elInf, pIch, pDu, pEr, pIhr, elPart, inpPrep].forEach(el=>{
+    el?.addEventListener('focus', ()=> { lastInputFocus = el; });
+  });
+
+    // The order you want to tab through with Enter:
+    function focusChain(){
+    // Only include visible & enabled inputs
+    return [elInf, pIch, pDu, pEr, pIhr, elPart, inpPrep].filter(el => el && !el.disabled && el.offsetParent !== null);
+  }
+  function focusNextFrom(current){
+    const list = focusChain();
+    const i = list.indexOf(current);
+    if (i >= 0 && i < list.length - 1) {
+      list[i+1].focus({preventScroll:true});
+    } else {
+      // last field -> press Check
+      elCheck?.click();
+    }
+  }
+  // Add Enter key handler to each input
+  [elInf, pIch, pDu, pEr, pIhr, elPart, inpPrep].forEach(el=>{
+    el?.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        focusNextFrom(e.target);
+      }
+    });
+  });
+
     
   /* Helpers */
   function lsGet(key, fallback) {
@@ -781,6 +815,9 @@
     elInf.value = '';
     elPart.value = '';
     [pIch,pDu,pEr,pIhr].forEach(el=>{ if(el) el.value=''; });
+
+    if (inpPrep) inpPrep.value = '';
+
     
     // Reset preposition & reflexive UI (new feature)
     if (selPrep) selPrep.value = '';               // reset preposition dropdown
@@ -799,31 +836,54 @@
     elFeedback.textContent='';
   }
   
-  /* Aux selection */
-  let chosenAux = null;
+  // Function to select auxiliary (haben/sein)
+  function selectAux(aux){ // 'haben' or 'sein'
+    chosenAux = aux;
+    elAuxBtns.forEach(b=>b.classList.toggle('selected', b.dataset.aux === aux));
+    elAuxBadge.style.display='inline-block';
+    elAuxBadge.textContent = aux;
+    elAuxFixed.textContent = (aux === 'haben') ? 'habe' : 'bin';
+  }
+  
+  // Make sure clicking buttons doesn’t close the keyboard
   elAuxBtns.forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      chosenAux = btn.dataset.aux; // "haben" or "sein"
-  
-      // UI selection
-      elAuxBtns.forEach(b=>b.classList.toggle('selected', b===btn));
-  
-      // Small badge near the buttons still shows the infinitive (haben/sein)
-      elAuxBadge.style.display='inline-block';
-      elAuxBadge.textContent = chosenAux;
-  
-      // 👇 Perfekt line shows the conjugated form for ich
-      elAuxFixed.textContent = (chosenAux === 'haben') ? 'habe' : 'bin';
+    // On touch or click, prevent the input from losing focus
+    btn.addEventListener('mousedown', (e)=>{ 
+      e.preventDefault();            // stop losing focus
+      selectAux(btn.dataset.aux);    // handle logic
+      if (lastInputFocus) lastInputFocus.focus({preventScroll:true}); // refocus
     });
+    btn.addEventListener('touchstart', (e)=>{ 
+      e.preventDefault(); 
+      selectAux(btn.dataset.aux);
+      if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
+    }, {passive:false});
+    // Also handle desktop clicks normally
+    btn.addEventListener('click', ()=> selectAux(btn.dataset.aux));
   });
 
-    reflBtns.forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        chosenRefl = btn.dataset.refl; // 'yes' or 'no'
-        reflBtns.forEach(b=>b.classList.toggle('selected', b===btn));
-        selReflCase.disabled = (chosenRefl !== 'yes');
+    // Function to choose reflexive yes/no
+    function selectRefl(val){ // 'yes' or 'no'
+      chosenRefl = val;
+      reflBtns.forEach(b=>b.classList.toggle('selected', b.dataset.refl === val));
+      selReflCase.disabled = (val !== 'yes');
+    }
+    
+      // Prevent losing focus so keyboard stays up
+      reflBtns.forEach(btn=>{
+        btn.addEventListener('mousedown', (e)=>{ 
+          e.preventDefault();
+          selectRefl(btn.dataset.refl);
+          if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
+        });
+        btn.addEventListener('touchstart', (e)=>{ 
+          e.preventDefault();
+          selectRefl(btn.dataset.refl);
+          if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
+        }, {passive:false});
+        btn.addEventListener('click', ()=> selectRefl(btn.dataset.refl));
       });
-    });
+
 
   
   /* Check logic: full card must be correct to increment streak (3x target) */
@@ -840,18 +900,22 @@
     const okIhr  = norm(pIhr.value)    === norm(v.ihr);
     const okPart = norm(elPart.value)  === norm(v.partizip);
 
-    // --- Preposition check ---
-    let okPrep = true; // default true if no prepositions are listed for this verb
-    const rawPreps = (v.preps || '').trim(); // get what the CSV says
+    // --- Preposition check (input + datalist) ---
+    let okPrep = true; // default true if no prepositions listed for this verb
+    const rawPreps = (v.preps || '').trim(); // e.g., "auf|Akk;über|Akk"
     if (rawPreps) {
-      const allowed = rawPreps.split(';').map(s=>s.trim().toLowerCase()); // e.g. ["auf|akk","über|akk"]
-      const chosen = (selPrep?.value || '').trim().toLowerCase();        // what you picked
+      const allowed = rawPreps.split(';').map(s=>s.trim().toLowerCase()); // ["auf|akk","über|akk"]
+      // normalize user input "auf + Akk" -> "auf|Akk"
+      const raw = (inpPrep?.value || '').trim();
+      const normalized = raw.replace(/\s*\+\s*/,'|').replace(/\s+/g,' ').trim();
+      const chosen = normalized.toLowerCase(); // "auf|akk"
       okPrep = allowed.includes(chosen);
-      if (selPrep) { // color it green/red
-        selPrep.classList.remove('result-ok','result-bad');
-        selPrep.classList.add(okPrep ? 'result-ok' : 'result-bad');
+      if (inpPrep) { 
+        inpPrep.classList.remove('result-ok','result-bad'); 
+        inpPrep.classList.add(okPrep ? 'result-ok' : 'result-bad'); 
       }
     }
+
     
     // --- Reflexive check ---
     let okRefl = true; // default true if no reflexive rule
