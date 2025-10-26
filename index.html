@@ -183,6 +183,17 @@
       border: 1px solid #2a2f36;
     }
   </style>
+  
+  <style>
+	  .past-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; margin: 10px 0; }
+	  .case-toggle { display: flex; gap: 8px; align-items: center; }
+	  .case-btn { padding: 6px 10px; border: 1px solid #ccc; background: #fafafa; border-radius: 6px; cursor: pointer; }
+	  .case-btn.selected { background: #e8f2ff; border-color: #5b9cff; }
+
+	  body.dark .case-btn { background: #12151a; border-color: #2a2f36; color: #e8eaed; }
+	  body.dark .case-btn.selected { background: #162036; border-color: #3b6ad9; }
+	</style>
+
 
 </head>
 <body>
@@ -210,40 +221,43 @@
     <!-- === Verb governance (preposition + reflexive) === -->
     <div id="verbs-gov">
       <div class="gov-row">
-        <label for="verbs-prep">Preposition</label>
-        <input id="verbs-prep" list="verbs-prep-options" placeholder="e.g., auf + Akk" autocomplete="off" />
-        <datalist id="verbs-prep-options">
-          <option value="an + Akk"></option>
-          <option value="an + Dat"></option>
-          <option value="auf + Akk"></option>
-          <option value="auf + Dat"></option>
-          <option value="aus + Dat"></option>
-          <option value="bei + Dat"></option>
-          <option value="für + Akk"></option>
-          <option value="gegen + Akk"></option>
-          <option value="in + Akk"></option>
-          <option value="in + Dat"></option>
-          <option value="mit + Dat"></option>
-          <option value="nach + Dat"></option>
-          <option value="über + Akk"></option>
-          <option value="über + Dat"></option>
-          <option value="um + Akk"></option>
-          <option value="von + Dat"></option>
-          <option value="zu + Dat"></option>
-        </datalist>
-      </div>
+		  <label for="verbs-prep">Preposition</label>
+		  <input id="verbs-prep" list="verbs-prep-options" placeholder="e.g., auf" autocomplete="off" />
+		  <datalist id="verbs-prep-options">
+			<option value="an"></option>
+			<option value="auf"></option>
+			<option value="aus"></option>
+			<option value="bei"></option>
+			<option value="für"></option>
+			<option value="gegen"></option>
+			<option value="in"></option>
+			<option value="mit"></option>
+			<option value="nach"></option>
+			<option value="über"></option>
+			<option value="um"></option>
+			<option value="von"></option>
+			<option value="zu"></option>
+		  </datalist>
+		</div>
+
+		<div class="gov-row">
+		  <label>Case after verb</label>
+		  <div class="case-toggle">
+			<button type="button" class="case-btn" data-case="inf">Inf</button>
+			<button type="button" class="case-btn" data-case="akk">Akk</button>
+			<button type="button" class="case-btn" data-case="dat">Dat</button>
+		  </div>
+		</div>
+
     
       <div class="gov-row">
-        <label>Reflexive?</label>
-        <div class="refl-toggle">
-          <button type="button" class="refl-btn" data-refl="no">No</button>
-          <button type="button" class="refl-btn" data-refl="yes">Yes</button>
-          <select id="verbs-refl-case" disabled>
-            <option value="Akk">Akkusativ</option>
-            <option value="Dat">Dativ</option>
-          </select>
-        </div>
-      </div>
+		  <label>Reflexive?</label>
+		  <div class="refl-toggle">
+			<button type="button" class="refl-btn" data-refl="no">No</button>
+			<button type="button" class="refl-btn" data-refl="yes">Yes</button>
+		  </div>
+		</div>
+
     </div>
 
     
@@ -261,6 +275,13 @@
       <input id="verbs-p-ihr" autocomplete="off">
     </div>
 
+	<!-- Simple past -->
+	<div class="past-row">
+	  <label for="verbs-past">Präteritum</label>
+	  <input id="verbs-past" placeholder="z. B. ging" autocomplete="off">
+	</div>
+
+	<!-- Perfekt line -->
     <div class="perfekt">
       ich <span id="verbs-aux-fixed" class="badge">—</span>
       <input id="verbs-partizip" placeholder="Partizip II (z. B. gegangen)" autocomplete="off">
@@ -756,20 +777,40 @@
         const reflBtns = Array.from(document.querySelectorAll('.refl-btn'));
         const selReflCase = document.getElementById('verbs-refl-case');
         let chosenRefl = null; // 'yes' | 'no' | null
+		
+		// NEW fields
+		const inpPast = document.getElementById('verbs-past');     // Präteritum
+		const inpPrep = document.getElementById('verbs-prep');     // preposition input
+
+		// Case buttons + state
+		const caseBtns = Array.from(document.querySelectorAll('.case-btn'));
+		let chosenCase = null;  // 'inf' | 'akk' | 'dat' | null
+
+		// Reflexive state (we already had chosenRefl)
+		let chosenRefl = null;  // 'yes' | 'no' | null
+
+		// remember last focused text input (to keep keyboard open)
+		let lastInputFocus = null;
+		[elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
+		  el?.addEventListener('focus', ()=> { lastInputFocus = el; });
+		});
+
       
         // NEW: preposition input reference + last focused input tracker
         const inpPrep = document.getElementById('verbs-prep');
         let lastInputFocus = null;
         
         // Remember which text input is active (so buttons won't steal focus)
-        [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].forEach(el=>{
+        [elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
           el?.addEventListener('focus', ()=> { lastInputFocus = el; });
         });
       
           // The order you want to tab through with Enter:
           function focusChain(){
-          // Only include visible & enabled inputs
-          return [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].filter(el => el && !el.disabled && el.offsetParent !== null);
+		  return [elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart]
+			.filter(el => el && !el.disabled && el.offsetParent !== null);
+		}
+
         }
         function focusNextFrom(current){
           const list = focusChain();
@@ -921,6 +962,22 @@
           [pIch,pDu,pEr,pIhr].forEach(el=>{ if(el) el.value=''; });
       
           if (inpPrep) inpPrep.value = '';
+		  
+		  // --- NEW: reset extra governance fields for each new card ---
+
+			// Preposition input (just the preposition, e.g., "auf")
+			if (inpPrep) inpPrep.value = '';
+
+			// Past (Präteritum) input (e.g., "ging")
+			if (inpPast) inpPast.value = '';
+
+			// Case buttons (Inf/Akk/Dat)
+			chosenCase = null;
+			caseBtns.forEach(b => b.classList.remove('selected'));
+
+			// Reflexive buttons (Yes/No)
+			chosenRefl = null;
+			reflBtns.forEach(b => b.classList.remove('selected'));
       
           
           // Reset preposition & reflexive UI (new feature)
@@ -966,6 +1023,37 @@
           btn.addEventListener('click', ()=> selectAux(btn.dataset.aux));
         });
       
+		// === CASE BUTTONS (Inf / Akk / Dat) ===
+
+		// function to remember which case you picked
+		function selectCase(val){ // 'inf' | 'akk' | 'dat'
+		  chosenCase = val;
+		  caseBtns.forEach(b => 
+			b.classList.toggle('selected', b.dataset.case === val)
+		  );
+		}
+
+		// these make sure tapping buttons on mobile doesn't close keyboard
+		caseBtns.forEach(btn=>{
+		  btn.addEventListener('mousedown', (e)=>{
+			e.preventDefault();                     // stop losing focus
+			selectCase(btn.dataset.case);           // mark this case as chosen
+			if (lastInputFocus)                     // if a text field was focused...
+			  lastInputFocus.focus({preventScroll:true}); // ...keep it focused
+		  });
+
+		  btn.addEventListener('touchstart', (e)=>{
+			e.preventDefault(); 
+			selectCase(btn.dataset.case);
+			if (lastInputFocus)
+			  lastInputFocus.focus({preventScroll:true});
+		  }, {passive:false});
+
+		  // desktop fallback (works even if you don’t need it)
+		  btn.addEventListener('click', ()=> selectCase(btn.dataset.case));
+		});
+	  
+	  
           // Function to choose reflexive yes/no
           function selectRefl(val){ // 'yes' or 'no'
             chosenRefl = val;
@@ -991,101 +1079,114 @@
       
         
         /* Check logic: full card must be correct to increment streak (3x target) */
-        function checkVerbsCard(){
-          const v = currentVerb();
-          if (!v) return;
-        
-          // comparisons
-          const okInf  = norm(elInf.value)   === norm(v.lemma);
-          const okAux  = (chosenAux === (v.aux||'').toLowerCase());
-          const okIch  = norm(pIch.value)    === norm(v.ich);
-          const okDu   = norm(pDu.value)     === norm(v.du);
-          const okEr   = norm(pEr.value)     === norm(v.er);
-          const okIhr  = norm(pIhr.value)    === norm(v.ihr);
-          const okPart = norm(elPart.value)  === norm(v.partizip);
-      
-          // --- Preposition check (input + datalist) ---
-          let okPrep = true; // default true if no prepositions listed for this verb
-          const rawPreps = (v.preps || '').trim(); // e.g., "auf|Akk;über|Akk"
-          if (rawPreps) {
-            const allowed = rawPreps.split(';').map(s=>s.trim().toLowerCase()); // ["auf|akk","über|akk"]
-            // normalize user input "auf + Akk" -> "auf|Akk"
-            const raw = (inpPrep?.value || '').trim();
-            const normalized = raw.replace(/\s*\+\s*/,'|').replace(/\s+/g,' ').trim();
-            const chosen = normalized.toLowerCase(); // "auf|akk"
-            okPrep = allowed.includes(chosen);
-            if (inpPrep) { 
-              inpPrep.classList.remove('result-ok','result-bad'); 
-              inpPrep.classList.add(okPrep ? 'result-ok' : 'result-bad'); 
-            }
-          }
-      
-          
-          // --- Reflexive check ---
-          let okRefl = true; // default true if no reflexive rule
-          const needRefl = (v.reflexive || '').toLowerCase();       // yes/no from CSV
-          const needCase = (v.reflexive_case || '').toLowerCase();  // akk/dat from CSV
-          if (needRefl === 'yes') {
-            const userRefl = (chosenRefl || '').toLowerCase();
-            const userCase = (selReflCase?.value || '').toLowerCase();
-            okRefl = (userRefl === 'yes') && (!needCase || userCase === needCase);
-          } else if (needRefl === 'no') {
-            okRefl = (chosenRefl === 'no'); // must select "No"
-          }
-          
-          // color the buttons to show correct/wrong
-          reflBtns.forEach(b=>{
-            b.classList.remove('result-ok','result-bad');
-            if (needRefl) b.classList.add(okRefl ? 'result-ok' : 'result-bad');
-          });
-          if (selReflCase && chosenRefl==='yes' && needCase) {
-            selReflCase.classList.remove('result-ok','result-bad');
-            selReflCase.classList.add(okRefl ? 'result-ok' : 'result-bad');
-          }
-      
-        
-          // mark fields
-          mark(elInf, okInf);
-          elAuxBtns.forEach(b=>b.classList.toggle('result-ok', okAux));
-          elAuxBtns.forEach(b=>b.classList.toggle('result-bad', !okAux));
-          mark(pIch, okIch); mark(pDu, okDu); mark(pEr, okEr);
-          mark(pIhr, okIhr); 
-          mark(elPart, okPart);
-        
-          const allOK =
-            okInf && okAux &&
-            okIch && okDu && okEr && okIhr &&
-            okPart && okPrep && okRefl;
-          
-          // dynamic total for optional fields
-          let total = 7; // base fields we already check
-          if ((v.preps||'').trim()) total += 1;          // need preposition
-          if ((v.reflexive||'').trim()) total += 1;      // need reflexive
-      
-        
-          // streak update (per-item)
-          const id = v.id;
-          const cur = verbsState.streaks[id] || 0;
-          verbsState.streaks[id] = allOK ? Math.min(3, cur + 1) : 0;
-        
-          // unlock next level if needed (every 25)
-          maybeUnlockNextVerbsLevel();
-        
-          saveVerbsState();
-        
-          // feedback
-          const streakNow = verbsState.streaks[id];
-          elFeedback.textContent = allOK
-            ? `✅ Perfect! Streak for "${v.lemma}" is now ${streakNow}/3.`
-            : `❌ Not quite. Streak for "${v.lemma}" reset to 0.`;
-        
-          // (OPTIONAL) if you have a global XP/streak function, call it here safely:
-          try {
-            if (typeof updateStreak === 'function') {
-              updateStreak({ mode: 'verbs', passed: allOK, correctFields: allOK?9:0, totalFields: 9 });
-            }
-          } catch(_) {}
-        }
+		function checkVerbsCard(){
+		  const v = currentVerb();
+		  if (!v) return;
+
+		  // --- 1) Basic checks (infinitive, aux, Präsens, past, partizip) ---
+		  const okInf  = norm(elInf.value)   === norm(v.lemma || '');
+		  // AUX supports "sein" or "haben" or "sein/haben" in CSV
+		  const allowedAux = String(v.aux || '').toLowerCase().split('/').map(s=>s.trim()).filter(Boolean);
+		  const okAux  = allowedAux.includes((chosenAux || '').toLowerCase());
+
+		  const okIch  = norm(pIch.value)    === norm(v.ich || '');
+		  const okDu   = norm(pDu.value)     === norm(v.du || '');
+		  const okEr   = norm(pEr.value)     === norm(v.er || '');
+		  const okIhr  = norm(pIhr.value)    === norm(v.ihr || '');
+
+		  const okPast = norm((inpPast?.value)||'') === norm(v.past || '');
+		  const okPart = norm(elPart.value)  === norm(v.partizip || '');
+
+		  // Mark the text inputs green/red
+		  mark(elInf, okInf);
+		  // Aux buttons visual
+		  elAuxBtns.forEach(b=>{
+			b.classList.remove('result-ok','result-bad');
+			b.classList.add(okAux ? 'result-ok' : 'result-bad');
+		  });
+		  mark(pIch, okIch); mark(pDu, okDu); mark(pEr, okEr); mark(pIhr, okIhr);
+		  mark(inpPast, okPast); mark(elPart, okPart);
+
+		  // --- 2) Preposition (CSV now has ONLY the preposition(s)) ---
+		  // CSV: preps = "auf;an;mit" or "" (empty means: no preposition requirement)
+		  let okPrep = true;
+		  const csvPreps = String(v.preps || '').split(';').map(s=>s.trim().toLowerCase()).filter(Boolean); // ["auf","an"]
+		  if (csvPreps.length) {
+			const userPrep = (inpPrep?.value || '').trim().toLowerCase();
+			okPrep = csvPreps.includes(userPrep);
+			if (inpPrep) {
+			  inpPrep.classList.remove('result-ok','result-bad');
+			  inpPrep.classList.add(okPrep ? 'result-ok' : 'result-bad');
+			}
+		  }
+
+		  // --- 3) Case after the verb (buttons: Inf / Akk / Dat) ---
+		  // CSV: case = "Inf" | "Akk" | "Dativ" (or empty)
+		  let okCase = true;
+		  const csvCaseRaw = String(v.case || '').trim().toLowerCase(); // "inf" | "akk" | "dativ"
+		  // normalize variants
+		  const csvCase = csvCaseRaw
+			.replace('akkusativ','akk')
+			.replace('dativ','dat')
+			.replace('infinitiv','inf');
+		  if (csvCase) {
+			okCase = (chosenCase === csvCase); // chosenCase is 'inf' | 'akk' | 'dat'
+			caseBtns.forEach(b=>{
+			  b.classList.remove('result-ok','result-bad');
+			  b.classList.add(okCase ? 'result-ok' : 'result-bad');
+			});
+		  }
+
+		  // --- 4) Reflexive (Yes/No only) ---
+		  // CSV: reflexive = True/False (boolean-ish)
+		  let okRefl = true;
+		  const needRefl = String(v.reflexive || '').toLowerCase(); // "true" | "false" | ""
+		  if (needRefl === 'true') {
+			okRefl = (chosenRefl === 'yes');
+		  } else if (needRefl === 'false') {
+			// allow 'no' or untouched (null) to count as correct non-reflexive
+			okRefl = (chosenRefl === 'no' || chosenRefl === null);
+		  }
+		  reflBtns.forEach(b=>{
+			b.classList.remove('result-ok','result-bad');
+			if (needRefl) b.classList.add(okRefl ? 'result-ok' : 'result-bad');
+		  });
+
+		  // --- 5) Final pass/fail & scoring ---
+		  const allOK =
+			okInf && okAux &&
+			okIch && okDu && okEr && okIhr &&
+			okPast && okPart && okPrep && okCase && okRefl;
+
+		  // Base fields we always check now: 8
+		  // (inf, aux, ich, du, er, ihr, past, partizip)
+		  let total = 8;
+		  if (csvPreps.length) total += 1;       // preposition present in CSV
+		  if (csvCase)          total += 1;       // case present in CSV
+		  if (needRefl)         total += 1;       // reflexive requirement present
+
+		  // Update per-verb streak
+		  const id = v.id || `${v.lemma}_${v.english}`;
+		  const cur = verbsState.streaks[id] || 0;
+		  verbsState.streaks[id] = allOK ? Math.min(3, cur + 1) : 0;
+
+		  // Unlock next levels if needed
+		  maybeUnlockNextVerbsLevel();
+		  saveVerbsState();
+
+		  // Feedback
+		  elFeedback.textContent = allOK
+			? `✅ Perfect! Streak for "${v.lemma}" is now ${verbsState.streaks[id]}/3.`
+			: `❌ Not quite. Streak for "${v.lemma}" reset to 0.`;
+
+		  // Optional global hook (if you had one)
+		  try {
+			if (typeof updateStreak === 'function') {
+			  updateStreak({ mode: 'verbs', passed: allOK, correctFields: allOK?total:0, totalFields: total });
+			}
+		  } catch(_) {}
+		}
+
         
         /* Unlock logic identical shape to your vocab levels */
         function allVerbsInCurrentLevelComplete(){
