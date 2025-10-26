@@ -855,20 +855,25 @@
 			  const isLast = (e.target === lastEl);
 
 			  if (isLast) {
-				if (!lastFieldCheckedOnce) {
-				  // First Enter on last field => CHECK
-				  elCheck?.click();
-				  // keep focus on the same field so second Enter goes Next
-				  e.target.focus({ preventScroll: true });
-				  scrollFieldIntoView(e.target);
+				  if (!lastFieldCheckedOnce) {
+					// First Enter on last field => CHECK
+					elCheck?.click();
+					e.target.focus({ preventScroll: true });
+					scrollFieldIntoView(e.target);
+				  } else {
+					// Second Enter on last field => NEXT
+					elNext?.click();
+					// After moving to next verb, focus on first field
+					setTimeout(() => {
+					  elInf?.focus({ preventScroll: true });
+					  scrollFieldIntoView(elInf);
+					}, 150);
+				  }
 				} else {
-				  // Second Enter on last field => NEXT
-				  elNext?.click();
+				  // Normal path: go to next field
+				  focusNextFrom(e.target);
 				}
-			  } else {
-				// Normal path: go to next field
-				focusNextFrom(e.target);
-			  }
+}
 			}
 		  });
 		});
