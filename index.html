@@ -307,6 +307,9 @@
     </div>
 
     <div id="verbs-feedback"></div>
+	
+	<div id="verbs-level-indicator" style="margin-top:10px; font-size:12px; opacity:0.8;"></div>
+
   </div>
   
   <div id="adjadv-card" hidden>
@@ -790,6 +793,11 @@
         const reflBtns = Array.from(document.querySelectorAll('.refl-btn'));
         const selReflCase = document.getElementById('verbs-refl-case');
 		
+		// Keep track: after Check is pressed once, second Enter on last field should go Next
+		elCheck?.addEventListener('click', ()=> { lastFieldCheckedOnce = true; });
+		elNext ?.addEventListener('click', ()=> { lastFieldCheckedOnce = false; });
+
+		
 		// NEW fields
 		const inpPast = document.getElementById('verbs-past');     // Präteritum
 		const inpPrep = document.getElementById('verbs-prep');     // preposition input
@@ -797,6 +805,9 @@
 		// Case buttons + state
 		const caseBtns = Array.from(document.querySelectorAll('.case-btn'));
 		let chosenCase = null;  // 'inf' | 'akk' | 'dat' | null
+
+		let lastFieldCheckedOnce = false; // first Enter on last field triggers Check; second triggers Next
+
 
 		// Reflexive state (we already had chosenRefl)
 		let chosenRefl = null;  // 'yes' | 'no' | null
@@ -806,8 +817,12 @@
 		// remember last focused text input (to keep keyboard open)
 		let lastInputFocus = null;
 		[elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
-		  el?.addEventListener('focus', ()=> { lastInputFocus = el; });
+		  el?.addEventListener('focus', ()=>{
+			lastInputFocus = el;
+			scrollFieldIntoView(el);
+		  });
 		});
+
 
       
       
@@ -819,24 +834,45 @@
 
        
         function focusNextFrom(current){
-          const list = focusChain();
-          const i = list.indexOf(current);
-          if (i >= 0 && i < list.length - 1) {
-            list[i+1].focus({preventScroll:true});
-          } else {
-            // last field -> press Check
-            elCheck?.click();
-          }
-        }
+		  const list = focusChain();
+		  const i = list.indexOf(current);
+		  if (i >= 0 && i < list.length - 1) {
+			const nextEl = list[i+1];
+			nextEl.focus({preventScroll:true});
+			scrollFieldIntoView(nextEl);
+		  } else {
+			elCheck?.click();
+		  }
+		}
+
         // Add Enter key handler to each input
         [elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
-          el?.addEventListener('keydown', (e)=>{
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              focusNextFrom(e.target);
-            }
-          });
-        });
+		  el?.addEventListener('keydown', (e)=>{
+			if (e.key === 'Enter') {
+			  e.preventDefault();
+			  const list   = focusChain();
+			  const lastEl = list[list.length - 1];
+			  const isLast = (e.target === lastEl);
+
+			  if (isLast) {
+				if (!lastFieldCheckedOnce) {
+				  // First Enter on last field => CHECK
+				  elCheck?.click();
+				  // keep focus on the same field so second Enter goes Next
+				  e.target.focus({ preventScroll: true });
+				  scrollFieldIntoView(e.target);
+				} else {
+				  // Second Enter on last field => NEXT
+				  elNext?.click();
+				}
+			  } else {
+				// Normal path: go to next field
+				focusNextFrom(e.target);
+			  }
+			}
+		  });
+		});
+
       
           
         /* Helpers */
@@ -860,6 +896,35 @@
 		  if (!isOK && correctValue && el) {
 			el.insertAdjacentHTML('afterend', `<div class="correct-tip">${correctValue}</div>`);
 		  }
+		}
+		
+		function updateLevelIndicator(){
+		  const el = document.getElementById('verbs-level-indicator');
+		  if (!el || !verbsState?.data?.length) return;
+
+		  // current level (default 1); if you store it differently, adjust here
+		  const level = verbsState.level || getInt?.('verbs_level', 1) || 1;
+
+		  // total items available up to this level (25 per level)
+		  const totalUpToLevel = Math.min(level * 25, verbsState.data.length);
+
+		  // build IDs for first N verbs
+		  const idsUpToLevel = verbsState.data.slice(0, totalUpToLevel)
+			.map(v => v.id || `${v.lemma}_${v.english}`);
+
+		  const doneUpToLevel = idsUpToLevel
+			.filter(id => (verbsState.streaks?.[id] || 0) >= 3)
+			.length;
+
+		  el.textContent = `Level ${level} • ${doneUpToLevel}/${totalUpToLevel} mastered`;
+		}
+
+
+		//Scroll to focus the text field helper
+		function scrollFieldIntoView(el){
+		  if (!el) return;
+		  // small delay helps on mobile when keyboard pops
+		  setTimeout(()=>{ try { el.scrollIntoView({ behavior:'smooth', block:'center' }); } catch(_){} }, 50);
 		}
 
 		
@@ -978,6 +1043,10 @@
           elInf.value = '';
           elPart.value = '';
           [pIch,pDu,pEr,pIhr].forEach(el=>{ if(el) el.value=''; });
+		  
+		  // Enter-behavior state reset for the last field
+			lastFieldCheckedOnce = false;
+
       
           if (inpPrep) inpPrep.value = '';
 		  
@@ -1016,6 +1085,9 @@
 		  
 		  // remove any old correct tips
 			document.querySelectorAll('.correct-tip').forEach(tip => tip.remove());
+
+			updateLevelIndicator();
+
 
         }
         
@@ -1212,6 +1284,8 @@
 		  elFeedback.textContent = allOK
 			? `✅ Perfect! Streak for "${v.lemma}" is now ${verbsState.streaks[id]}/3.`
 			: `❌ Not quite. Streak for "${v.lemma}" reset to 0.`;
+			updateLevelIndicator();
+
 
 		  // Optional global hook (if you had one)
 		  try {
@@ -1269,6 +1343,8 @@
           await loadVerbsData();
           initVerbsState();
           renderMode();
+		  updateLevelIndicator();
+
         
           // If first time and no mode saved, keep your site behavior (vocab default).
           if (!localStorage.getItem(MODE_KEY)) localStorage.setItem(MODE_KEY, 'vocab');
