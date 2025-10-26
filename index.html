@@ -776,7 +776,6 @@
         const selPrep = document.getElementById('verbs-prep');
         const reflBtns = Array.from(document.querySelectorAll('.refl-btn'));
         const selReflCase = document.getElementById('verbs-refl-case');
-        let chosenRefl = null; // 'yes' | 'no' | null
 		
 		// NEW fields
 		const inpPast = document.getElementById('verbs-past');     // Präteritum
@@ -788,6 +787,8 @@
 
 		// Reflexive state (we already had chosenRefl)
 		let chosenRefl = null;  // 'yes' | 'no' | null
+		
+		let chosenAux = null;   // 'haben' | 'sein'
 
 		// remember last focused text input (to keep keyboard open)
 		let lastInputFocus = null;
@@ -811,7 +812,7 @@
 			.filter(el => el && !el.disabled && el.offsetParent !== null);
 		}
 
-        }
+       
         function focusNextFrom(current){
           const list = focusChain();
           const i = list.indexOf(current);
@@ -823,7 +824,7 @@
           }
         }
         // Add Enter key handler to each input
-        [elInf, inpPrep, pIch, pDu, pEr, pIhr, elPart].forEach(el=>{
+        [elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
           el?.addEventListener('keydown', (e)=>{
             if (e.key === 'Enter') {
               e.preventDefault();
