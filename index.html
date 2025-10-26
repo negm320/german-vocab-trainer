@@ -185,6 +185,20 @@
   </style>
   
   <style>
+	  /* Correct answer tips under red fields */
+	  .correct-tip {
+		font-size: 0.85em;
+		color: #aaa;
+		margin-top: 2px;
+		opacity: 0.8;
+	  }
+	  body.dark .correct-tip {
+		color: #999;
+	  }
+	</style>
+
+  
+  <style>
 	  .past-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; margin: 10px 0; }
 	  .case-toggle { display: flex; gap: 8px; align-items: center; }
 	  .case-btn { padding: 6px 10px; border: 1px solid #ccc; background: #fafafa; border-radius: 6px; cursor: pointer; }
@@ -837,6 +851,18 @@
         function norm(s){ return (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
         function mark(el, ok){ el?.classList.remove('result-ok','result-bad'); el?.classList.add(ok?'result-ok':'result-bad'); }
         
+		// Helper: show the correct answer below wrong inputs
+		function showCorrect(el, isOK, correctValue){
+		  // remove old tip if any
+		  const old = el?.nextElementSibling;
+		  if (old && old.classList.contains('correct-tip')) old.remove();
+
+		  if (!isOK && correctValue && el) {
+			el.insertAdjacentHTML('afterend', `<div class="correct-tip">${correctValue}</div>`);
+		  }
+		}
+
+		
         /* Mode switch (non-destructive) */
         function getMode(){ return localStorage.getItem(MODE_KEY) || 'vocab'; }
         function setMode(m){ localStorage.setItem(MODE_KEY, m); renderMode(); }
@@ -987,6 +1013,10 @@
           elAuxBadge.textContent='';
           elAuxFixed.textContent='—';
           elFeedback.textContent='';
+		  
+		  // remove any old correct tips
+			document.querySelectorAll('.correct-tip').forEach(tip => tip.remove());
+
         }
         
         // Function to select auxiliary (haben/sein)
@@ -1099,6 +1129,17 @@
 		  });
 		  mark(pIch, okIch); mark(pDu, okDu); mark(pEr, okEr); mark(pIhr, okIhr);
 		  mark(inpPast, okPast); mark(elPart, okPart);
+		  
+		  // --- show correct answers under wrong fields ---
+			showCorrect(elInf, okInf, v.lemma);
+			showCorrect(pIch, okIch, v.ich);
+			showCorrect(pDu, okDu, v.du);
+			showCorrect(pEr, okEr, v.er);
+			showCorrect(pIhr, okIhr, v.ihr);
+			showCorrect(inpPast, okPast, v.past);
+			showCorrect(elPart, okPart, v.partizip);
+			showCorrect(inpPrep, okPrep, v.preps);
+
 
 		  // --- 2) Preposition (CSV now has ONLY the preposition(s)) ---
 		  // CSV: preps = "auf;an;mit" or "" (empty means: no preposition requirement)
