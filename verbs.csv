@@ -1,13 +1,12 @@
 lemma,english,aux,ich,du,er,ihr,wir,Sie,partizip,preps,reflexive,past,case,trennbar
-sein,"his, its",sein,bin,bist,ist,seid,sind,sind,sein-,,FALSE,war,Akk,FALSE
-wenn,"when, whenever, if",haben,wene,wenst,went,went,wenn,wenn,gewent,,FALSE,wente,Akk,FALSE
+sein,"to be",sein,bin,bist,ist,seid,sind,sind,sein-,,FALSE,war,Akk,FALSE
 werden,"to become, get",sein,werde,wirst,wird,werdet,werden,werden,geworden,zu,FALSE,wurde,Akk,FALSE
 haben,to have,haben,habe,hast,hat,habt,haben,haben,gehabt,,FALSE,hatte,Akk,FALSE
 wollen,to want to,haben,will,willst,will,wollt,wollen,wollen,gewollt,,FALSE,wollte,Infinitiv,FALSE
-können,"to be able to, can",haben,kann,kannst,kann,könnt,können,können,gekonnt,,FALSE,konnte,Infinitiv,FALSE
-müssen,to have to,haben,muss,musst,muss,müsst,müssen,müssen,gemusst,,FALSE,musste,Infinitiv,FALSE
+kÃ¶nnen,"to be able to, can",haben,kann,kannst,kann,kÃ¶nnt,kÃ¶nnen,kÃ¶nnen,gekonnt,,FALSE,konnte,Infinitiv,FALSE
+mÃ¼ssen,to have to,haben,muss,musst,muss,mÃ¼sst,mÃ¼ssen,mÃ¼ssen,gemusst,,FALSE,musste,Infinitiv,FALSE
 sollen,"should, ought to",haben,soll,sollst,soll,sollt,sollen,sollen,gesollt,,FALSE,sollte,Infinitiv,FALSE
-lassen,"to let, allow, have done",haben,lasse,lässt,lässt,lasst,lassen,lassen,gelassen,,FALSE,ließ,Akk,FALSE
+lassen,"to let, allow, have done",haben,lasse,lÃ¤sst,lÃ¤sst,lasst,lassen,lassen,gelassen,,FALSE,lieÃŸ,Akk,FALSE
 geben,to give,haben,gebe,gibst,gibt,gebt,geben,geben,gegeben,,FALSE,gab,Akk,FALSE
 sagen,to say,haben,sage,sagst,sagt,sagt,sagen,sagen,gesagt,,FALSE,sagte,Akk,FALSE
 kommen,to come,sein,komme,kommst,kommt,kommt,kommen,kommen,gekommen,aus; zu,FALSE,kam,Akk,FALSE
@@ -21,23 +20,23 @@ liegen,"to be in a horizontal position, lying, to lie, to be located",haben,lieg
 stellen,"to put, place, set",haben,stelle,stellst,stellt,stellt,stellen,stellen,gestellt,,FALSE,stellte,Akk,FALSE
 nehmen,to take,haben,nehme,nimmst,nimmt,nehmt,nehmen,nehmen,genommen,,FALSE,nahm,Akk,FALSE
 zeigen,to show,haben,zeige,zeigst,zeigt,zeigt,zeigen,zeigen,gezeigt,,FALSE,zeigte,Akk,FALSE
-dürfen,"to be allowed, permitted",haben,darf,darfst,darf,dürft,dürfen,dürfen,gedurft,,FALSE,durfte,Infinitiv,FALSE
-halten,"to keep, hold, stop",haben,halte,hältst,hält,haltet,halten,halten,gehalten,,FALSE,hielt,Akk,FALSE
+dÃ¼rfen,"to be allowed, permitted",haben,darf,darfst,darf,dÃ¼rft,dÃ¼rfen,dÃ¼rfen,gedurft,,FALSE,durfte,Infinitiv,FALSE
+halten,"to keep, hold, stop",haben,halte,hÃ¤ltst,hÃ¤lt,haltet,halten,halten,gehalten,,FALSE,hielt,Akk,FALSE
 spielen,to play,haben,spiele,spielst,spielt,spielt,spielen,spielen,gespielt,mit,FALSE,spielte,Akk,FALSE
 bringen,to bring,haben,bringe,bringst,bringt,bringt,bringen,bringen,gebracht,,FALSE,brachte,Akk,FALSE
-führen,to lead,haben,führe,führst,führt,führt,führen,führen,geführt,zu,FALSE,führte,Akk,FALSE
-gehören,to belong,haben,gehöre,gehörst,gehört,gehört,gehören,gehören,gehört,zu,FALSE,gehörte,Dat,FALSE
+fÃ¼hren,to lead,haben,fÃ¼hre,fÃ¼hrst,fÃ¼hrt,fÃ¼hrt,fÃ¼hren,fÃ¼hren,gefÃ¼hrt,zu,FALSE,fÃ¼hrte,Akk,FALSE
+gehÃ¶ren,to belong,haben,gehÃ¶re,gehÃ¶rst,gehÃ¶rt,gehÃ¶rt,gehÃ¶ren,gehÃ¶ren,gehÃ¶rt,zu,FALSE,gehÃ¶rte,Dat,FALSE
 beginnen,to begin,haben,beginne,beginnst,beginnt,beginnt,beginnen,beginnen,begonnen,mit,FALSE,begann,Infinitiv,FALSE
 erhalten,"to obtain, receive",haben,erhalte,erhaltest,erhaltet,erhaltet,erhalten,erhalten,erhalten,,FALSE,erhaltete,Akk,FALSE
-heißen,to be called,haben,heiße,heißt,heißt,heißt,heißen,heißen,geheißen,,FALSE,hieß,Akk,FALSE
+heiÃŸen,to be called,haben,heiÃŸe,heiÃŸt,heiÃŸt,heiÃŸt,heiÃŸen,heiÃŸen,geheiÃŸen,,FALSE,hieÃŸ,Akk,FALSE
 eigen,own,haben,eige,eigst,eigt,eigt,eigen,eigen,geeigt,,FALSE,eigte,Akk,FALSE
 klein,"small, little",haben,kleie,kleist,kleit,kleit,klein,klein,gekleit,,FALSE,kleite,Akk,FALSE
 arbeiten,to work,haben,arbeite,arbeitest,arbeitet,arbeitet,arbeiten,arbeiten,gearbeitet,an; bei; mit,FALSE,arbeitete,Akk,FALSE
 bekommen,"to get, receive",haben,bekomme,bekommst,bekommt,bekommt,bekommen,bekommen,bekommen,,FALSE,bekam,Akk,FALSE
-berichten,"to report, tell",haben,berichte,berichtest,berichtet,berichtet,berichten,berichten,berichtet,von; über,FALSE,berichtete,Akk,FALSE
+berichten,"to report, tell",haben,berichte,berichtest,berichtet,berichtet,berichten,berichten,berichtet,von; Ã¼ber,FALSE,berichtete,Akk,FALSE
 bestehen,"to exist, insist, pass an exam",haben,bestehe,bestehst,besteht,besteht,bestehen,bestehen,bestanden,auf; aus; in,FALSE,bestehte,Akk,FALSE
 bieten,"to offer, bid",haben,biete,bietest,bietet,bietet,bieten,bieten,geboten,,FALSE,bot,Akk,FALSE
-erklären,"to explain, make clear",haben,erkläre,erklärst,erklärt,erklärt,erklären,erklären,erklärt,,FALSE,erklärte,Akk,FALSE
+erklÃ¤ren,"to explain, make clear",haben,erklÃ¤re,erklÃ¤rst,erklÃ¤rt,erklÃ¤rt,erklÃ¤ren,erklÃ¤ren,erklÃ¤rt,,FALSE,erklÃ¤rte,Akk,FALSE
 erreichen,"to achieve, attain, reach",haben,erreiche,erreichst,erreicht,erreicht,erreichen,erreichen,erreicht,,FALSE,erreichte,Akk,FALSE
 folgen,to follow,haben,folge,folgst,folgt,folgt,folgen,folgen,gefolgt,,FALSE,folgte,Dat,FALSE
 fordern,"to demand, require, ask, claim",haben,fordere,forderst,fordert,fordert,fordern,fordern,gefordert,,FALSE,forderte,Akk,FALSE
@@ -45,36 +44,36 @@ gelten,to be valid,haben,gelte,geltest,geltet,geltet,gelten,gelten,gegolten,,FAL
 gewinnen,"to win, gain",haben,gewinne,gewinnst,gewinnt,gewinnt,gewinnen,gewinnen,gewonnen,,FALSE,gewann,Akk,FALSE
 leben,"life, living",haben,lebe,lebst,lebt,lebt,leben,leben,gelebt,,FALSE,lebte,Akk,FALSE
 meinen,"to think, opine",haben,meine,meinst,meint,meint,meinen,meinen,gemeint,,FALSE,meinte,Akk,FALSE
-mögen,"to like, may",haben,mag,magst,mag,mögt,mögen,mögen,gemocht,,FALSE,mochte,Infinitiv,FALSE
+mÃ¶gen,"to like, may",haben,mag,magst,mag,mÃ¶gt,mÃ¶gen,mÃ¶gen,gemocht,,FALSE,mochte,Infinitiv,FALSE
 nennen,to name,haben,nenne,nennst,nennt,nennt,nennen,nennen,genannt,,FALSE,nannte,Akk,FALSE
 schaffen,"to manage, pull off",haben,schaffe,schaffst,schafft,schafft,schaffen,schaffen,geschafft,,FALSE,schaffte,Akk,FALSE
-schreiben,to write,haben,schreibe,schreibst,schreibt,schreibt,schreiben,schreiben,geschrieben,an; über,FALSE,schrieb,Akk,FALSE
+schreiben,to write,haben,schreibe,schreibst,schreibt,schreibt,schreiben,schreiben,geschrieben,an; Ã¼ber,FALSE,schrieb,Akk,FALSE
 setzen,"to set, put, place in a seated position",haben,setze,setzt,setzt,setzt,setzen,setzen,gesetzt,,FALSE,setzte,Akk,FALSE
-sprechen,to speak,haben,spreche,sprichst,spricht,sprecht,sprechen,sprechen,gesprochen,mit; von; über,FALSE,sprach,Akk,FALSE
+sprechen,to speak,haben,spreche,sprichst,spricht,sprecht,sprechen,sprechen,gesprochen,mit; von; Ã¼ber,FALSE,sprach,Akk,FALSE
 steigen,"to climb, rise, increase",sein,steige,steigst,steigt,steigt,steigen,steigen,gestiegen,,FALSE,stieg,Akk,FALSE
 treffen,"to meet, hit",haben,treffe,triffst,trifft,trefft,treffen,treffen,getroffen,,FALSE,traf,Akk,FALSE
 tun,to do,haben,tue,tust,tut,tut,tun,tun,getan,,FALSE,tat,Akk,FALSE
-wissen,to know (facts),haben,weiß,weißt,weiß,wisst,wissen,wissen,gewusst,,FALSE,wusste,Akk,FALSE
+wissen,to know (facts),haben,weiÃŸ,weiÃŸt,weiÃŸ,wisst,wissen,wissen,gewusst,,FALSE,wusste,Akk,FALSE
 ziehen,"to pull, move, drag",haben,ziehe,ziehst,zieht,zieht,ziehen,ziehen,gezogen,,FALSE,zog,Akk,FALSE
-schön,beautiful,haben,schöe,schöst,schöt,schöt,schön,schön,geschöt,,FALSE,schöte,Akk,FALSE
+schÃ¶n,beautiful,haben,schÃ¶e,schÃ¶st,schÃ¶t,schÃ¶t,schÃ¶n,schÃ¶n,geschÃ¶t,,FALSE,schÃ¶te,Akk,FALSE
 vergangen,"past, bygone",haben,vergange,vergangst,vergangt,vergangt,vergangen,vergangen,vergangt,,FALSE,vergangte,Akk,FALSE
 neben,"beside, next to",haben,nebe,nebst,nebt,nebt,neben,neben,genebt,,FALSE,nebte,Akk,FALSE
 davon,"of or from it / them, thereof",haben,davoe,davost,davot,davot,davon,davon,gedavot,,FALSE,davote,Akk,FALSE
 brauchen,to need,haben,brauche,brauchst,braucht,braucht,brauchen,brauchen,gebraucht,,FALSE,brauchte,Akk,FALSE
-denken,to think,haben,denke,denkst,denkt,denkt,denken,denken,gedacht,an; über,FALSE,dachte,Akk,FALSE
-entscheiden,to decide,haben,entscheide,entscheidest,entscheidet,entscheidet,entscheiden,entscheiden,entschieden,für; gegen,FALSE,entscheidete,Akk,FALSE
+denken,to think,haben,denke,denkst,denkt,denkt,denken,denken,gedacht,an; Ã¼ber,FALSE,dachte,Akk,FALSE
+entscheiden,to decide,haben,entscheide,entscheidest,entscheidet,entscheidet,entscheiden,entscheiden,entschieden,fÃ¼r; gegen,FALSE,entscheidete,Akk,FALSE
 entstehen,"to originate, develop",sein,entstehe,entstehst,entsteht,entsteht,entstehen,entstehen,entstanden,,FALSE,entstehte,Akk,FALSE
 erwarten,"to expect, await",haben,erwarte,erwartest,erwartet,erwartet,erwarten,erwarten,erwartet,,FALSE,erwartete,Akk,FALSE
 fehlen,"to be lacking, missing",haben,fehle,fehlst,fehlt,fehlt,fehlen,fehlen,gefehlt,,FALSE,fehlte,Dat,FALSE
 feiern,to celebrate,haben,feiere,feierst,feiert,feiert,feiern,feiern,gefeiert,,FALSE,feierte,Akk,FALSE
-laufen,"to run, walk",sein,laufe,läufst,läuft,lauft,laufen,laufen,gelaufen,,FALSE,lief,Akk,FALSE
+laufen,"to run, walk",sein,laufe,lÃ¤ufst,lÃ¤uft,lauft,laufen,laufen,gelaufen,,FALSE,lief,Akk,FALSE
 legen,"to lay, put, place",haben,lege,legst,legt,legt,legen,legen,gelegt,,FALSE,legte,Akk,FALSE
 planen,to plan,haben,plane,planst,plant,plant,planen,planen,geplant,,FALSE,plante,Infinitiv,FALSE
 scheinen,"to seem, appear, shine",haben,scheine,scheinst,scheint,scheint,scheinen,scheinen,geschienen,,FALSE,schien,Infinitiv,FALSE
-sorgen,"to worry, to care",haben,sorge,sorgst,sorgt,sorgt,sorgen,sorgen,gesorgt,für,FALSE,sorgte,Akk,FALSE
+sorgen,"to worry, to care",haben,sorge,sorgst,sorgt,sorgt,sorgen,sorgen,gesorgt,fÃ¼r,FALSE,sorgte,Akk,FALSE
 suchen,"to seek, look for, look up",haben,suche,suchst,sucht,sucht,suchen,suchen,gesucht,nach,FALSE,suchte,Akk,FALSE
-tragen,"to carry, to wear",haben,trage,trägst,trägt,tragt,tragen,tragen,getragen,,FALSE,trug,Akk,FALSE
-übernehmen,"to assume (responsibility), take on, take over",haben,übernehme,übernehmst,übernehmt,übernehmt,übernehmen,übernehmen,übernommen,,FALSE,übernehmte,Akk,FALSE
+tragen,"to carry, to wear",haben,trage,trÃ¤gst,trÃ¤gt,tragt,tragen,tragen,getragen,,FALSE,trug,Akk,FALSE
+Ã¼bernehmen,"to assume (responsibility), take on, take over",haben,Ã¼bernehme,Ã¼bernehmst,Ã¼bernehmt,Ã¼bernehmt,Ã¼bernehmen,Ã¼bernehmen,Ã¼bernommen,,FALSE,Ã¼bernehmte,Akk,FALSE
 verlieren,to lose,haben,verliere,verlierst,verliert,verliert,verlieren,verlieren,verloren,,FALSE,verlierierte,Akk,FALSE
 versuchen,"to try, attempt",haben,versuche,versuchst,versucht,versucht,versuchen,versuchen,versucht,,FALSE,versuchte,Infinitiv,FALSE
 allein,alone,haben,alleie,alleist,alleit,alleit,allein,allein,gealleit,,FALSE,alleite,Akk,FALSE
@@ -82,27 +81,27 @@ zusammen,"together, en masse",haben,zusamme,zusammst,zusammt,zusammt,zusammen,zu
 offen,"open, frank, honest",haben,offe,offst,offt,offt,offen,offen,geofft,,FALSE,offte,Akk,FALSE
 verschieden,"different, diverse",haben,verschiede,verschiedest,verschiedet,verschiedet,verschieden,verschieden,verschiedt,,FALSE,verschiedete,Akk,FALSE
 bauen,to build,haben,baue,baust,baut,baut,bauen,bauen,gebaut,,FALSE,baute,Akk,FALSE
-erzählen,to tell,haben,erzähle,erzählst,erzählt,erzählt,erzählen,erzählen,erzählt,von; über,FALSE,erzählte,Akk,FALSE
+erzÃ¤hlen,to tell,haben,erzÃ¤hle,erzÃ¤hlst,erzÃ¤hlt,erzÃ¤hlt,erzÃ¤hlen,erzÃ¤hlen,erzÃ¤hlt,von; Ã¼ber,FALSE,erzÃ¤hlte,Akk,FALSE
 fragen,to ask,haben,frage,fragst,fragt,fragt,fragen,fragen,gefragt,nach,FALSE,fragte,Akk,FALSE
 glauben,to believe,haben,glaube,glaubst,glaubt,glaubt,glauben,glauben,geglaubt,an,FALSE,glaubte,Dat,FALSE
 helfen,to help,haben,helfe,helfst,helft,helft,helfen,helfen,geholfen,bei,FALSE,half,Dat,FALSE
-hören,to hear,haben,höre,hörst,hört,hört,hören,hören,gehört,,FALSE,hörte,Akk,FALSE
+hÃ¶ren,to hear,haben,hÃ¶re,hÃ¶rst,hÃ¶rt,hÃ¶rt,hÃ¶ren,hÃ¶ren,gehÃ¶rt,,FALSE,hÃ¶rte,Akk,FALSE
 kennen,"to know (person, place), to be aware of, acquainted w/",haben,kenne,kennst,kennt,kennt,kennen,kennen,gekannt,,FALSE,kennte,Akk,FALSE
 nutzen,to use,haben,nutze,nutzt,nutzt,nutzt,nutzen,nutzen,genutzt,,FALSE,nutzte,Akk,FALSE
 rechnen,"to reckon, calculate, count, do arithmetic",haben,rechne,rechnest,rechnet,rechnet,rechnen,rechnen,gerechnet,,FALSE,rechnete,Akk,FALSE
 schlagen,"to hit, beat, slug",haben,schlage,schlagst,schlagt,schlagt,schlagen,schlagen,geschlagen,,FALSE,schlagte,Akk,FALSE
-schließen,"to close, shut, conclude",haben,schließe,schließt,schließt,schließt,schließen,schließen,geschlossen,,FALSE,schließte,Akk,FALSE
-sitzen,"sit, to be sitting, to be based",haben,sitze,sitzt,sitzt,sitzt,sitzen,sitzen,gesessen,,FALSE,saß,Akk,FALSE
+schlieÃŸen,"to close, shut, conclude",haben,schlieÃŸe,schlieÃŸt,schlieÃŸt,schlieÃŸt,schlieÃŸen,schlieÃŸen,geschlossen,,FALSE,schlieÃŸte,Akk,FALSE
+sitzen,"sit, to be sitting, to be based",haben,sitze,sitzt,sitzt,sitzt,sitzen,sitzen,gesessen,,FALSE,saÃŸ,Akk,FALSE
 teilen,"to divide, share",haben,teile,teilst,teilt,teilt,teilen,teilen,geteilt,durch; mit,FALSE,teilte,Akk,FALSE
-unterstützen,"to support, promote",haben,unterstütze,unterstützt,unterstützt,unterstützt,unterstützen,unterstützen,unterstützt,,FALSE,unterstützte,Akk,FALSE
+unterstÃ¼tzen,"to support, promote",haben,unterstÃ¼tze,unterstÃ¼tzt,unterstÃ¼tzt,unterstÃ¼tzt,unterstÃ¼tzen,unterstÃ¼tzen,unterstÃ¼tzt,,FALSE,unterstÃ¼tzte,Akk,FALSE
 verstehen,to understand,haben,verstehe,verstehst,versteht,versteht,verstehen,verstehen,verstanden,,FALSE,verstand,Akk,FALSE
-wählen,"to elect, choose, select, dial (phone)",haben,wähle,wählst,wählt,wählt,wählen,wählen,gewählt,zwischen,FALSE,wählte,Akk,FALSE
-zählen,"to count, total, tally",haben,zähle,zählst,zählt,zählt,zählen,zählen,gezählt,zu,FALSE,zählte,Akk,FALSE
+wÃ¤hlen,"to elect, choose, select, dial (phone)",haben,wÃ¤hle,wÃ¤hlst,wÃ¤hlt,wÃ¤hlt,wÃ¤hlen,wÃ¤hlen,gewÃ¤hlt,zwischen,FALSE,wÃ¤hlte,Akk,FALSE
+zÃ¤hlen,"to count, total, tally",haben,zÃ¤hle,zÃ¤hlst,zÃ¤hlt,zÃ¤hlt,zÃ¤hlen,zÃ¤hlen,gezÃ¤hlt,zu,FALSE,zÃ¤hlte,Akk,FALSE
 dagegen,"against it / them, however, on the contrary, in contrast",haben,dagege,dagegst,dagegt,dagegt,dagegen,dagegen,gedagegt,,FALSE,dagegte,Akk,FALSE
 daran,"thereon, at it, on it, to it",haben,darae,darast,darat,darat,daran,daran,gedarat,,FALSE,darate,Akk,FALSE
 inzwischen,"meanwhile, since then, by then",haben,inzwische,inzwischst,inzwischt,inzwischt,inzwischen,inzwischen,geinzwischt,,FALSE,inzwischte,Akk,FALSE
-ändern,"to change, alter",haben,ändere,änderst,ändert,ändert,ändern,ändern,geändert,,FALSE,änderte,Akk,FALSE
-bestätigen,to confirm,haben,bestätige,bestätigst,bestätigt,bestätigt,bestätigen,bestätigen,bestätigt,,FALSE,bestätigte,Akk,FALSE
+Ã¤ndern,"to change, alter",haben,Ã¤ndere,Ã¤nderst,Ã¤ndert,Ã¤ndert,Ã¤ndern,Ã¤ndern,geÃ¤ndert,,FALSE,Ã¤nderte,Akk,FALSE
+bestÃ¤tigen,to confirm,haben,bestÃ¤tige,bestÃ¤tigst,bestÃ¤tigt,bestÃ¤tigt,bestÃ¤tigen,bestÃ¤tigen,bestÃ¤tigt,,FALSE,bestÃ¤tigte,Akk,FALSE
 bezeichnen,"to designate, label, describe",haben,bezeichne,bezeichnest,bezeichnet,bezeichnet,bezeichnen,bezeichnen,bezeichnet,,FALSE,bezeichnete,Akk,FALSE
 bilden,"to form, educate",haben,bilde,bildest,bildet,bildet,bilden,bilden,gebildet,,FALSE,bildete,Akk,FALSE
 einsetzen,"to put in, insert, deploy",haben,einsetze,einsetzt,einsetzt,einsetzt,einsetzen,einsetzen,eingesetzt,,FALSE,einsetzte,Akk,TRUE
@@ -114,14 +113,14 @@ holen,"to fetch, to go get",haben,hole,holst,holt,holt,holen,holen,geholt,,FALSE
 kosten,"expenses, costs",haben,koste,kostest,kostet,kostet,kosten,kosten,gekostet,,FALSE,kostete,Akk,FALSE
 laden,"to load, charge",haben,lade,ladest,ladet,ladet,laden,laden,geladen,,FALSE,ladete,Akk,FALSE
 lernen,"to learn, to study, to do homework",haben,lerne,lernst,lernt,lernt,lernen,lernen,gelernt,aus; von,FALSE,lernte,Infinitiv,FALSE
-lesen,to read /,haben,lese,liest,liest,lest,lesen,lesen,gelesen,von; über,FALSE,las,Akk,FALSE
+lesen,to read /,haben,lese,liest,liest,lest,lesen,lesen,gelesen,von; Ã¼ber,FALSE,las,Akk,FALSE
 melden,"to report, announce, notify",haben,melde,meldest,meldet,meldet,melden,melden,gemeldet,,FALSE,meldete,Akk,FALSE
-öffnen,to open [cognate],haben,öffne,öffnest,öffnet,öffnet,öffnen,öffnen,geöffnet,,FALSE,öffnete,Akk,FALSE
-präsentieren,to present [cognate],haben,präsentiere,präsentierst,präsentiert,präsentiert,präsentieren,präsentieren,präsentiert,,FALSE,präsentierierte,Akk,FALSE
+Ã¶ffnen,to open [cognate],haben,Ã¶ffne,Ã¶ffnest,Ã¶ffnet,Ã¶ffnet,Ã¶ffnen,Ã¶ffnen,geÃ¶ffnet,,FALSE,Ã¶ffnete,Akk,FALSE
+prÃ¤sentieren,to present [cognate],haben,prÃ¤sentiere,prÃ¤sentierst,prÃ¤sentiert,prÃ¤sentiert,prÃ¤sentieren,prÃ¤sentieren,prÃ¤sentiert,,FALSE,prÃ¤sentierierte,Akk,FALSE
 stammen,"to stem, originate",haben,stamme,stammst,stammt,stammt,stammen,stammen,gestammt,,FALSE,stammte,Akk,FALSE
 starten,"to launch, start",haben,starte,startest,startet,startet,starten,starten,gestartet,,FALSE,startete,Akk,FALSE
 sterben,to die,sein,sterbe,sterbst,sterbt,sterbt,sterben,sterben,gestorben,an,FALSE,sterbte,Akk,FALSE
-stimmen,to vote,haben,stimme,stimmst,stimmt,stimmt,stimmen,stimmen,gestimmt,für; gegen,FALSE,stimmte,Akk,FALSE
+stimmen,to vote,haben,stimme,stimmst,stimmt,stimmt,stimmen,stimmen,gestimmt,fÃ¼r; gegen,FALSE,stimmte,Akk,FALSE
 verlassen,to leave sb/sth,haben,verlasse,verlasst,verlasst,verlasst,verlassen,verlassen,verlassen,auf,FALSE,verlasste,Akk,FALSE
 verletzen,"to injure, harm, breach",haben,verletze,verletzt,verletzt,verletzt,verletzen,verletzen,verletzt,,FALSE,verletzte,Akk,FALSE
 wachsen,"to grow, increase",haben,wachse,wachst,wachst,wachst,wachsen,wachsen,gewachsen,,FALSE,wachste,Akk,FALSE
@@ -139,10 +138,10 @@ betragen,to amount to,haben,betrage,betragst,betragt,betragt,betragen,betragen,b
 bitten,"to request, ask",haben,bitte,bittest,bittet,bittet,bitten,bitten,gebeten,um,FALSE,bat,Akk,FALSE
 drohen,"to threaten, to be in danger of",haben,drohe,drohst,droht,droht,drohen,drohen,gedroht,,FALSE,drohte,Infinitiv,FALSE
 entwickeln,to develop,haben,entwickele,entwickelst,entwickelt,entwickelt,entwickeln,entwickeln,entwickelt,,FALSE,entwickelte,Akk,FALSE
-erhöhen,"to raise, increase, heighten",haben,erhöhe,erhöhst,erhöht,erhöht,erhöhen,erhöhen,erhöht,,FALSE,erhöhte,Akk,FALSE
+erhÃ¶hen,"to raise, increase, heighten",haben,erhÃ¶he,erhÃ¶hst,erhÃ¶ht,erhÃ¶ht,erhÃ¶hen,erhÃ¶hen,erhÃ¶ht,,FALSE,erhÃ¶hte,Akk,FALSE
 erkennen,"to realize, recognize, perceive",haben,erkenne,erkennst,erkennt,erkennt,erkennen,erkennen,erkannt,,FALSE,erkennte,Akk,FALSE
-eröffnen,to open,haben,eröffne,eröffnest,eröffnet,eröffnet,eröffnen,eröffnen,eröffnet,,FALSE,eröffnete,Akk,FALSE
-gründen,"to establish, found",haben,gründe,gründest,gründet,gründet,gründen,gründen,gegründet,,FALSE,gründete,Akk,FALSE
+erÃ¶ffnen,to open,haben,erÃ¶ffne,erÃ¶ffnest,erÃ¶ffnet,erÃ¶ffnet,erÃ¶ffnen,erÃ¶ffnen,erÃ¶ffnet,,FALSE,erÃ¶ffnete,Akk,FALSE
+grÃ¼nden,"to establish, found",haben,grÃ¼nde,grÃ¼ndest,grÃ¼ndet,grÃ¼ndet,grÃ¼nden,grÃ¼nden,gegrÃ¼ndet,,FALSE,grÃ¼ndete,Akk,FALSE
 leisten,"to achieve, perform, render",haben,leiste,leistest,leistet,leistet,leisten,leisten,geleistet,,TRUE,leistete,Dat,FALSE
 reichen,"to reach, to be enough",haben,reiche,reichst,reicht,reicht,reichen,reichen,gereicht,,FALSE,reichte,Akk,FALSE
 rufen,"to call, shout",haben,rufe,rufst,ruft,ruft,rufen,rufen,gerufen,,FALSE,rief,Akk,FALSE
@@ -152,7 +151,7 @@ verwenden,"to use, apply, employ",haben,verwende,verwendest,verwendet,verwendet,
 vorstellen,"to introduce, suggest",haben,vorstelle,vorstellst,vorstellt,vorstellt,vorstellen,vorstellen,vorgestellt,,TRUE,vorstellte,Dat,TRUE
 weisen,"to indicate, point out",haben,weise,weist,weist,weist,weisen,weisen,gewiesen,,FALSE,weiste,Akk,FALSE
 werfen,to throw,haben,werfe,werfst,werft,werft,werfen,werfen,geworfen,,FALSE,warf,Akk,FALSE
-zahlen,to pay,haben,zahle,zahlst,zahlt,zahlt,zahlen,zahlen,gezahlt,für,FALSE,zahlte,Akk,FALSE
+zahlen,to pay,haben,zahle,zahlst,zahlt,zahlt,zahlen,zahlen,gezahlt,fÃ¼r,FALSE,zahlte,Akk,FALSE
 allgemein,general(ly),haben,allgemeie,allgemeist,allgemeit,allgemeit,allgemein,allgemein,geallgemeit,,FALSE,allgemeite,Akk,FALSE
 modern,modern,haben,modere,moderst,modert,modert,modern,modern,gemodert,,FALSE,moderte,Akk,FALSE
 dreizehn,,haben,dreizehe,dreizehst,dreizeht,dreizeht,dreizehn,dreizehn,zwanzig,,FALSE,dreizehte,Akk,FALSE
@@ -162,7 +161,7 @@ immerhin,after all,haben,immerhie,immerhist,immerhit,immerhit,immerhin,immerhin,
 oben,"above, at the top",haben,obe,obst,obt,obt,oben,oben,geobt,,FALSE,obte,Akk,FALSE
 selten,seldom,haben,selte,seltest,seltet,seltet,selten,selten,geseltt,,FALSE,seltete,Akk,FALSE
 zufrieden,"pleased, satisfied",haben,zufriede,zufriedest,zufriedet,zufriedet,zufrieden,zufrieden,gezufriedt,,FALSE,zufriedete,Akk,FALSE
-beschließen,"to resolve, decide",haben,beschließe,beschließt,beschließt,beschließt,beschließen,beschließen,beschlossen,,FALSE,beschließte,Akk,FALSE
+beschlieÃŸen,"to resolve, decide",haben,beschlieÃŸe,beschlieÃŸt,beschlieÃŸt,beschlieÃŸt,beschlieÃŸen,beschlieÃŸen,beschlossen,,FALSE,beschlieÃŸte,Akk,FALSE
 beschreiben,to describe,haben,beschreibe,beschreibst,beschreibt,beschreibt,beschreiben,beschreiben,beschrieben,,FALSE,beschreibte,Akk,FALSE
 besuchen,"to visit, attend",haben,besuche,besuchst,besucht,besucht,besuchen,besuchen,besucht,,FALSE,besuchte,Akk,FALSE
 beteiligen,"to participate, partake",haben,beteilige,beteiligst,beteiligt,beteiligt,beteiligen,beteiligen,beteiligt,an,FALSE,beteiligte,Akk,FALSE
@@ -172,19 +171,19 @@ erfahren,"to experience, find out, to learn, to hear",haben,erfahre,erfahrst,erf
 erfolgen,"to take place, occur",haben,erfolge,erfolgst,erfolgt,erfolgt,erfolgen,erfolgen,erfolgt,,FALSE,erfolgte,Akk,FALSE
 ergeben,to result in,haben,ergebe,ergebst,ergebt,ergebt,ergeben,ergeben,ergeben,,FALSE,ergebte,Akk,FALSE
 erleben,"to experience, to undergo an experience",haben,erlebe,erlebst,erlebt,erlebt,erleben,erleben,erlebt,,FALSE,erlebte,Akk,FALSE
-kämpfen,"to brawl, fight",haben,kämpfe,kämpfst,kämpft,kämpft,kämpfen,kämpfen,gekämpft,für; gegen,FALSE,kämpfte,Akk,FALSE
+kÃ¤mpfen,"to brawl, fight",haben,kÃ¤mpfe,kÃ¤mpfst,kÃ¤mpft,kÃ¤mpft,kÃ¤mpfen,kÃ¤mpfen,gekÃ¤mpft,fÃ¼r; gegen,FALSE,kÃ¤mpfte,Akk,FALSE
 kaufen,to buy,haben,kaufe,kaufst,kauft,kauft,kaufen,kaufen,gekauft,,FALSE,kaufte,Akk,FALSE
 kritisieren,to criticize,haben,kritisiere,kritisierst,kritisiert,kritisiert,kritisieren,kritisieren,kritisiert,,FALSE,kritisierierte,Akk,FALSE
-reden,"to speak, talk",haben,rede,redest,redet,redet,reden,reden,geredet,mit; von; über,FALSE,redete,Akk,FALSE
+reden,"to speak, talk",haben,rede,redest,redet,redet,reden,reden,geredet,mit; von; Ã¼ber,FALSE,redete,Akk,FALSE
 scheitern,"to fail, founder",sein,scheitere,scheiterst,scheitert,scheitert,scheitern,scheitern,gescheitert,,FALSE,scheiterte,Akk,FALSE
 sichern,"to secure, ensure",haben,sichere,sicherst,sichert,sichert,sichern,sichern,gesichert,,FALSE,sicherte,Akk,FALSE
 singen,to sing,haben,singe,singst,singt,singt,singen,singen,gesungen,,FALSE,singte,Akk,FALSE
 verhindern,to prevent,haben,verhindere,verhinderst,verhindert,verhindert,verhindern,verhindern,verhindert,,FALSE,verhinderte,Akk,FALSE
 verkaufen,to sell,haben,verkaufe,verkaufst,verkauft,verkauft,verkaufen,verkaufen,verkauft,,FALSE,verkaufte,Akk,FALSE
 wechseln,"to change, switch",haben,wechsele,wechselst,wechselt,wechselt,wechseln,wechseln,gewechselt,,FALSE,wechselte,Akk,FALSE
-wünschen,to wish,haben,wünsche,wünschst,wünscht,wünscht,wünschen,wünschen,gewünscht,,FALSE,wünschte,Akk,FALSE
-abschließen,"to lock, conclude",haben,abschließe,abschließt,abschließt,abschließt,abschließen,abschließen,abgeschlossen,,FALSE,abschließte,Akk,TRUE
-ankündigen,to announce,haben,ankündige,ankündigst,ankündigt,ankündigt,ankündigen,ankündigen,angekündigt,,FALSE,ankündigte,Akk,TRUE
+wÃ¼nschen,to wish,haben,wÃ¼nsche,wÃ¼nschst,wÃ¼nscht,wÃ¼nscht,wÃ¼nschen,wÃ¼nschen,gewÃ¼nscht,,FALSE,wÃ¼nschte,Akk,FALSE
+abschlieÃŸen,"to lock, conclude",haben,abschlieÃŸe,abschlieÃŸt,abschlieÃŸt,abschlieÃŸt,abschlieÃŸen,abschlieÃŸen,abgeschlossen,,FALSE,abschlieÃŸte,Akk,TRUE
+ankÃ¼ndigen,to announce,haben,ankÃ¼ndige,ankÃ¼ndigst,ankÃ¼ndigt,ankÃ¼ndigt,ankÃ¼ndigen,ankÃ¼ndigen,angekÃ¼ndigt,,FALSE,ankÃ¼ndigte,Akk,TRUE
 belegen,"to attend (a class), to cover, to prove",haben,belege,belegst,belegt,belegt,belegen,belegen,belegte,,FALSE,belegte,Akk,FALSE
 bestimmen,"to decide, determine",haben,bestimme,bestimmst,bestimmt,bestimmt,bestimmen,bestimmen,bestimmt,,FALSE,bestimmte,Akk,FALSE
 darstellen,"to depict, portray",haben,darstelle,darstellst,darstellt,darstellt,darstellen,darstellen,dargestellt,,FALSE,darstellte,Akk,FALSE
@@ -192,17 +191,17 @@ einladen,"to invite, to load",haben,einlade,einladest,einladet,einladet,einladen
 entdecken,to discover,haben,entdecke,entdeckst,entdeckt,entdeckt,entdecken,entdecken,entdeckt,,FALSE,entdeckte,Akk,FALSE
 enthalten,to contain,haben,enthalte,enthaltest,enthaltet,enthaltet,enthalten,enthalten,enthalten,,FALSE,enthaltete,Akk,FALSE
 erzielen,"to achieve, reach",haben,erziele,erzielst,erzielt,erzielt,erzielen,erzielen,erzielt,,FALSE,erzielte,Akk,FALSE
-fördern,"to promote, support",haben,fördere,förderst,fördert,fördert,fördern,fördern,gefördert,,FALSE,förderte,Akk,FALSE
+fÃ¶rdern,"to promote, support",haben,fÃ¶rdere,fÃ¶rderst,fÃ¶rdert,fÃ¶rdert,fÃ¶rdern,fÃ¶rdern,gefÃ¶rdert,,FALSE,fÃ¶rderte,Akk,FALSE
 geraten,"to get in(to), to turn out",haben,gerate,geratest,geratet,geratet,geraten,geraten,geraten,,FALSE,geratete,Akk,FALSE
-hängen,to hang,haben,hänge,hängst,hängt,hängt,hängen,hängen,gehängt,,FALSE,hängte,Akk,FALSE
-kündigen,"to terminate, resign, cancel",haben,kündige,kündigst,kündigt,kündigt,kündigen,kündigen,gekündigt,,FALSE,kündigte,Akk,FALSE
+hÃ¤ngen,to hang,haben,hÃ¤nge,hÃ¤ngst,hÃ¤ngt,hÃ¤ngt,hÃ¤ngen,hÃ¤ngen,gehÃ¤ngt,,FALSE,hÃ¤ngte,Akk,FALSE
+kÃ¼ndigen,"to terminate, resign, cancel",haben,kÃ¼ndige,kÃ¼ndigst,kÃ¼ndigt,kÃ¼ndigt,kÃ¼ndigen,kÃ¼ndigen,gekÃ¼ndigt,,FALSE,kÃ¼ndigte,Akk,FALSE
 leiten,to lead,haben,leite,leitest,leitet,leitet,leiten,leiten,geleitet,,FALSE,leitete,Akk,FALSE
 liefern,"to deliver, supply, provide",haben,liefere,lieferst,liefert,liefert,liefern,liefern,geliefert,,FALSE,lieferte,Akk,FALSE
-lösen,"to solve, loosen",haben,löse,löst,löst,löst,lösen,lösen,gelöst,,FALSE,löste,Akk,FALSE
+lÃ¶sen,"to solve, loosen",haben,lÃ¶se,lÃ¶st,lÃ¶st,lÃ¶st,lÃ¶sen,lÃ¶sen,gelÃ¶st,,FALSE,lÃ¶ste,Akk,FALSE
 passieren,to happen,sein,passiere,passierst,passiert,passiert,passieren,passieren,passiert,,FALSE,passierierte,Akk,FALSE
 reagieren,to react,haben,reagiere,reagierst,reagiert,reagiert,reagieren,reagieren,reagiert,,FALSE,reagierierte,Akk,FALSE
 stattfinden,to take place,haben,stattfinde,stattfindest,stattfindet,stattfindet,stattfinden,stattfinden,stattgefunden,,FALSE,stattfindete,Akk,FALSE
-überzeugen,"to convince, persuade",haben,überzeuge,überzeugst,überzeugt,überzeugt,überzeugen,überzeugen,überzeugt,von,FALSE,überzeugte,Akk,FALSE
+Ã¼berzeugen,"to convince, persuade",haben,Ã¼berzeuge,Ã¼berzeugst,Ã¼berzeugt,Ã¼berzeugt,Ã¼berzeugen,Ã¼berzeugen,Ã¼berzeugt,von,FALSE,Ã¼berzeugte,Akk,FALSE
 verbessern,to improve,haben,verbessere,verbesserst,verbessert,verbessert,verbessern,verbessern,verbessert,,FALSE,verbesserte,Akk,FALSE
 verdienen,"to earn, deserve",haben,verdiene,verdienst,verdient,verdient,verdienen,verdienen,verdient,,FALSE,verdiente,Akk,FALSE
 verlangen,"ro require, demand",haben,verlange,verlangst,verlangt,verlangt,verlangen,verlangen,verlangt,,FALSE,verlangte,Akk,FALSE
@@ -210,15 +209,15 @@ versprechen,to promise,haben,verspreche,versprechst,versprecht,versprecht,verspr
 verzichten,"to forgo, do without",haben,verzichte,verzichtest,verzichtet,verzichtet,verzichten,verzichten,verzichtt,auf,FALSE,verzichtete,Akk,FALSE
 warnen,to warn,haben,warne,warnst,warnt,warnt,warnen,warnen,gewarnt,vor,FALSE,warnte,Akk,FALSE
 hingegen,"whereas, however",haben,hingege,hingegst,hingegt,hingegt,hingegen,hingegen,gehingegt,,FALSE,hingegte,Akk,TRUE
-nein,no,haben,neie,neist,neit,neit,nein,nein,nö,,FALSE,neite,Akk,FALSE
+nein,no,haben,neie,neist,neit,neit,nein,nein,nÃ¶,,FALSE,neite,Akk,FALSE
 beenden,to end sth. finish sth.,haben,beende,beendest,beendet,beendet,beenden,beenden,beendet,,FALSE,beendete,Akk,FALSE
 besitzen,"to possess, own, occupy",haben,besitze,besitzt,besitzt,besitzt,besitzen,besitzen,besessen,,FALSE,besitzte,Akk,FALSE
 beweisen,to prove,haben,beweise,beweist,beweist,beweist,beweisen,beweisen,bewiesen,,FALSE,beweiste,Akk,FALSE
-bezahlen,to pay,haben,bezahle,bezahlst,bezahlt,bezahlt,bezahlen,bezahlen,bezahlt,für,FALSE,bezahlte,Akk,FALSE
+bezahlen,to pay,haben,bezahle,bezahlst,bezahlt,bezahlt,bezahlen,bezahlen,bezahlt,fÃ¼r,FALSE,bezahlte,Akk,FALSE
 enden,to end,haben,ende,endest,endet,endet,enden,enden,geendet,mit,FALSE,endete,Akk,FALSE
 greifen,"to take hold of, reach",haben,greife,greifst,greift,greift,greifen,greifen,gegriffen,,FALSE,greifte,Akk,FALSE
 herrschen,"to rule, prevail",haben,herrsche,herrschst,herrscht,herrscht,herrschen,herrschen,geherrscht,,FALSE,herrschte,Akk,TRUE
-informieren,to inform,haben,informiere,informierst,informiert,informiert,informieren,informieren,informiert,über,FALSE,informierierte,Akk,FALSE
+informieren,to inform,haben,informiere,informierst,informiert,informiert,informieren,informieren,informiert,Ã¼ber,FALSE,informierierte,Akk,FALSE
 lauten,"to be (answer), to sound",haben,laute,lautest,lautet,lautet,lauten,lauten,gelautet,,FALSE,lautete,Akk,FALSE
 mitteilen,to inform,haben,mitteile,mitteilst,mitteilt,mitteilt,mitteilen,mitteilen,mitgeteilt,,FALSE,mitteilte,Akk,TRUE
 organisieren,to organize,haben,organisiere,organisierst,organisiert,organisiert,organisieren,organisieren,organisiert,,FALSE,organisierte,Akk,FALSE
@@ -226,33 +225,33 @@ passen,"to fit, suit, pass",haben,passe,passt,passt,passt,passen,passen,gepasst,
 richten,"to direct, repair, follow",haben,richte,richtest,richtet,richtet,richten,richten,gerichtet,,FALSE,richtete,Akk,FALSE
 sinken,"sink, drop",sein,sinke,sinkst,sinkt,sinkt,sinken,sinken,gesunken,,FALSE,sinkte,Akk,FALSE
 stecken,"to put, to be located",haben,stecke,steckst,steckt,steckt,stecken,stecken,gesteckt,,FALSE,steckte,Akk,FALSE
-stoßen,"to bump, push",haben,stoße,stoßt,stoßt,stoßt,stoßen,stoßen,gestoßen,,FALSE,stoßte,Akk,FALSE
+stoÃŸen,"to bump, push",haben,stoÃŸe,stoÃŸt,stoÃŸt,stoÃŸt,stoÃŸen,stoÃŸen,gestoÃŸen,,FALSE,stoÃŸte,Akk,FALSE
 teilnehmen,"to take part, participate",haben,teilnehme,teilnehmst,teilnehmt,teilnehmt,teilnehmen,teilnehmen,teilgenommen,an,FALSE,teilnehmte,Akk,FALSE
 vergessen,to forget,haben,vergesse,vergesst,vergesst,vergesst,vergessen,vergessen,vergessen,,FALSE,vergesste,Infinitiv,FALSE
-veröffentlichen,to publish,haben,veröffentliche,veröffentlichst,veröffentlicht,veröffentlicht,veröffentlichen,veröffentlichen,veröffentlicht,,FALSE,veröffentlichte,Akk,FALSE
+verÃ¶ffentlichen,to publish,haben,verÃ¶ffentliche,verÃ¶ffentlichst,verÃ¶ffentlicht,verÃ¶ffentlicht,verÃ¶ffentlichen,verÃ¶ffentlichen,verÃ¶ffentlicht,,FALSE,verÃ¶ffentlichte,Akk,FALSE
 wohnen,"to live, reside",haben,wohne,wohnst,wohnt,wohnt,wohnen,wohnen,gewohnt,,FALSE,wohnte,Akk,FALSE
-grün,green,haben,grüe,grüst,grüt,grüt,grün,grün,gegrüt,,FALSE,grüte,Akk,FALSE
+grÃ¼n,green,haben,grÃ¼e,grÃ¼st,grÃ¼t,grÃ¼t,grÃ¼n,grÃ¼n,gegrÃ¼t,,FALSE,grÃ¼te,Akk,FALSE
 rein,"pure, clear, clean",haben,reie,reist,reit,reit,rein,rein,gereit,,FALSE,reite,Akk,FALSE
-begrüßen,to greet,haben,begrüße,begrüßt,begrüßt,begrüßt,begrüßen,begrüßen,begrüßt,,FALSE,begrüßte,Akk,FALSE
+begrÃ¼ÃŸen,to greet,haben,begrÃ¼ÃŸe,begrÃ¼ÃŸt,begrÃ¼ÃŸt,begrÃ¼ÃŸt,begrÃ¼ÃŸen,begrÃ¼ÃŸen,begrÃ¼ÃŸt,,FALSE,begrÃ¼ÃŸte,Akk,FALSE
 besetzen,"to occupy, fill",haben,besetze,besetzt,besetzt,besetzt,besetzen,besetzen,besetzt,,FALSE,besetzte,Akk,FALSE
 betreiben,"to proceed w., to operate",haben,betreibe,betreibst,betreibt,betreibt,betreiben,betreiben,betrieben,,FALSE,betreibte,Akk,FALSE
 bewegen,to move,haben,bewege,bewegst,bewegt,bewegt,bewegen,bewegen,bewegt,,FALSE,bewegte,Akk,FALSE
-diskutieren,to discuss,haben,diskutiere,diskutierst,diskutiert,diskutiert,diskutieren,diskutieren,diskutiert,mit; über,FALSE,diskutierierte,Akk,FALSE
+diskutieren,to discuss,haben,diskutiere,diskutierst,diskutiert,diskutiert,diskutieren,diskutieren,diskutiert,mit; Ã¼ber,FALSE,diskutierierte,Akk,FALSE
 drehen,to turn,haben,drehe,drehst,dreht,dreht,drehen,drehen,gedreht,,FALSE,drehte,Akk,FALSE
 einstellen,"to adjust, employ, stop",haben,einstelle,einstellst,einstellt,einstellt,einstellen,einstellen,eingestellt,,FALSE,einstellte,Akk,TRUE
-erläutern,to explain,haben,erläutere,erläuterst,erläutert,erläutert,erläutern,erläutern,erläutert,,FALSE,erläuterte,Akk,FALSE
-ermöglichen,to enable,haben,ermögliche,ermöglichst,ermöglicht,ermöglicht,ermöglichen,ermöglichen,ermöglicht,,FALSE,ermöglichte,Akk,FALSE
+erlÃ¤utern,to explain,haben,erlÃ¤utere,erlÃ¤uterst,erlÃ¤utert,erlÃ¤utert,erlÃ¤utern,erlÃ¤utern,erlÃ¤utert,,FALSE,erlÃ¤uterte,Akk,FALSE
+ermÃ¶glichen,to enable,haben,ermÃ¶gliche,ermÃ¶glichst,ermÃ¶glicht,ermÃ¶glicht,ermÃ¶glichen,ermÃ¶glichen,ermÃ¶glicht,,FALSE,ermÃ¶glichte,Akk,FALSE
 geschehen,"to happen, occur",sein,geschehe,geschehst,gescheht,gescheht,geschehen,geschehen,geschehen,,FALSE,geschehte,Akk,FALSE
 gestalten,"to shape, design",haben,gestalte,gestaltest,gestaltet,gestaltet,gestalten,gestalten,gestaltet,,FALSE,gestaltete,Akk,FALSE
-interessieren,to interest,haben,interessiere,interessierst,interessiert,interessiert,interessieren,interessieren,interessiert,für,FALSE,interessierierte,Akk,FALSE
-prüfen,"to examine, check",haben,prüfe,prüfst,prüft,prüft,prüfen,prüfen,geprüft,,FALSE,prüfte,Akk,FALSE
+interessieren,to interest,haben,interessiere,interessierst,interessiert,interessiert,interessieren,interessieren,interessiert,fÃ¼r,FALSE,interessierierte,Akk,FALSE
+prÃ¼fen,"to examine, check",haben,prÃ¼fe,prÃ¼fst,prÃ¼ft,prÃ¼ft,prÃ¼fen,prÃ¼fen,geprÃ¼ft,,FALSE,prÃ¼fte,Akk,FALSE
 retten,"to save, rescue",haben,rette,rettest,rettet,rettet,retten,retten,gerettet,,FALSE,rettete,Akk,FALSE
 sammeln,"to collect, gather",haben,sammele,sammelst,sammelt,sammelt,sammeln,sammeln,gesammelt,,FALSE,sammelte,Akk,FALSE
 schauen,to look,haben,schaue,schaust,schaut,schaut,schauen,schauen,geschaut,,FALSE,schaute,Akk,FALSE
-schützen,to protect,haben,schütze,schützt,schützt,schützt,schützen,schützen,geschützt,vor,FALSE,schützte,Akk,FALSE
-töten,to kill,haben,töte,tötest,tötet,tötet,töten,töten,getötet,,FALSE,tötete,Akk,FALSE
+schÃ¼tzen,to protect,haben,schÃ¼tze,schÃ¼tzt,schÃ¼tzt,schÃ¼tzt,schÃ¼tzen,schÃ¼tzen,geschÃ¼tzt,vor,FALSE,schÃ¼tzte,Akk,FALSE
+tÃ¶ten,to kill,haben,tÃ¶te,tÃ¶test,tÃ¶tet,tÃ¶tet,tÃ¶ten,tÃ¶ten,getÃ¶tet,,FALSE,tÃ¶tete,Akk,FALSE
 umfassen,"to include, consist of",haben,umfasse,umfasst,umfasst,umfasst,umfassen,umfassen,umfasst,,FALSE,umfasste,Akk,FALSE
-verfügen,"to have at oneâ€™s disposal, be in charge",haben,verfüge,verfügst,verfügt,verfügt,verfügen,verfügen,verfügt,,FALSE,verfügte,Akk,FALSE
+verfÃ¼gen,"to have at oneÃ¢Â€Â™s disposal, be in charge",haben,verfÃ¼ge,verfÃ¼gst,verfÃ¼gt,verfÃ¼gt,verfÃ¼gen,verfÃ¼gen,verfÃ¼gt,,FALSE,verfÃ¼gte,Akk,FALSE
 verurteilen,to condemn,haben,verurteile,verurteilst,verurteilt,verurteilt,verurteilen,verurteilen,verurteilt,,FALSE,verurteilte,Akk,FALSE
 verweisen,to refer,haben,verweise,verweist,verweist,verweist,verweisen,verweisen,verwiesen,,FALSE,verweiste,Akk,FALSE
 betroffen,"affected, concerned, shocked",haben,betroffe,betroffst,betrofft,betrofft,betroffen,betroffen,betrofft,,FALSE,betroffte,Akk,FALSE
@@ -263,13 +262,13 @@ aufbauen,to build up,haben,aufbaue,aufbaust,aufbaut,aufbaut,aufbauen,aufbauen,au
 begleiten,to accompany,haben,begleite,begleitest,begleitet,begleitet,begleiten,begleiten,begleitet,,FALSE,begleitete,Akk,FALSE
 behandeln,to treat,haben,behandele,behandelst,behandelt,behandelt,behandeln,behandeln,behandelt,,FALSE,behandelte,Akk,FALSE
 behaupten,"to claim, maintain",haben,behaupte,behauptest,behauptet,behauptet,behaupten,behaupten,behauptet,,FALSE,behauptete,Akk,FALSE
-beschäftigen,"to employ, be busy, deal with",haben,beschäftige,beschäftigst,beschäftigt,beschäftigt,beschäftigen,beschäftigen,beschäftigt,mit,FALSE,beschäftigte,Akk,FALSE
+beschÃ¤ftigen,"to employ, be busy, deal with",haben,beschÃ¤ftige,beschÃ¤ftigst,beschÃ¤ftigt,beschÃ¤ftigt,beschÃ¤ftigen,beschÃ¤ftigen,beschÃ¤ftigt,mit,FALSE,beschÃ¤ftigte,Akk,FALSE
 betrachten,"to look at, consider",haben,betrachte,betrachtest,betrachtet,betrachtet,betrachten,betrachten,betrachtet,,FALSE,betrachtete,Akk,FALSE
 betreffen,"to affect, concern",haben,betreffe,betreffst,betrefft,betrefft,betreffen,betreffen,betroffen,,FALSE,betreffte,Akk,FALSE
 beziehen,"to refer, put, get",haben,beziehe,beziehst,bezieht,bezieht,beziehen,beziehen,bezogen,auf,FALSE,beziehte,Akk,FALSE
 brechen,to break,haben,breche,brechst,brecht,brecht,brechen,brechen,gebrochen,,FALSE,brechte,Akk,FALSE
-erfüllen,"to grant, fulfill",haben,erfülle,erfüllst,erfüllt,erfüllt,erfüllen,erfüllen,erfüllt,,FALSE,erfüllte,Akk,FALSE
-ergänzen,"to add, complete",haben,ergänze,ergänzt,ergänzt,ergänzt,ergänzen,ergänzen,ergänzt,,FALSE,ergänzte,Akk,FALSE
+erfÃ¼llen,"to grant, fulfill",haben,erfÃ¼lle,erfÃ¼llst,erfÃ¼llt,erfÃ¼llt,erfÃ¼llen,erfÃ¼llen,erfÃ¼llt,,FALSE,erfÃ¼llte,Akk,FALSE
+ergÃ¤nzen,"to add, complete",haben,ergÃ¤nze,ergÃ¤nzt,ergÃ¤nzt,ergÃ¤nzt,ergÃ¤nzen,ergÃ¤nzen,ergÃ¤nzt,,FALSE,ergÃ¤nzte,Akk,FALSE
 erlauben,"to allow, permit",haben,erlaube,erlaubst,erlaubt,erlaubt,erlauben,erlauben,erlaubt,,FALSE,erlaubte,Akk,FALSE
 errichten,"to build, erect",haben,errichte,errichtest,errichtet,errichtet,errichten,errichten,errichtet,,FALSE,errichtete,Akk,FALSE
 ersetzen,"to replace, reimburse",haben,ersetze,ersetzt,ersetzt,ersetzt,ersetzen,ersetzen,ersetzt,,FALSE,ersetzte,Akk,FALSE
@@ -278,10 +277,11 @@ fliegen,to fly,sein,fliege,fliegst,fliegt,fliegt,fliegen,fliegen,geflogen,mit; n
 funktionieren,"to function, work",haben,funktioniere,funktionierst,funktioniert,funktioniert,funktionieren,funktionieren,funktioniert,,FALSE,funktionierierte,Akk,FALSE
 gefallen,"to please, to appeal to",haben,gefalle,gefallst,gefallt,gefallt,gefallen,gefallen,gefallen,,FALSE,gefallte,Dat,FALSE
 landen,to land,sein/haben,lande,landest,landet,landet,landen,landen,gelandet,,FALSE,landete,Akk,FALSE
-schätzen,to estimate,haben,schätze,schätzt,schätzt,schätzt,schätzen,schätzen,geschätzt,,FALSE,schätzte,Akk,FALSE
-überraschen,to surprise,haben,überrasche,überraschst,überrascht,überrascht,überraschen,überraschen,überrascht,,FALSE,überraschte,Akk,FALSE
+schÃ¤tzen,to estimate,haben,schÃ¤tze,schÃ¤tzt,schÃ¤tzt,schÃ¤tzt,schÃ¤tzen,schÃ¤tzen,geschÃ¤tzt,,FALSE,schÃ¤tzte,Akk,FALSE
+Ã¼berraschen,to surprise,haben,Ã¼berrasche,Ã¼berraschst,Ã¼berrascht,Ã¼berrascht,Ã¼berraschen,Ã¼berraschen,Ã¼berrascht,,FALSE,Ã¼berraschte,Akk,FALSE
 veranstalten,to organize,haben,veranstalte,veranstaltest,veranstaltet,veranstaltet,veranstalten,veranstalten,veranstaltet,,FALSE,veranstaltete,Akk,FALSE
 vergeben,to award,haben,vergebe,vergebst,vergebt,vergebt,vergeben,vergeben,vergeben,,FALSE,vergebte,Akk,FALSE
 verschwinden,to disappear,sein,verschwinde,verschwindest,verschwindet,verschwindet,verschwinden,verschwinden,verschwunden,,FALSE,verschwindete,Akk,FALSE
 vorsehen,to plan,haben,vorsehe,vorsehst,vorseht,vorseht,vorsehen,vorsehen,vorgesehen,,FALSE,vorsehte,Akk,TRUE
 zwingen,to force,haben,zwinge,zwingst,zwingt,zwingt,zwingen,zwingen,gezwungen,,FALSE,zwingte,Akk,FALSE
+
