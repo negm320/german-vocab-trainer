@@ -773,7 +773,6 @@
         const elCheck = document.getElementById('verbs-check');
         const elNext  = document.getElementById('verbs-next');
         const elFeedback = document.getElementById('verbs-feedback');
-        const selPrep = document.getElementById('verbs-prep');
         const reflBtns = Array.from(document.querySelectorAll('.refl-btn'));
         const selReflCase = document.getElementById('verbs-refl-case');
 		
@@ -797,14 +796,6 @@
 		});
 
       
-        // NEW: preposition input reference + last focused input tracker
-        const inpPrep = document.getElementById('verbs-prep');
-        let lastInputFocus = null;
-        
-        // Remember which text input is active (so buttons won't steal focus)
-        [elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
-          el?.addEventListener('focus', ()=> { lastInputFocus = el; });
-        });
       
           // The order you want to tab through with Enter:
           function focusChain(){
@@ -982,7 +973,7 @@
       
           
           // Reset preposition & reflexive UI (new feature)
-          if (selPrep) selPrep.value = '';               // reset preposition dropdown
+          if (inpPrep) inpPrep.value = '';               // reset preposition dropdown
           chosenRefl = null;                             // forget previous yes/no choice
           reflBtns.forEach(b=>b.classList.remove('selected'));  // unselect both buttons
           if (selReflCase) { 
@@ -1059,7 +1050,8 @@
           function selectRefl(val){ // 'yes' or 'no'
             chosenRefl = val;
             reflBtns.forEach(b=>b.classList.toggle('selected', b.dataset.refl === val));
-            selReflCase.disabled = (val !== 'yes');
+            if (selReflCase) selReflCase.disabled = (val !== 'yes');
+
           }
           
             // Prevent losing focus so keyboard stays up
