@@ -846,39 +846,37 @@
 		}
 
         // Add Enter key handler to each input
-        [elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
-		  el?.addEventListener('keydown', (e)=>{
+		[elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el => {
+		  el?.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') {
 			  e.preventDefault();
+
 			  const list   = focusChain();
 			  const lastEl = list[list.length - 1];
 			  const isLast = (e.target === lastEl);
 
 			  if (isLast) {
-				  if (!lastFieldCheckedOnce) {
-					// First Enter on last field => CHECK
-					elCheck?.click();
-					e.target.focus({ preventScroll: true });
-					scrollFieldIntoView(e.target);
-				  } else {
-					// Second Enter on last field => NEXT
-					elNext?.click();
-					// After moving to next verb, focus on first field
-					setTimeout(() => {
-					  elInf?.focus({ preventScroll: true });
-					  scrollFieldIntoView(elInf);
-					}, 150);
-				  }
+				if (!lastFieldCheckedOnce) {
+				  // First Enter on last field => CHECK
+				  elCheck?.click();
+				  e.target.focus({ preventScroll: true });
+				  scrollFieldIntoView(e.target);
 				} else {
-				  // Normal path: go to next field
-				  focusNextFrom(e.target);
+				  // Second Enter on last field => NEXT, then focus first field
+				  elNext?.click();
+				  setTimeout(() => {
+					elInf?.focus({ preventScroll: true });
+					scrollFieldIntoView(elInf);
+				  }, 150);
 				}
-}
+			  } else {
+				// Normal path: go to next field
+				focusNextFrom(e.target);
+			  }
 			}
 		  });
 		});
 
-      
           
         /* Helpers */
         function lsGet(key, fallback) {
@@ -1207,17 +1205,7 @@
 		  mark(pIch, okIch); mark(pDu, okDu); mark(pEr, okEr); mark(pIhr, okIhr);
 		  mark(inpPast, okPast); mark(elPart, okPart);
 		  
-		  // --- show correct answers under wrong fields ---
-			showCorrect(elInf, okInf, v.lemma);
-			showCorrect(pIch, okIch, v.ich);
-			showCorrect(pDu, okDu, v.du);
-			showCorrect(pEr, okEr, v.er);
-			showCorrect(pIhr, okIhr, v.ihr);
-			showCorrect(inpPast, okPast, v.past);
-			showCorrect(elPart, okPart, v.partizip);
-			showCorrect(inpPrep, okPrep, v.preps);
-
-
+		  
 		  // --- 2) Preposition (CSV now has ONLY the preposition(s)) ---
 		  // CSV: preps = "auf;an;mit" or "" (empty means: no preposition requirement)
 		  let okPrep = true;
@@ -1262,6 +1250,16 @@
 			b.classList.remove('result-ok','result-bad');
 			if (needRefl) b.classList.add(okRefl ? 'result-ok' : 'result-bad');
 		  });
+		  
+		  // --- show correct answers under wrong fields ---
+			showCorrect(elInf, okInf, v.lemma);
+			showCorrect(pIch, okIch, v.ich);
+			showCorrect(pDu, okDu, v.du);
+			showCorrect(pEr, okEr, v.er);
+			showCorrect(pIhr, okIhr, v.ihr);
+			showCorrect(inpPast, okPast, v.past);
+			showCorrect(elPart, okPart, v.partizip);
+			showCorrect(inpPrep, okPrep, v.preps);
 
 		  // --- 5) Final pass/fail & scoring ---
 		  const allOK =
