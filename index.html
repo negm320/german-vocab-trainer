@@ -803,7 +803,6 @@
 		  btn.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
 		});
 
-		let lastFieldCheckedOnce = false; // first Enter on last field triggers Check; second triggers Next
 		elCheck?.addEventListener('click', ()=> { lastFieldCheckedOnce = true; });
 		elNext ?.addEventListener('click', ()=> { lastFieldCheckedOnce = false; });
 
