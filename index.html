@@ -795,6 +795,14 @@
 		elCheck?.addEventListener('click', ()=> { lastFieldCheckedOnce = true; });
 		elNext ?.addEventListener('click', ()=> { lastFieldCheckedOnce = false; });
 
+		// clear any previous check coloring before showing next card
+		[elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
+		  el?.classList.remove('result-ok','result-bad');
+		});
+		[...elAuxBtns, ...caseBtns, ...reflBtns].forEach(btn=>{
+		  btn.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
+		});
+
 		
 		// NEW fields
 		const inpPast = document.getElementById('verbs-past');     // Präteritum
@@ -1071,7 +1079,17 @@
 			chosenRefl = null;
 			reflBtns.forEach(b => b.classList.remove('selected'));
       
-          
+			// -- reset field and button colors for a fresh card --
+			[elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
+			  el?.classList.remove('result-ok','result-bad');
+			});
+
+			// keep selections (user's choice) but clear correctness coloring
+			[...elAuxBtns, ...caseBtns, ...reflBtns].forEach(btn=>{
+			  btn.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
+			});
+
+		  
           // Reset preposition & reflexive UI (new feature)
           if (inpPrep) inpPrep.value = '';               // reset preposition dropdown
           chosenRefl = null;                             // forget previous yes/no choice
