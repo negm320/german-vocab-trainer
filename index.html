@@ -99,6 +99,15 @@
     body.dark .result-ok { border-color: #2fa97b !important; background: #0f1b16 !important; }
     body.dark .result-bad { border-color: #e66b6b !important; background: #1a1111 !important; }
   </style>
+  
+  <style>
+	  /* Orange = correct choice (when user chose a different one), Red = user's wrong choice */
+	  .choice-correct { border-color:#f59e0b !important; box-shadow:0 0 0 2px #f59e0b inset !important; }
+	  .choice-wrong   { border-color:#ef4444 !important; box-shadow:0 0 0 2px #ef4444 inset !important; }
+	  body.dark .choice-correct { border-color:#f59e0b !important; box-shadow:0 0 0 2px #f59e0b inset !important; }
+	  body.dark .choice-wrong   { border-color:#e66b6b !important; box-shadow:0 0 0 2px #e66b6b inset !important; }
+	</style>
+
 
   <style>
     #verbs-gov { margin: 10px 0 6px; display: grid; gap: 10px; }
@@ -1198,10 +1207,25 @@
 		  // Mark the text inputs green/red
 		  mark(elInf, okInf);
 		  // Aux buttons visual
-		  elAuxBtns.forEach(b=>{
-			b.classList.remove('result-ok','result-bad');
-			b.classList.add(okAux ? 'result-ok' : 'result-bad');
-		  });
+		  // Aux buttons: user's wrong pick = red, correct pick(s) = orange, right pick = green
+			elAuxBtns.forEach(b=>{
+			  b.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
+			  const btnAux = (b.dataset.aux || '').toLowerCase();
+			  const isUserPick  = (chosenAux || '').toLowerCase() === btnAux;
+			  const isCorrectOp = allowedAux.includes(btnAux);
+
+			  if (okAux && isUserPick) {
+				// user picked a correct one -> green
+				b.classList.add('result-ok');
+			  } else if (!okAux) {
+				// user is wrong: mark their pick red, and show the correct option(s) in orange
+				if (isUserPick) b.classList.add('choice-wrong');
+				if (!isUserPick && isCorrectOp) b.classList.add('choice-correct');
+			  }
+			});
+
+		  
+		  
 		  mark(pIch, okIch); mark(pDu, okDu); mark(pEr, okEr); mark(pIhr, okIhr);
 		  mark(inpPast, okPast); mark(elPart, okPart);
 		  
@@ -1230,10 +1254,23 @@
 			.replace('infinitiv','inf');
 		  if (csvCase) {
 			okCase = (chosenCase === csvCase); // chosenCase is 'inf' | 'akk' | 'dat'
+			// Case buttons: chosenCase vs csvCase ('inf' | 'akk' | 'dat')
 			caseBtns.forEach(b=>{
-			  b.classList.remove('result-ok','result-bad');
-			  b.classList.add(okCase ? 'result-ok' : 'result-bad');
+			  b.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
+			  if (!csvCase) return; // nothing to check for this verb
+
+			  const btnVal = (b.dataset.case || '').toLowerCase(); // 'inf' | 'akk' | 'dat'
+			  const isUserPick  = chosenCase === btnVal;
+			  const isCorrectOp = (btnVal === csvCase);
+
+			  if (okCase && isUserPick) {
+				b.classList.add('result-ok');
+			  } else if (!okCase) {
+				if (isUserPick) b.classList.add('choice-wrong');
+				if (!isUserPick && isCorrectOp) b.classList.add('choice-correct');
+			  }
 			});
+
 		  }
 
 		  // --- 4) Reflexive (Yes/No only) ---
@@ -1246,10 +1283,24 @@
 			// allow 'no' or untouched (null) to count as correct non-reflexive
 			okRefl = (chosenRefl === 'no' || chosenRefl === null);
 		  }
-		  reflBtns.forEach(b=>{
-			b.classList.remove('result-ok','result-bad');
-			if (needRefl) b.classList.add(okRefl ? 'result-ok' : 'result-bad');
-		  });
+			// Reflexive buttons: csv 'true' => yes is correct, 'false' => no is correct, '' => not checked
+			reflBtns.forEach(b=>{
+			  b.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
+			  if (!needRefl) return; // no reflexive requirement for this verb
+
+			  const btnVal = (b.dataset.refl || '').toLowerCase(); // 'yes' | 'no'
+			  const correctVal = (needRefl === 'true') ? 'yes' : 'no';
+			  const isUserPick  = (chosenRefl || 'no') === btnVal; // null counts like 'no' here
+			  const isCorrectOp = (btnVal === correctVal);
+
+			  if (okRefl && isUserPick) {
+				b.classList.add('result-ok');
+			  } else if (!okRefl) {
+				if (isUserPick) b.classList.add('choice-wrong');
+				if (!isUserPick && isCorrectOp) b.classList.add('choice-correct');
+			  }
+			});
+
 		  
 		  // --- show correct answers under wrong fields ---
 			showCorrect(elInf, okInf, v.lemma);
