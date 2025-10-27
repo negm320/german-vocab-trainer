@@ -232,7 +232,7 @@
 
     <!-- === Verb governance (preposition + reflexive) === -->
     <div id="verbs-gov">
-      <div class="gov-row">
+      <div class="gov-row" id="verbs-prep-row">
 		  <label for="verbs-prep">Preposition</label>
 		  <input id="verbs-prep" list="verbs-prep-options" placeholder="e.g., auf" autocomplete="off" />
 		  <datalist id="verbs-prep-options">
@@ -1042,6 +1042,20 @@
         function renderVerbsCard(){
           const v = currentVerb();
           if (!v) { elVerbsCard.hidden = true; return; }
+		  // --- Show/Hide the Preposition field depending on the verb ---
+			const prepRow = document.getElementById('verbs-prep-row');
+			if (prepRow) {
+			  const hasPrep = !!String(v.preps || '').trim();  // does CSV have any preposition?
+			  prepRow.style.display = hasPrep ? '' : 'none';
+
+			  // optional: use first preposition as a placeholder example
+			  if (hasPrep && inpPrep) {
+				const first = String(v.preps).split(';').map(s => s.trim()).filter(Boolean)[0] || 'auf';
+				inpPrep.placeholder = 'e.g., ' + first;
+			  } else if (inpPrep) {
+				inpPrep.placeholder = 'e.g., auf';
+			  }
+			}
           clearFieldStyles();
           elEnglish.textContent = v.english || '';
           elInf.value = '';
