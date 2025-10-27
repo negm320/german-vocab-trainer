@@ -193,18 +193,7 @@
     }
   </style>
   
-  <style>
-	  /* Correct answer tips under red fields */
-	  .correct-tip {
-		font-size: 0.85em;
-		color: #aaa;
-		margin-top: 2px;
-		opacity: 0.8;
-	  }
-	  body.dark .correct-tip {
-		color: #999;
-	  }
-	</style>
+ 
 
   
   <style>
@@ -901,14 +890,18 @@
         
 		// Helper: show the correct answer below wrong inputs
 		function showCorrect(el, isOK, correctValue){
-		  // remove old tip if any
-		  const old = el?.nextElementSibling;
-		  if (old && old.classList.contains('correct-tip')) old.remove();
+		  if (!el) return;
 
-		  if (!isOK && correctValue && el) {
-			el.insertAdjacentHTML('afterend', `<div class="correct-tip">${correctValue}</div>`);
+		  // remove any old tip element if it exists (harmless if not)
+		  const old = el.nextElementSibling;
+		  if (old && old.classList && old.classList.contains('correct-tip')) old.remove();
+
+		  // If wrong and we have a correct value, put it directly in the input
+		  if (!isOK && correctValue) {
+			try { el.value = correctValue; } catch(_) {}
 		  }
 		}
+
 		
 		function updateLevelIndicator(){
 		  const el = document.getElementById('verbs-level-indicator');
