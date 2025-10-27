@@ -784,7 +784,12 @@
         const pIch = document.getElementById('verbs-p-ich');
         const pDu  = document.getElementById('verbs-p-du');
         const pEr  = document.getElementById('verbs-p-er');
-        const pIhr = document.getElementById('verbs-p-ihr');  const elPart = document.getElementById('verbs-partizip');
+        const pIhr = document.getElementById('verbs-p-ihr');  
+		const elPart = document.getElementById('verbs-partizip');
+		// NEW fields must be declared before any use
+		const inpPast = document.getElementById('verbs-past');     // Präteritum
+		const inpPrep = document.getElementById('verbs-prep');     // Preposition input
+		const caseBtns = Array.from(document.querySelectorAll('.case-btn')); // Inf/Akk/Dat buttons
         const elCheck = document.getElementById('verbs-check');
         const elNext  = document.getElementById('verbs-next');
         const elFeedback = document.getElementById('verbs-feedback');
@@ -795,24 +800,7 @@
 		elCheck?.addEventListener('click', ()=> { lastFieldCheckedOnce = true; });
 		elNext ?.addEventListener('click', ()=> { lastFieldCheckedOnce = false; });
 
-		// clear any previous check coloring before showing next card
-		[elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
-		  el?.classList.remove('result-ok','result-bad');
-		});
-		[...elAuxBtns, ...caseBtns, ...reflBtns].forEach(btn=>{
-		  btn.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
-		});
-
-		elCheck?.addEventListener('click', ()=> { lastFieldCheckedOnce = true; });
-		elNext ?.addEventListener('click', ()=> { lastFieldCheckedOnce = false; });
-
-		
-		// NEW fields
-		const inpPast = document.getElementById('verbs-past');     // Präteritum
-		const inpPrep = document.getElementById('verbs-prep');     // preposition input
-
 		// Case buttons + state
-		const caseBtns = Array.from(document.querySelectorAll('.case-btn'));
 		let chosenCase = null;  // 'inf' | 'akk' | 'dat' | null
 
 		let lastFieldCheckedOnce = false; // first Enter on last field triggers Check; second triggers Next
