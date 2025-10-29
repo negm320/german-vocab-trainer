@@ -1541,6 +1541,7 @@
 		  elAdjAdvEx.textContent = it.example ? '📝 ' + it.example : '';
           elAdjAdvDe.value = '';
           elAdjAdvFb.textContent = '';
+		  adjadvEnterCount = 0; // reset Enter counter each time a new word loads
           setTimeout(()=>{ elAdjAdvDe?.focus(); }, 0);
         }
         
@@ -1590,9 +1591,26 @@
           // if MIX mode, after moving within this pool, switch to a random section
           if (getMode()==='mix') pickRandomSectionAndRender();
         });
-        elAdjAdvDe?.addEventListener('keydown', (e)=>{
-          if(e.key==='Enter'){ e.preventDefault(); aa_check(); }
-        });
+		// Two-step Enter behavior: first Enter = check, second = next
+		let adjadvEnterCount = 0;
+
+		elAdjAdvDe?.addEventListener('keydown', (e)=>{
+		  if (e.key === 'Enter') {
+			e.preventDefault();
+			adjadvEnterCount++;
+			if (adjadvEnterCount === 1) {
+			  aa_check();
+			} else if (adjadvEnterCount === 2) {
+			  adjadvEnterCount = 0;
+			  aa_next();
+			  // If in Mix mode, switch to another section after next
+			  if (getMode() === 'mix') {
+				pickRandomSectionAndRender();
+			  }
+			}
+		  }
+		});
+
         
         /* ===== Mix integration =====
            When in MIX, we show one section at a time (vocab/verbs/adjadv).
