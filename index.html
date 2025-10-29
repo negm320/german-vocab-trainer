@@ -313,10 +313,11 @@
   <div id="adjadv-card" hidden>
     <div class="prompt" id="adjadv-english">beautiful</div>
   
+	<p id="adjadv-example" class="muted"></p>
     <label for="adjadv-german">German word</label>
     <input id="adjadv-german" autocomplete="off" placeholder="z. B. schön" />
   
-    <p id="adjadv-example" class="muted"></p>
+    
   
     <div id="adjadv-actions" style="display:flex;gap:8px;margin-top:12px;">
       <button id="adjadv-check">Check</button>
@@ -1537,8 +1538,8 @@
           aa_clearStyles();
           elAdjAdvCard.hidden = false;
           elAdjAdvEn.textContent = it.english || '';
+		  elAdjAdvEx.textContent = it.example ? '📝 ' + it.example : '';
           elAdjAdvDe.value = '';
-          elAdjAdvEx.textContent = it.example ? '📝 ' + it.example : '';
           elAdjAdvFb.textContent = '';
           setTimeout(()=>{ elAdjAdvDe?.focus(); }, 0);
         }
