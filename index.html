@@ -1708,215 +1708,281 @@
   </script>
   
   <script>
-    /* ============================================
-       Prepositions Trainer — type the preposition (no +Akk/+Dat)
-       CSV: prepositions.csv
-       Columns: german_sentence,english_translation,correct_prep,options
-       - Put "___" where the blank is in the German sentence.
-       - correct_prep: just the word (e.g., "auf", "bei").
-       - options (optional): "auf;an;bei"
-    ============================================ */
-    
-    const PREPS_LEVEL_KEY    = 'preps_level';
-    const PREPS_UNLOCKED_KEY = 'preps_unlocked_count';
-    const PREPS_INDEX_KEY    = 'preps_index';
-    const PREPS_STREAKS_KEY  = 'preps_streaks';
-    
-    const prepsState = { data: [], index: 0, level: 1, unlocked: 25, streaks: {} };
-    
-    const elPrepsCard   = document.getElementById('preps-card');
-    const elPrepsSentence = document.getElementById('preps-sentence');
-    const elPrepsEn     = document.getElementById('preps-english');
-    const elPrepsCheck  = document.getElementById('preps-check');
-    const elPrepsNext   = document.getElementById('preps-next');
-    const elPrepsFb     = document.getElementById('preps-feedback');
-    
-    function pp_lsGet(key, fallback){ try{const v=localStorage.getItem(key); return v?JSON.parse(v):fallback;}catch{ return fallback; } }
-    function pp_lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
-    function pp_lsGetInt(key, fallback){ const v=localStorage.getItem(key); const n=v===null?NaN:parseInt(v,10); return Number.isFinite(n)?n:fallback; }
-    function pp_lsSetInt(key, n){ try{ localStorage.setItem(key, String(n)); }catch{} }
-    function pp_norm(s){ return (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
-    
-    function pp_initState(){
-      prepsState.level    = pp_lsGetInt(PREPS_LEVEL_KEY, 1);
-      prepsState.unlocked = pp_lsGetInt(PREPS_UNLOCKED_KEY, 25);
-      prepsState.index    = pp_lsGetInt(PREPS_INDEX_KEY, 0);
-      prepsState.streaks  = pp_lsGet(PREPS_STREAKS_KEY, {});
-    }
-    function pp_saveState(){
-      pp_lsSetInt(PREPS_LEVEL_KEY, prepsState.level);
-      pp_lsSetInt(PREPS_UNLOCKED_KEY, prepsState.unlocked);
-      pp_lsSetInt(PREPS_INDEX_KEY, prepsState.index);
-      pp_lsSet(PREPS_STREAKS_KEY, prepsState.streaks);
-    }
-    
-    /* Load data */
-    async function pp_loadData(){
-      let rows = null;
-      try{
-        const res = await fetch('prepositions.csv', { cache:'no-store' });
-        if(res.ok){
-          const csv = await res.text();
-          rows = pp_parseCSVtoObjects(csv);
-        }
-      }catch(_){}
-      if(!rows || !rows.length){
-        // Safe demo items if CSV missing
-        rows = [
-          { german_sentence:'Ich warte ___ den Bus.', english_translation:'I am waiting for the bus.', correct_prep:'auf', options:'auf;an;bei' },
-          { german_sentence:'Er interessiert sich ___ Musik.', english_translation:'He is interested in music.', correct_prep:'für', options:'für;bei;mit' },
-          { german_sentence:'Wir sprechen ___ das Problem.', english_translation:'We are talking about the problem.', correct_prep:'über', options:'über;auf;mit' },
-        ];
-      }
-      prepsState.data = rows.map((r,i)=>({
-        id: 'pp_' + (r.german_sentence || 'row_'+i).replace(/\s+/g,'_') + '_' + i,
-        de: r.german_sentence || '',
-        en: r.english_translation || '',
-        correct: (r.correct_prep || '').trim(),
-        options: (r.options || '').split(';').map(s=>s.trim()).filter(Boolean)
-      }));
-    }
-    
-    /* CSV to objects */
-    function pp_parseCSVtoObjects(text){
-      const lines = text.trim().split(/\r?\n/);
-      if(!lines.length) return [];
-      const headers = lines[0].split(',').map(h=>h.trim());
-      return lines.slice(1).map(line=>{
-        const cells = []; let cur = '', inQ=false;
-        for(let i=0;i<line.length;i++){
-          const ch=line[i];
-          if(ch === '"'){ inQ = !inQ; continue; }
-          if(ch === ',' && !inQ){ cells.push(cur); cur=''; continue; }
-          cur += ch;
-        }
-        cells.push(cur);
-        const obj={};
-        headers.forEach((h,i)=> obj[h] = (cells[i]||'').trim());
-        return obj;
-      });
-    }
-    
-    function pp_pool(){ return prepsState.data.slice(0, Math.min(prepsState.unlocked, prepsState.data.length)); }
-    function pp_current(){
-      const p = pp_pool(); if(!p.length) return null;
-      const i = Math.max(0, Math.min(prepsState.index % p.length, p.length-1));
-      return p[i];
-    }
-    
-    /* Render sentence with inline input */
-    function pp_render(){
-      const it = pp_current();
-      if(!it){ elPrepsCard.hidden = true; return; }
-      elPrepsCard.hidden = false;
-      elPrepsFb.textContent = '';
-      elPrepsEn.textContent = it.en ? ('📝 ' + it.en) : '';
-    
-      const parts = (it.de || '').split('___');
-      const left = parts[0] || '';
-      const right = parts[1] || '';
-    
-      const input = document.createElement('input');
-      input.id = 'preps-input';
-      input.setAttribute('list', 'preps-options');
-      input.setAttribute('autocomplete', 'off');
-      input.placeholder = 'auf';
-      input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); pp_check(); } });
-    
-      if (it.options && it.options.length){
-        const dlId = 'preps-options-dyn';
-        let dl = document.getElementById(dlId);
-        if(!dl){
-          dl = document.createElement('datalist');
-          dl.id = dlId;
-          document.body.appendChild(dl);
-        }
-        dl.innerHTML = it.options.map(o=>`<option value="${o}"></option>`).join('');
-        input.setAttribute('list', dlId);
-      } else {
-        input.setAttribute('list', 'preps-options');
-      }
-    
-      elPrepsSentence.innerHTML = '';
-      elPrepsSentence.append(document.createTextNode(left), input, document.createTextNode(right));
-      setTimeout(()=>{ input.focus(); }, 0);
-    }
-    
-    function pp_allInLevelMastered(){
-      const need = prepsState.level * 25;
-      const ids = prepsState.data.slice(0, Math.min(need, prepsState.data.length)).map(x=>x.id);
-      return ids.length>0 && ids.every(id => (prepsState.streaks[id]||0) >= 3);
-    }
-    function pp_maybeUnlockNext(){
-      if(pp_allInLevelMastered()){
-        prepsState.level += 1;
-        prepsState.unlocked = Math.min(prepsState.level * 25, prepsState.data.length);
-      }
-    }
-    
-    function pp_check(){
-      const it = pp_current(); if(!it) return;
-      const input = document.getElementById('preps-input');
-      const val = (input?.value || '').trim();
-      const ok = pp_norm(val) === pp_norm(it.correct.split(' ')[0]); // only the word
-      input?.classList.remove('result-ok','result-bad');
-      input?.classList.add(ok ? 'result-ok' : 'result-bad');
-    
-      const cur = prepsState.streaks[it.id] || 0;
-      prepsState.streaks[it.id] = ok ? Math.min(3, cur+1) : 0;
-      pp_maybeUnlockNext();
-      pp_saveState();
-    
-      elPrepsFb.textContent = ok
-        ? `✅ Correct! Streak now ${prepsState.streaks[it.id]}/3.`
-        : `❌ Wrong. Correct: ${it.correct}`;
-    }
-    
-    function pp_next(){
-      const p = pp_pool(); if(!p.length) return;
-      let next = (prepsState.index + 1) % p.length;
-      const start = next;
-      do{
-        const id = p[next].id;
-        if ((prepsState.streaks[id]||0) < 3) break;
-        next = (next + 1) % p.length;
-      }while(next !== start);
-      prepsState.index = next;
-      pp_saveState();
-      pp_render();
-    }
-    
-    /* Buttons */
-    elPrepsCheck?.addEventListener('click', pp_check);
-    elPrepsNext ?.addEventListener('click', pp_next);
-    
-    /* Load + init */
-    (async function initPreps(){
-      await pp_loadData();
-      pp_initState();
-    })();
-    
-    /* Hook into your renderMode() so 'preps' shows the card */
-    const _renderMode_preps = renderMode;  // keep previous behavior (vocab/verbs/adjadv/mix)
-    renderMode = function(){
-      _renderMode_preps();
-    
-      const mode = getMode();
-      const vocab = document.getElementById('vocab-wrapper');
-      const verbs = document.getElementById('verbs-card');
-      const adjad = document.getElementById('adjadv-card');
-      const preps = document.getElementById('preps-card');
-    
-      if (mode === 'preps'){
-        if (vocab) vocab.style.display = 'none';
-        if (verbs) verbs.hidden = true;
-        if (adjad) adjad.hidden = true;
-        if (preps) { preps.hidden = false; pp_render(); }
-      } else {
-        if (preps) preps.hidden = true;
-      }
-    };
-  </script>
+		/* ===========================================================================================================
+		   Prepositions Trainer — CSV: prep,forms,de1..de10
+		   - "forms" is optional; list variants like: an;am;ans  |  in;im;ins  |  zu;zum;zur  |  bei;beim  |  von;vom
+		   - We pick a random non-empty sentence per row.
+		   - We blank the FIRST whole-word match from forms (or prep if forms empty).
+		   - The ONLY correct answer is the exact surface form found in that sentence (e.g., "am", not "an").
+		============================================================================================================= */
+
+		const PREPS_LEVEL_KEY    = 'preps_level';
+		const PREPS_UNLOCKED_KEY = 'preps_unlocked_count';
+		const PREPS_INDEX_KEY    = 'preps_index';
+		const PREPS_STREAKS_KEY  = 'preps_streaks';
+
+		const prepsState = {
+		  data: [],       // [{ id, prep, formsArr, sentences: [de1..de10], lastSlot: {left,right,correct,formsArrUsed} }]
+		  index: 0,
+		  level: 1,
+		  unlocked: 25,
+		  streaks: {}     // id -> 0..3
+		};
+
+		const elPrepsCard     = document.getElementById('preps-card');
+		const elPrepsSentence = document.getElementById('preps-sentence');
+		const elPrepsEn       = document.getElementById('preps-english'); // we keep it for layout; we won't show EN now
+		const elPrepsCheck    = document.getElementById('preps-check');
+		const elPrepsNext     = document.getElementById('preps-next');
+		const elPrepsFb       = document.getElementById('preps-feedback');
+
+		/* === Small helpers === */
+		function pp_lsGet(key, fallback){ try{const v=localStorage.getItem(key); return v?JSON.parse(v):fallback;}catch{ return fallback; } }
+		function pp_lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
+		function pp_lsGetInt(key, fallback){ const v=localStorage.getItem(key); const n=v===null?NaN:parseInt(v,10); return Number.isFinite(n)?n:fallback; }
+		function pp_lsSetInt(key, n){ try{ localStorage.setItem(key, String(n)); }catch{} }
+		function pp_norm(s){ return (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
+
+		/* CSV -> objects (expects headers) */
+		function pp_parseCSV(text){
+		  const lines = text.trim().split(/\r?\n/);
+		  if(!lines.length) return [];
+		  const headers = lines[0].split(',').map(h=>h.trim());
+		  return lines.slice(1).map(line=>{
+			const cells = []; let cur = '', inQ=false;
+			for(let i=0;i<line.length;i++){
+			  const ch=line[i];
+			  if(ch === '"'){ inQ = !inQ; continue; }
+			  if(ch === ',' && !inQ){ cells.push(cur); cur=''; continue; }
+			  cur += ch;
+			}
+			cells.push(cur);
+			const obj={};
+			headers.forEach((h,i)=> obj[h] = (cells[i]||'').trim());
+			return obj;
+		  });
+		}
+
+		/* Find first whole-word match of any token (prefer longer first) */
+		function firstMatchTokenInSentence(formsStr, basePrep, sentence){
+		  const base = (basePrep||'').trim();
+		  const variants = (formsStr && formsStr.trim())
+			  ? formsStr.split(';').map(s=>s.trim()).filter(Boolean)
+			  : (base ? [base] : []);
+		  const tokens = variants.sort((a,b)=> b.length - a.length);
+		  for (const t of tokens){
+			if(!t) continue;
+			const re = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\b`, 'i');
+			const m = sentence.match(re);
+			if (m) return { token: m[0], index: m.index, length: m[0].length, tried: tokens };
+		  }
+		  return null;
+		}
+
+		/* Replace matched token with an inline input */
+		function renderSentenceWithBlank(prep, forms, sentence){
+		  const hit = firstMatchTokenInSentence(forms, prep, sentence);
+		  if (!hit) return null;
+		  const left  = sentence.slice(0, hit.index);
+		  const right = sentence.slice(hit.index + hit.length);
+		  return { left, right, correct: hit.token, formsArrUsed: hit.tried };
+		}
+
+		/* === Load data (new CSV shape) === */
+		async function pp_loadData(){
+		  let rows = null;
+		  try{
+			const res = await fetch('prepositions.csv', { cache:'no-store' });
+			if(res.ok){
+			  const csv = await res.text();
+			  rows = pp_parseCSV(csv);
+			}
+		  }catch(_){}
+		  if(!rows || !rows.length){
+			// tiny fallback
+			rows = [
+			  { prep:'an',  forms:'an;am;ans', de1:'Ich warte am Bahnhof', de2:'Er geht ans Fenster' },
+			  { prep:'in',  forms:'in;im;ins', de1:'Sie geht ins Kino', de2:'Er wohnt im Haus' },
+			  { prep:'zu',  forms:'zu;zum;zur', de1:'Ich gehe zum Arzt' },
+			];
+		  }
+
+		  // Normalize into our objects
+		  prepsState.data = rows.map((r,i)=>{
+			const prep = (r.prep||'').trim();
+			const forms = (r.forms||'').trim();
+			const sentences = [];
+			for (let n=1;n<=10;n++){
+			  const s = (r['de'+n]||'').trim();
+			  if (s) sentences.push(s);
+			}
+			return {
+			  id: 'pp_'+ (prep || 'row') +'_'+ i,
+			  prep,
+			  formsArr: forms ? forms.split(';').map(s=>s.trim()).filter(Boolean) : [],
+			  sentences,
+			  lastSlot: null
+			};
+		  }).filter(x => x.prep && x.sentences && x.sentences.length);
+		}
+
+		/* === State init/save === */
+		function pp_initState(){
+		  prepsState.level    = pp_lsGetInt(PREPS_LEVEL_KEY, 1);
+		  prepsState.unlocked = pp_lsGetInt(PREPS_UNLOCKED_KEY, 25);
+		  prepsState.index    = pp_lsGetInt(PREPS_INDEX_KEY, 0);
+		  prepsState.streaks  = pp_lsGet(PREPS_STREAKS_KEY, {});
+		}
+		function pp_saveState(){
+		  pp_lsSetInt(PREPS_LEVEL_KEY, prepsState.level);
+		  pp_lsSetInt(PREPS_UNLOCKED_KEY, prepsState.unlocked);
+		  pp_lsSetInt(PREPS_INDEX_KEY, prepsState.index);
+		  pp_lsSet(PREPS_STREAKS_KEY, prepsState.streaks);
+		}
+
+		/* Pool + current row */
+		function pp_pool(){ return prepsState.data.slice(0, Math.min(prepsState.unlocked, prepsState.data.length)); }
+		function pp_current(){
+		  const p = pp_pool(); if(!p.length) return null;
+		  const i = Math.max(0, Math.min(prepsState.index % p.length, p.length-1));
+		  return p[i];
+		}
+
+		/* === Render round === */
+		function pp_render(){
+		  const row = pp_current();
+		  if(!row){ elPrepsCard.hidden = true; return; }
+		  elPrepsCard.hidden = false;
+		  elPrepsFb.textContent = '';
+		  if (elPrepsEn) elPrepsEn.textContent = ''; // (no EN for now)
+
+		  // Pick a random sentence that actually contains a match
+		  let tries = 0, slot = null, chosen = null;
+		  const shuffled = row.sentences.slice().sort(()=>Math.random()-0.5);
+		  for (const s of shuffled){
+			slot = renderSentenceWithBlank(row.prep, row.formsArr.join(';'), s);
+			if (slot){ chosen = s; break; }
+			if (++tries > row.sentences.length) break;
+		  }
+		  if (!slot){
+			// No safe blank found (e.g., malformed row). Skip gracefully.
+			elPrepsSentence.textContent = '(No place to blank in this sentence.)';
+			row.lastSlot = null;
+			return;
+		  }
+		  row.lastSlot = slot;
+
+		  // Build input
+		  const input = document.createElement('input');
+		  input.id = 'preps-input';
+		  input.setAttribute('autocomplete', 'off');
+		  // Use per-row forms for better suggestions; else fall back to global datalist:
+		  if (row.formsArr && row.formsArr.length){
+			const dlId = 'preps-options-dyn';
+			let dl = document.getElementById(dlId);
+			if(!dl){
+			  dl = document.createElement('datalist');
+			  dl.id = dlId;
+			  document.body.appendChild(dl);
+			}
+			dl.innerHTML = row.formsArr.map(o=>`<option value="${o}"></option>`).join('');
+			input.setAttribute('list', dlId);
+		  } else {
+			input.setAttribute('list', 'preps-options');
+		  }
+		  input.placeholder = row.prep; // small hint; not the exact surface
+		  input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); pp_check(); } });
+
+		  // Render sentence: left [input] right
+		  elPrepsSentence.innerHTML = '';
+		  elPrepsSentence.append(document.createTextNode(slot.left), input, document.createTextNode(slot.right));
+
+		  // Focus
+		  setTimeout(()=>{ input.focus(); }, 0);
+		}
+
+		/* Leveling like other trainers */
+		function pp_allInLevelMastered(){
+		  const need = prepsState.level * 25;
+		  const ids = prepsState.data.slice(0, Math.min(need, prepsState.data.length)).map(x=>x.id);
+		  return ids.length>0 && ids.every(id => (prepsState.streaks[id]||0) >= 3);
+		}
+		function pp_maybeUnlockNext(){
+		  if(pp_allInLevelMastered()){
+			prepsState.level += 1;
+			prepsState.unlocked = Math.min(prepsState.level * 25, prepsState.data.length);
+		  }
+		}
+
+		/* === Check === */
+		function pp_check(){
+		  const row = pp_current();
+		  if(!row || !row.lastSlot) return;
+		  const input = document.getElementById('preps-input');
+		  const val = (input?.value || '').trim();
+		  const correct = row.lastSlot.correct;           // exact surface form found in sentence
+		  const ok = val.toLowerCase() === correct.toLowerCase();
+
+		  input?.classList.remove('result-ok','result-bad');
+		  input?.classList.add(ok ? 'result-ok' : 'result-bad');
+
+		  const cur = prepsState.streaks[row.id] || 0;
+		  prepsState.streaks[row.id] = ok ? Math.min(3, cur+1) : 0;
+		  pp_maybeUnlockNext();
+		  pp_saveState();
+
+		  elPrepsFb.textContent = ok
+			? `✅ Correct! Streak now ${prepsState.streaks[row.id]}/3.`
+			: `❌ Wrong. Correct: ${correct}`;
+		}
+
+		/* === Next === */
+		function pp_next(){
+		  const p = pp_pool(); if(!p.length) return;
+		  let next = (prepsState.index + 1) % p.length;
+		  const start = next;
+		  do{
+			const id = p[next].id;
+			if ((prepsState.streaks[id]||0) < 3) break;
+			next = (next + 1) % p.length;
+		  }while(next !== start);
+		  prepsState.index = next;
+		  pp_saveState();
+		  pp_render();
+		}
+
+		/* Wire buttons */
+		elPrepsCheck?.addEventListener('click', pp_check);
+		elPrepsNext ?.addEventListener('click', pp_next);
+
+		/* Load + init */
+		(async function initPreps(){
+		  await pp_loadData();
+		  pp_initState();
+		})();
+
+		/* Hook into renderMode so 'preps' shows this card */
+		const _renderMode_preps = renderMode;  // keep previous behavior
+		renderMode = function(){
+		  _renderMode_preps();
+
+		  const mode = getMode();
+		  const vocab = document.getElementById('vocab-wrapper');
+		  const verbs = document.getElementById('verbs-card');
+		  const adjad = document.getElementById('adjadv-card');
+		  const preps = document.getElementById('preps-card');
+
+		  if (mode === 'preps'){
+			if (vocab) vocab.style.display = 'none';
+			if (verbs) verbs.hidden = true;
+			if (adjad) adjad.hidden = true;
+			if (preps) { preps.hidden = false; pp_render(); }
+		  } else {
+			if (preps) preps.hidden = true;
+		  }
+		};
+	</script>
+
 
 
   
