@@ -1873,9 +1873,14 @@
 		  row.lastSlot = slot;
 
 		  // Build input
-		  const input = document.createElement('input');
-		  input.id = 'preps-input';
-		  input.setAttribute('autocomplete', 'off');
+			const input = document.createElement('input');
+			input.id = 'preps-input';
+			input.value = '';                 // make sure it starts empty
+			input.placeholder = '';           // no hints that give it away
+			input.autocomplete = 'off';
+			input.autocapitalize = 'off';
+			input.spellcheck = false;
+
 		  // Use per-row forms for better suggestions; else fall back to global datalist:
 		  if (row.formsArr && row.formsArr.length){
 			const dlId = 'preps-options-dyn';
