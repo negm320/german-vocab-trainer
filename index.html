@@ -1617,39 +1617,69 @@
            - On entering MIX -> pick random section and render.
            - On any "Next" click of the visible section -> advance that pool, then randomly switch section.
         */
-        const MIX_SECTIONS = ['vocab','verbs','adjadv'];
-        function pickRandomSection(){
-          return MIX_SECTIONS[Math.floor(Math.random()*MIX_SECTIONS.length)];
-        }
+		/* MIX can include all trainers. Default = equal weights; tweakable via localStorage 'mix_weights' = {"vocab":1,"verbs":1,"adjadv":1,"preps":1} */
+		const MIX_SECTIONS = ['vocab','verbs','adjadv','preps'];
+
+		function pickWeightedRandomSection(){
+		  const ls = localStorage.getItem('mix_weights');
+		  const defaultW = { vocab:1, verbs:1, adjadv:1, preps:1 };
+		  let W = defaultW;
+		  try { if (ls) W = { ...defaultW, ...JSON.parse(ls) }; } catch {}
+
+		  const pool = [];
+		  MIX_SECTIONS.forEach(s => {
+			const w = Math.max(0, Number(W[s] ?? 1));
+			for (let i=0;i<w;i++) pool.push(s);
+		  });
+		  if (!pool.length) pool.push('vocab');
+		  return pool[Math.floor(Math.random()*pool.length)];
+		}
+		function pickRandomSection(){  // keep old name for existing calls
+		  return pickWeightedRandomSection();
+		}
+
         function showOnly(section){ // hide/show sections
-          const vocab = document.getElementById('vocab-wrapper');
-          const verbs = document.getElementById('verbs-card');
-          const adjad = document.getElementById('adjadv-card');
-          if (section==='vocab'){
-            if(vocab) vocab.style.display='';
-            if(verbs) verbs.hidden=true;
-            if(adjad) adjad.hidden=true;
-          } else if (section==='verbs'){
-            if(vocab) vocab.style.display='none';
-            if(verbs) verbs.hidden=false;
-            if(adjad) adjad.hidden=true;
-          } else if (section==='adjadv'){
-            if(vocab) vocab.style.display='none';
-            if(verbs) verbs.hidden=true;
-            if(adjad) adjad.hidden=false;
-          }
-        }
+		  const vocab = document.getElementById('vocab-wrapper');
+		  const verbs = document.getElementById('verbs-card');
+		  const adjad = document.getElementById('adjadv-card');
+		  const preps = document.getElementById('preps-card');
+
+		  if (section==='vocab'){
+			if(vocab) vocab.style.display='';
+			if(verbs) verbs.hidden=true;
+			if(adjad) adjad.hidden=true;
+			if(preps) preps.hidden=true;
+		  } else if (section==='verbs'){
+			if(vocab) vocab.style.display='none';
+			if(verbs) verbs.hidden=false;
+			if(adjad) adjad.hidden=true;
+			if(preps) preps.hidden=true;
+		  } else if (section==='adjadv'){
+			if(vocab) vocab.style.display='none';
+			if(verbs) verbs.hidden=true;
+			if(adjad) adjad.hidden=false;
+			if(preps) preps.hidden=true;
+		  } else if (section==='preps'){
+			if(vocab) vocab.style.display='none';
+			if(verbs) verbs.hidden=true;
+			if(adjad) adjad.hidden=true;
+			if(preps) preps.hidden=false;
+		  }
+		}
+
         function renderForSection(section){
-          if (section==='vocab'){
-            // reuse your existing nextWord() to ensure a word is visible
-            try { nextWord(); } catch {}
-          } else if (section==='verbs'){
-            try { renderVerbsCard(); } catch {}
-          } else if (section==='adjadv'){
-            aa_render();
-          }
-          showOnly(section);
-        }
+		  if (section==='vocab'){
+			try { nextWord(); } catch {}
+		  } else if (section==='verbs'){
+			try { renderVerbsCard(); } catch {}
+		  } else if (section==='adjadv'){
+			try { aa_render(); } catch {}
+		  } else if (section==='preps'){
+			try { if (typeof pp_render === 'function') pp_render(); } catch {}
+		  }
+		  showOnly(section);
+		}
+
         function pickRandomSectionAndRender(){
           const s = pickRandomSection();
           renderForSection(s);
@@ -1697,6 +1727,16 @@
           }
         };
         
+		/* (Preps) — after Next, jump to a fresh random section in MIX */
+		const ppNext = document.getElementById('preps-next');
+		if (ppNext && !ppNext._mixHooked){
+		  ppNext._mixHooked = true;
+		  ppNext.addEventListener('click', ()=>{
+			setTimeout(()=>{ if(getMode()==='mix') pickRandomSectionAndRender(); }, 0);
+		  });
+		}
+
+		
         /* Boot Adj/Adv together with verbs init */
         (async function initAdjAdv(){
           await aa_loadData();
