@@ -713,7 +713,14 @@
         e.preventDefault();
         pluralEnterCount++;
         if(pluralEnterCount===1) checkAnswer();
-        else if(pluralEnterCount===2){ pluralEnterCount=0; nextWord(); }
+        else if(pluralEnterCount===2){ 
+		  pluralEnterCount=0; 
+		  nextWord(); 
+		  setTimeout(()=>{ 
+			if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); 
+		  }, 0); 
+		}
+
       }
     });
 
@@ -952,7 +959,8 @@
           if (verbs) verbs.hidden = (mode !== 'verbs');
         
           // Show Vocab only in "vocab" or "mix" (hide when "verbs")
-          if (vocab) vocab.style.display = (mode === 'vocab' || mode === 'mix') ? '' : 'none';
+          if (vocab) vocab.style.display = (mode === 'vocab') ? '' : 'none';
+
         
           // If entering verbs, (re)render a fresh card
           if (mode === 'verbs') {
@@ -1622,7 +1630,7 @@
 
 		function pickWeightedRandomSection(){
 		  const ls = localStorage.getItem('mix_weights');
-		  const defaultW = { vocab:1, verbs:1, adjadv:1, preps:1 };
+		  const defaultW = { vocab:2, verbs:2, adjadv:1, preps:1 };
 		  let W = defaultW;
 		  try { if (ls) W = { ...defaultW, ...JSON.parse(ls) }; } catch {}
 
