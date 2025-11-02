@@ -1740,11 +1740,11 @@
 		if (ppNext && !ppNext._mixHooked){
 		  ppNext._mixHooked = true;
 		  ppNext.addEventListener('click', ()=>{
-			setTimeout(()=>{ if(getMode()==='mix') pickRandomSectionAndRender(); }, 0);
+			setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
 		  });
 		}
 
-		/* (Verbs) — after Next or Enter, jump to a fresh random section in MIX */
+		/* (Verbs) — after Next, jump to a fresh random section in MIX */
 		(function(){
 		  const vc = document.getElementById('verbs-card');
 		  if (!vc || vc._mixHooked) return;
@@ -1763,14 +1763,30 @@
 			  setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
 			}
 		  }, true);
+		})();
 
-		  // Enter: if any input inside verbs-card advances, follow with a MIX hop
-		  vc.addEventListener('keydown', (e)=>{
-			if (e.key === 'Enter'){
-			  // let the card handle its own logic first, then rotate
-			  setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
+		/* MIX wrappers: if the app has explicit next functions, wrap them so MIX rotates only after real advances. */
+		(function(){
+		  function wrapNext(fnName){
+			const w = (globalThis || window);
+			if (typeof w[fnName] === 'function' && !w[fnName]._mixWrapped){
+			  const orig = w[fnName];
+			  w[fnName] = function(){
+				const out = orig.apply(this, arguments);
+				setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
+				return out;
+			  };
+			  w[fnName]._mixWrapped = true;
 			}
-		  });
+		  }
+
+		  // Try common names you might be using:
+		  wrapNext('verbsNext');      // e.g., called when Verbs goes to the next item
+		  wrapNext('nextVerb');       // alternative common name
+		  wrapNext('renderVerbsNext'); // if you made a specific renderer for next
+
+		  wrapNext('pp_next');        // Preps: your Next handler if named like this
+		  wrapNext('prepsNext');      // alternative
 		})();
 
 		
