@@ -1744,6 +1744,35 @@
 		  });
 		}
 
+		/* (Verbs) — after Next or Enter, jump to a fresh random section in MIX */
+		(function(){
+		  const vc = document.getElementById('verbs-card');
+		  if (!vc || vc._mixHooked) return;
+		  vc._mixHooked = true;
+
+		  // Click: catch any plausible "Next" button inside verbs-card
+		  vc.addEventListener('click', (e)=>{
+			const t = e.target;
+			if (!t) return;
+			const isNext =
+			  t.id === 'verbs-next' ||
+			  t.id === 'vb-next' ||
+			  (t.matches && t.matches('[data-role="verbs-next"], [data-action="next"]')) ||
+			  (t.tagName === 'BUTTON' && /next/i.test(t.textContent || ''));
+			if (isNext){
+			  setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
+			}
+		  }, true);
+
+		  // Enter: if any input inside verbs-card advances, follow with a MIX hop
+		  vc.addEventListener('keydown', (e)=>{
+			if (e.key === 'Enter'){
+			  // let the card handle its own logic first, then rotate
+			  setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
+			}
+		  });
+		})();
+
 		
         /* Boot Adj/Adv together with verbs init */
         (async function initAdjAdv(){
