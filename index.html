@@ -217,6 +217,7 @@
     <button class="mode-btn" data-mode="mix">Mix</button>
   </div>
 
+
   <div id="verbs-card" hidden>
     <div class="prompt" id="verbs-english">to go</div>
 
@@ -408,6 +409,197 @@
       </div>
     </div>
   </div>
+  
+	<!-- ===== Source selector / Kapitel loader ===== -->
+	<div id="source-bar" style="max-width:500px;margin:10px auto 8px;display:flex;gap:8px;align-items:center;">
+	  <label style="white-space:nowrap;color:#9aa6b2;font-size:14px;">Source:</label>
+	  <select id="dataset-selector" style="flex:1;padding:8px;border-radius:8px;border:1px solid #2a3240;background:#0f1620;color:#eaeaea;">
+		<option value="default">Default Dataset</option>
+	  </select>
+	  <button id="btnLoadKapitel" style="padding:8px 12px;border-radius:8px;border:1px solid #2a3240;background:#243042;color:#eaeaea;cursor:pointer;">
+		Load Kapitel…
+	  </button>
+	</div>
+	<div id="dataset-context" style="max-width:500px;margin:-2px auto 12px;color:#9aa6b2;font-size:13px;"></div>
+
+	<!-- hidden file input for zip -->
+	<input id="kapitel-zip-input" type="file" accept=".zip" style="display:none" />
+
+	<!-- JSZip (for reading uploaded Kapitel .zip) -->
+	<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+	<!-- Dataset bridge (lets existing loaders read from a Kapitel package if selected) -->
+	<script>
+	  // Current dataset (default == nil files -> fall back to fetch)
+	  window.currentDataset = {
+		key: 'default',
+		title: 'Default Dataset',
+		files: null,   // { 'vocab.csv': '...', 'verbs.csv': '...', 'adjadv.csv': '...', 'prepositions.csv': '...', 'manifest.json': '{...}' }
+		counts: null   // { vocab: n, verbs: n, adjadv: n, preps: n }
+	  };
+
+	  // Persist exactly one loaded Kapitel (v1); we’ll add multi-Kapitel later
+	  const KAPITEL_STORE_KEY = 'kapitel_current_v1';
+
+	  function ds_lsGet(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch{ return fallback; } }
+	  function ds_lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
+	  function ds_trimCsvCount(csv){
+		if(!csv) return 0;
+		const lines = csv.trim().split(/\r?\n/);
+		if(lines.length === 0) return 0;
+		// assume first row is header when it looks like text, skip it
+		return Math.max(0, lines.length - 1);
+	  }
+
+	  // Core read helper used by our patched loaders
+	  async function datasetRead(filename){
+		const ds = window.currentDataset;
+		if(ds && ds.files && ds.files[filename] != null){
+		  return ds.files[filename]; // already a string
+		}
+		// Fallback to original local CSV fetch
+		const res = await fetch(filename, { cache: 'no-store' });
+		if(!res.ok) throw new Error('Failed to load ' + filename);
+		return await res.text();
+	  }
+
+	  function updateDatasetUI(){
+		const sel = document.getElementById('dataset-selector');
+		const ctx = document.getElementById('dataset-context');
+		// Rebuild selector each time (simple)
+		sel.innerHTML = '<option value="default">Default Dataset</option>';
+		const saved = ds_lsGet(KAPITEL_STORE_KEY, null);
+		if(saved){
+		  const opt = document.createElement('option');
+		  opt.value = 'kapitel';
+		  opt.textContent = saved.title || (saved.manifest?.title) || 'Kapitel (loaded)';
+		  sel.appendChild(opt);
+		}
+		// Pre-select current
+		sel.value = (window.currentDataset.key === 'kapitel') ? 'kapitel' : 'default';
+
+		// Context line
+		if(window.currentDataset.key === 'kapitel'){
+		  const c = window.currentDataset.counts || {};
+		  const title = window.currentDataset.title || 'Kapitel';
+		  ctx.textContent = `Studying: ${title} • ${c.vocab||0} vocab · ${c.verbs||0} verbs · ${c.adjadv||0} adj/adv · ${c.preps||0} preps`;
+		} else {
+		  ctx.textContent = '';
+		}
+	  }
+
+	  async function applyDatasetAndReload(){
+		// Re-run all existing loaders so the four modes use the selected dataset
+		try{
+		  // These functions exist later in the file; we call them after DOM is ready.
+		  if(typeof loadCSV === 'function')           await loadCSV();
+		  if(typeof loadVerbsData === 'function')     await loadVerbsData();
+		  if(typeof aa_loadData === 'function')       await aa_loadData();
+		  if(typeof pp_loadData === 'function')       await pp_loadData();
+		  // Refresh mode rendering if the app provides it
+		  if(typeof renderMode === 'function')        renderMode();
+		  // Optional: if you want to jump to Mix automatically, uncomment:
+		  // if(typeof setMode === 'function') setMode('mix');
+		}catch(e){ console.error(e); }
+	  }
+
+	  async function handleKapitelZip(file){
+		const zip = await JSZip.loadAsync(file);
+		// Helper: find by file base name anywhere in the zip
+		async function readByName(basename){
+		  const entry = Object.values(zip.files).find(f => !f.dir && f.name.toLowerCase().endsWith('/'+basename)) 
+					 || Object.values(zip.files).find(f => !f.dir && f.name.toLowerCase() === basename.toLowerCase());
+		  if(!entry) return null;
+		  return await entry.async('string');
+		}
+		const manifestTxt = await readByName('manifest.json');
+		const vocabTxt    = await readByName('vocab.csv');
+		const verbsTxt    = await readByName('verbs.csv');
+		const adjadvTxt   = await readByName('adjadv.csv');
+		const prepsTxt    = await readByName('prepositions.csv');
+
+		if(!vocabTxt && !verbsTxt && !adjadvTxt && !prepsTxt){
+		  alert('This ZIP does not contain any of the required CSV files.');
+		  return;
+		}
+
+		// Build dataset object
+		let manifest = null;
+		try{ manifest = manifestTxt ? JSON.parse(manifestTxt) : null; }catch{ manifest = null; }
+		const title = (manifest && (manifest.title || manifest.kapitel)) || (file.name.replace(/\.zip$/i,''));
+		const counts = {
+		  vocab:  ds_trimCsvCount(vocabTxt||''),
+		  verbs:  ds_trimCsvCount(verbsTxt||''),
+		  adjadv: ds_trimCsvCount(adjadvTxt||''),
+		  preps:  ds_trimCsvCount(prepsTxt||'')
+		};
+		const ds = {
+		  key: 'kapitel',
+		  title,
+		  files: {
+			'manifest.json': manifestTxt || '',
+			'vocab.csv': vocabTxt || '',
+			'verbs.csv': verbsTxt || '',
+			'adjadv.csv': adjadvTxt || '',
+			'prepositions.csv': prepsTxt || ''
+		  },
+		  counts
+		};
+
+		// Save (single current Kapitel)
+		ds_lsSet(KAPITEL_STORE_KEY, { title, manifest, files: ds.files, counts });
+		window.currentDataset = ds;
+		updateDatasetUI();
+		await applyDatasetAndReload();
+	  }
+
+	  document.addEventListener('DOMContentLoaded', ()=>{
+		// Restore previously loaded Kapitel if any
+		const saved = ds_lsGet(KAPITEL_STORE_KEY, null);
+		if(saved){
+		  window.currentDataset = { key:'kapitel', title: saved.title, files: saved.files, counts: saved.counts };
+		}
+		updateDatasetUI();
+
+		// Wiring: selector change
+		const sel = document.getElementById('dataset-selector');
+		sel.addEventListener('change', async (e)=>{
+		  const v = e.target.value;
+		  if(v === 'default'){
+			window.currentDataset = { key:'default', title:'Default Dataset', files:null, counts:null };
+		  } else if(v === 'kapitel'){
+			const s = ds_lsGet(KAPITEL_STORE_KEY, null);
+			if(s){
+			  window.currentDataset = { key:'kapitel', title: s.title, files: s.files, counts: s.counts };
+			} else {
+			  // If nothing saved, revert
+			  window.currentDataset = { key:'default', title:'Default Dataset', files:null, counts:null };
+			  e.target.value = 'default';
+			}
+		  }
+		  updateDatasetUI();
+		  await applyDatasetAndReload();
+		});
+
+		// Wiring: Load Kapitel button
+		document.getElementById('btnLoadKapitel').addEventListener('click', ()=>{
+		  document.getElementById('kapitel-zip-input').click();
+		});
+		document.getElementById('kapitel-zip-input').addEventListener('change', async (ev)=>{
+		  const f = ev.target.files && ev.target.files[0];
+		  if(!f) return;
+		  try{
+			await handleKapitelZip(f);
+		  }catch(err){
+			console.error(err);
+			alert('Failed to load Kapitel ZIP: ' + err.message);
+		  } finally {
+			ev.target.value = '';
+		  }
+		});
+	  });
+	</script>
+
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -458,9 +650,7 @@
     async function loadCSV(){
       try{
         status('Loading vocab.csv…');
-        const res = await fetch('vocab.csv', {cache:'no-store'});
-        if(!res.ok) throw new Error('Failed to load vocab.csv');
-        const data = await res.text();
+		const data = await datasetRead('vocab.csv');
         const lines = parseCSV(data.trim());
         if(lines.length===0){ status('vocab.csv is empty'); return; }
         lines.shift();
@@ -982,11 +1172,8 @@
         async function loadVerbsData(){
           let rows = null;
           try {
-            const res = await fetch('verbs.csv', { cache: 'no-store' });
-            if (res.ok) {
-              const csv = await res.text();
-              rows = parseCSV(csv);
-            }
+			const csv = await datasetRead('verbs.csv');
+			rows = parseCSV(csv);
           } catch(_) {}
           if (!rows || rows.length===0) {
             rows = [
@@ -1487,10 +1674,9 @@
         /* Load data from adjadv.csv (english,german,example) */
         async function aa_loadData(){
           try{
-            const res = await fetch('adjadv.csv', { cache:'no-store' });
-            if(res.ok){
-              const csv = await res.text();
-              const rows = parseCSV(csv); // we reuse the verbs parseCSV helper
+            const csv = await datasetRead('adjadv.csv');
+			const rows = parseCSV(csv);
+			// ...// we reuse the verbs parseCSV helper
               // Expect headers: english,german,example
               // If user CSV has headers, parseCSV returns objects already.
               // But our parseCSV returns array-of-objects only when a header line exists.
@@ -1955,11 +2141,9 @@
 		async function pp_loadData(){
 		  let rows = null;
 		  try{
-			const res = await fetch('prepositions.csv', { cache:'no-store' });
-			if(res.ok){
-			  const csv = await res.text();
-			  rows = pp_parseCSV(csv);
-			}
+			const csv = await datasetRead('prepositions.csv');
+			rows = pp_parseCSV(csv);
+
 		  }catch(_){}
 		  if(!rows || !rows.length){
 			// tiny fallback
