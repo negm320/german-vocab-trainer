@@ -870,12 +870,20 @@
     }
 
     function saveProgress(){
-      try{ localStorage.setItem('vocabProgress', JSON.stringify({ words, level, showEnglish: document.getElementById('toggleEnglish')?.checked })); }catch{}
+      try{
+		  const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
+		  localStorage.setItem(`vocabProgress::${dsKey}`, JSON.stringify({
+			words, level,
+			showEnglish: document.getElementById('toggleEnglish')?.checked
+		  }));
+		}catch{}
+
     }
 
     function loadProgress(){
       try{
-        const saved=localStorage.getItem('vocabProgress');
+        const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
+		const saved = localStorage.getItem(`vocabProgress::${dsKey}`);
         const cb=document.getElementById('toggleEnglish');
         if(saved){
           const data=JSON.parse(saved);
