@@ -1735,14 +1735,81 @@
           }
         };
         
-		/* (Preps) — after Next, jump to a fresh random section in MIX */
+		/* (Preps) — after Next, reset Enter phase and jump to a fresh random section in MIX */
 		const ppNext = document.getElementById('preps-next');
 		if (ppNext && !ppNext._mixHooked){
 		  ppNext._mixHooked = true;
 		  ppNext.addEventListener('click', ()=>{
+			window.ppEnterPhase = 0; // reset so first Enter = check again
 			setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
 		  });
 		}
+
+		/* Preps Enter behavior: first Enter checks, second Enter goes next */
+		(function(){
+		  // global-ish flag
+		  if (typeof window.ppEnterPhase === 'undefined') window.ppEnterPhase = 0;
+
+		  function qsPrepsInput(){
+			// Try common ids/selectors for the preps answer field
+			return document.getElementById('preps-input')
+				|| document.getElementById('preps-answer')
+				|| document.querySelector('#preps-card input[type="text"], #preps-card input');
+		  }
+		  function btnPrepsCheck(){
+			return document.getElementById('preps-check')
+				|| document.querySelector('#preps-card [data-role="preps-check"], #preps-card [data-action="check"]')
+				|| Array.from(document.querySelectorAll('#preps-card button'))
+					  .find(b => /check|prüfen|überprüfen/i.test(b.textContent||''));
+		  }
+		  function btnPrepsNext(){
+			return document.getElementById('preps-next')
+				|| document.querySelector('#preps-card [data-role="preps-next"], #preps-card [data-action="next"]')
+				|| Array.from(document.querySelectorAll('#preps-card button'))
+					  .find(b => /next|weiter|nächste/i.test(b.textContent||''));
+		  }
+
+		  function ensurePrepsEnterWiring(){
+			const input = qsPrepsInput();
+			if (!input || input._ppEnterWired) return;
+			input._ppEnterWired = true;
+
+			input.addEventListener('keydown', (e)=>{
+			  if (e.key !== 'Enter') return;
+
+			  // Always stop the default so we control the flow
+			  e.preventDefault();
+			  e.stopPropagation();
+
+			  const checkBtn = btnPrepsCheck();
+			  const nextBtn  = btnPrepsNext();
+
+			  // first Enter → check (if there is a check button), second Enter → next
+			  if (window.ppEnterPhase === 0){
+				// if no explicit check button, fall back to "Next" (some UIs auto-check on next)
+				if (checkBtn) { checkBtn.click(); }
+				else if (nextBtn) { nextBtn.click(); }
+				window.ppEnterPhase = 1;
+			  } else {
+				if (nextBtn) { nextBtn.click(); }
+				window.ppEnterPhase = 0; // reset for the next item
+			  }
+			});
+
+			// If the user edits the input again, go back to "first Enter = check"
+			input.addEventListener('input', ()=> { window.ppEnterPhase = 0; });
+		  }
+
+		  // Run now and also whenever Preps card becomes visible
+		  document.addEventListener('DOMContentLoaded', ensurePrepsEnterWiring);
+		  const prepsCard = document.getElementById('preps-card');
+		  if (prepsCard){
+			const obs = new MutationObserver(()=> ensurePrepsEnterWiring());
+			obs.observe(prepsCard, { childList:true, subtree:true, attributes:true });
+		  }
+		})();
+
+
 
 		/* (Verbs) — after Next, jump to a fresh random section in MIX */
 		(function(){
@@ -1767,24 +1834,27 @@
 
 		/* MIX wrappers: if the app has explicit next functions, wrap them so MIX rotates only after real advances. */
 		(function(){
-		  function wrapNext(fnName){
-			const w = (globalThis || window);
-			if (typeof w[fnName] === 'function' && !w[fnName]._mixWrapped){
-			  const orig = w[fnName];
-			  w[fnName] = function(){
-				const out = orig.apply(this, arguments);
-				setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
-				return out;
-			  };
-			  w[fnName]._mixWrapped = true;
+			function wrapNext(fnName){
+			  const w = (globalThis || window);
+			  if (typeof w[fnName] === 'function' && !w[fnName]._mixWrapped){
+				const orig = w[fnName];
+				w[fnName] = function(){
+				  const out = orig.apply(this, arguments);
+				  // New item loaded → reset Enter phase to "check first"
+				  window.ppEnterPhase = 0;
+				  setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
+				  return out;
+				};
+				w[fnName]._mixWrapped = true;
+			  }
 			}
-		  }
+
+
 
 		  // Try common names you might be using:
 		  wrapNext('verbsNext');      // e.g., called when Verbs goes to the next item
 		  wrapNext('nextVerb');       // alternative common name
 		  wrapNext('renderVerbsNext'); // if you made a specific renderer for next
-
 		  wrapNext('pp_next');        // Preps: your Next handler if named like this
 		  wrapNext('prepsNext');      // alternative
 		})();
