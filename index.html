@@ -1673,46 +1673,45 @@
         
         /* Load data from adjadv.csv (english,german,example) */
         async function aa_loadData(){
-          try{
-            const csv = await datasetRead('adjadv.csv');
+		  try {
+			const csv  = await datasetRead('adjadv.csv');
 			const rows = parseCSV(csv);
-			// ...// we reuse the verbs parseCSV helper
-              // Expect headers: english,german,example
-              // If user CSV has headers, parseCSV returns objects already.
-              // But our parseCSV returns array-of-objects only when a header line exists.
-              // So handle both cases:
-              if(Array.isArray(rows) && rows.length && typeof rows[0]==='object' && rows[0].english!==undefined){
-                adjadvState.data = rows.map((r,i)=>({
-                  id: r.id || ('aa_'+(r.german||r.english||('i'+i)).replace(/\s+/g,'_')+'_'+i),
-                  english: r.english || '',
-                  german:  r.german  || '',
-                  example: r.example || ''
-                }));
-              } else {
-                // Simple fallback if the CSV had no header or parse failed:
-                adjadvState.data = [
-                  { id:'aa001', english:'beautiful', german:'schön', example:'Das ist ein schönes Haus.' },
-                  { id:'aa002', english:'slow',      german:'langsam', example:'Er fährt langsam.' },
-                  { id:'aa003', english:'quickly',   german:'schnell', example:'Sie läuft schnell.' },
-                  { id:'aa004', english:'angry',     german:'wütend', example:'Er ist sehr wütend.' },
-                  { id:'aa005', english:'carefully', german:'vorsichtig', example:'Er arbeitet vorsichtig.' },
-                ];
-              }
-            } else {
-              // No CSV file -> use small demo list
-              adjadvState.data = [
-                { id:'aa001', english:'beautiful', german:'schön', example:'Das ist ein schönes Haus.' },
-                { id:'aa002', english:'slow',      german:'langsam', example:'Er fährt langsam.' },
-                { id:'aa003', english:'quickly',   german:'schnell', example:'Sie läuft schnell.' },
-              ];
-            }
-          } catch {
-            adjadvState.data = [
-              { id:'aa001', english:'beautiful', german:'schön', example:'Das ist ein schönes Haus.' },
-              { id:'aa002', english:'slow',      german:'langsam', example:'Er fährt langsam.' },
-            ];
-          }
-        }
+
+			// Normalize to objects we expect: {id, english, german, example}
+			if (Array.isArray(rows) && rows.length) {
+			  // rows might already be objects (when CSV had headers)
+			  if (typeof rows[0] === 'object' && ('english' in rows[0] || 'german' in rows[0])) {
+				adjadvState.data = rows.map((r,i)=>({
+				  id: r.id || ('aa_' + (r.german || r.english || ('i'+i)).replace(/\s+/g,'_') + '_' + i),
+				  english: r.english || '',
+				  german:  r.german  || '',
+				  example: r.example || ''
+				}));
+			  } else {
+				// rows might be arrays (no headers) → [english,german,example]
+				adjadvState.data = rows.map((cols,i)=>({
+				  id: 'aa_' + i,
+				  english: (cols[0]||'').trim(),
+				  german:  (cols[1]||'').trim(),
+				  example: (cols[2]||'').trim()
+				}));
+			  }
+			} else {
+			  // Fallback demo data if CSV empty
+			  adjadvState.data = [
+				{ id:'aa001', english:'beautiful', german:'schön',     example:'Das ist ein schönes Haus.' },
+				{ id:'aa002', english:'slow',      german:'langsam',   example:'Er fährt langsam.' },
+				{ id:'aa003', english:'quickly',   german:'schnell',   example:'Sie läuft schnell.' }
+			  ];
+			}
+		  } catch {
+			// Fallback if file missing or parse failed
+			adjadvState.data = [
+			  { id:'aa001', english:'beautiful', german:'schön',   example:'Das ist ein schönes Haus.' },
+			  { id:'aa002', english:'slow',      german:'langsam', example:'Er fährt langsam.' }
+			];
+		  }
+		}
         
         /* Current item helpers */
         function aa_pool(){
