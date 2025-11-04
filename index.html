@@ -1475,14 +1475,15 @@
           });
         
           // Sections we want to show/hide
-          const vocab = document.getElementById('vocab-wrapper'); // <- the wrapper you just added
-          const verbs = document.getElementById('verbs-card');
-        
-          // Show Verbs card only in "verbs" mode
-          if (verbs) verbs.hidden = (mode !== 'verbs');
-        
-          // Show Vocab only in "vocab" or "mix" (hide when "verbs")
-          if (vocab) vocab.style.display = (mode === 'vocab') ? '' : 'none';
+			const vocab = document.getElementById('vocab-wrapper');
+			const verbs = document.getElementById('verbs-card');
+
+			// Show Verbs card only in "verbs" mode
+			if (verbs) verbs.hidden = (mode !== 'verbs');
+
+			// Show Vocab only in "vocab" (Mix is handled by the Mix renderer)
+			if (vocab) vocab.style.display = (mode === 'vocab') ? '' : 'none';
+
 
         
           // If entering verbs, (re)render a fresh card
