@@ -457,6 +457,20 @@
 	  </div>
 	</div>
 
+	<!-- Kapitel-complete splash -->
+	<div id="kapitelDoneModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:10000;">
+	  <div style="background:#0f1620;border:1px solid #2a3240;border-radius:12px;max-width:520px;width:92%;padding:18px;color:#eaeaea;">
+		<h3 style="margin:0 0 8px 0;font-size:18px;">Kapitel mastered 🎉</h3>
+		<p style="margin:0 0 12px;color:#9aa6b2;font-size:14px;">
+		  You’ve mastered all vocab, verbs, adjectives/adverbs, and prepositions in this Kapitel.
+		</p>
+		<div style="display:flex;gap:8px;justify-content:flex-end;">
+		  <button id="kapitelDoneClose" style="padding:8px 12px;border-radius:8px;border:1px solid #2a3240;background:#202a38;color:#eaeaea;cursor:pointer;">Close</button>
+		  <button id="kapitelDoneReset" style="padding:8px 12px;border-radius:8px;border:1px solid #2a3240;background:#3a5c78;color:#eaeaea;cursor:pointer;">Reset progress</button>
+		</div>
+	  </div>
+	</div>
+
 	
 	<div id="dataset-context" style="max-width:500px;margin:-2px auto 12px;color:#9aa6b2;font-size:13px;"></div>
 
@@ -805,368 +819,468 @@
 
 
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // ===== State =====
-    let words = [];
-    let currentWord = null;
-    let chosenArticle = '';
-    let level = 1;
-    const wordsPerLevel = 25;
-    const masteryThreshold = 3;
-    let pluralEnterCount = 0;
-    let lastFocusId = 'german';
+	  document.addEventListener('DOMContentLoaded', () => {
+		// ===== State =====
+		let words = [];
+		let currentWord = null;
+		let chosenArticle = '';
+		let level = 1;
+		const wordsPerLevel = 25;
+		const masteryThreshold = 3;
+		let pluralEnterCount = 0;
+		let lastFocusId = 'german';
 
-    const statusEl = document.getElementById('status');
-    const englishRowEl = document.getElementById('englishRow');
+		const statusEl = document.getElementById('status');
+		const englishRowEl = document.getElementById('englishRow');
 
-    // Show any uncaught error in the UI (helps diagnose blank screens)
-    window.addEventListener('error', (e) => {
-      if (statusEl) statusEl.textContent = '⚠️ JS error: ' + (e.error?.message || e.message || String(e));
-    });
+		// Show any uncaught error in the UI (helps diagnose blank screens)
+		window.addEventListener('error', (e) => {
+		  if (statusEl) statusEl.textContent = '⚠️ JS error: ' + (e.error?.message || e.message || String(e));
+		});
 
-    // === Image cache & preload ===
-    let imageCache = new Map(); // german -> best src or null
-    let preloadedNext = null;   // { word, src }
+		// === Image cache & preload ===
+		let imageCache = new Map(); // german -> best src or null
+		let preloadedNext = null;   // { word, src }
 
-    function status(msg){ if(statusEl) statusEl.textContent = msg || ''; }
+		function status(msg){ if(statusEl) statusEl.textContent = msg || ''; }
 
-    // ===== CSV Parser =====
-    function parseCSV(text){
-      const rows=[]; let row=[]; let cur=''; let inQuotes=false;
-      for(let i=0;i<text.length;i++){
-        const c=text[i];
-        if(c==='"'){
-          if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; }
-        } else if(c===',' && !inQuotes){
-          row.push(cur); cur='';
-        } else if((c==='\n' || c==='\r') && !inQuotes){
-          if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
-        } else {
-          cur+=c;
-        }
-      }
-      if(cur!=='' || row.length){ row.push(cur); rows.push(row); }
-      return rows;
-    }
-
-    // ===== Data loading =====
-    async function loadCSV(){
-      try{
-        status('Loading vocab.csv…');
-		const data = await datasetRead('vocab.csv');
-        const lines = parseCSV(data.trim());
-        if(lines.length===0){ status('vocab.csv is empty'); return; }
-        lines.shift();
-        words = lines.map(cols=>{
-          const english=cols[0]||''; const article=cols[1]||''; const german=cols[2]||''; const plural=cols[3]||'';
-          const ex1=cols[4]||''; const ex2=cols[5]||''; const ex3=cols[6]||'';
-          const examples=[ex1,ex2,ex3].filter(x=>x&&x.trim()!=='');
-          return { english, article, german, plural, examples, correctStreak:0, answeredCorrect:false };
-        });
-        loadProgress();
-        updateLevelDisplay();
-        await nextWord();          // show first word
-        schedulePreloadNext();     // start preloading immediately
-        status('');
-      }catch(e){ console.error(e); status('Error: '+e.message); }
-    }
-
-    function updateLevelDisplay(){
-      const el = document.getElementById('level');
-      if (el) el.textContent = `Level: ${level} (Words 1–${level*wordsPerLevel})`;
-    }
-
-    function getActiveWords(){ return words.slice(0, level*wordsPerLevel); }
-
-    function getTierWords(){
-      const active=getActiveWords(); if(active.length===0) return [];
-      const minStreak=Math.min(...active.map(w=>w.correctStreak));
-      return active.filter(w=>w.correctStreak===minStreak && !w.answeredCorrect);
-    }
-
-    // ===== Image helpers =====
-    function replaceUmlauts(s){
-      return (s||'')
-        .replaceAll('ä','ae').replaceAll('Ä','Ae')
-        .replaceAll('ö','oe').replaceAll('Ö','Oe')
-        .replaceAll('ü','ue').replaceAll('Ü','Ue')
-        .replaceAll('ß','ss');
-    }
-    function buildCandidates(german){
-      const baseRaw=(german||'').trim(); const bases=[];
-      if(baseRaw){
-        bases.push(baseRaw, baseRaw.toLowerCase(), baseRaw.replaceAll(' ','-'), baseRaw.toLowerCase().replaceAll(' ','-'));
-        const uml=replaceUmlauts(baseRaw);
-        bases.push(uml, uml.toLowerCase(), uml.replaceAll(' ','-'), uml.toLowerCase().replaceAll(' ','-'));
-      }
-      const exts=['jpg','jpeg','png','webp']; const out=[];
-      bases.forEach(b=>exts.forEach(ext=>out.push('img/'+encodeURIComponent(b)+'.'+ext)));
-      return out;
-    }
-
-    function resolveImageSrcForGerman(german){
-      return new Promise((resolve)=>{
-        if(!german){ resolve(null); return; }
-        if(imageCache.has(german)){ resolve(imageCache.get(german)); return; }
-
-        const candidates = buildCandidates(german);
-        let i = 0, done = false;
-
-        const tryNext = ()=>{
-          if(done) return;
-          if(i >= candidates.length){ done = true; imageCache.set(german, null); resolve(null); return; }
-          const src = candidates[i++];
-          const probe = new Image();
-          probe.onload = ()=>{ if(done) return; done = true; imageCache.set(german, src); resolve(src); };
-          probe.onerror = tryNext;
-          probe.src = src;
-        };
-        tryNext();
-      });
-    }
-
-    async function preloadWordImage(word){
-      if(!word || !word.german) return { word, src: null };
-      const src = await resolveImageSrcForGerman(word.german);
-      return { word, src };
-    }
-
-    // Faster image: no artificial wait
-    async function loadImageForCurrent(waitMs = 0){
-      const img=document.getElementById('wordImage');
-      if(!img) return;
-
-      img.style.display='none';
-      img.removeAttribute('src');
-      if(!currentWord || !currentWord.german) return;
-
-      let src = (preloadedNext && preloadedNext.word === currentWord) ? preloadedNext.src : null;
-      if(!src){ src = await resolveImageSrcForGerman(currentWord.german); }
-      if(!src){ return; }
-
-      if(waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
-
-      img.onload = ()=>{ img.style.display='block'; };
-      img.onerror = ()=>{ img.style.display='none'; };
-      img.src = src;
-    }
-
-    function pickNextCandidateWord(){
-      const active = getActiveWords();
-      if(active.length === 0) return null;
-
-      const minStreak = Math.min(...active.map(w => w.correctStreak));
-      let tier = active.filter(w => w.correctStreak === minStreak && !w.answeredCorrect);
-      if(tier.length === 0) tier = active.filter(w => w.correctStreak === minStreak);
-      if(tier.length === 0) tier = active;
-
-      return tier[Math.floor(Math.random()*tier.length)];
-    }
-    async function schedulePreloadNext(){
-      const candidate = pickNextCandidateWord();
-      if(!candidate){ preloadedNext = null; return; }
-      preloadedNext = await preloadWordImage(candidate);
-    }
-
-    async function nextWord(){
-      const activeWords=getActiveWords(); if(activeWords.length===0) return;
-
-      let tierWords=getTierWords();
-      if(tierWords.length===0){
-        const minStreak=Math.min(...activeWords.map(w=>w.correctStreak));
-        activeWords.filter(w=>w.correctStreak===minStreak).forEach(w=>w.answeredCorrect=false);
-        tierWords=getTierWords();
-      }
-      const list=(tierWords.length?tierWords:activeWords);
-      currentWord=list[Math.floor(Math.random()*list.length)];
-
-      const englishEl = document.getElementById('english');
-      const streakEl  = document.getElementById('streakDisplay');
-      const germanEl  = document.getElementById('german');
-      const pluralEl  = document.getElementById('plural');
-      const feedbackEl= document.getElementById('feedback');
-      const exampleEl = document.getElementById('example');
-      const nextBtn   = document.getElementById('nextBtn');
-
-      if(englishEl) englishEl.textContent=currentWord.english;
-      if(streakEl)  streakEl.textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
-      if(germanEl)  germanEl.value='';
-      if(pluralEl)  pluralEl.value='';
-      if(feedbackEl)feedbackEl.textContent='';
-      if(exampleEl) exampleEl.textContent='';
-      if(nextBtn)   nextBtn.style.display='none';
-
-      chosenArticle='';
-      resetArticleButtons();
-      pluralEnterCount=0;
-
-      applyEnglishVisibility();
-
-      // Begin resolving image ASAP, then show it
-      await loadImageForCurrent(0);
-      schedulePreloadNext();
-
-      if(germanEl){
-        setTimeout(()=>{
-          germanEl.focus();
-          try{ germanEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch{}
-        },0);
-      }
-    }
-
-    function resetArticleButtons(){
-      const a=document.getElementById('btnDer');
-      const b=document.getElementById('btnDie');
-      const c=document.getElementById('btnDas');
-      if(a) a.classList.remove('selected');
-      if(b) b.classList.remove('selected');
-      if(c) c.classList.remove('selected');
-    }
-
-    function chooseArticle(article){
-      chosenArticle=article; resetArticleButtons();
-      if(article==='der') document.getElementById('btnDer')?.classList.add('selected');
-      if(article==='die') document.getElementById('btnDie')?.classList.add('selected');
-      if(article==='das') document.getElementById('btnDas')?.classList.add('selected');
-
-      const germanEl=document.getElementById('german');
-      if(germanEl){
-        lastFocusId='german';
-        setTimeout(()=>{
-          germanEl.focus();
-          try{ germanEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch{}
-        },0);
-      }
-    }
-
-    function randomExample(examples){ if(!examples||examples.length===0) return ''; const i=Math.floor(Math.random()*examples.length); return examples[i]; }
-
-    function checkAnswer(){
-      if(!currentWord) return;
-      const german=(document.getElementById('german')?.value || '').trim().toLowerCase();
-      const plural=(document.getElementById('plural')?.value || '').trim().toLowerCase();
-      let feedback='';
-      const correctGerman=(currentWord.german||'').toLowerCase();
-      const correctPlural=(currentWord.plural||'').toLowerCase();
-      const pluralCorrect=(plural===correctPlural) || (correctPlural==='—' && plural==='');
-      if(chosenArticle===currentWord.article && german===correctGerman && pluralCorrect){
-        currentWord.correctStreak++; currentWord.answeredCorrect=true; feedback='<span style="color:var(--ok)">Correct!</span>';
-      } else {
-        currentWord.correctStreak=0; currentWord.answeredCorrect=false; feedback=`<span style="color:var(--bad)">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
-      }
-      const feedbackEl=document.getElementById('feedback');
-      if(feedbackEl) feedbackEl.innerHTML=feedback;
-      const streakEl=document.getElementById('streakDisplay');
-      if(streakEl) streakEl.textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
-      const ex=randomExample(currentWord.examples);
-      const exampleEl=document.getElementById('example');
-      if(exampleEl) exampleEl.textContent=ex?`📝 ${ex}`:'';
-      const nextBtn=document.getElementById('nextBtn');
-      if(nextBtn) nextBtn.style.display='inline-block';
-      saveProgress();
-
-      const activeWords=getActiveWords();
-      const allMastered=activeWords.every(w=>w.correctStreak>=masteryThreshold);
-      if(allMastered && level*wordsPerLevel<words.length){
-        level++; activeWords.forEach(w=>{w.correctStreak=0; w.answeredCorrect=false;}); updateLevelDisplay(); saveProgress();
-      }
-    }
-
-    function saveProgress(){
-      try{
-		  const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
-		  localStorage.setItem(`vocabProgress::${dsKey}`, JSON.stringify({
-			words, level,
-			showEnglish: document.getElementById('toggleEnglish')?.checked
-		  }));
-		}finally{
-		  // Mark for cloud sync if enabled
-		  if (typeof scheduleSyncSoon === 'function') scheduleSyncSoon();
+		// ===== Mix(Kapitel) helpers =====
+		function isKapitelMixMode(){
+		  return (window.currentDataset?.key === 'kapitel') && (typeof getMode==='function') && (getMode()==='mix');
 		}
-    }
+		function sectionHasUnmastered(sectionName){
+		  // vocab
+		  if (sectionName === 'vocab'){
+			const arr = words || [];
+			return arr.some(w => (w.correctStreak||0) < masteryThreshold);
+		  }
+		  // verbs
+		  if (sectionName === 'verbs'){
+			const data = (window.verbsState?.data)||[];
+			const streaks = (window.verbsState?.streaks)||{};
+			return data.some(v => (streaks[v.id]||0) < 3);
+		  }
+		  // adjadv
+		  if (sectionName === 'adjadv'){
+			const data = (window.adjadvState?.data)||[];
+			const streaks = (window.adjadvState?.streaks)||{};
+			return data.some(x => (streaks[x.id]||0) < 3);
+		  }
+		  // preps
+		  if (sectionName === 'preps'){
+			const data = (window.prepsState?.data)||[];
+			const streaks = (window.prepsState?.streaks)||{};
+			return data.some(x => (streaks[x.id]||0) < 3);
+		  }
+		  return false;
+		}
+		function allKapitelMastered(){
+		  if (window.currentDataset?.key !== 'kapitel') return false;
+		  return !['vocab','verbs','adjadv','preps'].some(sectionHasUnmastered);
+		}
+		function showKapitelDoneSplash(){
+		  const m = document.getElementById('kapitelDoneModal');
+		  if (m) m.style.display = 'flex';
+		}
+		function hideKapitelDoneSplash(){
+		  const m = document.getElementById('kapitelDoneModal');
+		  if (m) m.style.display = 'none';
+		}
+		function resetKapitelProgress(){
+		  // Vocab (kapitel-scoped)
+		  try{ localStorage.removeItem('vocabProgress::kapitel'); }catch{}
+		  // Verbs/AdjAdv/Preps (these keys are global in current code – clear them)
+		  try{
+			['verbs_level','verbs_unlocked_count','verbs_streaks','verbs_index',
+			 'adjadv_level','adjadv_unlocked_count','adjadv_streaks','adjadv_index',
+			 'preps_level','preps_unlocked_count','preps_streaks','preps_index']
+			 .forEach(k => localStorage.removeItem(k));
+		  }catch{}
+		  // In-memory reset (soft)
+		  try{
+			(words||[]).forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; });
+			if (window.verbsState){ verbsState.streaks = {}; verbsState.index=0; }
+			if (window.adjadvState){ adjadvState.streaks = {}; adjadvState.index=0; }
+			if (window.prepsState){ prepsState.streaks = {}; prepsState.index=0; }
+		  }catch{}
+		  hideKapitelDoneSplash();
+		  // Re-render the current mix section
+		  if (typeof renderMode==='function') renderMode();
+		}
+		document.addEventListener('DOMContentLoaded', ()=>{
+		  document.getElementById('kapitelDoneClose')?.addEventListener('click', hideKapitelDoneSplash);
+		  document.getElementById('kapitelDoneReset')?.addEventListener('click', resetKapitelProgress);
+		});
 
-    function loadProgress(){
-      try{
-        const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
-		const saved = localStorage.getItem(`vocabProgress::${dsKey}`);
-        const cb=document.getElementById('toggleEnglish');
-        if(saved){
-          const data=JSON.parse(saved);
-          level=data.level||1;
-          if(cb) cb.checked = (data.showEnglish!==undefined)? !!data.showEnglish : true;
-          words.forEach((w,i)=>{ if(data.words && data.words[i]){ w.correctStreak=data.words[i].correctStreak||0; w.answeredCorrect=data.words[i].answeredCorrect||false; } });
-        } else { if(cb) cb.checked = true; }
-      }catch{}
-    }
 
-    function resetProgress(){
-	  if(confirm('Are you sure you want to reset progress?')){
-		try{
-		  const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
-		  localStorage.removeItem(`vocabProgress::${dsKey}`);
-		}catch{}
-		words.forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; });
-		level=1; updateLevelDisplay(); nextWord();
-	  }
-	}
-
-
-    // Input focus + Enter behavior
-    document.getElementById('german')?.addEventListener('focus', ()=>{ lastFocusId='german'; });
-    document.getElementById('plural')?.addEventListener('focus', ()=>{ lastFocusId='plural'; });
-
-    document.getElementById('german')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('plural')?.focus(); }});
-    document.getElementById('plural')?.addEventListener('keydown', e=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        pluralEnterCount++;
-        if(pluralEnterCount===1) checkAnswer();
-        else if(pluralEnterCount===2){ 
-		  pluralEnterCount=0; 
-		  nextWord(); 
-		  setTimeout(()=>{ 
-			if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); 
-		  }, 0); 
+		// ===== CSV Parser =====
+		function parseCSV(text){
+		  const rows=[]; let row=[]; let cur=''; let inQuotes=false;
+		  for(let i=0;i<text.length;i++){
+			const c=text[i];
+			if(c==='"'){
+			  if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; }
+			} else if(c===',' && !inQuotes){
+			  row.push(cur); cur='';
+			} else if((c==='\n' || c==='\r') && !inQuotes){
+			  if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
+			} else {
+			  cur+=c;
+			}
+		  }
+		  if(cur!=='' || row.length){ row.push(cur); rows.push(row); }
+		  return rows;
 		}
 
-      }
-    });
+		// ===== Data loading =====
+		async function loadCSV(){
+		  try{
+			status('Loading vocab.csv…');
+			const data = await datasetRead('vocab.csv');
+			const lines = parseCSV(data.trim());
+			if(lines.length===0){ status('vocab.csv is empty'); return; }
+			lines.shift();
+			words = lines.map(cols=>{
+			  const english=cols[0]||''; const article=cols[1]||''; const german=cols[2]||''; const plural=cols[3]||'';
+			  const ex1=cols[4]||''; const ex2=cols[5]||''; const ex3=cols[6]||'';
+			  const examples=[ex1,ex2,ex3].filter(x=>x&&x.trim()!=='');
+			  return { english, article, german, plural, examples, correctStreak:0, answeredCorrect:false };
+			});
+			loadProgress();
+			updateLevelDisplay();
+			await nextWord();          // show first word
+			schedulePreloadNext();     // start preloading immediately
+			status('');
+		  }catch(e){ console.error(e); status('Error: '+e.message); }
+		}
 
-    // ===== Article buttons — keep keyboard up =====
-    function bindArticleButton(id, article){
-      const el = document.getElementById(id);
-      if(!el) return;
+		function updateLevelDisplay(){
+		  const el = document.getElementById('level');
+		  if (!el) return;
+		  if (isKapitelMixMode()){
+			el.style.display = 'none';
+		  } else {
+			el.style.display = '';
+			el.textContent = `Level: ${level} (Words 1–${level*wordsPerLevel})`;
+		  }
+		}
 
-      // Prevent the button from stealing focus (so keyboard stays open)
-      const early = (e)=>{ 
-        try { e.preventDefault(); } catch {}
-        chooseArticle(article);
-      };
-      el.addEventListener('pointerdown', early);
-      el.addEventListener('mousedown', early);
-      el.addEventListener('click', (e)=>{ e.preventDefault(); chooseArticle(article); });
-    }
-    bindArticleButton('btnDer','der');
-    bindArticleButton('btnDie','die');
-    bindArticleButton('btnDas','das');
 
-    // Other buttons
-    document.getElementById('checkBtn')?.addEventListener('click', checkAnswer);
-    document.getElementById('resetBtn')?.addEventListener('click', resetProgress);
-    document.getElementById('nextBtn')?.addEventListener('click', nextWord);
+		function getActiveWords(){
+		  if (isKapitelMixMode()){
+			// Whole Kapitel is available; we’ll prefer unmastered when picking next
+			return words.slice();
+		  }
+		  return words.slice(0, level*wordsPerLevel);
+		}
 
-    // English toggle
-    function applyEnglishVisibility(){
-      const cb=document.getElementById('toggleEnglish');
-      if(!englishRowEl) return;
-      englishRowEl.style.display = cb && cb.checked ? '' : 'none';
-    }
-    document.getElementById('toggleEnglish')?.addEventListener('change', ()=>{ applyEnglishVisibility(); saveProgress(); });
 
-    // Start
-    applyEnglishVisibility();
-    loadCSV();
-  });
+		function getTierWords(){
+		  const active=getActiveWords(); if(active.length===0) return [];
+		  const minStreak=Math.min(...active.map(w=>w.correctStreak));
+		  return active.filter(w=>w.correctStreak===minStreak && !w.answeredCorrect);
+		}
+
+		// ===== Image helpers =====
+		function replaceUmlauts(s){
+		  return (s||'')
+			.replaceAll('ä','ae').replaceAll('Ä','Ae')
+			.replaceAll('ö','oe').replaceAll('Ö','Oe')
+			.replaceAll('ü','ue').replaceAll('Ü','Ue')
+			.replaceAll('ß','ss');
+		}
+		function buildCandidates(german){
+		  const baseRaw=(german||'').trim(); const bases=[];
+		  if(baseRaw){
+			bases.push(baseRaw, baseRaw.toLowerCase(), baseRaw.replaceAll(' ','-'), baseRaw.toLowerCase().replaceAll(' ','-'));
+			const uml=replaceUmlauts(baseRaw);
+			bases.push(uml, uml.toLowerCase(), uml.replaceAll(' ','-'), uml.toLowerCase().replaceAll(' ','-'));
+		  }
+		  const exts=['jpg','jpeg','png','webp']; const out=[];
+		  bases.forEach(b=>exts.forEach(ext=>out.push('img/'+encodeURIComponent(b)+'.'+ext)));
+		  return out;
+		}
+
+		function resolveImageSrcForGerman(german){
+		  return new Promise((resolve)=>{
+			if(!german){ resolve(null); return; }
+			if(imageCache.has(german)){ resolve(imageCache.get(german)); return; }
+
+			const candidates = buildCandidates(german);
+			let i = 0, done = false;
+
+			const tryNext = ()=>{
+			  if(done) return;
+			  if(i >= candidates.length){ done = true; imageCache.set(german, null); resolve(null); return; }
+			  const src = candidates[i++];
+			  const probe = new Image();
+			  probe.onload = ()=>{ if(done) return; done = true; imageCache.set(german, src); resolve(src); };
+			  probe.onerror = tryNext;
+			  probe.src = src;
+			};
+			tryNext();
+		  });
+		}
+
+		async function preloadWordImage(word){
+		  if(!word || !word.german) return { word, src: null };
+		  const src = await resolveImageSrcForGerman(word.german);
+		  return { word, src };
+		}
+
+		// Faster image: no artificial wait
+		async function loadImageForCurrent(waitMs = 0){
+		  const img=document.getElementById('wordImage');
+		  if(!img) return;
+
+		  img.style.display='none';
+		  img.removeAttribute('src');
+		  if(!currentWord || !currentWord.german) return;
+
+		  let src = (preloadedNext && preloadedNext.word === currentWord) ? preloadedNext.src : null;
+		  if(!src){ src = await resolveImageSrcForGerman(currentWord.german); }
+		  if(!src){ return; }
+
+		  if(waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
+
+		  img.onload = ()=>{ img.style.display='block'; };
+		  img.onerror = ()=>{ img.style.display='none'; };
+		  img.src = src;
+		}
+
+		function pickNextCandidateWord(){
+		  const active = getActiveWords();
+			if(active.length === 0) return null;
+
+			if (isKapitelMixMode()){
+			  const unmastered = active.filter(w => (w.correctStreak||0) < masteryThreshold);
+			  if (unmastered.length === 0) return null; // all done -> splash handled by mix picker
+			  const minStreak = Math.min(...unmastered.map(w => w.correctStreak||0));
+			  const tier = unmastered.filter(w => (w.correctStreak||0) === minStreak && !w.answeredCorrect);
+			  const pool = tier.length ? tier : unmastered;
+			  return pool[Math.floor(Math.random()*pool.length)];
+			}
+
+			// default (level-based)
+			const minStreak = Math.min(...active.map(w => w.correctStreak));
+			let tier = active.filter(w => w.correctStreak === minStreak && !w.answeredCorrect);
+			if(tier.length === 0) tier = active.filter(w => w.correctStreak === minStreak);
+			if(tier.length === 0) tier = active;
+			return tier[Math.floor(Math.random()*tier.length)];
+
+		}
+		async function schedulePreloadNext(){
+		  const candidate = pickNextCandidateWord();
+		  if(!candidate){ preloadedNext = null; return; }
+		  preloadedNext = await preloadWordImage(candidate);
+		}
+
+		async function nextWord(){
+		  const activeWords=getActiveWords(); if(activeWords.length===0) return;
+
+		  let tierWords=getTierWords();
+		  if(tierWords.length===0){
+			const minStreak=Math.min(...activeWords.map(w=>w.correctStreak));
+			activeWords.filter(w=>w.correctStreak===minStreak).forEach(w=>w.answeredCorrect=false);
+			tierWords=getTierWords();
+		  }
+		  const list=(tierWords.length?tierWords:activeWords);
+		  currentWord=list[Math.floor(Math.random()*list.length)];
+
+		  const englishEl = document.getElementById('english');
+		  const streakEl  = document.getElementById('streakDisplay');
+		  const germanEl  = document.getElementById('german');
+		  const pluralEl  = document.getElementById('plural');
+		  const feedbackEl= document.getElementById('feedback');
+		  const exampleEl = document.getElementById('example');
+		  const nextBtn   = document.getElementById('nextBtn');
+
+		  if(englishEl) englishEl.textContent=currentWord.english;
+		  if(streakEl)  streakEl.textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
+		  if(germanEl)  germanEl.value='';
+		  if(pluralEl)  pluralEl.value='';
+		  if(feedbackEl)feedbackEl.textContent='';
+		  if(exampleEl) exampleEl.textContent='';
+		  if(nextBtn)   nextBtn.style.display='none';
+
+		  chosenArticle='';
+		  resetArticleButtons();
+		  pluralEnterCount=0;
+
+		  applyEnglishVisibility();
+
+		  // Begin resolving image ASAP, then show it
+		  await loadImageForCurrent(0);
+		  schedulePreloadNext();
+
+		  if(germanEl){
+			setTimeout(()=>{
+			  germanEl.focus();
+			  try{ germanEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch{}
+			},0);
+		  }
+		}
+
+		function resetArticleButtons(){
+		  const a=document.getElementById('btnDer');
+		  const b=document.getElementById('btnDie');
+		  const c=document.getElementById('btnDas');
+		  if(a) a.classList.remove('selected');
+		  if(b) b.classList.remove('selected');
+		  if(c) c.classList.remove('selected');
+		}
+
+		function chooseArticle(article){
+		  chosenArticle=article; resetArticleButtons();
+		  if(article==='der') document.getElementById('btnDer')?.classList.add('selected');
+		  if(article==='die') document.getElementById('btnDie')?.classList.add('selected');
+		  if(article==='das') document.getElementById('btnDas')?.classList.add('selected');
+
+		  const germanEl=document.getElementById('german');
+		  if(germanEl){
+			lastFocusId='german';
+			setTimeout(()=>{
+			  germanEl.focus();
+			  try{ germanEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch{}
+			},0);
+		  }
+		}
+
+		function randomExample(examples){ if(!examples||examples.length===0) return ''; const i=Math.floor(Math.random()*examples.length); return examples[i]; }
+
+		function checkAnswer(){
+		  if(!currentWord) return;
+		  const german=(document.getElementById('german')?.value || '').trim().toLowerCase();
+		  const plural=(document.getElementById('plural')?.value || '').trim().toLowerCase();
+		  let feedback='';
+		  const correctGerman=(currentWord.german||'').toLowerCase();
+		  const correctPlural=(currentWord.plural||'').toLowerCase();
+		  const pluralCorrect=(plural===correctPlural) || (correctPlural==='—' && plural==='');
+		  if(chosenArticle===currentWord.article && german===correctGerman && pluralCorrect){
+			currentWord.correctStreak++; currentWord.answeredCorrect=true; feedback='<span style="color:var(--ok)">Correct!</span>';
+		  } else {
+			currentWord.correctStreak=0; currentWord.answeredCorrect=false; feedback=`<span style="color:var(--bad)">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
+		  }
+		  const feedbackEl=document.getElementById('feedback');
+		  if(feedbackEl) feedbackEl.innerHTML=feedback;
+		  const streakEl=document.getElementById('streakDisplay');
+		  if(streakEl) streakEl.textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
+		  const ex=randomExample(currentWord.examples);
+		  const exampleEl=document.getElementById('example');
+		  if(exampleEl) exampleEl.textContent=ex?`📝 ${ex}`:'';
+		  const nextBtn=document.getElementById('nextBtn');
+		  if(nextBtn) nextBtn.style.display='inline-block';
+		  saveProgress();
+
+		  const activeWords = getActiveWords();
+			const allMastered = activeWords.every(w => w.correctStreak>=masteryThreshold);
+
+			if (isKapitelMixMode()){
+			  if (allKapitelMastered()) showKapitelDoneSplash();
+			} else {
+			  if(allMastered && level*wordsPerLevel<words.length){
+				level++; activeWords.forEach(w=>{w.correctStreak=0; w.answeredCorrect=false;});
+				updateLevelDisplay(); saveProgress();
+			  }
+			}
+
+		}
+
+		function saveProgress(){
+		  try{
+			  const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
+			  localStorage.setItem(`vocabProgress::${dsKey}`, JSON.stringify({
+				words, level,
+				showEnglish: document.getElementById('toggleEnglish')?.checked
+			  }));
+			}finally{
+			  // Mark for cloud sync if enabled
+			  if (typeof scheduleSyncSoon === 'function') scheduleSyncSoon();
+			}
+		}
+
+		function loadProgress(){
+		  try{
+			const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
+			const saved = localStorage.getItem(`vocabProgress::${dsKey}`);
+			const cb=document.getElementById('toggleEnglish');
+			if(saved){
+			  const data=JSON.parse(saved);
+			  level=data.level||1;
+			  if(cb) cb.checked = (data.showEnglish!==undefined)? !!data.showEnglish : true;
+			  words.forEach((w,i)=>{ if(data.words && data.words[i]){ w.correctStreak=data.words[i].correctStreak||0; w.answeredCorrect=data.words[i].answeredCorrect||false; } });
+			} else { if(cb) cb.checked = true; }
+		  }catch{}
+		}
+
+		function resetProgress(){
+		  if(confirm('Are you sure you want to reset progress?')){
+			try{
+			  const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
+			  localStorage.removeItem(`vocabProgress::${dsKey}`);
+			}catch{}
+			words.forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; });
+			level=1; updateLevelDisplay(); nextWord();
+		  }
+		}
+
+
+		// Input focus + Enter behavior
+		document.getElementById('german')?.addEventListener('focus', ()=>{ lastFocusId='german'; });
+		document.getElementById('plural')?.addEventListener('focus', ()=>{ lastFocusId='plural'; });
+
+		document.getElementById('german')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('plural')?.focus(); }});
+		document.getElementById('plural')?.addEventListener('keydown', e=>{
+		  if(e.key==='Enter'){
+			e.preventDefault();
+			pluralEnterCount++;
+			if(pluralEnterCount===1) checkAnswer();
+			else if(pluralEnterCount===2){ 
+			  pluralEnterCount=0; 
+			  nextWord(); 
+			  setTimeout(()=>{ 
+				if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); 
+			  }, 0); 
+			}
+
+		  }
+		});
+
+		// ===== Article buttons — keep keyboard up =====
+		function bindArticleButton(id, article){
+		  const el = document.getElementById(id);
+		  if(!el) return;
+
+		  // Prevent the button from stealing focus (so keyboard stays open)
+		  const early = (e)=>{ 
+			try { e.preventDefault(); } catch {}
+			chooseArticle(article);
+		  };
+		  el.addEventListener('pointerdown', early);
+		  el.addEventListener('mousedown', early);
+		  el.addEventListener('click', (e)=>{ e.preventDefault(); chooseArticle(article); });
+		}
+		bindArticleButton('btnDer','der');
+		bindArticleButton('btnDie','die');
+		bindArticleButton('btnDas','das');
+
+		// Other buttons
+		document.getElementById('checkBtn')?.addEventListener('click', checkAnswer);
+		document.getElementById('resetBtn')?.addEventListener('click', resetProgress);
+		document.getElementById('nextBtn')?.addEventListener('click', nextWord);
+
+		// English toggle
+		function applyEnglishVisibility(){
+		  const cb=document.getElementById('toggleEnglish');
+		  if(!englishRowEl) return;
+		  englishRowEl.style.display = cb && cb.checked ? '' : 'none';
+		}
+		document.getElementById('toggleEnglish')?.addEventListener('change', ()=>{ applyEnglishVisibility(); saveProgress(); });
+
+		// Start
+		applyEnglishVisibility();
+		loadCSV();
+	  });
   </script>
   <script>
         /* =======================
@@ -1320,24 +1434,21 @@
 		
 		function updateLevelIndicator(){
 		  const el = document.getElementById('verbs-level-indicator');
-		  if (!el || !verbsState?.data?.length) return;
+		  if (!el) return;
+		  if (isKapitelMixMode()){
+			el.style.display = 'none';
+			return;
+		  }
+		  el.style.display = '';
+		  if (!verbsState?.data?.length) return;
 
-		  // current level (default 1); if you store it differently, adjust here
-		  const level = verbsState.level || getInt?.('verbs_level', 1) || 1;
-
-		  // total items available up to this level (25 per level)
+		  const level = verbsState.level || 1;
 		  const totalUpToLevel = Math.min(level * 25, verbsState.data.length);
-
-		  // build IDs for first N verbs
-		  const idsUpToLevel = verbsState.data.slice(0, totalUpToLevel)
-			.map(v => v.id || `${v.lemma}_${v.english}`);
-
-		  const doneUpToLevel = idsUpToLevel
-			.filter(id => (verbsState.streaks?.[id] || 0) >= 3)
-			.length;
-
+		  const idsUpToLevel = verbsState.data.slice(0, totalUpToLevel).map(v => v.id || `${v.lemma}_${v.english}`);
+		  const doneUpToLevel = idsUpToLevel.filter(id => (verbsState.streaks?.[id] || 0) >= 3).length;
 		  el.textContent = `Level ${level} • ${doneUpToLevel}/${totalUpToLevel} mastered`;
 		}
+
 
 
 		//Scroll to focus the text field helper
@@ -1443,11 +1554,20 @@
         
         /* Render current verb card */
         function currentVerb(){
-          const pool = verbsState.data.slice(0, Math.min(verbsState.unlocked, verbsState.data.length));
-          if (pool.length===0) return null;
-          const i = Math.max(0, Math.min(verbsState.index % pool.length, pool.length-1));
-          return pool[i];
-        }
+		  let pool;
+		  if (isKapitelMixMode()){
+			const data = verbsState.data.slice();
+			const streaks = verbsState.streaks||{};
+			const unmastered = data.filter(v => (streaks[v.id]||0) < 3);
+			pool = unmastered.length ? unmastered : data; // if all done, let MIX show splash
+		  } else {
+			pool = verbsState.data.slice(0, Math.min(verbsState.unlocked, verbsState.data.length));
+		  }
+		  if (!pool.length) return null;
+		  const i = Math.max(0, Math.min(verbsState.index % pool.length, pool.length-1));
+		  return pool[i];
+		}
+
         
         function clearFieldStyles(){
           [elInf, pIch, pDu, pEr, pIhr, elPart].forEach(el=>el?.classList.remove('result-ok','result-bad'));
@@ -1761,8 +1881,11 @@
 		  verbsState.streaks[id] = allOK ? Math.min(3, cur + 1) : 0;
 
 		  // Unlock next levels if needed
-		  maybeUnlockNextVerbsLevel();
-		  saveVerbsState();
+		  if (!isKapitelMixMode()){
+			  maybeUnlockNextVerbsLevel();
+			}
+			saveVerbsState();
+
 
 		  // Feedback
 		  elFeedback.textContent = allOK
@@ -1797,20 +1920,26 @@
         /* Navigation */
         function nextVerb(){
           // Prefer items that are < 3 streak within unlocked set
-          const pool = verbsState.data.slice(0, Math.min(verbsState.unlocked, verbsState.data.length));
-          if (pool.length===0) return;
-        
-          let nextIdx = (verbsState.index + 1) % pool.length;
-        
-          // Try to find a verb with streak < 3
-          const start = nextIdx;
-          do {
-            const id = pool[nextIdx].id;
-            if ((verbsState.streaks[id]||0) < 3) break;
-            nextIdx = (nextIdx + 1) % pool.length;
-          } while(nextIdx !== start);
-        
-          verbsState.index = nextIdx;
+          let pool;
+			if (isKapitelMixMode()){
+			  const data = verbsState.data.slice();
+			  const streaks = verbsState.streaks||{};
+			  const unmastered = data.filter(v => (streaks[v.id]||0) < 3);
+			  pool = unmastered.length ? unmastered : data;
+			} else {
+			  pool = verbsState.data.slice(0, Math.min(verbsState.unlocked, verbsState.data.length));
+			}
+			if (!pool.length) return;
+
+			let nextIdx = (verbsState.index + 1) % pool.length;
+			const start = nextIdx;
+			do{
+			  const id = pool[nextIdx].id;
+			  if ((verbsState.streaks[id]||0) < 3) break;
+			  nextIdx = (nextIdx + 1) % pool.length;
+			}while(nextIdx !== start);
+
+			verbsState.index = nextIdx;
           saveVerbsState();
           chosenAux = null;
           renderVerbsCard();
@@ -1933,8 +2062,10 @@
         
         /* Current item helpers */
         function aa_pool(){
-          return adjadvState.data.slice(0, Math.min(adjadvState.unlocked, adjadvState.data.length));
-        }
+		  if (isKapitelMixMode()) return adjadvState.data.slice();
+		  return adjadvState.data.slice(0, Math.min(adjadvState.unlocked, adjadvState.data.length));
+		}
+
         function aa_current(){
           const p = aa_pool(); if(!p.length) return null;
           const i = Math.max(0, Math.min(adjadvState.index % p.length, p.length-1));
@@ -2037,14 +2168,23 @@
 		  let W = defaultW;
 		  try { if (ls) W = { ...defaultW, ...JSON.parse(ls) }; } catch {}
 
+		  // If we’re in Kapitel+Mix, only include sections that still have unmastered items
+		  const candidates = (isKapitelMixMode() ? MIX_SECTIONS.filter(sectionHasUnmastered) : MIX_SECTIONS.slice());
+
+		  if (!candidates.length){
+			if (isKapitelMixMode() && allKapitelMastered()) showKapitelDoneSplash();
+			// fall back (won’t be used much; we’ll just re-render whatever)
+			return 'vocab';
+		  }
+
 		  const pool = [];
-		  MIX_SECTIONS.forEach(s => {
+		  candidates.forEach(s => {
 			const w = Math.max(0, Number(W[s] ?? 1));
 			for (let i=0;i<w;i++) pool.push(s);
 		  });
-		  if (!pool.length) pool.push('vocab');
 		  return pool[Math.floor(Math.random()*pool.length)];
 		}
+
 		function pickRandomSection(){  // keep old name for existing calls
 		  return pickWeightedRandomSection();
 		}
@@ -2120,8 +2260,16 @@
         
           // For "mix": pick one section randomly and render only that
           if (mode==='mix'){
-            const section = pickRandomSection();
-            renderForSection(section);
+		  // Hide any level badges when studying Kapitel
+		  if (isKapitelMixMode()){
+			const lvl = document.getElementById('level'); if (lvl) lvl.style.display='none';
+			const vi  = document.getElementById('verbs-level-indicator'); if (vi) vi.style.display='none';
+		  }
+
+		  if (allKapitelMastered()){ showKapitelDoneSplash(); return; }
+
+		  const section = pickRandomSection();
+		  renderForSection(section);
         
             // Also tweak each card's Next to jump to a new random section after it advances:
             // (Vocab) — hook its Next button (id="nextBtn")
@@ -2405,7 +2553,10 @@
 		}
 
 		/* Pool + current row */
-		function pp_pool(){ return prepsState.data.slice(0, Math.min(prepsState.unlocked, prepsState.data.length)); }
+		function pp_pool(){
+		  if (isKapitelMixMode()) return prepsState.data.slice();
+		  return prepsState.data.slice(0, Math.min(prepsState.unlocked, prepsState.data.length));
+		}
 		function pp_current(){
 		  const p = pp_pool(); if(!p.length) return null;
 		  const i = Math.max(0, Math.min(prepsState.index % p.length, p.length-1));
