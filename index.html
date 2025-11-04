@@ -966,6 +966,8 @@
 			  const examples=[ex1,ex2,ex3].filter(x=>x&&x.trim()!=='');
 			  return { english, article, german, plural, examples, correctStreak:0, answeredCorrect:false };
 			});
+			window.words = words; // expose vocab to MIX
+
 			loadProgress();
 			updateLevelDisplay();
 			await nextWord();          // show first word
@@ -1312,7 +1314,8 @@
           unlocked: 25,  // how many available = level * 25
           streaks: {}    // id -> 0..3
         };
-        
+        window.verbsState = verbsState; // expose verbs to MIX
+
         /* DOM refs */
         const elModeSwitch = document.getElementById('mode-switch');
         const elVerbsCard  = document.getElementById('verbs-card');
@@ -1999,7 +2002,8 @@
           unlocked: 25,
           streaks: {}   // id -> 0..3
         };
-        
+        window.adjadvState = adjadvState; // expose adj/adv to MIX
+
         /* DOM refs */
         const elAdjAdvCard   = document.getElementById('adjadv-card');
         const elAdjAdvEn     = document.getElementById('adjadv-english');
@@ -2540,6 +2544,7 @@
 		  unlocked: 25,
 		  streaks: {}     // id -> 0..3
 		};
+		window.prepsState = prepsState; // expose prepositions to MIX
 
 		const elPrepsCard     = document.getElementById('preps-card');
 		const elPrepsSentence = document.getElementById('preps-sentence');
