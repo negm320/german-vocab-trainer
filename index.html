@@ -564,6 +564,12 @@
 		  if(typeof pp_loadData === 'function')       await pp_loadData();
 		  // Refresh mode rendering if the app provides it
 		  if(typeof renderMode === 'function')        renderMode();
+		  console.log('[Mix pools]',
+		  { vocab:(window.words||[]).length,
+			verbs:(window.verbsState?.data||[]).length,
+			adjadv:(window.adjadvState?.data||[]).length,
+			preps:(window.prepsState?.data||[]).length });
+
 		  // Optional: if you want to jump to Mix automatically, uncomment:
 		  // if(typeof setMode === 'function') setMode('mix');
 		}catch(e){ console.error(e); }
@@ -2204,12 +2210,21 @@
 		  // Rotate by round-robin index
 		  window.__mix_rr_i = ((window.__mix_rr_i||0) + 1) % cand.length;
 		  const pick = cand[window.__mix_rr_i];
-		  window.__mix_last_section = pick;
-		  return pick;
+		    window.__mix_last_section = pick;
+			  console.log('[Mix pick]', pick, {cand, last, rr:window.__mix_rr_i, pools:{
+				vocab:(window.words||[]).length,
+				verbs:(window.verbsState?.data||[]).length,
+				adjadv:(window.adjadvState?.data||[]).length,
+				preps:(window.prepsState?.data||[]).length
+			  }}, 't='+(Date.now()-__before)+'ms');
+			  return pick;
+
 		}
 
 		// === Balanced MIX picker (round-robin, no repeats, Kapitel=only unmastered, skips empty) ===
 		function pickWeightedRandomSection(){
+			const __before = Date.now();
+
 		  const sections = (typeof MIX_SECTIONS!=='undefined' && Array.isArray(MIX_SECTIONS))
 			? MIX_SECTIONS.slice() : ['vocab','verbs','adjadv','preps'];
 
@@ -2265,11 +2280,6 @@
 			if (alt.length) cand = alt;
 		  }
 
-		  // round-robin index
-		  window.__mix_rr_i = ((window.__mix_rr_i||0) + 1) % cand.length;
-		  const pick = cand[window.__mix_rr_i];
-		  window.__mix_last_section = pick;
-		  return pick;
 		}
 
 
