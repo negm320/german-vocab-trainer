@@ -212,9 +212,23 @@
 	  body.dark .case-btn.selected { background: #162036; border-color: #3b6ad9; }
 	</style>
 
+	<style>#wordImage{display:none!important}</style>
+
 
 </head>
 <body>
+
+	<script>
+	// Early global stub (safe). If you define it later, that one will override.
+	window.isKapitelMixMode = window.isKapitelMixMode || function(){
+	  try{
+		return (window.currentDataset?.key === 'kapitel') &&
+			   ((typeof getMode==='function' ? getMode() : window.mode) === 'mix');
+	  }catch(_){ return false; }
+	};
+	</script>
+
+
     <div id="mode-switch">
     <button class="mode-btn" data-mode="vocab">Vocab</button>
     <button class="mode-btn" data-mode="verbs">Verbs</button>
@@ -1029,24 +1043,15 @@
 		}
 
 		// Faster image: no artificial wait
-		async function loadImageForCurrent(waitMs = 0){
-		  const img=document.getElementById('wordImage');
-		  if(!img) return;
-
-		  img.style.display='none';
-		  img.removeAttribute('src');
-		  if(!currentWord || !currentWord.german) return;
-
-		  let src = (preloadedNext && preloadedNext.word === currentWord) ? preloadedNext.src : null;
-		  if(!src){ src = await resolveImageSrcForGerman(currentWord.german); }
-		  if(!src){ return; }
-
-		  if(waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
-
-		  img.onload = ()=>{ img.style.display='block'; };
-		  img.onerror = ()=>{ img.style.display='none'; };
-		  img.src = src;
+		function loadImageForCurrent(waitMs = 0){
+		  const img = document.getElementById('wordImage');
+		  if (img){
+			img.style.display='none';
+			img.removeAttribute('src');
+		  }
+		  return; // images disabled
 		}
+
 
 		function pickNextCandidateWord(){
 		  const active = getActiveWords();
@@ -1070,10 +1075,9 @@
 
 		}
 		async function schedulePreloadNext(){
-		  const candidate = pickNextCandidateWord();
-		  if(!candidate){ preloadedNext = null; return; }
-		  preloadedNext = await preloadWordImage(candidate);
+		  window.preloadedNext = null; // images disabled
 		}
+
 
 		async function nextWord(){
 		  const activeWords=getActiveWords(); if(activeWords.length===0) return;
@@ -2162,28 +2166,111 @@
 		/* MIX can include all trainers. Default = equal weights; tweakable via localStorage 'mix_weights' = {"vocab":1,"verbs":1,"adjadv":1,"preps":1} */
 		const MIX_SECTIONS = ['vocab','verbs','adjadv','preps'];
 
-		function pickWeightedRandomSection(){
-		  const ls = localStorage.getItem('mix_weights');
-		  const defaultW = { vocab:2, verbs:2, adjadv:1, preps:1 };
-		  let W = defaultW;
-		  try { if (ls) W = { ...defaultW, ...JSON.parse(ls) }; } catch {}
+		// Balanced picker that rotates across eligible sections
+		function pickNextSectionBalanced(){
+		  // Helpers
+		  function sectionHasData(s){
+			if (s==='vocab')  return Array.isArray(window.words) && window.words.length>0;
+			if (s==='verbs')  return Array.isArray(window.verbsState?.data) && window.verbsState.data.length>0;
+			if (s==='adjadv') return Array.isArray(window.adjadvState?.data) && window.adjadvState.data.length>0;
+			if (s==='preps')  return Array.isArray(window.prepsState?.data) && window.prepsState.data.length>0;
+			return false;
+		  }
 
-		  // If we’re in Kapitel+Mix, only include sections that still have unmastered items
-		  const candidates = (isKapitelMixMode() ? MIX_SECTIONS.filter(sectionHasUnmastered) : MIX_SECTIONS.slice());
+		  // Build candidate list
+		  let cand = MIX_SECTIONS.filter(sectionHasData);
 
-		  if (!candidates.length){
-			if (isKapitelMixMode() && allKapitelMastered()) showKapitelDoneSplash();
-			// fall back (won’t be used much; we’ll just re-render whatever)
+		  // In Kapitel+Mix → only unmastered sections
+		  if (typeof isKapitelMixMode === 'function' && isKapitelMixMode()) {
+			cand = cand.filter(s => (typeof sectionHasUnmastered==='function') ? sectionHasUnmastered(s) : true);
+		  }
+
+		  // If nothing left, show splash (Kapitel) or fall back to vocab
+		  if (!cand.length){
+			if (typeof allKapitelMastered==='function' && isKapitelMixMode() && allKapitelMastered()){
+			  if (typeof showKapitelDoneSplash==='function') showKapitelDoneSplash();
+			}
 			return 'vocab';
 		  }
 
-		  const pool = [];
-		  candidates.forEach(s => {
-			const w = Math.max(0, Number(W[s] ?? 1));
-			for (let i=0;i<w;i++) pool.push(s);
-		  });
-		  return pool[Math.floor(Math.random()*pool.length)];
+		  // Avoid repeating the same section when another exists
+		  const last = window.__mix_last_section || null;
+		  if (cand.length>1 && last){
+			const alt = cand.filter(s => s !== last);
+			if (alt.length) cand = alt;
+		  }
+
+		  // Rotate by round-robin index
+		  window.__mix_rr_i = ((window.__mix_rr_i||0) + 1) % cand.length;
+		  const pick = cand[window.__mix_rr_i];
+		  window.__mix_last_section = pick;
+		  return pick;
 		}
+
+		// === Balanced MIX picker (round-robin, no repeats, Kapitel=only unmastered, skips empty) ===
+		function pickWeightedRandomSection(){
+		  const sections = (typeof MIX_SECTIONS!=='undefined' && Array.isArray(MIX_SECTIONS))
+			? MIX_SECTIONS.slice() : ['vocab','verbs','adjadv','preps'];
+
+		  // has any data?
+		  function hasData(s){
+			if (s==='vocab')  return Array.isArray(window.words) && window.words.length>0;
+			if (s==='verbs')  return Array.isArray(window.verbsState?.data) && window.verbsState.data.length>0;
+			if (s==='adjadv') return Array.isArray(window.adjadvState?.data) && window.adjadvState.data.length>0;
+			if (s==='preps')  return Array.isArray(window.prepsState?.data) && window.prepsState.data.length>0;
+			return false;
+		  }
+
+		  // unmastered check (self-contained; no external helpers needed)
+		  function hasUnmastered(s){
+			const thr = window.masteryThreshold || 3;
+
+			if (s==='vocab'){
+			  const arr = window.words || [];
+			  return arr.some(w => (w.correctStreak||0) < thr);
+			}
+			if (s==='verbs'){
+			  const data = window.verbsState?.data || [];
+			  const streaks = window.verbsState?.streaks || {};
+			  return data.some(v => (streaks[v.id]||0) < 3);
+			}
+			if (s==='adjadv'){
+			  const data = window.adjadvState?.data || [];
+			  const streaks = window.adjadvState?.streaks || {};
+			  return data.some(x => (streaks[x.id]||0) < 3);
+			}
+			if (s==='preps'){
+			  const data = window.prepsState?.data || [];
+			  const streaks = window.prepsState?.streaks || {};
+			  return data.some(x => (streaks[x.id]||0) < 3);
+			}
+			return false;
+		  }
+
+		  // start from sections that actually have data
+		  let cand = sections.filter(hasData);
+
+		  // if Kapitel+Mix, only keep sections with unmastered items
+		  const inKapitelMix = (window.currentDataset?.key === 'kapitel') && ((typeof getMode==='function' ? getMode() : window.mode) === 'mix');
+		  if (inKapitelMix) cand = cand.filter(hasUnmastered);
+
+		  // nothing left → just fall back to vocab (your renderMode handles “done” UX)
+		  if (!cand.length) return 'vocab';
+
+		  // avoid repeating last section if alternatives exist
+		  const last = window.__mix_last_section || null;
+		  if (cand.length>1 && last){
+			const alt = cand.filter(s => s !== last);
+			if (alt.length) cand = alt;
+		  }
+
+		  // round-robin index
+		  window.__mix_rr_i = ((window.__mix_rr_i||0) + 1) % cand.length;
+		  const pick = cand[window.__mix_rr_i];
+		  window.__mix_last_section = pick;
+		  return pick;
+		}
+
 
 		function pickRandomSection(){  // keep old name for existing calls
 		  return pickWeightedRandomSection();
