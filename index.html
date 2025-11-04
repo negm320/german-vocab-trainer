@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+	<!-- Firebase (compat builds for simplicity) -->
+	<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>German Trainer</title>
@@ -420,6 +426,38 @@
 		Load Kapitel…
 	  </button>
 	</div>
+	
+	<!-- ===== Sync status / controls ===== -->
+	<div id="sync-bar" style="max-width:500px;margin:-2px auto 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+	  <div style="font-size:13px;color:#9aa6b2">
+		<span id="syncStatus">Sync: Off</span>
+	  </div>
+	  <div style="display:flex;gap:8px;">
+		<button id="btnSyncNow" style="padding:6px 10px;border-radius:8px;border:1px solid #2a3240;background:#243042;color:#eaeaea;cursor:pointer;">Sync now</button>
+		<button id="btnSyncSettings" style="padding:6px 10px;border-radius:8px;border:1px solid #2a3240;background:#243042;color:#eaeaea;cursor:pointer;">Sync settings</button>
+	  </div>
+	</div>
+
+	<!-- ===== Sync modal (splash) ===== -->
+	<div id="syncModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999;">
+	  <div style="background:#0f1620;border:1px solid #2a3240;border-radius:12px;max-width:520px;width:92%;padding:16px 16px 14px;color:#eaeaea;">
+		<h3 style="margin:0 0 8px 0;font-size:18px;">Cloud Sync (optional)</h3>
+		<p style="margin:0 0 12px;color:#9aa6b2;font-size:14px;">
+		  Use a simple username to sync progress across browsers/devices. No email or password.
+		</p>
+		<label style="font-size:14px;color:#cbd5e1;">Username</label>
+		<input id="syncUsernameInput" type="text" placeholder="e.g., negm" style="width:100%;margin-top:6px;margin-bottom:10px;padding:10px;border-radius:8px;border:1px solid #2a3240;background:#0b1220;color:#eaeaea;">
+		<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+		  <button id="syncCancel" style="padding:8px 12px;border-radius:8px;border:1px solid #2a3240;background:#202a38;color:#eaeaea;cursor:pointer;">Skip</button>
+		  <button id="syncSave" style="padding:8px 12px;border-radius:8px;border:1px solid #2a3240;background:#3a5c78;color:#eaeaea;cursor:pointer;">Enable sync</button>
+		</div>
+		<div id="syncNote" style="margin-top:10px;color:#9aa6b2;font-size:12px;">
+		  Tip: If a cloud save exists for this username, you can choose to load it on first sync.
+		</div>
+	  </div>
+	</div>
+
+	
 	<div id="dataset-context" style="max-width:500px;margin:-2px auto 12px;color:#9aa6b2;font-size:13px;"></div>
 
 	<!-- hidden file input for zip -->
@@ -598,6 +636,171 @@
 		  }
 		});
 	  });
+			  
+				// ===== Firebase config — REPLACE with your real config from Firebase console =====
+		  // FIND THIS BLOCK LATER IF YOU NEED TO UPDATE CONFIG: "FIREBASE_CONFIG_START" → "FIREBASE_CONFIG_END"
+		  // FIREBASE_CONFIG_START
+		  const firebaseConfig = {
+			apiKey: "AIzaSyAvMyNtFyWM3Ajg2sxpWp4uMErfyawEOMc",
+			authDomain: "german-52657.firebaseapp.com",
+			databaseURL: "https://german-52657-default-rtdb.europe-west1.firebasedatabase.app",
+			projectId: "german-52657",
+			storageBucket: "german-52657.firebasestorage.app",
+			messagingSenderId: "364706857329",
+			appId: "1:364706857329:web:97779c21361db2423336d0"
+		  };
+		  // FIREBASE_CONFIG_END
+
+		  // Initialize Firebase (safe-guard: only once)
+		  if (!window._fbApp) {
+			try { window._fbApp = firebase.initializeApp(firebaseConfig); } catch(e) { /* ignore if already */ }
+		  }
+		  const db = firebase.database();
+
+		  // ===== What we sync (same keys we used for export/import)
+		  const SYNC_KEYS = [
+			'vocabProgress::default',
+			'vocabProgress::kapitel',
+
+			// Verbs/AdjAdv/Preps progress keys — add more if you already use these:
+			'verbs_level','verbs_unlocked_count','verbs_streaks','verbs_index',
+			'adjadv_level','adjadv_unlocked_count','adjadv_streaks','adjadv_index',
+			'preps_level','preps_unlocked_count','preps_streaks','preps_index',
+
+			// The currently loaded Kapitel package so other browsers load it too
+			'kapitel_current_v1'
+		  ];
+
+		  function cloudPath(username){ return 'users/' + encodeURIComponent(username); }
+
+		  function cloudSnapshot(){
+			const out = {};
+			SYNC_KEYS.forEach(k => { out[k] = localStorage.getItem(k) ?? null; });
+			// small meta
+			out['_meta'] = {
+			  updatedAt: Date.now(),
+			  datasetKey: (window.currentDataset?.key || 'default'),
+			  title: window.currentDataset?.title || 'Default Dataset'
+			};
+			return out;
+		  }
+
+		  async function cloudPull(username){
+			const snap = await db.ref(cloudPath(username)).get();
+			return snap.exists() ? snap.val() : null;
+		  }
+
+		  async function cloudPush(username, data){
+			await db.ref(cloudPath(username)).set(data);
+		  }
+
+		  function applyCloudData(data){
+			if(!data) return;
+			Object.keys(data).forEach(k=>{
+			  if(k === '_meta') return;
+			  const v = data[k];
+			  if(v === null || v === undefined) return;
+			  try { localStorage.setItem(k, v); } catch {}
+			});
+			// Re-apply Kapitel package if present
+			const saved = ds_lsGet('kapitel_current_v1', null);
+			if(saved){
+			  window.currentDataset = { key:'kapitel', title:saved.title, files:saved.files, counts:saved.counts };
+			} else {
+			  window.currentDataset = { key:'default', title:'Default Dataset', files:null, counts:null };
+			}
+		  }
+
+		  // UI helpers
+		  function updateSyncStatus(){
+			const el = document.getElementById('syncStatus');
+			const u  = localStorage.getItem('syncUsername') || null;
+			el.textContent = u ? ('Sync: ' + u) : 'Sync: Off';
+		  }
+
+		  // Autosync
+		  let _syncTimer = null;
+		  let _syncBusy = false;
+		  function scheduleSyncSoon(){
+			if(!localStorage.getItem('syncUsername')) return;
+			if(_syncTimer) clearTimeout(_syncTimer);
+			_syncTimer = setTimeout(runSync, 1500);
+		  }
+		  async function runSync(){
+			if(_syncBusy) return;
+			const u = localStorage.getItem('syncUsername');
+			if(!u) return;
+			_syncBusy = true;
+			try {
+			  await cloudPush(u, cloudSnapshot());
+			  // (optional) could update a small "last synced" timestamp UI here
+			} catch(e) {
+			  console.warn('Cloud sync failed:', e?.message || e);
+			} finally {
+			  _syncBusy = false;
+			}
+		  }
+		  // Periodic sync as a backup
+		  setInterval(()=>{ if(localStorage.getItem('syncUsername')) runSync(); }, 15000);
+
+		  // Wire UI
+		  document.addEventListener('DOMContentLoaded', ()=>{
+			// First visit splash
+			const hasSeen = localStorage.getItem('syncSplashSeen');
+			if(!hasSeen){
+			  document.getElementById('syncModal').style.display = 'flex';
+			}
+			document.getElementById('btnSyncSettings').addEventListener('click', ()=>{
+			  const input = document.getElementById('syncUsernameInput');
+			  input.value = localStorage.getItem('syncUsername') || '';
+			  document.getElementById('syncModal').style.display = 'flex';
+			});
+			document.getElementById('syncCancel').addEventListener('click', ()=>{
+			  localStorage.setItem('syncSplashSeen','1');
+			  document.getElementById('syncModal').style.display = 'none';
+			});
+			document.getElementById('syncSave').addEventListener('click', async ()=>{
+			  const u = (document.getElementById('syncUsernameInput').value || '').trim();
+			  if(!u){ alert('Please enter a username, e.g., negm'); return; }
+			  localStorage.setItem('syncSplashSeen','1');
+
+			  // If cloud has data, ask to use it
+			  try{
+				const remote = await cloudPull(u);
+				if(remote){
+				  if(confirm('Cloud data found for "'+u+'". Load it and overwrite local?')){
+					applyCloudData(remote);
+					if(typeof updateDatasetUI === 'function') updateDatasetUI();
+					await applyDatasetAndReload?.();
+				  }
+				}
+			  }catch(e){ console.warn('pull failed', e); }
+
+			  localStorage.setItem('syncUsername', u);
+			  updateSyncStatus();
+			  document.getElementById('syncModal').style.display = 'none';
+			  scheduleSyncSoon(); // push current local state
+			});
+
+			document.getElementById('btnSyncNow').addEventListener('click', runSync);
+
+			updateSyncStatus();
+
+			// Also sync on leave
+			window.addEventListener('beforeunload', ()=>{ try{ navigator.sendBeacon; }catch{}; });
+		  });
+
+		  // Every time we load data or change dataset, mark dirty → push soon
+		  const _origApplyDatasetAndReload = applyDatasetAndReload;
+		  applyDatasetAndReload = async function(){
+			if(typeof _origApplyDatasetAndReload === 'function'){
+			  await _origApplyDatasetAndReload();
+			}
+			scheduleSyncSoon();
+		  }
+
+	  
+	  
 	</script>
 
 
@@ -876,8 +1079,10 @@
 			words, level,
 			showEnglish: document.getElementById('toggleEnglish')?.checked
 		  }));
-		}catch{}
-
+		}finally{
+		  // Mark for cloud sync if enabled
+		  if (typeof scheduleSyncSoon === 'function') scheduleSyncSoon();
+		}
     }
 
     function loadProgress(){
@@ -895,11 +1100,16 @@
     }
 
     function resetProgress(){
-      if(confirm('Are you sure you want to reset progress?')){
-        try{ localStorage.removeItem('vocabProgress'); }catch{}
-        words.forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; }); level=1; updateLevelDisplay(); nextWord();
-      }
-    }
+	  if(confirm('Are you sure you want to reset progress?')){
+		try{
+		  const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
+		  localStorage.removeItem(`vocabProgress::${dsKey}`);
+		}catch{}
+		words.forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; });
+		level=1; updateLevelDisplay(); nextWord();
+	  }
+	}
+
 
     // Input focus + Enter behavior
     document.getElementById('german')?.addEventListener('focus', ()=>{ lastFocusId='german'; });
