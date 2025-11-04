@@ -1131,6 +1131,13 @@
 			  try{ germanEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch{}
 			},0);
 		  }
+		    // MIX: rotate to another section after moving to next
+		  if ((typeof getMode==='function' ? getMode() : window.mode) === 'mix') {
+			const section = pickRandomSection();
+			renderForSection(section);
+			return;
+		  }
+
 		}
 
 		function resetArticleButtons(){
@@ -1957,6 +1964,13 @@
           saveVerbsState();
           chosenAux = null;
           renderVerbsCard();
+		    // MIX: rotate to another section after moving to next
+		  if ((typeof getMode==='function' ? getMode() : window.mode) === 'mix') {
+			const section = pickRandomSection();
+			renderForSection(section);
+			return;
+		  }
+
         }
         
         /* Wire buttons */
@@ -2139,6 +2153,13 @@
           adjadvState.index = next;
           aa_saveState();
           aa_render();
+		  
+		    // MIX: rotate to another section after moving to next
+			  if ((typeof getMode==='function' ? getMode() : window.mode) === 'mix') {
+				const section = pickRandomSection();
+				renderForSection(section);
+				return;
+			  }
         }
         
         /* Wire buttons */
@@ -2771,6 +2792,13 @@
 		  prepsState.index = next;
 		  pp_saveState();
 		  pp_render();
+		    // MIX: rotate to another section after moving to next
+		  if ((typeof getMode==='function' ? getMode() : window.mode) === 'mix') {
+			const section = pickRandomSection();
+			renderForSection(section);
+			return;
+		  }
+
 		}
 
 		/* Wire buttons */
