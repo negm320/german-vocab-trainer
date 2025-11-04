@@ -844,69 +844,70 @@
 
 		function status(msg){ if(statusEl) statusEl.textContent = msg || ''; }
 
-		// ===== Mix(Kapitel) helpers =====
-		function isKapitelMixMode(){
-		  return (window.currentDataset?.key === 'kapitel') && (typeof getMode==='function') && (getMode()==='mix');
-		}
-		function sectionHasUnmastered(sectionName){
-		  // vocab
-		  if (sectionName === 'vocab'){
-			const arr = words || [];
-			return arr.some(w => (w.correctStreak||0) < masteryThreshold);
-		  }
-		  // verbs
-		  if (sectionName === 'verbs'){
-			const data = (window.verbsState?.data)||[];
-			const streaks = (window.verbsState?.streaks)||{};
-			return data.some(v => (streaks[v.id]||0) < 3);
-		  }
-		  // adjadv
-		  if (sectionName === 'adjadv'){
-			const data = (window.adjadvState?.data)||[];
-			const streaks = (window.adjadvState?.streaks)||{};
-			return data.some(x => (streaks[x.id]||0) < 3);
-		  }
-		  // preps
-		  if (sectionName === 'preps'){
-			const data = (window.prepsState?.data)||[];
-			const streaks = (window.prepsState?.streaks)||{};
-			return data.some(x => (streaks[x.id]||0) < 3);
-		  }
-		  return false;
-		}
-		function allKapitelMastered(){
-		  if (window.currentDataset?.key !== 'kapitel') return false;
-		  return !['vocab','verbs','adjadv','preps'].some(sectionHasUnmastered);
-		}
-		function showKapitelDoneSplash(){
-		  const m = document.getElementById('kapitelDoneModal');
-		  if (m) m.style.display = 'flex';
-		}
-		function hideKapitelDoneSplash(){
-		  const m = document.getElementById('kapitelDoneModal');
-		  if (m) m.style.display = 'none';
-		}
-		function resetKapitelProgress(){
-		  // Vocab (kapitel-scoped)
-		  try{ localStorage.removeItem('vocabProgress::kapitel'); }catch{}
-		  // Verbs/AdjAdv/Preps (these keys are global in current code – clear them)
-		  try{
-			['verbs_level','verbs_unlocked_count','verbs_streaks','verbs_index',
-			 'adjadv_level','adjadv_unlocked_count','adjadv_streaks','adjadv_index',
-			 'preps_level','preps_unlocked_count','preps_streaks','preps_index']
-			 .forEach(k => localStorage.removeItem(k));
-		  }catch{}
-		  // In-memory reset (soft)
-		  try{
-			(words||[]).forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; });
-			if (window.verbsState){ verbsState.streaks = {}; verbsState.index=0; }
-			if (window.adjadvState){ adjadvState.streaks = {}; adjadvState.index=0; }
-			if (window.prepsState){ prepsState.streaks = {}; prepsState.index=0; }
-		  }catch{}
-		  hideKapitelDoneSplash();
-		  // Re-render the current mix section
-		  if (typeof renderMode==='function') renderMode();
-		}
+        // ===== Mix(Kapitel) helpers =====
+        function isKapitelMixMode(){
+          return (window.currentDataset?.key === 'kapitel') && (typeof getMode==='function') && (getMode()==='mix');
+        }
+        function sectionHasUnmastered(sectionName){
+          // vocab
+          if (sectionName === 'vocab'){
+            const arr = words || [];
+            return arr.some(w => (w.correctStreak||0) < masteryThreshold);
+          }
+          // verbs
+          if (sectionName === 'verbs'){
+            const data = (window.verbsState?.data)||[];
+            const streaks = (window.verbsState?.streaks)||{};
+            return data.some(v => (streaks[v.id]||0) < 3);
+          }
+          // adjadv
+          if (sectionName === 'adjadv'){
+            const data = (window.adjadvState?.data)||[];
+            const streaks = (window.adjadvState?.streaks)||{};
+            return data.some(x => (streaks[x.id]||0) < 3);
+          }
+          // preps
+          if (sectionName === 'preps'){
+            const data = (window.prepsState?.data)||[];
+            const streaks = (window.prepsState?.streaks)||{};
+            return data.some(x => (streaks[x.id]||0) < 3);
+          }
+          return false;
+        }
+        function allKapitelMastered(){
+          if (window.currentDataset?.key !== 'kapitel') return false;
+          return !['vocab','verbs','adjadv','preps'].some(sectionHasUnmastered);
+        }
+        function showKapitelDoneSplash(){
+          const m = document.getElementById('kapitelDoneModal');
+          if (m) m.style.display = 'flex';
+        }
+        function hideKapitelDoneSplash(){
+          const m = document.getElementById('kapitelDoneModal');
+          if (m) m.style.display = 'none';
+        }
+        function resetKapitelProgress(){
+          // Vocab (kapitel-scoped)
+          try{ localStorage.removeItem('vocabProgress::kapitel'); }catch{}
+          // Verbs/AdjAdv/Preps (these keys are global in current code – clear them)
+          try{
+            ['verbs_level','verbs_unlocked_count','verbs_streaks','verbs_index',
+             'adjadv_level','adjadv_unlocked_count','adjadv_streaks','adjadv_index',
+             'preps_level','preps_unlocked_count','preps_streaks','preps_index']
+             .forEach(k => localStorage.removeItem(k));
+          }catch{}
+          // In-memory reset (soft)
+          try{
+            (words||[]).forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; });
+            if (window.verbsState){ verbsState.streaks = {}; verbsState.index=0; }
+            if (window.adjadvState){ adjadvState.streaks = {}; adjadvState.index=0; }
+            if (window.prepsState){ prepsState.streaks = {}; prepsState.index=0; }
+          }catch{}
+          hideKapitelDoneSplash();
+          // Re-render the current mix section
+          if (typeof renderMode==='function') renderMode();
+        }
+
 		document.addEventListener('DOMContentLoaded', ()=>{
 		  document.getElementById('kapitelDoneClose')?.addEventListener('click', hideKapitelDoneSplash);
 		  document.getElementById('kapitelDoneReset')?.addEventListener('click', resetKapitelProgress);
