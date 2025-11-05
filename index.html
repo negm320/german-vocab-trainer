@@ -1520,19 +1520,97 @@
            - If not found, uses a small mock so you can test UI immediately.
         */
         async function loadVerbsData(){
-          let rows = null;
-          try {
-			const csv = await datasetRead('verbs.csv');
-			rows = parseCSV(csv);
-          } catch(_) {}
-          if (!rows || rows.length===0) {
+          let raw = '';
+          try { raw = await datasetRead('verbs.csv'); } catch(_) {}
+          raw = (raw || '').trim();
+        
+          let rows = [];
+          if (raw) {
+            const lines = raw.split(/\r?\n/);
+            const head = (lines[0] || '').toLowerCase();
+        
+            // Heuristics: if header line contains typical keys, parse as objects; else parse as fixed columns.
+            const looksHeader = /(english|lemma|aux|ich|partizip|past|praeteritum)/.test(head);
+        
+            if (looksHeader) {
+              // --- Parse with headers -> objects ---
+              const headers = lines.shift().split(',').map(h => h.trim());
+              rows = lines.filter(Boolean).map(line => {
+                const cells = []; let cur='', inQ=false;
+                for (let i=0;i<line.length;i++){
+                  const ch=line[i];
+                  if (ch === '"'){ inQ = !inQ; continue; }
+                  if (ch === ',' && !inQ){ cells.push(cur); cur=''; continue; }
+                  cur += ch;
+                }
+                cells.push(cur);
+                const obj = {};
+                headers.forEach((h,i)=> obj[h] = (cells[i]||'').trim());
+                return obj;
+              });
+            } else {
+              // --- Parse as plain columns (no header) ---
+              // Expected order:
+              // 0:english, 1:lemma, 2:aux, 3:ich, 4:du, 5:er, 6:wir, 7:ihr, 8:sie, 9:partizip, 10:past, 11:preps, 12:case, 13:reflexive
+              rows = lines.filter(Boolean).map((line, i) => {
+                const cells = []; let cur='', inQ=false;
+                for (let j=0;j<line.length;j++){
+                  const ch=line[j];
+                  if (ch === '"'){ inQ = !inQ; continue; }
+                  if (ch === ',' && !inQ){ cells.push(cur); cur=''; continue; }
+                  cur += ch;
+                }
+                cells.push(cur);
+                return {
+                  english:   (cells[0]||'').trim(),
+                  lemma:     (cells[1]||'').trim(),
+                  aux:       (cells[2]||'').trim(),
+                  ich:       (cells[3]||'').trim(),
+                  du:        (cells[4]||'').trim(),
+                  er:        (cells[5]||'').trim(),
+                  wir:       (cells[6]||'').trim(),
+                  ihr:       (cells[7]||'').trim(),
+                  sie:       (cells[8]||'').trim(),
+                  partizip:  (cells[9]||'').trim(),
+                  past:      (cells[10]||'').trim(),
+                  preps:     (cells[11]||'').trim(),
+                  case:      (cells[12]||'').trim(),
+                  reflexive: (cells[13]||'').trim()
+                };
+              });
+            }
+          }
+        
+          // Normalize & ensure id
+          const norm = (r, i) => ({
+            id: r.id || `v_${(r.lemma||r.english||'row').replace(/\s+/g,'_')}_${i}`,
+            lemma:     r.lemma || r.infinitive || '',
+            english:   r.english || r.meaning || '',
+            aux:       r.aux || r.auxiliary || '',
+            ich:       r.ich || r.prs_ich || '',
+            du:        r.du  || r.prs_du  || '',
+            er:        r.er  || r.prs_er  || '',
+            wir:       r.wir || r.prs_wir || '',
+            ihr:       r.ihr || r.prs_ihr || '',
+            sie:       r.sie || r.prs_sie || '',
+            partizip:  r.partizip || r.perfekt || r.partizip2 || '',
+            past:      r.past || r.praeteritum || r.präteritum || '',
+            preps:     r.preps || r.prepositions || '',
+            case:      (r.case || r.kasus || '').toLowerCase(),
+            reflexive: (r.reflexive || r.refl || '').toLowerCase()
+          });
+        
+          if (!rows.length) {
             rows = [
-              { id:'v001', lemma:'gehen',  english:'to go',    aux:'sein',  ich:'gehe', du:'gehst', er:'geht', wir:'gehen', ihr:'geht', sie:'gehen', partizip:'gegangen' },
-              { id:'v002', lemma:'machen', english:'to make',  aux:'haben', ich:'mache', du:'machst', er:'macht', wir:'machen', ihr:'macht', sie:'machen', partizip:'gemacht' },
-              { id:'v003', lemma:'kommen', english:'to come',  aux:'sein',  ich:'komme', du:'kommst', er:'kommt', wir:'kommen', ihr:'kommt', sie:'kommen', partizip:'gekommen' },
+              { id:'v001', lemma:'gehen',  english:'to go',    aux:'sein',  ich:'gehe', du:'gehst', er:'geht', wir:'gehen', ihr:'geht', sie:'gehen', partizip:'gegangen', past:'ging' },
+              { id:'v002', lemma:'machen', english:'to make',  aux:'haben', ich:'mache', du:'machst', er:'macht', wir:'machen', ihr:'macht', sie:'machen', partizip:'gemacht', past:'machte' },
+              { id:'v003', lemma:'kommen', english:'to come',  aux:'sein',  ich:'komme', du:'kommst', er:'kommt', wir:'kommen', ihr:'kommt', sie:'kommen', partizip:'gekommen', past:'kam' }
             ];
           }
-          verbsState.data = rows;
+        
+          verbsState.data = rows.map(norm);
+          // Debug so you can see it's loaded
+          console.log('[verbs loaded]', verbsState.data.length, verbsState.data[0]);
         }
         
         /* Tiny CSV parser (no deps) */
@@ -2335,6 +2413,8 @@
       }
       if(adjad) adjad.hidden = true;
       if(preps) preps.hidden = true;
+        // make absolutely sure it’s not visually collapsed
+      if (verbs && verbs.offsetParent === null) verbs.style.removeProperty('display');
 		  } else if (section==='adjadv'){
 			if(vocab) vocab.style.display='none';
 			if(verbs) verbs.hidden=true;
