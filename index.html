@@ -2190,11 +2190,7 @@
 		});
 
         
-        /* ===== Mix integration =====
-           When in MIX, we show one section at a time (vocab/verbs/adjadv).
-           - On entering MIX -> pick random section and render.
-           - On any "Next" click of the visible section -> advance that pool, then randomly switch section.
-        */
+      
 		/* MIX can include all trainers. Default = equal weights; tweakable via localStorage 'mix_weights' = {"vocab":1,"verbs":1,"adjadv":1,"preps":1} */
 		const MIX_SECTIONS = ['vocab','verbs','adjadv','preps'];
 
@@ -2254,12 +2250,9 @@
 
 		// === Balanced MIX picker (round-robin, no repeats, Kapitel=only unmastered, skips empty) ===
 		function pickWeightedRandomSection(){
-			const __before = Date.now();
-
 		  const sections = (typeof MIX_SECTIONS!=='undefined' && Array.isArray(MIX_SECTIONS))
 			? MIX_SECTIONS.slice() : ['vocab','verbs','adjadv','preps'];
 
-		  // has any data?
 		  function hasData(s){
 			if (s==='vocab')  return Array.isArray(window.words) && window.words.length>0;
 			if (s==='verbs')  return Array.isArray(window.verbsState?.data) && window.verbsState.data.length>0;
@@ -2267,11 +2260,8 @@
 			if (s==='preps')  return Array.isArray(window.prepsState?.data) && window.prepsState.data.length>0;
 			return false;
 		  }
-
-		  // unmastered check (self-contained; no external helpers needed)
 		  function hasUnmastered(s){
 			const thr = window.masteryThreshold || 3;
-
 			if (s==='vocab'){
 			  const arr = window.words || [];
 			  return arr.some(w => (w.correctStreak||0) < thr);
@@ -2298,10 +2288,11 @@
 		  let cand = sections.filter(hasData);
 
 		  // if Kapitel+Mix, only keep sections with unmastered items
-		  const inKapitelMix = (window.currentDataset?.key === 'kapitel') && ((typeof getMode==='function' ? getMode() : window.mode) === 'mix');
+		  const inKapitelMix = (window.currentDataset?.key === 'kapitel') &&
+							   ((typeof getMode==='function' ? getMode() : window.mode) === 'mix');
 		  if (inKapitelMix) cand = cand.filter(hasUnmastered);
 
-		  // nothing left → just fall back to vocab (your renderMode handles “done” UX)
+		  // nothing left → fallback to vocab (splash handled elsewhere)
 		  if (!cand.length) return 'vocab';
 
 		  // avoid repeating last section if alternatives exist
@@ -2311,12 +2302,19 @@
 			if (alt.length) cand = alt;
 		  }
 
+		  // round-robin rotation
+		  window.__mix_rr_i = ((window.__mix_rr_i || 0) + 1) % cand.length;
+		  const pick = cand[window.__mix_rr_i];
+		  window.__mix_last_section = pick;
+		  return pick;
 		}
+
 
 
 		function pickRandomSection(){  // keep old name for existing calls
-		  return pickWeightedRandomSection();
+		  return pickNextSectionBalanced();
 		}
+
 
         function showOnly(section){ // hide/show sections
 		  const vocab = document.getElementById('vocab-wrapper');
@@ -2375,8 +2373,9 @@
           const verbs = document.getElementById('verbs-card');
           const adjad = document.getElementById('adjadv-card');
         
-          // Show Adj/Adv only in "adjadv" mode
-          if (adjad) adjad.hidden = !(mode==='adjadv' || mode==='mix');
+          // Show Adj/Adv only in "adjadv" mode (Mix visibility is handled by renderForSection)
+		  if (adjad) adjad.hidden = (mode!=='adjadv');
+
         
           // For "vocab": (keep original) -> vocab visible, others hidden by original code
           // For "verbs": (keep original) -> verbs visible
@@ -2817,26 +2816,7 @@
 		  pp_initState();
 		})();
 
-		/* Hook into renderMode so 'preps' shows this card */
-		const _renderMode_preps = renderMode;  // keep previous behavior
-		renderMode = function(){
-		  _renderMode_preps();
-
-		  const mode = getMode();
-		  const vocab = document.getElementById('vocab-wrapper');
-		  const verbs = document.getElementById('verbs-card');
-		  const adjad = document.getElementById('adjadv-card');
-		  const preps = document.getElementById('preps-card');
-
-		  if (mode === 'preps'){
-			if (vocab) vocab.style.display = 'none';
-			if (verbs) verbs.hidden = true;
-			if (adjad) adjad.hidden = true;
-			if (preps) { preps.hidden = false; pp_render(); }
-		  } else {
-			if (preps) preps.hidden = true;
-		  }
-		};
+	
 	</script>
 
 
