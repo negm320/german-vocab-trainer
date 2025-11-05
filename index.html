@@ -2230,6 +2230,12 @@
 		  if (cand.length>1 && last){
 			const alt = cand.filter(s => s !== last);
 			if (alt.length) cand = alt;
+			  // Round-robin index + remember last pick
+			  window.__mix_rr_i = ((window.__mix_rr_i || 0) + 1) % cand.length;
+			  const pick = cand[window.__mix_rr_i];
+			  window.__mix_last_section = pick;
+			  return pick;
+
 		  }
 
 		  // Rotate by round-robin index
