@@ -1495,7 +1495,7 @@
 			const verbs = document.getElementById('verbs-card');
 
 			// Show Verbs card only in "verbs" mode
-			if (verbs) verbs.hidden = (mode !== 'verbs');
+			if (verbs) verbs.hidden = (mode !== 'verbs' && mode !== 'mix');
 
 			// Show Vocab only in "vocab" (Mix is handled by the Mix renderer)
 			if (vocab) vocab.style.display = (mode === 'vocab') ? '' : 'none';
@@ -2328,10 +2328,13 @@
 			if(adjad) adjad.hidden=true;
 			if(preps) preps.hidden=true;
 		  } else if (section==='verbs'){
-			if(vocab) vocab.style.display='none';
-			if(verbs) verbs.hidden=false;
-			if(adjad) adjad.hidden=true;
-			if(preps) preps.hidden=true;
+      if(vocab) vocab.style.display='none';
+      if(verbs){
+        verbs.hidden = false;
+        if (verbs.style && verbs.style.display === 'none') verbs.style.display = '';
+      }
+      if(adjad) adjad.hidden = true;
+      if(preps) preps.hidden = true;
 		  } else if (section==='adjadv'){
 			if(vocab) vocab.style.display='none';
 			if(verbs) verbs.hidden=true;
