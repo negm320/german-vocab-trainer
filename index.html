@@ -2902,6 +2902,157 @@
 	
 	</script>
 
+	<script>
+	/* =======================
+	   DEBUG + READINESS KIT
+	   ======================= */
+	(function(){
+	  // --- live readiness flags ---
+	  const READY = window.__READY = { vocab:false, verbs:false, adjadv:false, preps:false };
+	  const counts = ()=>({
+		vocab:(window.words||[]).length|0,
+		verbs:(window.verbsState?.data||[]).length|0,
+		adjadv:(window.adjadvState?.data||[]).length|0,
+		preps:(window.prepsState?.data||[]).length|0
+	  });
+
+	  // --- tiny HUD so you can SEE status quickly ---
+	  const hud = document.createElement('div');
+	  hud.id = 'debug-hud';
+	  Object.assign(hud.style, {
+		position:'fixed', right:'8px', bottom:'8px', zIndex:99999,
+		background:'rgba(20,24,32,.9)', color:'#e8eaed', font:'12px/1.4 monospace',
+		border:'1px solid #2a3240', borderRadius:'8px', padding:'8px 10px', minWidth:'220px'
+	  });
+	  hud.innerHTML = `
+		<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">
+		  <strong>Debug</strong>
+		  <div>
+			<button id="dbg-dump" style="font:12px monospace;padding:2px 6px;border:1px solid #2a3240;background:#1a2230;color:#e8eaed;border-radius:4px;cursor:pointer">Dump</button>
+			<button id="dbg-hide" style="font:12px monospace;padding:2px 6px;border:1px solid #2a3240;background:#1a2230;color:#e8eaed;border-radius:4px;cursor:pointer">✕</button>
+		  </div>
+		</div>
+		<div id="dbg-lines" style="margin-top:6px;white-space:pre"></div>
+	  `;
+	  document.body.appendChild(hud);
+	  document.getElementById('dbg-hide').onclick = ()=> hud.remove();
+	  document.getElementById('dbg-dump').onclick = ()=> dump();
+
+	  function refreshHUD(){
+		const c = counts();
+		const mode = (typeof getMode==='function'?getMode():window.mode)||'(none)';
+		const ds   = (window.currentDataset?.key)||'default';
+		const mixK = (typeof window.isKapitelMixMode==='function' && window.isKapitelMixMode()) ? 'kapitel+mix' : '';
+		document.getElementById('dbg-lines').textContent =
+		  `mode: ${mode} ${mixK}\n` +
+		  `dataset: ${ds}\n` +
+		  `ready: vocab=${READY.vocab} verbs=${READY.verbs} adjadv=${READY.adjadv} preps=${READY.preps}\n` +
+		  `pools: vocab=${c.vocab} verbs=${c.verbs} adjadv=${c.adjadv} preps=${c.preps}\n` +
+		  `lastMix: ${window.__mix_last_section||'-'} rr=${window.__mix_rr_i??'-'}`;
+	  }
+
+	  function markReady(which){
+		READY[which] = true;
+		refreshHUD();
+		document.dispatchEvent(new CustomEvent('pools:updated', { detail:{which, ready:true} }));
+	  }
+
+	  // --- wrap your existing loaders to set flags ---
+	  function wrapLoader(name, fnName, flag, after){
+		const w = window;
+		if (typeof w[fnName] !== 'function') return;
+		const orig = w[fnName];
+		w[fnName] = async function(){
+		  const t0 = performance.now();
+		  const out = await orig.apply(this, arguments);
+		  try { after && after(); } catch(_) {}
+		  const c = counts();
+		  if (c[flag] > 0) markReady(flag);
+		  console.log(`[debug] ${name} loaded in ${(performance.now()-t0).toFixed(1)}ms, count=`, c[flag]);
+		  return out;
+		};
+	  }
+
+	  wrapLoader('Vocab','loadCSV','vocab', ()=>{ /* words on window */ });
+	  wrapLoader('Verbs','loadVerbsData','verbs');
+	  wrapLoader('AdjAdv','aa_loadData','adjadv');
+	  wrapLoader('Preps','pp_loadData','preps');
+
+	  // In case something was already loaded before this kit attached
+	  setTimeout(()=>{
+		const c = counts();
+		if (c.vocab) READY.vocab = true;
+		if (c.verbs) READY.verbs = true;
+		if (c.adjadv) READY.adjadv = true;
+		if (c.preps) READY.preps = true;
+		refreshHUD();
+	  }, 0);
+
+	  // --- readiness barrier for MIX ---
+	  async function waitForMixReady(timeoutMs=4000){
+		const need = ['vocab','verbs','adjadv','preps'];
+		const start = performance.now();
+		return await new Promise(resolve=>{
+		  function check(){
+			const ok = need.some(k => READY[k] && counts()[k]>0); // need at least 1 pool ready to start
+			const all = need.every(k => READY[k] || counts()[k]===0); // “ready or empty” for the rest
+			if (ok && all) return resolve(true);
+			if (performance.now() - start > timeoutMs) return resolve(false);
+			setTimeout(check, 60);
+		  }
+		  check();
+		});
+	  }
+
+	  // Patch renderMode so MIX doesn’t fire before pools are there
+	  if (typeof window.renderMode === 'function' && !window.renderMode._mixGated){
+		const origRenderMode = window.renderMode;
+		window.renderMode = async function(){
+		  const mode = (typeof getMode==='function'?getMode():window.mode);
+		  if (mode === 'mix'){
+			// show a small “loading” status in place of the app until pools are ready
+			const root = document.getElementById('dataset-context');
+			if (root) root.textContent = 'Preparing Mix… (waiting for pools)';
+			const ok = await waitForMixReady();
+			if (root) root.textContent = '';
+			if (!ok) console.warn('[debug] Mix started with partial pools (timeout).');
+		  }
+		  const out = origRenderMode.apply(this, arguments);
+		  refreshHUD();
+		  return out;
+		};
+		window.renderMode._mixGated = true;
+	  }
+
+	  // Convenience: one-click dump to console
+	  function dump(){
+		const snapshot = {
+		  datasetKey: window.currentDataset?.key,
+		  mode: (typeof getMode==='function'?getMode():window.mode),
+		  ready: {...READY},
+		  counts: counts(),
+		  verbsIndex: window.verbsState?.index,
+		  verbsLevel: window.verbsState?.level,
+		  lastMix: window.__mix_last_section,
+		  rr: window.__mix_rr_i,
+		  lsKeys: Object.keys(localStorage).filter(k=>/verbs_|adjadv_|preps_|vocabProgress|kapitel/i.test(k))
+		};
+		console.log('[DEBUG DUMP]', snapshot);
+		try{
+		  console.table({
+			verbs: snapshot.counts.verbs,
+			adjadv: snapshot.counts.adjadv,
+			preps: snapshot.counts.preps,
+			vocab: snapshot.counts.vocab
+		  });
+		}catch(_){}
+	  }
+	  window.__debugDump = dump;
+
+	  // Auto-refresh on pool updates
+	  document.addEventListener('pools:updated', refreshHUD);
+	})();
+	</script>
 
 
   
