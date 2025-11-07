@@ -2469,32 +2469,58 @@
             if(adjad) { adjad.hidden = false; aa_render(); }
           }
         
-          // For "mix": pick one section randomly and render only that
-          if (mode==='mix'){
-		  // Hide any level badges when studying Kapitel
-		  if (isKapitelMixMode()){
-			const lvl = document.getElementById('level'); if (lvl) lvl.style.display='none';
-			const vi  = document.getElementById('verbs-level-indicator'); if (vi) vi.style.display='none';
-		  }
+          // For "mix": gated start + keep rotating after each Next
+			if (mode === 'mix'){
+			  // Hide level badges in Kapitel+Mix
+			  if (isKapitelMixMode()){
+				const lvl = document.getElementById('level'); if (lvl) lvl.style.display='none';
+				const vi  = document.getElementById('verbs-level-indicator'); if (vi) vi.style.display='none';
+			  }
 
-		  if (allKapitelMastered()){ showKapitelDoneSplash(); return; }
+			  // If everything in this Kapitel is mastered → splash
+			  if (typeof allKapitelMastered === 'function' && allKapitelMastered()){
+				showKapitelDoneSplash?.();
+				return;
+			  }
 
-		  const section = pickRandomSection();
-		  renderForSection(section);
-        
-            // Also tweak each card's Next to jump to a new random section after it advances:
-            // (Vocab) — hook its Next button (id="nextBtn")
-            const vbNext = document.getElementById('nextBtn');
-            if (vbNext && !vbNext._mixHooked){
-              vbNext._mixHooked = true;
-              const orig = vbNext.onclick;
-              vbNext.addEventListener('click', ()=>{
-                setTimeout(()=>{ if(getMode()==='mix') pickRandomSectionAndRender(); }, 0);
-              });
-            }
-            // (Verbs) — already hooked above in elNext listener (added set for mix)
-            // (Adj/Adv) — already hooked above in elAdjAdvNext listener
-          }
+			  // Gate: don’t start Mix until at least one pool is ready. Keep polling briefly so verbs don’t get skipped.
+			  (function startMixWhenReady(tries=0){
+				const ready = mixPoolsStatus();
+				const anyReady = ready.vocab || ready.verbs || ready.adjadv || ready.preps;
+
+				if (!anyReady){
+				  if (tries === 0) console.warn('[debug] Mix waiting for pools…');
+				  return setTimeout(()=>startMixWhenReady(tries+1), 150);
+				}
+
+				// If Mix first starts with partial pools, log once so we know.
+				if (!(ready.verbs && ready.adjadv && ready.preps && ready.vocab)){
+				  if (tries < 8) console.warn('[debug] Mix started with partial pools (timeout).');
+				  // Keep a short watchdog that re-picks once late pools arrive
+				  setTimeout(()=>{
+					const r2 = mixPoolsStatus();
+					if (r2.verbs && r2.adjadv && r2.preps && r2.vocab){
+					  // All caught up → jump once to rebalance (so verbs enter rotation)
+					  pickRandomSectionAndRender();
+					}
+				  }, 400);
+				}
+
+				// Normal first pick
+				pickRandomSectionAndRender();
+
+				// Hook Vocab Next (one-time) to rotate
+				const vbNext = document.getElementById('nextBtn');
+				if (vbNext && !vbNext._mixHooked){
+				  vbNext._mixHooked = true;
+				  vbNext.addEventListener('click', ()=>{
+					setTimeout(()=>{ if(getMode()==='mix') pickRandomSectionAndRender(); }, 0);
+				  });
+				}
+				// Verbs / AdjAdv / Preps are already wired below in their own sections
+			  })();
+			}
+
         };
         
 		/* (Preps) — after Next, reset Enter phase and jump to a fresh random section in MIX */
@@ -2629,6 +2655,22 @@
           // If user switches to adjadv later, aa_render() will run via renderMode().
         })();
    
+		   // --- Mix readiness helpers ---
+		function mixPoolsStatus(){
+		  return {
+			vocab:  Array.isArray(window.words) && window.words.length>0,
+			verbs:  Array.isArray(window.verbsState?.data) && window.verbsState.data.length>0,
+			adjadv: Array.isArray(window.adjadvState?.data) && window.adjadvState.data.length>0,
+			preps:  Array.isArray(window.prepsState?.data) && window.prepsState.data.length>0,
+		  };
+		}
+		function mixAllReady(){
+		  const r = mixPoolsStatus();
+		  // In Kapitel+Mix we allow starting if at least one pool is ready,
+		  // but we keep polling for the rest so verbs won’t be “starved”.
+		  return (r.vocab || r.verbs || r.adjadv || r.preps);
+		}
+
 
   </script>
   
