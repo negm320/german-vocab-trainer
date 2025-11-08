@@ -338,13 +338,20 @@ function parseCSV(text){
 
 // datasetRead: read from Kapitel package or fetch local file
 async function datasetRead(name){
+  // Prefer Kapitel files when Kapitel dataset is active
   if(APP.dsKey==='kapitel' && APP.kapitel.files && APP.kapitel.files[name]!=null){
     return APP.kapitel.files[name];
   }
+  // If we have inline samples for Default, use them
+  if(APP.dsKey==='default' && APP._inline && APP._inline[name]!=null){
+    return APP._inline[name];
+  }
+  // Fallback: fetch local CSVs
   const res = await fetch(name, {cache:'no-store'});
   if(!res.ok) throw new Error('Failed to load ' + name);
   return await res.text();
 }
+
 
 // UI helpers
 function $(sel){ return document.querySelector(sel); }
@@ -789,7 +796,6 @@ const Mix = {
       this.i = (this.i+1) % this.order.length;
       const sec = this.order[this.i];
       if(!Trainers[sec].hasData()) continue;
-      // must have at least something in the level-pool
       const available = Trainers[sec].levelPool().length>0;
       if(!available) continue;
       return sec;
@@ -801,13 +807,12 @@ const Mix = {
     this.showSection(sec);
     $('#mixInfo').textContent = `→ ${sec}`;
   },
-
   showSection(sec){
     Trainers[sec].next(true);
     mountSection(sec,'mix');
-}
-
+  }
 };
+
 
 // Kapitel Mix: never touches default CSVs; rotates across the 4 pools, always prefers unmastered; no levels.
 // When ALL are mastered: show “Kapitel mastered” splash with Reset.
@@ -1102,41 +1107,48 @@ function attachEvents(){
    =========================================================== */
 
 // FIND → PASTE BELOW: SAMPLE_CSVS
-const SAMPLE_VOCAB = `english,article,german,plural,example1,example2,example3
-book,das,Das Buch,Bücher,Ich lese ein Buch.,Das Buch ist interessant.,Sie kaufen viele Bücher.
-cat,die,Die Katze,Katzen,Die Katze schläft.,Ich mag Katzen.,Die Katzen sind süß.
-man,der,Der Mann,Männer,Der Mann arbeitet.,Ich sehe den Mann.,Viele Männer sind hier.`;
+const SAMPLE_VOCAB = [
+  "english,article,german,plural,example1,example2,example3",
+  "book,das,Das Buch,Bücher,Ich lese ein Buch.,Das Buch ist interessant.,Sie kaufen viele Bücher.",
+  "cat,die,Die Katze,Katzen,Die Katze schläft.,Ich mag Katzen.,Die Katzen sind süß.",
+  "man,der,Der Mann,Männer,Der Mann arbeitet.,Ich sehe den Mann.,Viele Männer sind hier."
+].join("\n");
 
-const SAMPLE_VERBS = `id,lemma,english,aux,ich,du,er,wir,ihr,sie,partizip,past,preps,case,reflexive
-gehen,gehen,to go,sein,gehe,gehst,geht,gehen,geht,gehen,gegangen,ging,,-,false
-sprechen,sprechen,to speak,haben,spreche,sprichst,spricht,sprechen,sprecht,sprechen,gesprochen,sprach,über,akk,false
-sich-waschen,waschen,to wash,haben,wasche,waeschst,waescht,waschen,wascht,waschen,gewaschen,wusch,,inf,true`;
 
-const SAMPLE_AA = `english,german,example
-beautiful,schön,Das ist ein schönes Bild.
-dangerous,gefährlich,Das ist eine gefährliche Kreuzung.
-often,häufig,Ich fahre häufig mit dem Rad.`;
+const SAMPLE_VERBS = [
+  "id,lemma,english,aux,ich,du,er,wir,ihr,sie,partizip,past,preps,case,reflexive",
+  "gehen,gehen,to go,sein,gehe,gehst,geht,gehen,geht,gehen,gegangen,ging,,-,false",
+  "sprechen,sprechen,to speak,haben,spreche,sprichst,spricht,sprechen,sprecht,sprechen,gesprochen,sprach,über,akk,false",
+  "sich-waschen,waschen,to wash,haben,wasche,waeschst,waescht,waschen,wascht,waschen,gewaschen,wusch,,inf,true"
+].join("\n");
 
-const SAMPLE_PREPS = `prep,forms,de1,de2,de3,de4,de5,de6,de7,de8,de9,de10,en1,en2,en3,en4,en5,en6,en7,en8,en9,en10
-in,in;im;ins,Ich bin im Büro.,Wir gehen ins Kino.,Er wohnt in Berlin.,, , , , , ,I'm at the office.,We're going to the cinema.,He lives in Berlin.,,,,,,,
-auf,auf,Das Buch liegt auf dem Tisch.,Wir gehen auf den Markt.,Er ist auf der Bühne.,,,,,,,The book is on the table.,We are going to the market.,He is on the stage.,,,,,,,`;
+
+const SAMPLE_AA = [
+  "english,german,example",
+  "beautiful,schön,Das ist ein schönes Bild.",
+  "dangerous,gefährlich,Das ist eine gefährliche Kreuzung.",
+  "often,häufig,Ich fahre häufig mit dem Rad."
+].join("\n");
+
+
+const SAMPLE_PREPS = [
+  "prep,forms,de1,de2,de3,de4,de5,de6,de7,de8,de9,de10,en1,en2,en3,en4,en5,en6,en7,en8,en9,en10",
+  "in,in;im;ins,Ich bin im Büro.,Wir gehen ins Kino.,Er wohnt in Berlin.,,,,,,I'm at the office.,We're going to the cinema.,He lives in Berlin.,,,,,,,",
+  "auf,auf,Das Buch liegt auf dem Tisch.,Wir gehen auf den Markt.,Er ist auf der Bühne.,,,,,,The book is on the table.,We are going to the market.,He is on the stage.,,,,,,,"
+].join("\n");
 
 /* ===========================================================
    APP INIT
    =========================================================== */
 async function loadDefaultIfMissing(name, sample){
-  try{ await datasetRead(name); }catch{ /* create virtual for default */ if(APP.dsKey==='default'){ // inject sample into fetch fallback by caching via ServiceWorker? Too heavy. Use Blob URLs in memory:
-      // We can't intercept fetch easily here, so instead, when default dataset is active, we will use these strings directly:
-      if(!APP._inline){ APP._inline={}; }
-      APP._inline[name]=sample;
-      // monkey patch datasetRead to read inline if present
-      const orig = datasetRead;
-      datasetRead = async function(filename){
-        if(APP.dsKey==='kapitel' && APP.kapitel.files && APP.kapitel.files[filename]!=null) return APP.kapitel.files[filename];
-        if(APP._inline && APP._inline[filename]!=null) return APP._inline[filename];
-        return orig(filename);
-      }
-  } }
+  try{
+	  await datasetRead(name);
+	}catch{
+	  if(APP.dsKey==='default'){
+		if(!APP._inline){ APP._inline = {}; }
+		APP._inline[name] = sample; // datasetRead will now read inline safely
+	  }
+	}
 }
 
 async function boot(){
