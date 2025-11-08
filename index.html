@@ -2274,68 +2274,42 @@
 
 		// Balanced picker that rotates across eligible sections
 		function pickNextSectionBalanced(){
-		  // Helpers
-		  function sectionHasData(s){
-			if (s==='vocab')  return Array.isArray(window.words) && window.words.length>0;
-			if (s==='verbs')  return Array.isArray(window.verbsState?.data) && window.verbsState.data.length>0;
-			if (s==='adjadv') return Array.isArray(window.adjadvState?.data) && window.adjadvState.data.length>0;
-			if (s==='preps')  return Array.isArray(window.prepsState?.data) && window.prepsState.data.length>0;
+		  const ALL = ['vocab','verbs','adjadv','preps'];
+
+		  // helpers
+		  const hasData = s => (
+			(s==='vocab'  && Array.isArray(window.words)                 && window.words.length) ||
+			(s==='verbs'  && Array.isArray(window.verbsState?.data)      && window.verbsState.data.length) ||
+			(s==='adjadv' && Array.isArray(window.adjadvState?.data)     && window.adjadvState.data.length) ||
+			(s==='preps'  && Array.isArray(window.prepsState?.data)      && window.prepsState.data.length)
+		  );
+		  const hasUnmastered = s => {
+			const thr = window.masteryThreshold || 3;
+			if (s==='vocab')  return (window.words||[]).some(w => (w.correctStreak||0) < thr);
+			if (s==='verbs')  return (window.verbsState?.data||[]).some(v => (window.verbsState.streaks?.[v.id]||0) < 3);
+			if (s==='adjadv') return (window.adjadvState?.data||[]).some(x => (window.adjadvState.streaks?.[x.id]||0) < 3);
+			if (s==='preps')  return (window.prepsState?.data||[]).some(x => (window.prepsState.streaks?.[x.id]||0) < 3);
 			return false;
-		  }
+		  };
 
-		  // Build candidate list
-		  let cand = MIX_SECTIONS.filter(sectionHasData);
+		  // build candidates in fixed order
+		  let cand = ALL.filter(hasData);
 
-			// New: guarantee each section appears at least once per Mix session
-			window.__mix_seen = window.__mix_seen || {};
-			const unseen = cand.filter(s => !window.__mix_seen[s]);
-			if (unseen.length){
-			  const pick = unseen[0];               // first unseen section wins
-			  window.__mix_seen[pick] = true;       // mark visited
-			  window.__mix_last_section = pick;
-			  return pick;
-			}
+		  // Kapitel+Mix → only unmastered
+		  if (window.isKapitelMixMode?.()) cand = cand.filter(hasUnmastered);
+		  if (!cand.length) return 'vocab';
 
-
-		  // In Kapitel+Mix → only unmastered sections
-		  if (typeof isKapitelMixMode === 'function' && isKapitelMixMode()) {
-			cand = cand.filter(s => (typeof sectionHasUnmastered==='function') ? sectionHasUnmastered(s) : true);
-		  }
-
-		  // If nothing left, show splash (Kapitel) or fall back to vocab
-		  if (!cand.length){
-			if (typeof allKapitelMastered==='function' && isKapitelMixMode() && allKapitelMastered()){
-			  if (typeof showKapitelDoneSplash==='function') showKapitelDoneSplash();
-			}
-			return 'vocab';
-		  }
-
-		  // Avoid repeating the same section when another exists
+		  // strict round-robin index across *cand*
 		  const last = window.__mix_last_section || null;
-		  if (cand.length>1 && last){
-			const alt = cand.filter(s => s !== last);
-			if (alt.length) cand = alt;
-			  // Round-robin index + remember last pick
-			  window.__mix_rr_i = ((window.__mix_rr_i || 0) + 1) % cand.length;
-			  const pick = cand[window.__mix_rr_i];
-			  window.__mix_last_section = pick;
-			  return pick;
+		  let i = (cand.indexOf(last) + 1);
+		  if (i <= 0) i = 0;                      // if last not in list, start at 0
+		  const pick = cand[i % cand.length];
 
-		  }
-
-		  // Rotate by round-robin index
-		  window.__mix_rr_i = ((window.__mix_rr_i||0) + 1) % cand.length;
-		  const pick = cand[window.__mix_rr_i];
-		    window.__mix_last_section = pick;
-			  console.log('[Mix pick]', pick, {cand, last, rr:window.__mix_rr_i, pools:{
-				vocab:(window.words||[]).length,
-				verbs:(window.verbsState?.data||[]).length,
-				adjadv:(window.adjadvState?.data||[]).length,
-				preps:(window.prepsState?.data||[]).length
-			  }});
-			  return pick;
-
+		  window.__mix_last_section = pick;
+		  window.__mix_rr_i = (window.__mix_rr_i||0) + 1;
+		  return pick;
 		}
+
 
 		// === Balanced MIX picker (round-robin, no repeats, Kapitel=only unmastered, skips empty) ===
 		function pickWeightedRandomSection(){
@@ -2453,9 +2427,16 @@
 		}
 
         function pickRandomSectionAndRender(){
-          const s = pickRandomSection();
-          renderForSection(s);
-        }
+		  if (window.__mix_busy) return;
+		  window.__mix_busy = true;                     // guard: one render at a time
+
+		  const s = pickRandomSection();
+		  renderForSection(s);
+
+		  // allow another pick after a short settle
+		  setTimeout(()=>{ window.__mix_busy = false; }, 300);
+		}
+
         
         /* Extend existing renderMode to include adjadv + mix */
         const _origRenderMode = renderMode;
@@ -3046,7 +3027,7 @@
 	  }, 0);
 
 	  // --- readiness barrier for MIX ---
-	  async function waitForMixReady(timeoutMs=4000){
+	  async function waitForMixReady(timeoutMs=6000){
 		const need = ['vocab','verbs','adjadv','preps'];
 		const start = performance.now();
 		return await new Promise(resolve=>{
