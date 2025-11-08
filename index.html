@@ -1,3098 +1,1064 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>German Trainer</title>
 
-	<!-- Firebase (compat builds for simplicity) -->
-	<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- JSZip for Kapitel package loading -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
+<!-- Firebase (optional username-only sync; safe if unused) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>German Trainer</title>
-  <style>
-    :root{
-      --bg:#0f1115; --text:#eaeaea; --muted:#9aa6b2; --card:#171b23; --border:#2a3240; --input:#0f1620;
-      --btn:#243042; --btn-hover:#2a3a50; --ok:#22c55e; --bad:#f97373;
-      --der:#7fb3ff; --der-text:#0b2139; --die:#ff9aa2; --die-text:#3a0b12; --das:#9be7a1; --das-text:#0d2a14;
-    }
-    *{box-sizing:border-box}
-    body{font-family:Arial,sans-serif;margin:0;padding:10px;background:var(--bg);color:var(--text)}
-    .container{max-width:500px;margin:auto;padding:10px}
-    h1{font-size:1.8em;text-align:center;margin-bottom:10px}
-    #level{text-align:center;margin-bottom:15px;font-size:1.1em;color:var(--muted)}
-    .card{background:var(--card);border-radius:12px;padding:15px;box-shadow:0 2px 6px rgba(0,0,0,.35);border:1px solid var(--border)}
+<style>
+  :root{
+    --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041; --accent:#6aa6ff;
+    --good:#22c55e; --bad:#ef4444; --btn:#1a2230; --btn2:#1e2a3c; --hole:#0f141c;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial,sans-serif;}
+  a{color:var(--accent)}
+  .wrap{max-width:720px;margin:0 auto;padding:14px}
+  .bar{display:flex;gap:8px;align-items:center;margin:6px auto 10px;max-width:720px}
+  .bar select,.bar button{background:var(--btn);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .bar button:hover{background:var(--btn2)}
+  .mode-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+  .mode-btn{border:1px solid var(--border);background:var(--btn);color:var(--text);padding:8px 10px;border-radius:10px;cursor:pointer}
+  .mode-btn.active{outline:2px solid var(--accent);background:#0f1420}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .row{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin:8px 0}
+  input[type="text"],input[type="search"],input[type="number"],select,textarea{
+    width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text)
+  }
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .good{color:var(--good)} .bad{color:var(--bad)}
+  .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:12px;color:var(--muted)}
+  .actions{display:flex;gap:8px;margin-top:10px}
+  .actions button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer}
+  .actions button:hover{background:var(--btn2)}
+  .hole{display:inline-block;min-width:64px;padding:6px 8px;border:1px dashed var(--border);border-radius:8px;background:#0b1017}
+  .center{display:flex;justify-content:center;align-items:center}
+  .hidden{display:none !important}
+  .label{opacity:.9}
 
-    .button-row{display:flex;gap:8px}
-    .article-btn{flex:1 1 0;padding:12px 0;font-size:16px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:#202734;color:var(--text)}
-    #btnDer.selected{background:var(--der);color:var(--der-text);border-color:#6aa6ff}
-    #btnDie.selected{background:var(--die);color:var(--die-text);border-color:#ff8a93}
-    #btnDas.selected{background:var(--das);color:var(--das-text);border-color:#86d892}
+  /* Kapitel Mix modern screen */
+  .kmx{display:grid;gap:10px}
+  .kmx .big-card{padding:18px;border-radius:16px}
+  .kmx .title{font-weight:700;font-size:18px}
+  .kmx .sub{color:var(--muted);font-size:13px}
+  .kmx .quiet{opacity:.85}
+  .kmx .badge{border:1px solid var(--accent);color:var(--accent);padding:2px 8px;border-radius:999px;font-size:12px}
 
-    input{width:48%;padding:12px;margin:5px 1%;font-size:16px;border-radius:8px;border:1px solid var(--border);background:var(--input);color:var(--text)}
-    input::placeholder{color:#7b879a}
-    input:focus{outline:2px solid #3b82f680;border-color:#3b82f6}
+  /* Debug HUD */
+  #debugHUD{position:fixed;right:8px;bottom:8px;background:#0b111a;border:1px solid var(--border);border-radius:10px;padding:8px 10px;color:#b7c6d8;font-size:12px;min-width:220px;z-index:9999;display:none}
+  #debugHUD code{font-size:12px}
+  #debugHUD .row{grid-template-columns:100px 1fr}
 
-    button{padding:12px;margin:5px 1%;font-size:16px;border-radius:8px;border:1px solid var(--border);background:var(--btn);color:var(--text);cursor:pointer}
-    button:hover{background:var(--btn-hover)}
+  /* Simple helper for article buttons */
+  .article-bar{display:flex;gap:8px;margin:8px 0}
+  .article-btn{flex:1;border:1px solid var(--border);border-radius:10px;background:var(--btn);color:var(--text);padding:10px 12px}
+  .article-btn.active{outline:2px solid var(--accent)}
 
-    #feedback{margin-top:5px;font-size:1em}
-    #example{margin-top:6px;font-size:.95em;color:var(--muted)}
-    #nextBtn{display:none;width:100%}
-    #status{margin-top:10px;font-size:.9em;color:var(--muted);white-space:pre-wrap}
-  </style>
-  
-  <style>
-    /* === Additive styles for Verbs UI === */
-    #mode-switch { margin: 12px 0; display: flex; gap: 8px; flex-wrap: wrap; }
-    #mode-switch .mode-btn { padding: 6px 10px; border: 1px solid #ccc; background: #f8f8f8; cursor: pointer; border-radius: 6px; }
-    #mode-switch .mode-btn.active { background: #e8f2ff; border-color: #5b9cff; }
-  
-    #verbs-card { border: 1px solid #e5e5e5; border-radius: 10px; padding: 16px; margin: 8px 0 16px; background: #fff; }
-    #verbs-card[hidden] { display: none; }
-    #verbs-card .prompt { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-  
-    .aux-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
-    .aux-btn { padding: 6px 10px; border: 1px solid #ccc; background: #fafafa; border-radius: 6px; cursor: pointer; }
-    .aux-btn.selected { background: #e8f2ff; border-color: #5b9cff; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #5b9cff; color: #1b62cf; font-size: 12px; }
-  
-    .praesens-grid { display: grid; grid-template-columns: repeat(2, minmax(200px, 1fr)); gap: 8px 16px; margin: 10px 0; }
-    .praesens-grid div { display: flex; align-items: center; gap: 6px; }
-    .praesens-grid input, #verbs-inf, #verbs-partizip { width: 100%; padding: 6px 8px; }
-  
-    .result-ok { border-color: #29a36a !important; background: #f0fff7 !important; }
-    .result-bad { border-color: #d9534f !important; background: #fff5f5 !important; }
-  
-    #verbs-actions { display: flex; gap: 8px; margin-top: 12px; }
-    #verbs-actions button { padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; background: #f8f8f8; cursor: pointer; }
-    #verbs-feedback { margin-top: 10px; font-size: 14px; }
-  </style>
-  
-  <style>
-    /* ===== Global dark theme (opt-in via .dark on <body>) ===== */
-    body.dark { background: #0b0d10; color: #e8eaed; }
-  
-    /* try to harmonize common elements if they exist */
-    body.dark input, body.dark select, body.dark button, body.dark textarea {
-      background: #111418; color: #e8eaed; border: 1px solid #2a2f36;
-    }
-    body.dark .card, body.dark .panel, body.dark .box {
-      background: #0f1216; border: 1px solid #2a2f36; color: #e8eaed;
-    }
-    body.dark a { color: #96b7ff; }
-  
-    /* ===== Verbs UI dark styles ===== */
-    body.dark #mode-switch .mode-btn {
-      background: #12151a; border-color: #2a2f36; color: #e8eaed;
-    }
-    body.dark #mode-switch .mode-btn.active {
-      background: #162036; border-color: #3b6ad9;
-    }
-    body.dark #verbs-card {
-      background: #0f1216; border-color: #2a2f36;
-    }
-    body.dark .aux-btn {
-      background: #12151a; border-color: #2a2f36; color: #e8eaed;
-    }
-    body.dark .aux-btn.selected {
-      background: #162036; border-color: #3b6ad9;
-    }
-    body.dark .badge {
-      border-color: #3b6ad9; color: #9bb8ff;
-    }
-    /* check result colors tuned for dark bg */
-    body.dark .result-ok { border-color: #2fa97b !important; background: #0f1b16 !important; }
-    body.dark .result-bad { border-color: #e66b6b !important; background: #1a1111 !important; }
-  </style>
-  
-  <style>
-	  /* Orange = correct choice (when user chose a different one), Red = user's wrong choice */
-	  .choice-correct { border-color:#f59e0b !important; box-shadow:0 0 0 2px #f59e0b inset !important; }
-	  .choice-wrong   { border-color:#ef4444 !important; box-shadow:0 0 0 2px #ef4444 inset !important; }
-	  body.dark .choice-correct { border-color:#f59e0b !important; box-shadow:0 0 0 2px #f59e0b inset !important; }
-	  body.dark .choice-wrong   { border-color:#e66b6b !important; box-shadow:0 0 0 2px #e66b6b inset !important; }
-	</style>
-
-
-  <style>
-    #verbs-gov { margin: 10px 0 6px; display: grid; gap: 10px; }
-    #verbs-gov .gov-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; }
-    .refl-toggle { display: flex; gap: 8px; align-items: center; }
-    .refl-btn { padding: 6px 10px; border: 1px solid #ccc; background: #fafafa; border-radius: 6px; cursor: pointer; }
-    .refl-btn.selected { background: #e8f2ff; border-color: #5b9cff; }
-  
-    /* dark mode versions */
-    body.dark #verbs-gov select,
-    body.dark .refl-btn { background: #12151a; border-color: #2a2f36; color: #e8eaed; }
-    body.dark .refl-btn.selected { background: #162036; border-color: #3b6ad9; }
-  </style>
-
-  <style>    
-    /* Adj/Adv card styles (reuse look of verbs) */
-    #adjadv-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 8px 0 16px; background: var(--card); }
-    #adjadv-card[hidden] { display: none; }
-    #adjadv-card .prompt { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-    #adjadv-card input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--input); color: var(--text); }
-    #adjadv-card .result-ok { border-color: #29a36a !important; background: #0f1b16 !important; }
-    #adjadv-card .result-bad { border-color: #d9534f !important; background: #1a1111 !important; }
-    .muted { color: var(--muted); }
-  </style>
-
-  <style>
-    /* Make verbs inputs truly full width */
-    #verbs-card .praesens-list { 
-      grid-template-columns: 70px 1fr;  /* slimmer label column, more room for input */
-    }
-  
-    /* Force width for all text inputs inside the verbs card */
-    #verbs-card input[type="text"],
-    #verbs-card input[list],
-    #verbs-card input:not([type]),
-    #verbs-gov input,
-    #verbs-card .praesens-list input {
-      width: 100% !important;
-      box-sizing: border-box;
-    }
-  
-    /* Optional: make the preposition row align perfectly */
-    #verbs-gov .gov-row { 
-      grid-template-columns: 110px 1fr; 
-    }
-  
-    /* If some global CSS sets small widths, this beats it */
-    #verbs-card input { 
-      min-width: 0; 
-      display: block; 
-    }
-  </style>
-
-  
-  <style>
-    /* Vertical two-column label/input layout */
-    .praesens-list {
-      display: grid;
-      grid-template-columns: 110px 1fr;
-      row-gap: 10px;
-      column-gap: 12px;
-      margin: 12px 0;
-      align-items: center;
-    }
-    .praesens-list label { opacity: 0.9; }
-  
-    /* Make verbs buttons dark (override whites) */
-    body.dark #verbs-actions button {
-      background: #12151a !important;
-      border-color: #2a2f36 !important;
-      color: #e8eaed !important;
-    }
-    body.dark #verbs-actions button:hover {
-      background: #162036 !important;
-      border-color: #3b6ad9 !important;
-    }
-  
-    /* Ensure inputs match dark styling */
-    body.dark #verbs-card input {
-      background: #111418;
-      color: #e8eaed;
-      border: 1px solid #2a2f36;
-    }
-  </style>
-  
- 
-
-  
-  <style>
-	  .past-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; margin: 10px 0; }
-	  .case-toggle { display: flex; gap: 8px; align-items: center; }
-	  .case-btn { padding: 6px 10px; border: 1px solid #ccc; background: #fafafa; border-radius: 6px; cursor: pointer; }
-	  .case-btn.selected { background: #e8f2ff; border-color: #5b9cff; }
-
-	  body.dark .case-btn { background: #12151a; border-color: #2a2f36; color: #e8eaed; }
-	  body.dark .case-btn.selected { background: #162036; border-color: #3b6ad9; }
-	</style>
-
-	<style>#wordImage{display:none!important}</style>
-
-
+  /* Splash modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:10000}
+  .modal .box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;max-width:520px;width:92%}
+</style>
 </head>
 <body>
 
-	<script>
-	// Early global stub (safe). If you define it later, that one will override.
-	window.isKapitelMixMode = window.isKapitelMixMode || function(){
-	  try{
-		return (window.currentDataset?.key === 'kapitel') &&
-			   ((typeof getMode==='function' ? getMode() : window.mode) === 'mix');
-	  }catch(_){ return false; }
-	};
-	</script>
+<div class="wrap">
+  <div class="bar">
+    <strong class="muted">Source:</strong>
+    <select id="datasetSel" title="Dataset">
+      <option value="default">Default</option>
+    </select>
+    <button id="btnLoadKapitel">Load Kapitel…</button>
+    <span id="datasetCtx" class="muted small"></span>
+  </div>
 
-
-    <div id="mode-switch">
+  <div class="mode-tabs" id="modeTabs">
     <button class="mode-btn" data-mode="vocab">Vocab</button>
     <button class="mode-btn" data-mode="verbs">Verbs</button>
     <button class="mode-btn" data-mode="adjadv">Adj/Adv</button>
     <button class="mode-btn" data-mode="preps">Preps</button>
     <button class="mode-btn" data-mode="mix">Mix</button>
+    <button class="mode-btn" data-mode="kapitelMix" id="btnKapitelMix" disabled>Kapitel Mix</button>
   </div>
 
-
-  <div id="verbs-card" hidden>
-    <div class="prompt" id="verbs-english">to go</div>
-
-    <label for="verbs-inf">German infinitive</label>
-    <input id="verbs-inf" autocomplete="off" />
-
-    <div class="aux-toggle">
-      <span>Auxiliary:</span>
-      <button type="button" class="aux-btn" data-aux="haben">haben</button>
-      <button type="button" class="aux-btn" data-aux="sein">sein</button>
-      <span id="verbs-aux-badge" class="badge" style="display:none;"></span>
+  <!-- ====== VOCAB ====== -->
+  <section id="vocab" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div><strong id="vocabEn" class="muted"></strong> <span id="vocabStreak" class="pill"></span></div>
+      <div id="vocabLevel" class="pill"></div>
     </div>
 
-    <!-- === Verb governance (preposition + reflexive) === -->
-    <div id="verbs-gov">
-      <div class="gov-row" id="verbs-prep-row">
-		  <label for="verbs-prep">Preposition</label>
-		  <input id="verbs-prep" list="verbs-prep-options" placeholder="e.g., auf" autocomplete="off" />
-		  <datalist id="verbs-prep-options">
-			<option value="an"></option>
-			<option value="auf"></option>
-			<option value="aus"></option>
-			<option value="bei"></option>
-			<option value="für"></option>
-			<option value="gegen"></option>
-			<option value="in"></option>
-			<option value="mit"></option>
-			<option value="nach"></option>
-			<option value="über"></option>
-			<option value="um"></option>
-			<option value="von"></option>
-			<option value="zu"></option>
-		  </datalist>
-		</div>
-
-		<div class="gov-row">
-		  <label>Case after verb</label>
-		  <div class="case-toggle">
-			<button type="button" class="case-btn" data-case="inf">Inf</button>
-			<button type="button" class="case-btn" data-case="akk">Akk</button>
-			<button type="button" class="case-btn" data-case="dat">Dat</button>
-		  </div>
-		</div>
-
-    
-      <div class="gov-row">
-		  <label>Reflexive?</label>
-		  <div class="refl-toggle">
-			<button type="button" class="refl-btn" data-refl="no">No</button>
-			<button type="button" class="refl-btn" data-refl="yes">Yes</button>
-		  </div>
-		</div>
-
+    <div class="article-bar">
+      <button class="article-btn" data-a="der">der</button>
+      <button class="article-btn" data-a="die">die</button>
+      <button class="article-btn" data-a="das">das</button>
     </div>
 
-    
-    <div class="praesens-list">
-      <label for="verbs-p-ich">ich</label>
-      <input id="verbs-p-ich" autocomplete="off">
-    
-      <label for="verbs-p-du">du</label>
-      <input id="verbs-p-du" autocomplete="off">
-    
-      <label for="verbs-p-er">er/sie/es</label>
-      <input id="verbs-p-er" autocomplete="off">
-    
-      <label for="verbs-p-ihr">ihr</label>
-      <input id="verbs-p-ihr" autocomplete="off">
+    <div class="row"><div class="label">German</div><div><input id="vocabDe" type="text" autocomplete="off"></div></div>
+    <div class="row"><div class="label">Plural</div><div><input id="vocabPl" type="text" autocomplete="off"></div></div>
+    <div id="vocabExamples" class="muted small"></div>
+
+    <div id="vocabFeedback" class="small" style="margin-top:8px"></div>
+    <div class="actions">
+      <button id="vocabCheck">Check</button>
+      <button id="vocabNext">Next</button>
+      <button id="vocabReset" class="muted">Reset</button>
+      <label class="muted small" style="margin-left:auto;display:flex;align-items:center;gap:6px"><input id="vocabShowEn" type="checkbox" checked>show English</label>
+    </div>
+  </section>
+
+  <!-- ====== VERBS ====== -->
+  <section id="verbs" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div><strong id="verbEn" class="muted"></strong> <span id="verbsLevel" class="pill"></span></div>
+      <div class="pill">Streak target: 3</div>
     </div>
 
-	<!-- Simple past -->
-	<div class="past-row">
-	  <label for="verbs-past">Präteritum</label>
-	  <input id="verbs-past" placeholder="z. B. ging" autocomplete="off">
-	</div>
+    <div class="row"><div class="label">Infinitive</div><div><input id="vInf" type="text" autocomplete="off"></div></div>
 
-	<!-- Perfekt line -->
-    <div class="perfekt">
-      ich <span id="verbs-aux-fixed" class="badge">—</span>
-      <input id="verbs-partizip" placeholder="Partizip II (z. B. gegangen)" autocomplete="off">
-    </div>
-
-    <div id="verbs-actions">
-      <button id="verbs-check">Check</button>
-      <button id="verbs-next">Next</button>
-    </div>
-
-    <div id="verbs-feedback"></div>
-	
-	<div id="verbs-level-indicator" style="margin-top:10px; font-size:12px; opacity:0.8;"></div>
-
-  </div>
-  
-  <div id="adjadv-card" hidden>
-    <div class="prompt" id="adjadv-english">beautiful</div>
-  
-	<p id="adjadv-example" class="muted"></p>
-    <label for="adjadv-german">German word</label>
-    <input id="adjadv-german" autocomplete="off" placeholder="z. B. schön" />
-  
-    
-  
-    <div id="adjadv-actions" style="display:flex;gap:8px;margin-top:12px;">
-      <button id="adjadv-check">Check</button>
-      <button id="adjadv-next">Next</button>
-    </div>
-  
-    <div id="adjadv-feedback" style="margin-top:10px;font-size:14px;"></div>
-  </div>
-
-   <!-- === Prepositions Trainer Card (simple: just the preposition) === -->
-      <style>
-        #preps-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 8px 0 16px; background: var(--card); }
-        #preps-card[hidden] { display: none; }
-        #preps-sentence { font-size: 20px; line-height: 1.6; margin-bottom: 10px; }
-        #preps-input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--input); color: var(--text); min-width: 80px; display: inline-block; text-align:center; }
-        #preps-input.result-ok { border-color: #29a36a !important; background: #0f1b16 !important; }
-        #preps-input.result-bad { border-color: #d9534f !important; background: #1a1111 !important; }
-        #preps-english { color: var(--muted); margin: 6px 0 0; }
-      </style>
-      
-      <div id="preps-card" hidden>
-        <div id="preps-sentence"></div>
-        <p id="preps-english" class="muted"></p>
-      
-        <div style="display:flex; gap:8px; margin-top:12px;">
-          <button id="preps-check">Check</button>
-          <button id="preps-next">Next</button>
-        </div>
-      
-        <div id="preps-feedback" style="margin-top:10px;font-size:14px;"></div>
-      
-        <!-- Autocomplete list (plain prepositions, no + Akk/+ Dat) -->
-        <datalist id="preps-options">
-          <option value="an"></option>
-          <option value="auf"></option>
-          <option value="aus"></option>
-          <option value="bei"></option>
-          <option value="für"></option>
-          <option value="gegen"></option>
-          <option value="in"></option>
-          <option value="mit"></option>
-          <option value="nach"></option>
-          <option value="über"></option>
-          <option value="um"></option>
-          <option value="unter"></option>
-          <option value="von"></option>
-          <option value="vor"></option>
-          <option value="zu"></option>
-          <option value="ohne"></option>
-          <option value="trotz"></option>
-        </datalist>
-      </div>
-
-  
-  <div class="container">
-    <div id="vocab-wrapper">
-    <h1>German Vocab Trainer</h1>
-    <p id="level">Level: 1 (Words 1–25)</p>
-      <div class="card">
-        <p id="englishRow"><strong>English word:</strong> <span id="english"></span> <em id="streakDisplay"></em></p>
-  
-        <div id="media" style="margin-bottom:8px;">
-          <!-- Faster image: async decode + high fetch priority -->
-          <img id="wordImage" alt="vocab image" decoding="async" fetchpriority="high"
-               style="display:none;width:100%;max-height:220px;object-fit:contain;background:#0d0f14;border:1px solid var(--border);border-radius:10px;padding:8px;" />
-        </div>
-  
-        <div class="button-row">
-          <button id="btnDer" class="article-btn">der</button>
-          <button id="btnDie" class="article-btn">die</button>
-          <button id="btnDas" class="article-btn">das</button>
-        </div>
-  
-        <input type="text" id="german" placeholder="German word" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-        <input type="text" id="plural" placeholder="Plural" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-        <p id="feedback"></p>
-        <p id="example"></p>
-  
-        <br />
-        <button id="checkBtn">Check</button>
-        <button id="resetBtn">Reset Progress</button>
-        <button id="nextBtn">Next word</button>
-        <div id="status"></div>
-
-        <label style="display:flex;align-items:center;gap:8px;margin:10px auto 0;max-width:500px;color:var(--muted);font-size:.95em;">
-          <input type="checkbox" id="toggleEnglish" checked /> Show English word
-        </label>
+    <div class="row"><div class="label">Aux</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="article-btn" data-aux="haben">haben</button>
+        <button class="article-btn" data-aux="sein">sein</button>
+        <button class="article-btn" data-aux="haben/sein">haben/sein</button>
+        <span id="auxHint" class="pill"></span>
       </div>
     </div>
+
+    <div class="row"><div class="label">ich</div><div><input id="pIch" type="text"></div></div>
+    <div class="row"><div class="label">du</div><div><input id="pDu" type="text"></div></div>
+    <div class="row"><div class="label">er/sie/es</div><div><input id="pEr" type="text"></div></div>
+    <div class="row"><div class="label">ihr</div><div><input id="pIhr" type="text"></div></div>
+
+    <div class="row"><div class="label">Präteritum</div><div><input id="vPast" type="text" placeholder="z. B. ging"></div></div>
+    <div class="row"><div class="label">Partizip II</div><div><input id="vPart" type="text" placeholder="z. B. gegangen"></div></div>
+
+    <div class="row"><div class="label">Preposition(s)</div><div><input id="vPrep" type="text" placeholder="auf;über;mit (optional)"></div></div>
+    <div class="row"><div class="label">Case</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="article-btn" data-case="inf">inf</button>
+        <button class="article-btn" data-case="akk">akk</button>
+        <button class="article-btn" data-case="dat">dat</button>
+        <span id="caseHint" class="pill"></span>
+      </div>
+    </div>
+    <div class="row"><div class="label">Reflexive</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="article-btn" data-refl="true">true</button>
+        <button class="article-btn" data-refl="false">false</button>
+      </div>
+    </div>
+
+    <div id="verbsFeedback" class="small" style="margin-top:8px"></div>
+    <div class="actions">
+      <button id="verbsCheck">Check</button>
+      <button id="verbsNext">Next</button>
+      <button id="verbsReset" class="muted">Reset</button>
+    </div>
+  </section>
+
+  <!-- ====== ADJ/ADV ====== -->
+  <section id="adjadv" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div><strong id="aaEn" class="muted"></strong> <span id="aaLevel" class="pill"></span></div>
+      <div class="pill">Streak target: 3</div>
+    </div>
+    <p id="aaExample" class="muted small"></p>
+    <div class="row"><div class="label">German</div><div><input id="aaDe" type="text" autocomplete="off"></div></div>
+    <div id="aaFeedback" class="small" style="margin-top:8px"></div>
+    <div class="actions">
+      <button id="aaCheck">Check</button>
+      <button id="aaNext">Next</button>
+      <button id="aaReset" class="muted">Reset</button>
+    </div>
+  </section>
+
+  <!-- ====== PREPOSITIONS (cloze) ====== -->
+  <section id="preps" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div><strong id="ppHeader" class="muted">Fill the blank with exact surface form</strong> <span id="ppLevel" class="pill"></span></div>
+      <div class="pill">Streak target: 3</div>
+    </div>
+    <p id="ppSentence" style="font-size:18px;line-height:1.6"></p>
+    <p id="ppEnglish" class="muted small"></p>
+    <div class="actions">
+      <button id="ppCheck">Check</button>
+      <button id="ppNext">Next</button>
+      <button id="ppReset" class="muted">Reset</button>
+    </div>
+    <div id="ppFeedback" class="small" style="margin-top:8px"></div>
+  </section>
+
+  <!-- ====== DEFAULT MIX (round-robin, level-gated) ====== -->
+  <section id="mix" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div><strong>Mix</strong> <span class="muted small">round-robin • prefers streak&lt;3 • respects levels</span></div>
+      <div class="pill" id="mixInfo"></div>
+    </div>
+    <div id="mixMount" style="margin-top:8px"></div>
+    <div class="small muted" style="margin-top:8px">Tip: press Enter to check; Enter again to advance.</div>
+  </section>
+
+  <!-- ====== KAPITEL MIX (separate UI) ====== -->
+  <section id="kapitelMix" class="card hidden">
+    <div class="kmx">
+      <div class="big-card">
+        <div class="title">Kapitel Mix</div>
+        <div class="sub" id="kmxCtx">Rotates across Vocab, Verbs, Adj/Adv, Preps • prefers unmastered • no levels.</div>
+      </div>
+      <div id="kmxMount"></div>
+      <div class="actions">
+        <button id="kmxNext">Next</button>
+        <button id="kmxReset" class="muted">Reset Kapitel progress</button>
+        <span id="kmxAllDone" class="badge hidden">Kapitel mastered 🎉</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="bar" style="margin-top:8px">
+    <button id="btnSync" title="Cloud Sync">Sync</button>
+    <span id="syncStatus" class="muted small">Sync: Off</span>
+    <button id="btnDebug" style="margin-left:auto">Debug HUD</button>
   </div>
-  
-	<!-- ===== Source selector / Kapitel loader ===== -->
-	<div id="source-bar" style="max-width:500px;margin:10px auto 8px;display:flex;gap:8px;align-items:center;">
-	  <label style="white-space:nowrap;color:#9aa6b2;font-size:14px;">Source:</label>
-	  <select id="dataset-selector" style="flex:1;padding:8px;border-radius:8px;border:1px solid #2a3240;background:#0f1620;color:#eaeaea;">
-		<option value="default">Default Dataset</option>
-	  </select>
-	  <button id="btnLoadKapitel" style="padding:8px 12px;border-radius:8px;border:1px solid #2a3240;background:#243042;color:#eaeaea;cursor:pointer;">
-		Load Kapitel…
-	  </button>
-	</div>
-	
-	<!-- ===== Sync status / controls ===== -->
-	<div id="sync-bar" style="max-width:500px;margin:-2px auto 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-	  <div style="font-size:13px;color:#9aa6b2">
-		<span id="syncStatus">Sync: Off</span>
-	  </div>
-	  <div style="display:flex;gap:8px;">
-		<button id="btnSyncNow" style="padding:6px 10px;border-radius:8px;border:1px solid #2a3240;background:#243042;color:#eaeaea;cursor:pointer;">Sync now</button>
-		<button id="btnSyncSettings" style="padding:6px 10px;border-radius:8px;border:1px solid #2a3240;background:#243042;color:#eaeaea;cursor:pointer;">Sync settings</button>
-	  </div>
-	</div>
-
-	<!-- ===== Sync modal (splash) ===== -->
-	<div id="syncModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999;">
-	  <div style="background:#0f1620;border:1px solid #2a3240;border-radius:12px;max-width:520px;width:92%;padding:16px 16px 14px;color:#eaeaea;">
-		<h3 style="margin:0 0 8px 0;font-size:18px;">Cloud Sync (optional)</h3>
-		<p style="margin:0 0 12px;color:#9aa6b2;font-size:14px;">
-		  Use a simple username to sync progress across browsers/devices. No email or password.
-		</p>
-		<label style="font-size:14px;color:#cbd5e1;">Username</label>
-		<input id="syncUsernameInput" type="text" placeholder="e.g., negm" style="width:100%;margin-top:6px;margin-bottom:10px;padding:10px;border-radius:8px;border:1px solid #2a3240;background:#0b1220;color:#eaeaea;">
-		<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
-		  <button id="syncCancel" style="padding:8px 12px;border-radius:8px;border:1px solid #2a3240;background:#202a38;color:#eaeaea;cursor:pointer;">Skip</button>
-		  <button id="syncSave" style="padding:8px 12px;border-radius:8px;border:1px solid #2a3240;background:#3a5c78;color:#eaeaea;cursor:pointer;">Enable sync</button>
-		</div>
-		<div id="syncNote" style="margin-top:10px;color:#9aa6b2;font-size:12px;">
-		  Tip: If a cloud save exists for this username, you can choose to load it on first sync.
-		</div>
-	  </div>
-	</div>
-
-	<!-- Kapitel-complete splash -->
-	<div id="kapitelDoneModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:10000;">
-	  <div style="background:#0f1620;border:1px solid #2a3240;border-radius:12px;max-width:520px;width:92%;padding:18px;color:#eaeaea;">
-		<h3 style="margin:0 0 8px 0;font-size:18px;">Kapitel mastered 🎉</h3>
-		<p style="margin:0 0 12px;color:#9aa6b2;font-size:14px;">
-		  You’ve mastered all vocab, verbs, adjectives/adverbs, and prepositions in this Kapitel.
-		</p>
-		<div style="display:flex;gap:8px;justify-content:flex-end;">
-		  <button id="kapitelDoneClose" style="padding:8px 12px;border-radius:8px;border:1px solid #2a3240;background:#202a38;color:#eaeaea;cursor:pointer;">Close</button>
-		  <button id="kapitelDoneReset" style="padding:8px 12px;border-radius:8px;border:1px solid #2a3240;background:#3a5c78;color:#eaeaea;cursor:pointer;">Reset progress</button>
-		</div>
-	  </div>
-	</div>
-
-	
-	<div id="dataset-context" style="max-width:500px;margin:-2px auto 12px;color:#9aa6b2;font-size:13px;"></div>
-
-	<!-- hidden file input for zip -->
-	<input id="kapitel-zip-input" type="file" accept=".zip" style="display:none" />
-
-	<!-- JSZip (for reading uploaded Kapitel .zip) -->
-	<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-
-	<!-- Dataset bridge (lets existing loaders read from a Kapitel package if selected) -->
-	<script>
-	  // Current dataset (default == nil files -> fall back to fetch)
-	  window.currentDataset = {
-		key: 'default',
-		title: 'Default Dataset',
-		files: null,   // { 'vocab.csv': '...', 'verbs.csv': '...', 'adjadv.csv': '...', 'prepositions.csv': '...', 'manifest.json': '{...}' }
-		counts: null   // { vocab: n, verbs: n, adjadv: n, preps: n }
-	  };
-
-	  // Persist exactly one loaded Kapitel (v1); we’ll add multi-Kapitel later
-	  const KAPITEL_STORE_KEY = 'kapitel_current_v1';
-
-	  function ds_lsGet(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch{ return fallback; } }
-	  function ds_lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
-	  function ds_trimCsvCount(csv){
-		if(!csv) return 0;
-		const lines = csv.trim().split(/\r?\n/);
-		if(lines.length === 0) return 0;
-		// assume first row is header when it looks like text, skip it
-		return Math.max(0, lines.length - 1);
-	  }
-
-	  // Core read helper used by our patched loaders
-	  async function datasetRead(filename){
-		const ds = window.currentDataset;
-		if(ds && ds.files && ds.files[filename] != null){
-		  return ds.files[filename]; // already a string
-		}
-		// Fallback to original local CSV fetch
-		const res = await fetch(filename, { cache: 'no-store' });
-		if(!res.ok) throw new Error('Failed to load ' + filename);
-		return await res.text();
-	  }
-
-	  function updateDatasetUI(){
-		const sel = document.getElementById('dataset-selector');
-		const ctx = document.getElementById('dataset-context');
-		// Rebuild selector each time (simple)
-		sel.innerHTML = '<option value="default">Default Dataset</option>';
-		const saved = ds_lsGet(KAPITEL_STORE_KEY, null);
-		if(saved){
-		  const opt = document.createElement('option');
-		  opt.value = 'kapitel';
-		  opt.textContent = saved.title || (saved.manifest?.title) || 'Kapitel (loaded)';
-		  sel.appendChild(opt);
-		}
-		// Pre-select current
-		sel.value = (window.currentDataset.key === 'kapitel') ? 'kapitel' : 'default';
-
-		// Context line
-		if(window.currentDataset.key === 'kapitel'){
-		  const c = window.currentDataset.counts || {};
-		  const title = window.currentDataset.title || 'Kapitel';
-		  ctx.textContent = `Studying: ${title} • ${c.vocab||0} vocab · ${c.verbs||0} verbs · ${c.adjadv||0} adj/adv · ${c.preps||0} preps`;
-		} else {
-		  ctx.textContent = '';
-		}
-	  }
-
-	  async function applyDatasetAndReload(){
-		// Re-run all existing loaders so the four modes use the selected dataset
-		try{
-		  // These functions exist later in the file; we call them after DOM is ready.
-		  if(typeof loadCSV === 'function')           await loadCSV();
-		  if(typeof loadVerbsData === 'function')     await loadVerbsData();
-		  if(typeof aa_loadData === 'function')       await aa_loadData();
-		  if(typeof pp_loadData === 'function')       await pp_loadData();
-		  // Refresh mode rendering if the app provides it
-		  if(typeof renderMode === 'function')        renderMode();
-		  console.log('[Mix pools]',
-		  { vocab:(window.words||[]).length,
-			verbs:(window.verbsState?.data||[]).length,
-			adjadv:(window.adjadvState?.data||[]).length,
-			preps:(window.prepsState?.data||[]).length });
-
-		  // Optional: if you want to jump to Mix automatically, uncomment:
-		  // if(typeof setMode === 'function') setMode('mix');
-		}catch(e){ console.error(e); }
-	  }
-
-	  async function handleKapitelZip(file){
-		const zip = await JSZip.loadAsync(file);
-		// Helper: find by file base name anywhere in the zip
-		async function readByName(basename){
-		  const entry = Object.values(zip.files).find(f => !f.dir && f.name.toLowerCase().endsWith('/'+basename)) 
-					 || Object.values(zip.files).find(f => !f.dir && f.name.toLowerCase() === basename.toLowerCase());
-		  if(!entry) return null;
-		  return await entry.async('string');
-		}
-		const manifestTxt = await readByName('manifest.json');
-		const vocabTxt    = await readByName('vocab.csv');
-		const verbsTxt    = await readByName('verbs.csv');
-		const adjadvTxt   = await readByName('adjadv.csv');
-		const prepsTxt    = await readByName('prepositions.csv');
-
-		if(!vocabTxt && !verbsTxt && !adjadvTxt && !prepsTxt){
-		  alert('This ZIP does not contain any of the required CSV files.');
-		  return;
-		}
-
-		// Build dataset object
-		let manifest = null;
-		try{ manifest = manifestTxt ? JSON.parse(manifestTxt) : null; }catch{ manifest = null; }
-		const title = (manifest && (manifest.title || manifest.kapitel)) || (file.name.replace(/\.zip$/i,''));
-		const counts = {
-		  vocab:  ds_trimCsvCount(vocabTxt||''),
-		  verbs:  ds_trimCsvCount(verbsTxt||''),
-		  adjadv: ds_trimCsvCount(adjadvTxt||''),
-		  preps:  ds_trimCsvCount(prepsTxt||'')
-		};
-		const ds = {
-		  key: 'kapitel',
-		  title,
-		  files: {
-			'manifest.json': manifestTxt || '',
-			'vocab.csv': vocabTxt || '',
-			'verbs.csv': verbsTxt || '',
-			'adjadv.csv': adjadvTxt || '',
-			'prepositions.csv': prepsTxt || ''
-		  },
-		  counts
-		};
-
-		// Save (single current Kapitel)
-		ds_lsSet(KAPITEL_STORE_KEY, { title, manifest, files: ds.files, counts });
-		window.currentDataset = ds;
-		updateDatasetUI();
-		await applyDatasetAndReload();
-	  }
-
-	  document.addEventListener('DOMContentLoaded', ()=>{
-		// Restore previously loaded Kapitel if any
-		const saved = ds_lsGet(KAPITEL_STORE_KEY, null);
-		if(saved){
-		  window.currentDataset = { key:'kapitel', title: saved.title, files: saved.files, counts: saved.counts };
-		}
-		updateDatasetUI();
-
-		// Wiring: selector change
-		const sel = document.getElementById('dataset-selector');
-		sel.addEventListener('change', async (e)=>{
-		  const v = e.target.value;
-		  if(v === 'default'){
-			window.currentDataset = { key:'default', title:'Default Dataset', files:null, counts:null };
-		  } else if(v === 'kapitel'){
-			const s = ds_lsGet(KAPITEL_STORE_KEY, null);
-			if(s){
-			  window.currentDataset = { key:'kapitel', title: s.title, files: s.files, counts: s.counts };
-			} else {
-			  // If nothing saved, revert
-			  window.currentDataset = { key:'default', title:'Default Dataset', files:null, counts:null };
-			  e.target.value = 'default';
-			}
-		  }
-		  updateDatasetUI();
-		  await applyDatasetAndReload();
-		});
-
-		// Wiring: Load Kapitel button
-		document.getElementById('btnLoadKapitel').addEventListener('click', ()=>{
-		  document.getElementById('kapitel-zip-input').click();
-		});
-		document.getElementById('kapitel-zip-input').addEventListener('change', async (ev)=>{
-		  const f = ev.target.files && ev.target.files[0];
-		  if(!f) return;
-		  try{
-			await handleKapitelZip(f);
-		  }catch(err){
-			console.error(err);
-			alert('Failed to load Kapitel ZIP: ' + err.message);
-		  } finally {
-			ev.target.value = '';
-		  }
-		});
-	  });
-			  
-				// ===== Firebase config — REPLACE with your real config from Firebase console =====
-		  // FIND THIS BLOCK LATER IF YOU NEED TO UPDATE CONFIG: "FIREBASE_CONFIG_START" → "FIREBASE_CONFIG_END"
-		  // FIREBASE_CONFIG_START
-		  const firebaseConfig = {
-			apiKey: "AIzaSyAvMyNtFyWM3Ajg2sxpWp4uMErfyawEOMc",
-			authDomain: "german-52657.firebaseapp.com",
-			databaseURL: "https://german-52657-default-rtdb.europe-west1.firebasedatabase.app",
-			projectId: "german-52657",
-			storageBucket: "german-52657.firebasestorage.app",
-			messagingSenderId: "364706857329",
-			appId: "1:364706857329:web:97779c21361db2423336d0"
-		  };
-		  // FIREBASE_CONFIG_END
-
-		  // Initialize Firebase (safe-guard: only once)
-		  if (!window._fbApp) {
-			try { window._fbApp = firebase.initializeApp(firebaseConfig); } catch(e) { /* ignore if already */ }
-		  }
-		  const db = firebase.database();
-
-		  // ===== What we sync (same keys we used for export/import)
-		  const SYNC_KEYS = [
-			'vocabProgress::default',
-			'vocabProgress::kapitel',
-
-			// Verbs/AdjAdv/Preps progress keys — add more if you already use these:
-			'verbs_level','verbs_unlocked_count','verbs_streaks','verbs_index',
-			'adjadv_level','adjadv_unlocked_count','adjadv_streaks','adjadv_index',
-			'preps_level','preps_unlocked_count','preps_streaks','preps_index',
-
-			// The currently loaded Kapitel package so other browsers load it too
-			'kapitel_current_v1'
-		  ];
-
-		  function cloudPath(username){ return 'users/' + encodeURIComponent(username); }
-
-		  function cloudSnapshot(){
-			const out = {};
-			SYNC_KEYS.forEach(k => { out[k] = localStorage.getItem(k) ?? null; });
-			// small meta
-			out['_meta'] = {
-			  updatedAt: Date.now(),
-			  datasetKey: (window.currentDataset?.key || 'default'),
-			  title: window.currentDataset?.title || 'Default Dataset'
-			};
-			return out;
-		  }
-
-		  async function cloudPull(username){
-			const snap = await db.ref(cloudPath(username)).get();
-			return snap.exists() ? snap.val() : null;
-		  }
-
-		  async function cloudPush(username, data){
-			await db.ref(cloudPath(username)).set(data);
-		  }
-
-		  function applyCloudData(data){
-			if(!data) return;
-			Object.keys(data).forEach(k=>{
-			  if(k === '_meta') return;
-			  const v = data[k];
-			  if(v === null || v === undefined) return;
-			  try { localStorage.setItem(k, v); } catch {}
-			});
-			// Re-apply Kapitel package if present
-			const saved = ds_lsGet('kapitel_current_v1', null);
-			if(saved){
-			  window.currentDataset = { key:'kapitel', title:saved.title, files:saved.files, counts:saved.counts };
-			} else {
-			  window.currentDataset = { key:'default', title:'Default Dataset', files:null, counts:null };
-			}
-		  }
-
-		  // UI helpers
-		  function updateSyncStatus(){
-			const el = document.getElementById('syncStatus');
-			const u  = localStorage.getItem('syncUsername') || null;
-			el.textContent = u ? ('Sync: ' + u) : 'Sync: Off';
-		  }
-
-		  // Autosync
-		  let _syncTimer = null;
-		  let _syncBusy = false;
-		  function scheduleSyncSoon(){
-			if(!localStorage.getItem('syncUsername')) return;
-			if(_syncTimer) clearTimeout(_syncTimer);
-			_syncTimer = setTimeout(runSync, 1500);
-		  }
-		  async function runSync(){
-			if(_syncBusy) return;
-			const u = localStorage.getItem('syncUsername');
-			if(!u) return;
-			_syncBusy = true;
-			try {
-			  await cloudPush(u, cloudSnapshot());
-			  // (optional) could update a small "last synced" timestamp UI here
-			} catch(e) {
-			  console.warn('Cloud sync failed:', e?.message || e);
-			} finally {
-			  _syncBusy = false;
-			}
-		  }
-		  // Periodic sync as a backup
-		  setInterval(()=>{ if(localStorage.getItem('syncUsername')) runSync(); }, 15000);
-
-		  // Wire UI
-		  document.addEventListener('DOMContentLoaded', ()=>{
-			// First visit splash
-			const hasSeen = localStorage.getItem('syncSplashSeen');
-			if(!hasSeen){
-			  document.getElementById('syncModal').style.display = 'flex';
-			}
-			document.getElementById('btnSyncSettings').addEventListener('click', ()=>{
-			  const input = document.getElementById('syncUsernameInput');
-			  input.value = localStorage.getItem('syncUsername') || '';
-			  document.getElementById('syncModal').style.display = 'flex';
-			});
-			document.getElementById('syncCancel').addEventListener('click', ()=>{
-			  localStorage.setItem('syncSplashSeen','1');
-			  document.getElementById('syncModal').style.display = 'none';
-			});
-			document.getElementById('syncSave').addEventListener('click', async ()=>{
-			  const u = (document.getElementById('syncUsernameInput').value || '').trim();
-			  if(!u){ alert('Please enter a username, e.g., negm'); return; }
-			  localStorage.setItem('syncSplashSeen','1');
-
-			  // If cloud has data, ask to use it
-			  try{
-				const remote = await cloudPull(u);
-				if(remote){
-				  if(confirm('Cloud data found for "'+u+'". Load it and overwrite local?')){
-					applyCloudData(remote);
-					if(typeof updateDatasetUI === 'function') updateDatasetUI();
-					await applyDatasetAndReload?.();
-				  }
-				}
-			  }catch(e){ console.warn('pull failed', e); }
-
-			  localStorage.setItem('syncUsername', u);
-			  updateSyncStatus();
-			  document.getElementById('syncModal').style.display = 'none';
-			  scheduleSyncSoon(); // push current local state
-			});
-
-			document.getElementById('btnSyncNow').addEventListener('click', runSync);
-
-			updateSyncStatus();
-
-			// Also sync on leave
-			window.addEventListener('beforeunload', ()=>{ try{ navigator.sendBeacon; }catch{}; });
-		  });
-
-		  // Every time we load data or change dataset, mark dirty → push soon
-		  const _origApplyDatasetAndReload = applyDatasetAndReload;
-		  applyDatasetAndReload = async function(){
-			if(typeof _origApplyDatasetAndReload === 'function'){
-			  await _origApplyDatasetAndReload();
-			}
-			scheduleSyncSoon();
-		  }
-
-	  
-	  
-	</script>
-
-
-  <script>
-	  document.addEventListener('DOMContentLoaded', () => {
-		// ===== State =====
-		let words = [];
-		let currentWord = null;
-		let chosenArticle = '';
-		let level = 1;
-		const wordsPerLevel = 25;
-		const masteryThreshold = 3;
-		let pluralEnterCount = 0;
-		let lastFocusId = 'german';
-
-		const statusEl = document.getElementById('status');
-		const englishRowEl = document.getElementById('englishRow');
-
-		// Show any uncaught error in the UI (helps diagnose blank screens)
-		window.addEventListener('error', (e) => {
-		  if (statusEl) statusEl.textContent = '⚠️ JS error: ' + (e.error?.message || e.message || String(e));
-		});
-
-		// === Image cache & preload ===
-		let imageCache = new Map(); // german -> best src or null
-		let preloadedNext = null;   // { word, src }
-
-		function status(msg){ if(statusEl) statusEl.textContent = msg || ''; }
-
-		// ===== Mix(Kapitel) helpers =====
-		window.isKapitelMixMode = function(){
-		  return (window.currentDataset?.key === 'kapitel') &&
-				 (typeof getMode==='function') && (getMode()==='mix');
-		};
-
-		window.sectionHasUnmastered = function(sectionName){
-		  if (sectionName === 'vocab'){
-			const arr = words || [];
-			return arr.some(w => (w.correctStreak||0) < masteryThreshold);
-		  }
-		  if (sectionName === 'verbs'){
-			const data = (window.verbsState?.data)||[];
-			const streaks = (window.verbsState?.streaks)||{};
-			return data.some(v => (streaks[v.id]||0) < 3);
-		  }
-		  if (sectionName === 'adjadv'){
-			const data = (window.adjadvState?.data)||[];
-			const streaks = (window.adjadvState?.streaks)||{};
-			return data.some(x => (streaks[x.id]||0) < 3);
-		  }
-		  if (sectionName === 'preps'){
-			const data = (window.prepsState?.data)||[];
-			const streaks = (window.prepsState?.streaks)||{};
-			return data.some(x => (streaks[x.id]||0) < 3);
-		  }
-		  return false;
-		};
-
-		window.allKapitelMastered = function(){
-		  if (window.currentDataset?.key !== 'kapitel') return false;
-		  return !['vocab','verbs','adjadv','preps'].some(window.sectionHasUnmastered);
-		};
-
-		window.showKapitelDoneSplash = function(){
-		  const m = document.getElementById('kapitelDoneModal');
-		  if (m) m.style.display = 'flex';
-		};
-
-		window.hideKapitelDoneSplash = function(){
-		  const m = document.getElementById('kapitelDoneModal');
-		  if (m) m.style.display = 'none';
-		};
-
-		window.resetKapitelProgress = function(){
-		  try{ localStorage.removeItem('vocabProgress::kapitel'); }catch{}
-		  try{
-			['verbs_level','verbs_unlocked_count','verbs_streaks','verbs_index',
-			 'adjadv_level','adjadv_unlocked_count','adjadv_streaks','adjadv_index',
-			 'preps_level','preps_unlocked_count','preps_streaks','preps_index']
-			 .forEach(k => localStorage.removeItem(k));
-		  }catch{}
-		  try{
-			(words||[]).forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; });
-			if (window.verbsState){ verbsState.streaks = {}; verbsState.index=0; }
-			if (window.adjadvState){ adjadvState.streaks = {}; adjadvState.index=0; }
-			if (window.prepsState){ prepsState.streaks = {}; prepsState.index=0; }
-		  }catch{}
-		  window.hideKapitelDoneSplash();
-		  if (typeof renderMode==='function') renderMode();
-		};
-
-
-		document.addEventListener('DOMContentLoaded', ()=>{
-		  document.getElementById('kapitelDoneClose')?.addEventListener('click', hideKapitelDoneSplash);
-		  document.getElementById('kapitelDoneReset')?.addEventListener('click', resetKapitelProgress);
-		});
-
-
-		// ===== CSV Parser =====
-		function parseCSV(text){
-		  const rows=[]; let row=[]; let cur=''; let inQuotes=false;
-		  for(let i=0;i<text.length;i++){
-			const c=text[i];
-			if(c==='"'){
-			  if(inQuotes && text[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=!inQuotes; }
-			} else if(c===',' && !inQuotes){
-			  row.push(cur); cur='';
-			} else if((c==='\n' || c==='\r') && !inQuotes){
-			  if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
-			} else {
-			  cur+=c;
-			}
-		  }
-		  if(cur!=='' || row.length){ row.push(cur); rows.push(row); }
-		  return rows;
-		}
-
-		// ===== Data loading =====
-		async function loadCSV(){
-		  try{
-			status('Loading vocab.csv…');
-			const data = await datasetRead('vocab.csv');
-			const lines = parseCSV(data.trim());
-			if(lines.length===0){ status('vocab.csv is empty'); return; }
-			lines.shift();
-			words = lines.map(cols=>{
-			  const english=cols[0]||''; const article=cols[1]||''; const german=cols[2]||''; const plural=cols[3]||'';
-			  const ex1=cols[4]||''; const ex2=cols[5]||''; const ex3=cols[6]||'';
-			  const examples=[ex1,ex2,ex3].filter(x=>x&&x.trim()!=='');
-			  return { english, article, german, plural, examples, correctStreak:0, answeredCorrect:false };
-			});
-			window.words = words; // expose vocab to MIX
-
-			loadProgress();
-			updateLevelDisplay();
-			await nextWord();          // show first word
-			schedulePreloadNext();     // start preloading immediately
-			status('');
-		  }catch(e){ console.error(e); status('Error: '+e.message); }
-		}
-
-		function updateLevelDisplay(){
-		  const el = document.getElementById('level');
-		  if (!el) return;
-		  if (isKapitelMixMode()){
-			el.style.display = 'none';
-		  } else {
-			el.style.display = '';
-			el.textContent = `Level: ${level} (Words 1–${level*wordsPerLevel})`;
-		  }
-		}
-
-
-		function getActiveWords(){
-		  if (isKapitelMixMode()){
-			// Whole Kapitel is available; we’ll prefer unmastered when picking next
-			return words.slice();
-		  }
-		  return words.slice(0, level*wordsPerLevel);
-		}
-
-
-		function getTierWords(){
-		  const active=getActiveWords(); if(active.length===0) return [];
-		  const minStreak=Math.min(...active.map(w=>w.correctStreak));
-		  return active.filter(w=>w.correctStreak===minStreak && !w.answeredCorrect);
-		}
-
-		// ===== Image helpers =====
-		function replaceUmlauts(s){
-		  return (s||'')
-			.replaceAll('ä','ae').replaceAll('Ä','Ae')
-			.replaceAll('ö','oe').replaceAll('Ö','Oe')
-			.replaceAll('ü','ue').replaceAll('Ü','Ue')
-			.replaceAll('ß','ss');
-		}
-		function buildCandidates(german){
-		  const baseRaw=(german||'').trim(); const bases=[];
-		  if(baseRaw){
-			bases.push(baseRaw, baseRaw.toLowerCase(), baseRaw.replaceAll(' ','-'), baseRaw.toLowerCase().replaceAll(' ','-'));
-			const uml=replaceUmlauts(baseRaw);
-			bases.push(uml, uml.toLowerCase(), uml.replaceAll(' ','-'), uml.toLowerCase().replaceAll(' ','-'));
-		  }
-		  const exts=['jpg','jpeg','png','webp']; const out=[];
-		  bases.forEach(b=>exts.forEach(ext=>out.push('img/'+encodeURIComponent(b)+'.'+ext)));
-		  return out;
-		}
-
-		function resolveImageSrcForGerman(german){
-		  return new Promise((resolve)=>{
-			if(!german){ resolve(null); return; }
-			if(imageCache.has(german)){ resolve(imageCache.get(german)); return; }
-
-			const candidates = buildCandidates(german);
-			let i = 0, done = false;
-
-			const tryNext = ()=>{
-			  if(done) return;
-			  if(i >= candidates.length){ done = true; imageCache.set(german, null); resolve(null); return; }
-			  const src = candidates[i++];
-			  const probe = new Image();
-			  probe.onload = ()=>{ if(done) return; done = true; imageCache.set(german, src); resolve(src); };
-			  probe.onerror = tryNext;
-			  probe.src = src;
-			};
-			tryNext();
-		  });
-		}
-
-		async function preloadWordImage(word){
-		  if(!word || !word.german) return { word, src: null };
-		  const src = await resolveImageSrcForGerman(word.german);
-		  return { word, src };
-		}
-
-		// Faster image: no artificial wait
-		function loadImageForCurrent(waitMs = 0){
-		  const img = document.getElementById('wordImage');
-		  if (img){
-			img.style.display='none';
-			img.removeAttribute('src');
-		  }
-		  return; // images disabled
-		}
-
-
-		function pickNextCandidateWord(){
-		  const active = getActiveWords();
-			if(active.length === 0) return null;
-
-			if (isKapitelMixMode()){
-			  const unmastered = active.filter(w => (w.correctStreak||0) < masteryThreshold);
-			  if (unmastered.length === 0) return null; // all done -> splash handled by mix picker
-			  const minStreak = Math.min(...unmastered.map(w => w.correctStreak||0));
-			  const tier = unmastered.filter(w => (w.correctStreak||0) === minStreak && !w.answeredCorrect);
-			  const pool = tier.length ? tier : unmastered;
-			  return pool[Math.floor(Math.random()*pool.length)];
-			}
-
-			// default (level-based)
-			const minStreak = Math.min(...active.map(w => w.correctStreak));
-			let tier = active.filter(w => w.correctStreak === minStreak && !w.answeredCorrect);
-			if(tier.length === 0) tier = active.filter(w => w.correctStreak === minStreak);
-			if(tier.length === 0) tier = active;
-			return tier[Math.floor(Math.random()*tier.length)];
-
-		}
-		async function schedulePreloadNext(){
-		  window.preloadedNext = null; // images disabled
-		}
-
-
-		async function nextWord(){
-		  const activeWords=getActiveWords(); if(activeWords.length===0) return;
-
-		  let tierWords=getTierWords();
-		  if(tierWords.length===0){
-			const minStreak=Math.min(...activeWords.map(w=>w.correctStreak));
-			activeWords.filter(w=>w.correctStreak===minStreak).forEach(w=>w.answeredCorrect=false);
-			tierWords=getTierWords();
-		  }
-		  const list=(tierWords.length?tierWords:activeWords);
-		  currentWord=list[Math.floor(Math.random()*list.length)];
-
-		  const englishEl = document.getElementById('english');
-		  const streakEl  = document.getElementById('streakDisplay');
-		  const germanEl  = document.getElementById('german');
-		  const pluralEl  = document.getElementById('plural');
-		  const feedbackEl= document.getElementById('feedback');
-		  const exampleEl = document.getElementById('example');
-		  const nextBtn   = document.getElementById('nextBtn');
-
-		  if(englishEl) englishEl.textContent=currentWord.english;
-		  if(streakEl)  streakEl.textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
-		  if(germanEl)  germanEl.value='';
-		  if(pluralEl)  pluralEl.value='';
-		  if(feedbackEl)feedbackEl.textContent='';
-		  if(exampleEl) exampleEl.textContent='';
-		  if(nextBtn)   nextBtn.style.display='none';
-
-		  chosenArticle='';
-		  resetArticleButtons();
-		  pluralEnterCount=0;
-
-		  applyEnglishVisibility();
-
-		  // Begin resolving image ASAP, then show it
-		  await loadImageForCurrent(0);
-		  schedulePreloadNext();
-
-		  if(germanEl){
-			setTimeout(()=>{
-			  germanEl.focus();
-			  try{ germanEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch{}
-			},0);
-		  }
-		    // MIX: rotate to another section after moving to next
-		  if ((typeof getMode==='function' ? getMode() : window.mode) === 'mix') {
-			const section = pickRandomSection();
-			renderForSection(section);
-			return;
-		  }
-
-		}
-
-		function resetArticleButtons(){
-		  const a=document.getElementById('btnDer');
-		  const b=document.getElementById('btnDie');
-		  const c=document.getElementById('btnDas');
-		  if(a) a.classList.remove('selected');
-		  if(b) b.classList.remove('selected');
-		  if(c) c.classList.remove('selected');
-		}
-
-		function chooseArticle(article){
-		  chosenArticle=article; resetArticleButtons();
-		  if(article==='der') document.getElementById('btnDer')?.classList.add('selected');
-		  if(article==='die') document.getElementById('btnDie')?.classList.add('selected');
-		  if(article==='das') document.getElementById('btnDas')?.classList.add('selected');
-
-		  const germanEl=document.getElementById('german');
-		  if(germanEl){
-			lastFocusId='german';
-			setTimeout(()=>{
-			  germanEl.focus();
-			  try{ germanEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch{}
-			},0);
-		  }
-		}
-
-		function randomExample(examples){ if(!examples||examples.length===0) return ''; const i=Math.floor(Math.random()*examples.length); return examples[i]; }
-
-		function checkAnswer(){
-		  if(!currentWord) return;
-		  const german=(document.getElementById('german')?.value || '').trim().toLowerCase();
-		  const plural=(document.getElementById('plural')?.value || '').trim().toLowerCase();
-		  let feedback='';
-		  const correctGerman=(currentWord.german||'').toLowerCase();
-		  const correctPlural=(currentWord.plural||'').toLowerCase();
-		  const pluralCorrect=(plural===correctPlural) || (correctPlural==='—' && plural==='');
-		  if(chosenArticle===currentWord.article && german===correctGerman && pluralCorrect){
-			currentWord.correctStreak++; currentWord.answeredCorrect=true; feedback='<span style="color:var(--ok)">Correct!</span>';
-		  } else {
-			currentWord.correctStreak=0; currentWord.answeredCorrect=false; feedback=`<span style="color:var(--bad)">Wrong!</span><br>Correct: ${currentWord.article} ${currentWord.german} — ${currentWord.plural}`;
-		  }
-		  const feedbackEl=document.getElementById('feedback');
-		  if(feedbackEl) feedbackEl.innerHTML=feedback;
-		  const streakEl=document.getElementById('streakDisplay');
-		  if(streakEl) streakEl.textContent=`(${currentWord.correctStreak}/${masteryThreshold})`;
-		  const ex=randomExample(currentWord.examples);
-		  const exampleEl=document.getElementById('example');
-		  if(exampleEl) exampleEl.textContent=ex?`📝 ${ex}`:'';
-		  const nextBtn=document.getElementById('nextBtn');
-		  if(nextBtn) nextBtn.style.display='inline-block';
-		  saveProgress();
-
-		  const activeWords = getActiveWords();
-			const allMastered = activeWords.every(w => w.correctStreak>=masteryThreshold);
-
-			if (isKapitelMixMode()){
-			  if (allKapitelMastered()) showKapitelDoneSplash();
-			} else {
-			  if(allMastered && level*wordsPerLevel<words.length){
-				level++; activeWords.forEach(w=>{w.correctStreak=0; w.answeredCorrect=false;});
-				updateLevelDisplay(); saveProgress();
-			  }
-			}
-
-		}
-
-		function saveProgress(){
-		  try{
-			  const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
-			  localStorage.setItem(`vocabProgress::${dsKey}`, JSON.stringify({
-				words, level,
-				showEnglish: document.getElementById('toggleEnglish')?.checked
-			  }));
-			}finally{
-			  // Mark for cloud sync if enabled
-			  if (typeof scheduleSyncSoon === 'function') scheduleSyncSoon();
-			}
-		}
-
-		function loadProgress(){
-		  try{
-			const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
-			const saved = localStorage.getItem(`vocabProgress::${dsKey}`);
-			const cb=document.getElementById('toggleEnglish');
-			if(saved){
-			  const data=JSON.parse(saved);
-			  level=data.level||1;
-			  if(cb) cb.checked = (data.showEnglish!==undefined)? !!data.showEnglish : true;
-			  words.forEach((w,i)=>{ if(data.words && data.words[i]){ w.correctStreak=data.words[i].correctStreak||0; w.answeredCorrect=data.words[i].answeredCorrect||false; } });
-			} else { if(cb) cb.checked = true; }
-		  }catch{}
-		}
-
-		function resetProgress(){
-		  if(confirm('Are you sure you want to reset progress?')){
-			try{
-			  const dsKey = (window.currentDataset?.key === 'kapitel') ? 'kapitel' : 'default';
-			  localStorage.removeItem(`vocabProgress::${dsKey}`);
-			}catch{}
-			words.forEach(w=>{ w.correctStreak=0; w.answeredCorrect=false; });
-			level=1; updateLevelDisplay(); nextWord();
-		  }
-		}
-
-
-		// Input focus + Enter behavior
-		document.getElementById('german')?.addEventListener('focus', ()=>{ lastFocusId='german'; });
-		document.getElementById('plural')?.addEventListener('focus', ()=>{ lastFocusId='plural'; });
-
-		document.getElementById('german')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('plural')?.focus(); }});
-		document.getElementById('plural')?.addEventListener('keydown', e=>{
-		  if(e.key==='Enter'){
-			e.preventDefault();
-			pluralEnterCount++;
-			if(pluralEnterCount===1) checkAnswer();
-			else if(pluralEnterCount===2){ 
-			  pluralEnterCount=0; 
-			  nextWord(); 
-			  setTimeout(()=>{ 
-				if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); 
-			  }, 0); 
-			}
-
-		  }
-		});
-
-		// ===== Article buttons — keep keyboard up =====
-		function bindArticleButton(id, article){
-		  const el = document.getElementById(id);
-		  if(!el) return;
-
-		  // Prevent the button from stealing focus (so keyboard stays open)
-		  const early = (e)=>{ 
-			try { e.preventDefault(); } catch {}
-			chooseArticle(article);
-		  };
-		  el.addEventListener('pointerdown', early);
-		  el.addEventListener('mousedown', early);
-		  el.addEventListener('click', (e)=>{ e.preventDefault(); chooseArticle(article); });
-		}
-		bindArticleButton('btnDer','der');
-		bindArticleButton('btnDie','die');
-		bindArticleButton('btnDas','das');
-
-		// Other buttons
-		document.getElementById('checkBtn')?.addEventListener('click', checkAnswer);
-		document.getElementById('resetBtn')?.addEventListener('click', resetProgress);
-		document.getElementById('nextBtn')?.addEventListener('click', nextWord);
-
-		// English toggle
-		function applyEnglishVisibility(){
-		  const cb=document.getElementById('toggleEnglish');
-		  if(!englishRowEl) return;
-		  englishRowEl.style.display = cb && cb.checked ? '' : 'none';
-		}
-		document.getElementById('toggleEnglish')?.addEventListener('change', ()=>{ applyEnglishVisibility(); saveProgress(); });
-
-		// Start
-		applyEnglishVisibility();
-		loadCSV();
-	  });
-  </script>
-  <script>
-        /* =======================
-           Verbs Trainer (ADD-ON)
-           ======================= */
-        
-        /* LocalStorage keys (namespaced) */
-        const MODE_KEY = 'mode'; // shared selector; defaults to 'vocab'
-        const VERBS_LEVEL_KEY = 'verbs_level';
-        const VERBS_UNLOCKED_KEY = 'verbs_unlocked_count';
-        const VERBS_STREAKS_KEY = 'verbs_streaks';
-        const VERBS_INDEX_KEY = 'verbs_index';
-        
-        /* State */
-        const verbsState = {
-          data: [],      // array of verbs
-          index: 0,      // pointer within unlocked pool
-          level: 1,      // 25 items per level
-          unlocked: 25,  // how many available = level * 25
-          streaks: {}    // id -> 0..3
-        };
-        window.verbsState = verbsState; // expose verbs to MIX
-
-        /* DOM refs */
-        const elModeSwitch = document.getElementById('mode-switch');
-        const elVerbsCard  = document.getElementById('verbs-card');
-        const elEnglish    = document.getElementById('verbs-english');
-        const elInf        = document.getElementById('verbs-inf');
-        const elAuxBtns    = Array.from(document.querySelectorAll('.aux-btn'));
-        const elAuxBadge   = document.getElementById('verbs-aux-badge');
-        const elAuxFixed   = document.getElementById('verbs-aux-fixed');
-        const pIch = document.getElementById('verbs-p-ich');
-        const pDu  = document.getElementById('verbs-p-du');
-        const pEr  = document.getElementById('verbs-p-er');
-        const pIhr = document.getElementById('verbs-p-ihr');  
-		const elPart = document.getElementById('verbs-partizip');
-		// NEW fields must be declared before any use
-		const inpPast = document.getElementById('verbs-past');     // Präteritum
-		const inpPrep = document.getElementById('verbs-prep');     // Preposition input
-		const caseBtns = Array.from(document.querySelectorAll('.case-btn')); // Inf/Akk/Dat buttons
-        const elCheck = document.getElementById('verbs-check');
-        const elNext  = document.getElementById('verbs-next');
-        const elFeedback = document.getElementById('verbs-feedback');
-        const reflBtns = Array.from(document.querySelectorAll('.refl-btn'));
-        const selReflCase = document.getElementById('verbs-refl-case');
-		
-		// Keep track: after Check is pressed once, second Enter on last field should go Next
-		elCheck?.addEventListener('click', ()=> { lastFieldCheckedOnce = true; });
-		elNext ?.addEventListener('click', ()=> { lastFieldCheckedOnce = false; });
-
-		// Case buttons + state
-		let chosenCase = null;  // 'inf' | 'akk' | 'dat' | null
-
-		let lastFieldCheckedOnce = false; // first Enter on last field triggers Check; second triggers Next
-
-
-		// Reflexive state (we already had chosenRefl)
-		let chosenRefl = null;  // 'yes' | 'no' | null
-		
-		let chosenAux = null;   // 'haben' | 'sein'
-
-		// remember last focused text input (to keep keyboard open)
-		let lastInputFocus = null;
-		[elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
-		  el?.addEventListener('focus', ()=>{
-			lastInputFocus = el;
-			scrollFieldIntoView(el);
-		  });
-		});
-
-
-      
-      
-          // The order you want to tab through with Enter:
-          function focusChain(){
-		  return [elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart]
-			.filter(el => el && !el.disabled && el.offsetParent !== null);
-		}
-
-       
-        function focusNextFrom(current){
-		  const list = focusChain();
-		  const i = list.indexOf(current);
-		  if (i >= 0 && i < list.length - 1) {
-			const nextEl = list[i+1];
-			nextEl.focus({preventScroll:true});
-			scrollFieldIntoView(nextEl);
-		  } else {
-			elCheck?.click();
-		  }
-		}
-
-        // Add Enter key handler to each input
-		[elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el => {
-		  el?.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') {
-			  e.preventDefault();
-
-			  const list   = focusChain();
-			  const lastEl = list[list.length - 1];
-			  const isLast = (e.target === lastEl);
-
-			  if (isLast) {
-				if (!lastFieldCheckedOnce) {
-				  // First Enter on last field => CHECK
-				  elCheck?.click();
-				  e.target.focus({ preventScroll: true });
-				  scrollFieldIntoView(e.target);
-				} else {
-				  // Second Enter on last field => NEXT, then focus first field
-				  elNext?.click();
-				  setTimeout(() => {
-					elInf?.focus({ preventScroll: true });
-					scrollFieldIntoView(elInf);
-				  }, 150);
-				}
-			  } else {
-				// Normal path: go to next field
-				focusNextFrom(e.target);
-			  }
-			}
-		  });
-		});
-
-          
-        /* Helpers */
-        function lsGet(key, fallback) {
-          try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
-        }
-        function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
-        function lsGetInt(key, fallback) {
-          const v = localStorage.getItem(key); const n = v===null?NaN:parseInt(v,10); return Number.isFinite(n)?n:fallback;
-        }
-        function lsSetInt(key, n) { try { localStorage.setItem(key, String(n)); } catch {} }
-        function norm(s){ return (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
-        function mark(el, ok){ el?.classList.remove('result-ok','result-bad'); el?.classList.add(ok?'result-ok':'result-bad'); }
-        
-		// Helper: show the correct answer below wrong inputs
-		function showCorrect(el, isOK, correctValue){
-		  if (!el) return;
-
-		  // remove any old tip element if it exists (harmless if not)
-		  const old = el.nextElementSibling;
-		  if (old && old.classList && old.classList.contains('correct-tip')) old.remove();
-
-		  // If wrong and we have a correct value, put it directly in the input
-		  if (!isOK && correctValue) {
-			try { el.value = correctValue; } catch(_) {}
-		  }
-		}
-
-		
-		function updateLevelIndicator(){
-		  const el = document.getElementById('verbs-level-indicator');
-		  if (!el) return;
-		  if (isKapitelMixMode()){
-			el.style.display = 'none';
-			return;
-		  }
-		  el.style.display = '';
-		  if (!verbsState?.data?.length) return;
-
-		  const level = verbsState.level || 1;
-		  const totalUpToLevel = Math.min(level * 25, verbsState.data.length);
-		  const idsUpToLevel = verbsState.data.slice(0, totalUpToLevel).map(v => v.id || `${v.lemma}_${v.english}`);
-		  const doneUpToLevel = idsUpToLevel.filter(id => (verbsState.streaks?.[id] || 0) >= 3).length;
-		  el.textContent = `Level ${level} • ${doneUpToLevel}/${totalUpToLevel} mastered`;
-		}
-
-
-
-		//Scroll to focus the text field helper
-		function scrollFieldIntoView(el){
-		  if (!el) return;
-		  // small delay helps on mobile when keyboard pops
-		  setTimeout(()=>{ try { el.scrollIntoView({ behavior:'smooth', block:'center' }); } catch(_){} }, 50);
-		}
-
-		
-        /* Mode switch (non-destructive) */
-        function getMode(){ return localStorage.getItem(MODE_KEY) || 'vocab'; }
-        function setMode(m){ localStorage.setItem(MODE_KEY, m); renderMode(); }
-        function renderMode(){
-          const mode = localStorage.getItem(MODE_KEY) || 'vocab';
-        
-          // Highlight the active mode button
-          document.querySelectorAll('#mode-switch .mode-btn').forEach(btn=>{
-            btn.classList.toggle('active', btn.dataset.mode === mode);
-          });
-        
-          // Sections we want to show/hide
-			const vocab = document.getElementById('vocab-wrapper');
-			const verbs = document.getElementById('verbs-card');
-
-			// Show Verbs card only in "verbs" mode
-			if (verbs) verbs.hidden = (mode !== 'verbs' && mode !== 'mix');
-
-			// Show Vocab only in "vocab" (Mix is handled by the Mix renderer)
-			if (vocab) vocab.style.display = (mode === 'vocab') ? '' : 'none';
-
-
-        
-          // If entering verbs, (re)render a fresh card
-          if (mode === 'verbs') {
-            chosenAux = null;          // from the verbs add-on state
-            renderVerbsCard?.();       // safe call in case it’s not defined yet
-          }
-        }
-        elModeSwitch?.addEventListener('click', (e)=>{
-          if(e.target.matches('.mode-btn')){
-            setMode(e.target.dataset.mode);
-          }
-        });
-        
-        /* Load verbs data
-           - Tries verbs.csv (same folder) with header:
-             id,lemma,english,aux,ich,du,er,wir,ihr,sie,partizip
-           - If not found, uses a small mock so you can test UI immediately.
-        */
-        async function loadVerbsData(){
-          let raw = '';
-          try { raw = await datasetRead('verbs.csv'); } catch(_) {}
-          raw = (raw || '').trim();
-        
-          let rows = [];
-          if (raw) {
-            const lines = raw.split(/\r?\n/);
-            const head = (lines[0] || '').toLowerCase();
-        
-            // Heuristics: if header line contains typical keys, parse as objects; else parse as fixed columns.
-            const looksHeader = /(english|lemma|aux|ich|partizip|past|praeteritum)/.test(head);
-        
-            if (looksHeader) {
-              // --- Parse with headers -> objects ---
-              const headers = lines.shift().split(',').map(h => h.trim());
-              rows = lines.filter(Boolean).map(line => {
-                const cells = []; let cur='', inQ=false;
-                for (let i=0;i<line.length;i++){
-                  const ch=line[i];
-                  if (ch === '"'){ inQ = !inQ; continue; }
-                  if (ch === ',' && !inQ){ cells.push(cur); cur=''; continue; }
-                  cur += ch;
-                }
-                cells.push(cur);
-                const obj = {};
-                headers.forEach((h,i)=> obj[h] = (cells[i]||'').trim());
-                return obj;
-              });
-            } else {
-              // --- Parse as plain columns (no header) ---
-              // Expected order:
-              // 0:english, 1:lemma, 2:aux, 3:ich, 4:du, 5:er, 6:wir, 7:ihr, 8:sie, 9:partizip, 10:past, 11:preps, 12:case, 13:reflexive
-              rows = lines.filter(Boolean).map((line, i) => {
-                const cells = []; let cur='', inQ=false;
-                for (let j=0;j<line.length;j++){
-                  const ch=line[j];
-                  if (ch === '"'){ inQ = !inQ; continue; }
-                  if (ch === ',' && !inQ){ cells.push(cur); cur=''; continue; }
-                  cur += ch;
-                }
-                cells.push(cur);
-                return {
-                  english:   (cells[0]||'').trim(),
-                  lemma:     (cells[1]||'').trim(),
-                  aux:       (cells[2]||'').trim(),
-                  ich:       (cells[3]||'').trim(),
-                  du:        (cells[4]||'').trim(),
-                  er:        (cells[5]||'').trim(),
-                  wir:       (cells[6]||'').trim(),
-                  ihr:       (cells[7]||'').trim(),
-                  sie:       (cells[8]||'').trim(),
-                  partizip:  (cells[9]||'').trim(),
-                  past:      (cells[10]||'').trim(),
-                  preps:     (cells[11]||'').trim(),
-                  case:      (cells[12]||'').trim(),
-                  reflexive: (cells[13]||'').trim()
-                };
-              });
-            }
-          }
-        
-          // Normalize & ensure id
-          const norm = (r, i) => ({
-            id: r.id || `v_${(r.lemma||r.english||'row').replace(/\s+/g,'_')}_${i}`,
-            lemma:     r.lemma || r.infinitive || '',
-            english:   r.english || r.meaning || '',
-            aux:       r.aux || r.auxiliary || '',
-            ich:       r.ich || r.prs_ich || '',
-            du:        r.du  || r.prs_du  || '',
-            er:        r.er  || r.prs_er  || '',
-            wir:       r.wir || r.prs_wir || '',
-            ihr:       r.ihr || r.prs_ihr || '',
-            sie:       r.sie || r.prs_sie || '',
-            partizip:  r.partizip || r.perfekt || r.partizip2 || '',
-            past:      r.past || r.praeteritum || r.präteritum || '',
-            preps:     r.preps || r.prepositions || '',
-            case:      (r.case || r.kasus || '').toLowerCase(),
-            reflexive: (r.reflexive || r.refl || '').toLowerCase()
-          });
-        
-          if (!rows.length) {
-            rows = [
-              { id:'v001', lemma:'gehen',  english:'to go',    aux:'sein',  ich:'gehe', du:'gehst', er:'geht', wir:'gehen', ihr:'geht', sie:'gehen', partizip:'gegangen', past:'ging' },
-              { id:'v002', lemma:'machen', english:'to make',  aux:'haben', ich:'mache', du:'machst', er:'macht', wir:'machen', ihr:'macht', sie:'machen', partizip:'gemacht', past:'machte' },
-              { id:'v003', lemma:'kommen', english:'to come',  aux:'sein',  ich:'komme', du:'kommst', er:'kommt', wir:'kommen', ihr:'kommt', sie:'kommen', partizip:'gekommen', past:'kam' }
-            ];
-          }
-        
-          verbsState.data = rows.map(norm);
-          // Debug so you can see it's loaded
-          console.log('[verbs loaded]', verbsState.data.length, verbsState.data[0]);
-        }
-        
-        /* Tiny CSV parser (no deps) */
-        function parseCSV(text){
-          const lines = text.trim().split(/\r?\n/);
-          const headers = lines.shift().split(',').map(h=>h.trim());
-          return lines.map(line=>{
-            const cells = [];
-            let cur = '', inQ=false;
-            for (let i=0;i<line.length;i++){
-              const ch=line[i];
-              if (ch==='\"'){ inQ = !inQ; continue; }
-              if (ch===',' && !inQ){ cells.push(cur); cur=''; continue; }
-              cur += ch;
-            }
-            cells.push(cur);
-            const obj={};
-            headers.forEach((h,i)=>obj[h]= (cells[i]||'').trim());
-            // ensure id exists
-            if (!obj.id) obj.id = 'v_' + obj.lemma + '_' + Math.random().toString(36).slice(2,7);
-            return obj;
-          });
-        }
-        
-        /* Initialize state from LS */
-        function initVerbsState(){
-          verbsState.level   = lsGetInt(VERBS_LEVEL_KEY, 1);
-          verbsState.unlocked= lsGetInt(VERBS_UNLOCKED_KEY, verbsState.level*25);
-          verbsState.index   = lsGetInt(VERBS_INDEX_KEY, 0);
-          verbsState.streaks = lsGet(VERBS_STREAKS_KEY, {});
-        }
-        
-        /* Save state to LS */
-        function saveVerbsState(){
-          lsSetInt(VERBS_LEVEL_KEY, verbsState.level);
-          lsSetInt(VERBS_UNLOCKED_KEY, verbsState.unlocked);
-          lsSetInt(VERBS_INDEX_KEY, verbsState.index);
-          lsSet(VERBS_STREAKS_KEY, verbsState.streaks);
-        }
-        
-        /* Render current verb card */
-        function currentVerb(){
-		  let pool;
-		  if (isKapitelMixMode()){
-			const data = verbsState.data.slice();
-			const streaks = verbsState.streaks||{};
-			const unmastered = data.filter(v => (streaks[v.id]||0) < 3);
-			pool = unmastered.length ? unmastered : data; // if all done, let MIX show splash
-		  } else {
-			pool = verbsState.data.slice(0, Math.min(verbsState.unlocked, verbsState.data.length));
-		  }
-		  if (!pool.length) return null;
-		  const i = Math.max(0, Math.min(verbsState.index % pool.length, pool.length-1));
-		  return pool[i];
-		}
-
-        
-        function clearFieldStyles(){
-          [elInf, pIch, pDu, pEr, pIhr, elPart].forEach(el=>el?.classList.remove('result-ok','result-bad'));
-        }
-        
-        function renderVerbsCard(){
-          const v = currentVerb();
-          if (!v) { elVerbsCard.hidden = true; return; }
-		  // --- Show/Hide the Preposition field depending on the verb ---
-			const prepRow = document.getElementById('verbs-prep-row');
-			if (prepRow) {
-			  const hasPrep = !!String(v.preps || '').trim();  // does CSV have any preposition?
-			  prepRow.style.display = hasPrep ? '' : 'none';
-
-			  // optional: use first preposition as a placeholder example
-			  if (hasPrep && inpPrep) {
-				const first = String(v.preps).split(';').map(s => s.trim()).filter(Boolean)[0] || 'auf';
-				inpPrep.placeholder = 'e.g., ' + first;
-			  } else if (inpPrep) {
-				inpPrep.placeholder = 'e.g., auf';
-			  }
-			}
-          clearFieldStyles();
-          elEnglish.textContent = v.english || '';
-          elInf.value = '';
-          elPart.value = '';
-          [pIch,pDu,pEr,pIhr].forEach(el=>{ if(el) el.value=''; });
-		  
-		  // Enter-behavior state reset for the last field
-			lastFieldCheckedOnce = false;
-
-      
-          if (inpPrep) inpPrep.value = '';
-		  
-		  // --- NEW: reset extra governance fields for each new card ---
-
-			// Preposition input (just the preposition, e.g., "auf")
-			if (inpPrep) inpPrep.value = '';
-
-			// Past (Präteritum) input (e.g., "ging")
-			if (inpPast) inpPast.value = '';
-
-			// Case buttons (Inf/Akk/Dat)
-			chosenCase = null;
-			caseBtns.forEach(b => b.classList.remove('selected'));
-
-			// Reflexive buttons (Yes/No)
-			chosenRefl = null;
-			reflBtns.forEach(b => b.classList.remove('selected'));
-      
-			// -- reset field and button colors for a fresh card --
-			[elInf, inpPrep, pIch, pDu, pEr, pIhr, inpPast, elPart].forEach(el=>{
-			  el?.classList.remove('result-ok','result-bad');
-			});
-
-			// keep selections (user's choice) but clear correctness coloring
-			[...elAuxBtns, ...caseBtns, ...reflBtns].forEach(btn=>{
-			  btn.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
-			});
-
-		  
-          // Reset preposition & reflexive UI (new feature)
-          if (inpPrep) inpPrep.value = '';               // reset preposition dropdown
-          chosenRefl = null;                             // forget previous yes/no choice
-          reflBtns.forEach(b=>b.classList.remove('selected'));  // unselect both buttons
-          if (selReflCase) { 
-            selReflCase.value = 'Akk';                   // set default case to Akkusativ
-            selReflCase.disabled = true;                 // keep it disabled until "Yes" is clicked
-          }
-      
-          // aux UI reset
-          elAuxBtns.forEach(btn=>btn.classList.remove('selected'));
-          elAuxBadge.style.display='none';
-          elAuxBadge.textContent='';
-          elAuxFixed.textContent='—';
-          elFeedback.textContent='';
-		  
-		  // remove any old correct tips
-			document.querySelectorAll('.correct-tip').forEach(tip => tip.remove());
-
-			updateLevelIndicator();
-
-
-        }
-        
-        // Function to select auxiliary (haben/sein)
-        function selectAux(aux){ // 'haben' or 'sein'
-          chosenAux = aux;
-          elAuxBtns.forEach(b=>b.classList.toggle('selected', b.dataset.aux === aux));
-          elAuxBadge.style.display='inline-block';
-          elAuxBadge.textContent = aux;
-          elAuxFixed.textContent = (aux === 'haben') ? 'habe' : 'bin';
-        }
-        
-        // Make sure clicking buttons doesn’t close the keyboard
-        elAuxBtns.forEach(btn=>{
-          // On touch or click, prevent the input from losing focus
-          btn.addEventListener('mousedown', (e)=>{ 
-            e.preventDefault();            // stop losing focus
-            selectAux(btn.dataset.aux);    // handle logic
-            if (lastInputFocus) lastInputFocus.focus({preventScroll:true}); // refocus
-          });
-          btn.addEventListener('touchstart', (e)=>{ 
-            e.preventDefault(); 
-            selectAux(btn.dataset.aux);
-            if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
-          }, {passive:false});
-          // Also handle desktop clicks normally
-          btn.addEventListener('click', ()=> selectAux(btn.dataset.aux));
-        });
-      
-		// === CASE BUTTONS (Inf / Akk / Dat) ===
-
-		// function to remember which case you picked
-		function selectCase(val){ // 'inf' | 'akk' | 'dat'
-		  chosenCase = val;
-		  caseBtns.forEach(b => 
-			b.classList.toggle('selected', b.dataset.case === val)
-		  );
-		}
-
-		// these make sure tapping buttons on mobile doesn't close keyboard
-		caseBtns.forEach(btn=>{
-		  btn.addEventListener('mousedown', (e)=>{
-			e.preventDefault();                     // stop losing focus
-			selectCase(btn.dataset.case);           // mark this case as chosen
-			if (lastInputFocus)                     // if a text field was focused...
-			  lastInputFocus.focus({preventScroll:true}); // ...keep it focused
-		  });
-
-		  btn.addEventListener('touchstart', (e)=>{
-			e.preventDefault(); 
-			selectCase(btn.dataset.case);
-			if (lastInputFocus)
-			  lastInputFocus.focus({preventScroll:true});
-		  }, {passive:false});
-
-		  // desktop fallback (works even if you don’t need it)
-		  btn.addEventListener('click', ()=> selectCase(btn.dataset.case));
-		});
-	  
-	  
-          // Function to choose reflexive yes/no
-          function selectRefl(val){ // 'yes' or 'no'
-            chosenRefl = val;
-            reflBtns.forEach(b=>b.classList.toggle('selected', b.dataset.refl === val));
-            if (selReflCase) selReflCase.disabled = (val !== 'yes');
-
-          }
-          
-            // Prevent losing focus so keyboard stays up
-            reflBtns.forEach(btn=>{
-              btn.addEventListener('mousedown', (e)=>{ 
-                e.preventDefault();
-                selectRefl(btn.dataset.refl);
-                if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
-              });
-              btn.addEventListener('touchstart', (e)=>{ 
-                e.preventDefault();
-                selectRefl(btn.dataset.refl);
-                if (lastInputFocus) lastInputFocus.focus({preventScroll:true});
-              }, {passive:false});
-              btn.addEventListener('click', ()=> selectRefl(btn.dataset.refl));
-            });
-      
-      
-        
-        /* Check logic: full card must be correct to increment streak (3x target) */
-		function checkVerbsCard(){
-		  const v = currentVerb();
-		  if (!v) return;
-
-		  // --- 1) Basic checks (infinitive, aux, Präsens, past, partizip) ---
-		  const okInf  = norm(elInf.value)   === norm(v.lemma || '');
-		  // AUX supports "sein" or "haben" or "sein/haben" in CSV
-		  const allowedAux = String(v.aux || '').toLowerCase().split('/').map(s=>s.trim()).filter(Boolean);
-		  const okAux  = allowedAux.includes((chosenAux || '').toLowerCase());
-
-		  const okIch  = norm(pIch.value)    === norm(v.ich || '');
-		  const okDu   = norm(pDu.value)     === norm(v.du || '');
-		  const okEr   = norm(pEr.value)     === norm(v.er || '');
-		  const okIhr  = norm(pIhr.value)    === norm(v.ihr || '');
-
-		  const okPast = norm((inpPast?.value)||'') === norm(v.past || '');
-		  const okPart = norm(elPart.value)  === norm(v.partizip || '');
-
-		  // Mark the text inputs green/red
-		  mark(elInf, okInf);
-		  // Aux buttons visual
-		  // Aux buttons: user's wrong pick = red, correct pick(s) = orange, right pick = green
-			elAuxBtns.forEach(b=>{
-			  b.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
-			  const btnAux = (b.dataset.aux || '').toLowerCase();
-			  const isUserPick  = (chosenAux || '').toLowerCase() === btnAux;
-			  const isCorrectOp = allowedAux.includes(btnAux);
-
-			  if (okAux && isUserPick) {
-				// user picked a correct one -> green
-				b.classList.add('result-ok');
-			  } else if (!okAux) {
-				// user is wrong: mark their pick red, and show the correct option(s) in orange
-				if (isUserPick) b.classList.add('choice-wrong');
-				if (!isUserPick && isCorrectOp) b.classList.add('choice-correct');
-			  }
-			});
-
-		  
-		  
-		  mark(pIch, okIch); mark(pDu, okDu); mark(pEr, okEr); mark(pIhr, okIhr);
-		  mark(inpPast, okPast); mark(elPart, okPart);
-		  
-		  
-		  // --- 2) Preposition (CSV now has ONLY the preposition(s)) ---
-		  // CSV: preps = "auf;an;mit" or "" (empty means: no preposition requirement)
-		  let okPrep = true;
-		  const csvPreps = String(v.preps || '').split(';').map(s=>s.trim().toLowerCase()).filter(Boolean); // ["auf","an"]
-		  if (csvPreps.length) {
-			const userPrep = (inpPrep?.value || '').trim().toLowerCase();
-			okPrep = csvPreps.includes(userPrep);
-			if (inpPrep) {
-			  inpPrep.classList.remove('result-ok','result-bad');
-			  inpPrep.classList.add(okPrep ? 'result-ok' : 'result-bad');
-			}
-		  }
-
-		  // --- 3) Case after the verb (buttons: Inf / Akk / Dat) ---
-		  // CSV: case = "Inf" | "Akk" | "Dativ" (or empty)
-		  let okCase = true;
-		  const csvCaseRaw = String(v.case || '').trim().toLowerCase(); // "inf" | "akk" | "dativ"
-		  // normalize variants
-		  const csvCase = csvCaseRaw
-			.replace('akkusativ','akk')
-			.replace('dativ','dat')
-			.replace('infinitiv','inf');
-		  if (csvCase) {
-			okCase = (chosenCase === csvCase); // chosenCase is 'inf' | 'akk' | 'dat'
-			// Case buttons: chosenCase vs csvCase ('inf' | 'akk' | 'dat')
-			caseBtns.forEach(b=>{
-			  b.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
-			  if (!csvCase) return; // nothing to check for this verb
-
-			  const btnVal = (b.dataset.case || '').toLowerCase(); // 'inf' | 'akk' | 'dat'
-			  const isUserPick  = chosenCase === btnVal;
-			  const isCorrectOp = (btnVal === csvCase);
-
-			  if (okCase && isUserPick) {
-				b.classList.add('result-ok');
-			  } else if (!okCase) {
-				if (isUserPick) b.classList.add('choice-wrong');
-				if (!isUserPick && isCorrectOp) b.classList.add('choice-correct');
-			  }
-			});
-
-		  }
-
-		  // --- 4) Reflexive (Yes/No only) ---
-		  // CSV: reflexive = True/False (boolean-ish)
-		  let okRefl = true;
-		  const needRefl = String(v.reflexive || '').toLowerCase(); // "true" | "false" | ""
-		  if (needRefl === 'true') {
-			okRefl = (chosenRefl === 'yes');
-		  } else if (needRefl === 'false') {
-			// allow 'no' or untouched (null) to count as correct non-reflexive
-			okRefl = (chosenRefl === 'no' || chosenRefl === null);
-		  }
-			// Reflexive buttons: csv 'true' => yes is correct, 'false' => no is correct, '' => not checked
-			reflBtns.forEach(b=>{
-			  b.classList.remove('result-ok','result-bad','choice-correct','choice-wrong');
-			  if (!needRefl) return; // no reflexive requirement for this verb
-
-			  const btnVal = (b.dataset.refl || '').toLowerCase(); // 'yes' | 'no'
-			  const correctVal = (needRefl === 'true') ? 'yes' : 'no';
-			  const isUserPick  = (chosenRefl || 'no') === btnVal; // null counts like 'no' here
-			  const isCorrectOp = (btnVal === correctVal);
-
-			  if (okRefl && isUserPick) {
-				b.classList.add('result-ok');
-			  } else if (!okRefl) {
-				if (isUserPick) b.classList.add('choice-wrong');
-				if (!isUserPick && isCorrectOp) b.classList.add('choice-correct');
-			  }
-			});
-
-		  
-		  // --- show correct answers under wrong fields ---
-			showCorrect(elInf, okInf, v.lemma);
-			showCorrect(pIch, okIch, v.ich);
-			showCorrect(pDu, okDu, v.du);
-			showCorrect(pEr, okEr, v.er);
-			showCorrect(pIhr, okIhr, v.ihr);
-			showCorrect(inpPast, okPast, v.past);
-			showCorrect(elPart, okPart, v.partizip);
-			showCorrect(inpPrep, okPrep, v.preps);
-
-		  // --- 5) Final pass/fail & scoring ---
-		  const allOK =
-			okInf && okAux &&
-			okIch && okDu && okEr && okIhr &&
-			okPast && okPart && okPrep && okCase && okRefl;
-
-		  // Base fields we always check now: 8
-		  // (inf, aux, ich, du, er, ihr, past, partizip)
-		  let total = 8;
-		  if (csvPreps.length) total += 1;       // preposition present in CSV
-		  if (csvCase)          total += 1;       // case present in CSV
-		  if (needRefl)         total += 1;       // reflexive requirement present
-
-		  // Update per-verb streak
-		  const id = v.id || `${v.lemma}_${v.english}`;
-		  const cur = verbsState.streaks[id] || 0;
-		  verbsState.streaks[id] = allOK ? Math.min(3, cur + 1) : 0;
-
-		  // Unlock next levels if needed
-		  if (!isKapitelMixMode()){
-			  maybeUnlockNextVerbsLevel();
-			}
-			saveVerbsState();
-
-
-		  // Feedback
-		  elFeedback.textContent = allOK
-			? `✅ Perfect! Streak for "${v.lemma}" is now ${verbsState.streaks[id]}/3.`
-			: `❌ Not quite. Streak for "${v.lemma}" reset to 0.`;
-			updateLevelIndicator();
-
-
-		  // Optional global hook (if you had one)
-		  try {
-			if (typeof updateStreak === 'function') {
-			  updateStreak({ mode: 'verbs', passed: allOK, correctFields: allOK?total:0, totalFields: total });
-			}
-		  } catch(_) {}
-		}
-
-        
-        /* Unlock logic identical shape to your vocab levels */
-        function allVerbsInCurrentLevelComplete(){
-          const need = verbsState.level * 25;
-          const ids = verbsState.data.slice(0, Math.min(need, verbsState.data.length)).map(v=>v.id);
-          return ids.length>0 && ids.every(id => (verbsState.streaks[id]||0) >= 3);
-        }
-        function maybeUnlockNextVerbsLevel(){
-          if (allVerbsInCurrentLevelComplete()){
-            verbsState.level += 1;
-            verbsState.unlocked = Math.min(verbsState.level * 25, verbsState.data.length);
-            // You can show a toast here if you have one
-          }
-        }
-        
-        /* Navigation */
-        function nextVerb(){
-          // Prefer items that are < 3 streak within unlocked set
-          let pool;
-			if (isKapitelMixMode()){
-			  const data = verbsState.data.slice();
-			  const streaks = verbsState.streaks||{};
-			  const unmastered = data.filter(v => (streaks[v.id]||0) < 3);
-			  pool = unmastered.length ? unmastered : data;
-			} else {
-			  pool = verbsState.data.slice(0, Math.min(verbsState.unlocked, verbsState.data.length));
-			}
-			if (!pool.length) return;
-
-			let nextIdx = (verbsState.index + 1) % pool.length;
-			const start = nextIdx;
-			do{
-			  const id = pool[nextIdx].id;
-			  if ((verbsState.streaks[id]||0) < 3) break;
-			  nextIdx = (nextIdx + 1) % pool.length;
-			}while(nextIdx !== start);
-
-			verbsState.index = nextIdx;
-          saveVerbsState();
-          chosenAux = null;
-          renderVerbsCard();
-		    // MIX: rotate to another section after moving to next
-		  if ((typeof getMode==='function' ? getMode() : window.mode) === 'mix') {
-			const section = pickRandomSection();
-			renderForSection(section);
-			return;
-		  }
-
-        }
-        
-        /* Wire buttons */
-        elCheck?.addEventListener('click', checkVerbsCard);
-        elNext ?.addEventListener('click', nextVerb);
-        
-        /* Boot */
-        (async function initVerbs(){
-          document.body.classList.add('dark'); // enables black mode
-          
-          await loadVerbsData();
-          initVerbsState();
-          renderMode();
-		  updateLevelIndicator();
-
-        
-          // If first time and no mode saved, keep your site behavior (vocab default).
-          if (!localStorage.getItem(MODE_KEY)) localStorage.setItem(MODE_KEY, 'vocab');
-        
-          if (getMode() === 'verbs') renderVerbsCard();
-        
-          // Re-render verbs card whenever switching to verbs mode
-          const obs = new MutationObserver(()=>{ if(getMode()==='verbs') renderVerbsCard(); });
-          obs.observe(document.getElementById('mode-switch'), { attributes:true, childList:true, subtree:true });
-        })();
-
-       
-     /* ============================================
-     Adjectives & Adverbs (Adj/Adv) — simple trainer
-     ============================================= */
-        
-        /* LocalStorage keys */
-        const ADJADV_LEVEL_KEY   = 'adjadv_level';
-        const ADJADV_UNLOCKED_KEY= 'adjadv_unlocked_count';
-        const ADJADV_INDEX_KEY   = 'adjadv_index';
-        const ADJADV_STREAKS_KEY = 'adjadv_streaks';
-        
-        /* State */
-        const adjadvState = {
-          data: [],     // {id, english, german, example}
-          index: 0,
-          level: 1,     // 25 per level
-          unlocked: 25,
-          streaks: {}   // id -> 0..3
-        };
-        window.adjadvState = adjadvState; // expose adj/adv to MIX
-
-        /* DOM refs */
-        const elAdjAdvCard   = document.getElementById('adjadv-card');
-        const elAdjAdvEn     = document.getElementById('adjadv-english');
-        const elAdjAdvDe     = document.getElementById('adjadv-german');
-        const elAdjAdvEx     = document.getElementById('adjadv-example');
-        const elAdjAdvCheck  = document.getElementById('adjadv-check');
-        const elAdjAdvNext   = document.getElementById('adjadv-next');
-        const elAdjAdvFb     = document.getElementById('adjadv-feedback');
-        
-        /* Helpers */
-        function aa_lsGet(key, fallback){ try{const v=localStorage.getItem(key); return v?JSON.parse(v):fallback;}catch{ return fallback; } }
-        function aa_lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
-        function aa_lsGetInt(key, fallback){ const v=localStorage.getItem(key); const n=v===null?NaN:parseInt(v,10); return Number.isFinite(n)?n:fallback; }
-        function aa_lsSetInt(key, n){ try{ localStorage.setItem(key, String(n)); }catch{} }
-        function aa_norm(s){ return (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
-        
-        function aa_initState(){
-          adjadvState.level    = aa_lsGetInt(ADJADV_LEVEL_KEY, 1);
-          adjadvState.unlocked = aa_lsGetInt(ADJADV_UNLOCKED_KEY, 25);
-          adjadvState.index    = aa_lsGetInt(ADJADV_INDEX_KEY, 0);
-          adjadvState.streaks  = aa_lsGet(ADJADV_STREAKS_KEY, {});
-        }
-        function aa_saveState(){
-          aa_lsSetInt(ADJADV_LEVEL_KEY, adjadvState.level);
-          aa_lsSetInt(ADJADV_UNLOCKED_KEY, adjadvState.unlocked);
-          aa_lsSetInt(ADJADV_INDEX_KEY, adjadvState.index);
-          aa_lsSet(ADJADV_STREAKS_KEY, adjadvState.streaks);
-        }
-        
-        /* Load data from adjadv.csv (english,german,example) */
-        async function aa_loadData(){
-		  try {
-			const csv  = await datasetRead('adjadv.csv');
-			const rows = parseCSV(csv);
-
-			// Normalize to objects we expect: {id, english, german, example}
-			if (Array.isArray(rows) && rows.length) {
-			  // rows might already be objects (when CSV had headers)
-			  if (typeof rows[0] === 'object' && ('english' in rows[0] || 'german' in rows[0])) {
-				adjadvState.data = rows.map((r,i)=>({
-				  id: r.id || ('aa_' + (r.german || r.english || ('i'+i)).replace(/\s+/g,'_') + '_' + i),
-				  english: r.english || '',
-				  german:  r.german  || '',
-				  example: r.example || ''
-				}));
-			  } else {
-				// rows might be arrays (no headers) → [english,german,example]
-				adjadvState.data = rows.map((cols,i)=>({
-				  id: 'aa_' + i,
-				  english: (cols[0]||'').trim(),
-				  german:  (cols[1]||'').trim(),
-				  example: (cols[2]||'').trim()
-				}));
-			  }
-			} else {
-			  // Fallback demo data if CSV empty
-			  adjadvState.data = [
-				{ id:'aa001', english:'beautiful', german:'schön',     example:'Das ist ein schönes Haus.' },
-				{ id:'aa002', english:'slow',      german:'langsam',   example:'Er fährt langsam.' },
-				{ id:'aa003', english:'quickly',   german:'schnell',   example:'Sie läuft schnell.' }
-			  ];
-			}
-		  } catch {
-			// Fallback if file missing or parse failed
-			adjadvState.data = [
-			  { id:'aa001', english:'beautiful', german:'schön',   example:'Das ist ein schönes Haus.' },
-			  { id:'aa002', english:'slow',      german:'langsam', example:'Er fährt langsam.' }
-			];
-		  }
-		}
-        
-        /* Current item helpers */
-        function aa_pool(){
-		  if (isKapitelMixMode()) return adjadvState.data.slice();
-		  return adjadvState.data.slice(0, Math.min(adjadvState.unlocked, adjadvState.data.length));
-		}
-
-        function aa_current(){
-          const p = aa_pool(); if(!p.length) return null;
-          const i = Math.max(0, Math.min(adjadvState.index % p.length, p.length-1));
-          return p[i];
-        }
-        
-        /* Render & actions */
-        function aa_clearStyles(){ elAdjAdvDe?.classList.remove('result-ok','result-bad'); }
-        function aa_render(){
-          const it = aa_current();
-          if(!it){ elAdjAdvCard.hidden = true; return; }
-          aa_clearStyles();
-          elAdjAdvCard.hidden = false;
-          elAdjAdvEn.textContent = it.english || '';
-		  elAdjAdvEx.textContent = it.example ? '📝 ' + it.example : '';
-          elAdjAdvDe.value = '';
-          elAdjAdvFb.textContent = '';
-		  adjadvEnterCount = 0; // reset Enter counter each time a new word loads
-          setTimeout(()=>{ elAdjAdvDe?.focus(); }, 0);
-        }
-        
-        function aa_allInLevelMastered(){
-          const need = adjadvState.level * 25;
-          const ids = adjadvState.data.slice(0, Math.min(need, adjadvState.data.length)).map(x=>x.id);
-          return ids.length>0 && ids.every(id => (adjadvState.streaks[id]||0) >= 3);
-        }
-        function aa_maybeUnlockNext(){
-          if(aa_allInLevelMastered()){
-            adjadvState.level += 1;
-            adjadvState.unlocked = Math.min(adjadvState.level * 25, adjadvState.data.length);
-          }
-        }
-        
-        function aa_check(){
-          const it = aa_current(); if(!it) return;
-          const ok = aa_norm(elAdjAdvDe.value) === aa_norm(it.german);
-          elAdjAdvDe.classList.add(ok ? 'result-ok' : 'result-bad');
-          const cur = adjadvState.streaks[it.id] || 0;
-          adjadvState.streaks[it.id] = ok ? Math.min(3, cur+1) : 0;
-          aa_maybeUnlockNext();
-          aa_saveState();
-          elAdjAdvFb.textContent = ok
-            ? `✅ Correct! Streak for "${it.german}" is now ${adjadvState.streaks[it.id]}/3.`
-            : `❌ Wrong. Correct: ${it.german}`;
-        }
-        function aa_next(){
-          const p = aa_pool(); if(!p.length) return;
-          // Prefer items with streak < 3
-          let next = (adjadvState.index + 1) % p.length;
-          const start = next;
-          do{
-            const id = p[next].id;
-            if ((adjadvState.streaks[id]||0) < 3) break;
-            next = (next + 1) % p.length;
-          }while(next !== start);
-          adjadvState.index = next;
-          aa_saveState();
-          aa_render();
-		  
-		    // MIX: rotate to another section after moving to next
-			  if ((typeof getMode==='function' ? getMode() : window.mode) === 'mix') {
-				const section = pickRandomSection();
-				renderForSection(section);
-				return;
-			  }
-        }
-        
-        /* Wire buttons */
-        elAdjAdvCheck?.addEventListener('click', aa_check);
-        elAdjAdvNext ?.addEventListener('click', ()=>{
-          aa_next();
-          // if MIX mode, after moving within this pool, switch to a random section
-          if (getMode()==='mix') pickRandomSectionAndRender();
-        });
-		// Two-step Enter behavior: first Enter = check, second = next
-		let adjadvEnterCount = 0;
-
-		elAdjAdvDe?.addEventListener('keydown', (e)=>{
-		  if (e.key === 'Enter') {
-			e.preventDefault();
-			adjadvEnterCount++;
-			if (adjadvEnterCount === 1) {
-			  aa_check();
-			} else if (adjadvEnterCount === 2) {
-			  adjadvEnterCount = 0;
-			  aa_next();
-			  // If in Mix mode, switch to another section after next
-			  if (getMode() === 'mix') {
-				pickRandomSectionAndRender();
-			  }
-			}
-		  }
-		});
-
-        
-      
-		/* MIX can include all trainers. Default = equal weights; tweakable via localStorage 'mix_weights' = {"vocab":1,"verbs":1,"adjadv":1,"preps":1} */
-		const MIX_SECTIONS = ['vocab','verbs','adjadv','preps'];
-
-		// Balanced picker that rotates across eligible sections
-		function pickNextSectionBalanced(){
-		  const ALL = ['vocab','verbs','adjadv','preps'];
-
-		  // helpers
-		  const hasData = s => (
-			(s==='vocab'  && Array.isArray(window.words)                 && window.words.length) ||
-			(s==='verbs'  && Array.isArray(window.verbsState?.data)      && window.verbsState.data.length) ||
-			(s==='adjadv' && Array.isArray(window.adjadvState?.data)     && window.adjadvState.data.length) ||
-			(s==='preps'  && Array.isArray(window.prepsState?.data)      && window.prepsState.data.length)
-		  );
-		  const hasUnmastered = s => {
-			const thr = window.masteryThreshold || 3;
-			if (s==='vocab')  return (window.words||[]).some(w => (w.correctStreak||0) < thr);
-			if (s==='verbs')  return (window.verbsState?.data||[]).some(v => (window.verbsState.streaks?.[v.id]||0) < 3);
-			if (s==='adjadv') return (window.adjadvState?.data||[]).some(x => (window.adjadvState.streaks?.[x.id]||0) < 3);
-			if (s==='preps')  return (window.prepsState?.data||[]).some(x => (window.prepsState.streaks?.[x.id]||0) < 3);
-			return false;
-		  };
-
-		  // build candidates in fixed order
-		  let cand = ALL.filter(hasData);
-
-		  // Kapitel+Mix → only unmastered
-		  if (window.isKapitelMixMode?.()) cand = cand.filter(hasUnmastered);
-		  if (!cand.length) return 'vocab';
-
-		  // strict round-robin index across *cand*
-		  const last = window.__mix_last_section || null;
-		  let i = (cand.indexOf(last) + 1);
-		  if (i <= 0) i = 0;                      // if last not in list, start at 0
-		  const pick = cand[i % cand.length];
-
-		  window.__mix_last_section = pick;
-		  window.__mix_rr_i = (window.__mix_rr_i||0) + 1;
-		  return pick;
-		}
-
-
-		// === Balanced MIX picker (round-robin, no repeats, Kapitel=only unmastered, skips empty) ===
-		function pickWeightedRandomSection(){
-		  const sections = (typeof MIX_SECTIONS!=='undefined' && Array.isArray(MIX_SECTIONS))
-			? MIX_SECTIONS.slice() : ['vocab','verbs','adjadv','preps'];
-
-		  function hasData(s){
-			if (s==='vocab')  return Array.isArray(window.words) && window.words.length>0;
-			if (s==='verbs')  return Array.isArray(window.verbsState?.data) && window.verbsState.data.length>0;
-			if (s==='adjadv') return Array.isArray(window.adjadvState?.data) && window.adjadvState.data.length>0;
-			if (s==='preps')  return Array.isArray(window.prepsState?.data) && window.prepsState.data.length>0;
-			return false;
-		  }
-		  function hasUnmastered(s){
-			const thr = window.masteryThreshold || 3;
-			if (s==='vocab'){
-			  const arr = window.words || [];
-			  return arr.some(w => (w.correctStreak||0) < thr);
-			}
-			if (s==='verbs'){
-			  const data = window.verbsState?.data || [];
-			  const streaks = window.verbsState?.streaks || {};
-			  return data.some(v => (streaks[v.id]||0) < 3);
-			}
-			if (s==='adjadv'){
-			  const data = window.adjadvState?.data || [];
-			  const streaks = window.adjadvState?.streaks || {};
-			  return data.some(x => (streaks[x.id]||0) < 3);
-			}
-			if (s==='preps'){
-			  const data = window.prepsState?.data || [];
-			  const streaks = window.prepsState?.streaks || {};
-			  return data.some(x => (streaks[x.id]||0) < 3);
-			}
-			return false;
-		  }
-
-		  // start from sections that actually have data
-		  let cand = sections.filter(hasData);
-
-		  // if Kapitel+Mix, only keep sections with unmastered items
-		  const inKapitelMix = (window.currentDataset?.key === 'kapitel') &&
-							   ((typeof getMode==='function' ? getMode() : window.mode) === 'mix');
-		  if (inKapitelMix) cand = cand.filter(hasUnmastered);
-
-		  // nothing left → fallback to vocab (splash handled elsewhere)
-		  if (!cand.length) return 'vocab';
-
-		  // avoid repeating last section if alternatives exist
-		  const last = window.__mix_last_section || null;
-		  if (cand.length>1 && last){
-			const alt = cand.filter(s => s !== last);
-			if (alt.length) cand = alt;
-		  }
-
-		  // round-robin rotation
-		  window.__mix_rr_i = ((window.__mix_rr_i || 0) + 1) % cand.length;
-		  const pick = cand[window.__mix_rr_i];
-		  window.__mix_last_section = pick;
-		  return pick;
-		}
-
-
-
-		function pickRandomSection(){  // keep old name for existing calls
-		  return pickNextSectionBalanced();
-		}
-
-
-        function showOnly(section){ // hide/show sections
-		  const vocab = document.getElementById('vocab-wrapper');
-		  const verbs = document.getElementById('verbs-card');
-		  const adjad = document.getElementById('adjadv-card');
-		  const preps = document.getElementById('preps-card');
-
-		  if (section==='vocab'){
-			if(vocab) vocab.style.display='';
-			if(verbs) verbs.hidden=true;
-			if(adjad) adjad.hidden=true;
-			if(preps) preps.hidden=true;
-		  } else if (section==='verbs'){
-      if(vocab) vocab.style.display='none';
-      if(verbs){
-        verbs.hidden = false;
-        if (verbs.style && verbs.style.display === 'none') verbs.style.display = '';
+</div>
+
+<!-- Debug HUD -->
+<div id="debugHUD">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+    <strong>Debug</strong>
+    <button id="dbgDump" class="mode-btn" style="padding:4px 8px">dump</button>
+  </div>
+  <div class="row"><div>dataset</div><div><code id="dbgDataset"></code></div></div>
+  <div class="row"><div>mode</div><div><code id="dbgMode"></code></div></div>
+  <div class="row"><div>sizes</div><div><code id="dbgSizes"></code></div></div>
+  <div class="row"><div>last pick</div><div><code id="dbgPick"></code></div></div>
+</div>
+
+<!-- Simple Sync modal -->
+<div id="syncModal" class="modal">
+  <div class="box">
+    <h3 style="margin:.2rem 0 .4rem">Cloud Sync (optional)</h3>
+    <p class="muted small">Use a simple username to push/pull your local progress to Firebase Realtime DB.</p>
+    <div class="row"><div class="label">Username</div><div><input id="syncUser" type="text" placeholder="e.g., negm"></div></div>
+    <div class="actions" style="justify-content:flex-end">
+      <button id="syncCancel">Cancel</button>
+      <button id="syncEnable">Enable</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===========================================================
+   CLEAN CORE — ENV & UTIL
+   =========================================================== */
+
+/* ====== EDIT HOOKS (use these markers for future edits) ======
+   FIND → PASTE BELOW: FIREBASE_CONFIG
+   FIND → PASTE BELOW: SAMPLE_CSVS
+   FIND → PASTE BELOW: UI_COPY
+   =========================================================== */
+
+const APP = {
+  dsKey: 'default',     // 'default' | 'kapitel'
+  mode: 'vocab',        // 'vocab'|'verbs'|'adjadv'|'preps'|'mix'|'kapitelMix'
+  masteryTarget: 3,
+  wordsPerLevel: 25,
+  debug: false,
+  kapitel: { title: '', counts: {vocab:0,verbs:0,adjadv:0,preps:0}, files:null }, // when loaded
+  rnd: (n)=>Math.floor(Math.random()*n),
+  norm: (s)=> (s||'').trim().toLowerCase(),
+  normDe: (s)=> (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'),
+  pick: (arr)=> arr.length? arr[Math.floor(Math.random()*arr.length)] : null
+};
+
+// LocalStorage helpers (namespaced by dataset)
+const LS = {
+  key: (k)=> `${k}::${APP.dsKey}`,
+  get: (k, fb)=>{ try{ const v = localStorage.getItem(LS.key(k)); return v? JSON.parse(v): fb; }catch{ return fb; } },
+  set: (k, v)=>{ try{ localStorage.setItem(LS.key(k), JSON.stringify(v)); }catch{}; scheduleSyncSoon(); },
+  del: (k)=>{ try{ localStorage.removeItem(LS.key(k)); }catch{}; scheduleSyncSoon(); }
+};
+
+// CSV parsing
+function parseCSV(text){
+  const rows=[]; let row=[]; let cur=''; let q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(c==='"'){ if(q && text[i+1]==='"'){ cur+='"'; i++; } else { q=!q; } }
+    else if(c===',' && !q){ row.push(cur); cur=''; }
+    else if((c==='\n'||c==='\r') && !q){ if(cur!==''||row.length){ row.push(cur); rows.push(row); row=[]; cur=''; } }
+    else { cur+=c; }
+  }
+  if(cur!==''||row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+
+// datasetRead: read from Kapitel package or fetch local file
+async function datasetRead(name){
+  if(APP.dsKey==='kapitel' && APP.kapitel.files && APP.kapitel.files[name]!=null){
+    return APP.kapitel.files[name];
+  }
+  const res = await fetch(name, {cache:'no-store'});
+  if(!res.ok) throw new Error('Failed to load ' + name);
+  return await res.text();
+}
+
+// UI helpers
+function $(sel){ return document.querySelector(sel); }
+function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
+function show(id){ const el=$(id.startsWith('#')?id:`#${id}`); el&&el.classList.remove('hidden'); }
+function hide(id){ const el=$(id.startsWith('#')?id:`#${id}`); el&&el.classList.add('hidden'); }
+function setMode(m){ APP.mode=m; localStorage.setItem('mode', m); renderMode(); updateHUD(); }
+
+// Debug HUD
+function updateHUD(){
+  $('#dbgDataset').textContent = APP.dsKey;
+  $('#dbgMode').textContent = APP.mode;
+  const sizes = {
+    vocab: state.vocab.data.length,
+    verbs: state.verbs.data.length,
+    adjadv: state.adjadv.data.length,
+    preps: state.preps.data.length
+  };
+  $('#dbgSizes').textContent = JSON.stringify(sizes);
+}
+
+// ===== Firebase (optional) =====
+// FIND → PASTE BELOW: FIREBASE_CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyAvMyNtFyWM3Ajg2sxpWp4uMErfyawEOMc",
+  authDomain: "german-52657.firebaseapp.com",
+  databaseURL: "https://german-52657-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "german-52657",
+  storageBucket: "german-52657.firebasestorage.app",
+  messagingSenderId: "364706857329",
+  appId: "1:364706857329:web:97779c21361db2423336d0"
+};
+try{ if(!window._fbApp) window._fbApp = firebase.initializeApp(firebaseConfig); }catch{}
+const db = firebase.database();
+const SYNC_KEYS = [
+  'vocabProgress','verbsProgress','adjadvProgress','prepsProgress',
+  'mixState','kapitel_current_v1'
+];
+const cloudPath = (u)=> 'users/'+encodeURIComponent(u);
+async function cloudPull(u){ const snap = await db.ref(cloudPath(u)).get(); return snap.exists()? snap.val(): null; }
+async function cloudPush(u, data){ await db.ref(cloudPath(u)).set(data); }
+function snapshotAll(){
+  const out={}; SYNC_KEYS.forEach(k=>{ out[k+'::default']=localStorage.getItem(k+'::default')??null; out[k+'::kapitel']=localStorage.getItem(k+'::kapitel')??null; });
+  out._meta = { t:Date.now(), ds:APP.dsKey, title: APP.kapitel.title||'Default' }; return out;
+}
+function applyCloud(data){
+  Object.entries(data||{}).forEach(([k,v])=>{
+    if(k==='_meta') return;
+    if(v!=null) localStorage.setItem(k,String(v));
+  });
+}
+let _syncTimer=null,_syncBusy=false;
+function scheduleSyncSoon(){ const u=localStorage.getItem('syncUser'); if(!u) return; clearTimeout(_syncTimer); _syncTimer=setTimeout(runSync,1200); }
+async function runSync(){ if(_syncBusy) return; const u=localStorage.getItem('syncUser'); if(!u) return; _syncBusy=true; try{ await cloudPush(u,snapshotAll()); }catch{} _syncBusy=false; }
+setInterval(()=>{ if(localStorage.getItem('syncUser')) runSync(); },15000);
+
+/* ===========================================================
+   DATASET LAYER
+   - Default: fetch local CSVs
+   - Kapitel: upload ZIP (manifest.json + 4 CSVs). Never touch local CSVs.
+   =========================================================== */
+
+const dsUI = {
+  update(){
+    const sel = $('#datasetSel');
+    // Rebuild
+    sel.innerHTML = `<option value="default">Default</option>` + (localStorage.getItem('kapitel_current_v1')? `<option value="kapitel">Kapitel</option>`:'');
+    sel.value = APP.dsKey;
+    // Context line
+    $('#datasetCtx').textContent = (APP.dsKey==='kapitel')
+      ? `Studying: ${APP.kapitel.title} • ${APP.kapitel.counts.vocab} vocab · ${APP.kapitel.counts.verbs} verbs · ${APP.kapitel.counts.adjadv} adj/adv · ${APP.kapitel.counts.preps} preps`
+      : '';
+    // Modes
+    $('#btnKapitelMix').disabled = (APP.dsKey!=='kapitel');
+    // Hide normal Mix + level badges when Kapitel active (we still allow seeing the tabs, but default Mix does nothing)
+    if(APP.dsKey==='kapitel' && APP.mode==='mix') setMode('kapitelMix');
+    $('#vocabLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
+    $('#verbsLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
+    $('#aaLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
+    $('#ppLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
+  }
+};
+
+async function handleKapitelZip(file){
+  const zip = await JSZip.loadAsync(file);
+  async function readByName(b){ const e = Object.values(zip.files).find(f=>!f.dir && f.name.toLowerCase().endsWith('/'+b.toLowerCase())) || Object.values(zip.files).find(f=>!f.dir && f.name.toLowerCase()===b.toLowerCase()); return e? await e.async('string'): null; }
+  const manifestTxt = await readByName('manifest.json');
+  const vocabTxt    = await readByName('vocab.csv');
+  const verbsTxt    = await readByName('verbs.csv');
+  const adjadvTxt   = await readByName('adjadv.csv');
+  const prepsTxt    = await readByName('prepositions.csv');
+
+  if(!vocabTxt && !verbsTxt && !adjadvTxt && !prepsTxt){ alert('ZIP missing required CSVs.'); return; }
+  let manifest=null; try{ manifest = manifestTxt? JSON.parse(manifestTxt): null; }catch{}
+  const title = (manifest?.title) || (manifest?.kapitel? ('Kapitel '+manifest.kapitel): file.name.replace(/\.zip$/i,''));
+  const counts = {
+    vocab: (vocabTxt? vocabTxt.trim().split(/\r?\n/).length-1:0) || 0,
+    verbs: (verbsTxt? verbsTxt.trim().split(/\r?\n/).length-1:0) || 0,
+    adjadv: (adjadvTxt? adjadvTxt.trim().split(/\r?\n/).length-1:0) || 0,
+    preps: (prepsTxt? prepsTxt.trim().split(/\r?\n/).length-1:0) || 0
+  };
+  APP.kapitel = { title, counts, files: {
+    'manifest.json': manifestTxt||'',
+    'vocab.csv': vocabTxt||'',
+    'verbs.csv': verbsTxt||'',
+    'adjadv.csv': adjadvTxt||'',
+    'prepositions.csv': prepsTxt||''
+  }};
+  localStorage.setItem('kapitel_current_v1', JSON.stringify(APP.kapitel));
+  APP.dsKey = 'kapitel';
+  dsUI.update();
+  await loadAll(); // reload data from dataset layer
+  setMode('kapitelMix');
+}
+
+// restore persisted Kapitel (if any)
+(function(){
+  const saved = localStorage.getItem('kapitel_current_v1');
+  if(saved){
+    try{
+      const k = JSON.parse(saved);
+      APP.kapitel = { title:k.title, counts:k.counts, files:k.files };
+      APP.dsKey = 'kapitel';
+    }catch{}
+  } else {
+    APP.dsKey = 'default';
+  }
+})();
+
+/* ===========================================================
+   PROGRESS STRUCT
+   =========================================================== */
+const state = {
+  vocab: { data:[], level:1, streaks:{}, idx:0, showEn:true, article:'' },
+  verbs: { data:[], level:1, streaks:{}, idx:0 },
+  adjadv:{ data:[], level:1, streaks:{}, idx:0 },
+  preps: { data:[], level:1, streaks:{}, idx:0, // holds blanked token for check
+           currentBlank:'', currentAnswer:'' }
+};
+
+function saveAll(){
+  LS.set('vocabProgress', state.vocab);
+  LS.set('verbsProgress', state.verbs);
+  LS.set('adjadvProgress', state.adjadv);
+  LS.set('prepsProgress', state.preps);
+}
+function loadAllProgress(){
+  const v = LS.get('vocabProgress', null); if(v) Object.assign(state.vocab,v);
+  const vb= LS.get('verbsProgress', null); if(vb) Object.assign(state.verbs,vb);
+  const aa= LS.get('adjadvProgress', null); if(aa) Object.assign(state.adjadv,aa);
+  const pp= LS.get('prepsProgress', null); if(pp) Object.assign(state.preps,pp);
+}
+
+/* ===========================================================
+   TRAINERS (each exposes: load(data), hasData(), hasUnmastered(), render(), next())
+   =========================================================== */
+
+/* ---------- VOCAB ---------- 
+   CSV headers: english,article,german,plural,example1,example2,example3
+*/
+const Vocab = {
+  async load(){
+    const txt = await datasetRead('vocab.csv');
+    const rows = parseCSV(txt.trim()); rows.shift();
+    state.vocab.data = rows.map(r=>({
+      english:r[0]||'', article:r[1]||'', german:r[2]||'', plural:r[3]||'',
+      ex:[r[4]||'', r[5]||'', r[6]||''].filter(Boolean)
+    }));
+  },
+  hasData(){ return state.vocab.data.length>0; },
+  levelPool(){ if(APP.dsKey==='kapitel') return state.vocab.data; return state.vocab.data.slice(0, state.vocab.level*APP.wordsPerLevel); },
+  hasUnmastered(){ const pool=this.levelPool(); return pool.some(x=> (state.vocab.streaks[x.german]||0) < APP.masteryTarget); },
+  pick(){
+    const pool = this.levelPool();
+    const prefer = pool.filter(x=>(state.vocab.streaks[x.german]||0)<APP.masteryTarget);
+    return (prefer.length? APP.pick(prefer): APP.pick(pool)) || null;
+  },
+  render(item){
+    $('#vocabEn').textContent = state.vocab.showEn? item.english : '';
+    $('#vocabStreak').textContent = `${state.vocab.streaks[item.german]||0}/${APP.masteryTarget}`;
+    $('#vocabExamples').textContent = item.ex.length ? ('📝 '+ APP.pick(item.ex)) : '';
+    $('#vocabFeedback').textContent = '';
+    $('#vocabDe').value=''; $('#vocabPl').value=''; state.vocab.article='';
+    // level badge
+    $('#vocabLevel').textContent = (APP.dsKey==='kapitel')? '' : `Level ${state.vocab.level}`;
+    // article buttons
+    $all('.article-bar .article-btn').forEach(b=>{
+      b.classList.toggle('active', b.dataset.a===state.vocab.article);
+    });
+    $('#vocabDe').focus();
+  },
+  check(item){
+    const a = state.vocab.article;
+    const de = APP.norm($('#vocabDe').value);
+    const pl = APP.norm($('#vocabPl').value);
+    const ok = (a===item.article) && (de===APP.norm(item.german)) && (pl===APP.norm(item.plural||''));
+    if(ok){ state.vocab.streaks[item.german]=(state.vocab.streaks[item.german]||0)+1; $('#vocabFeedback').innerHTML = `<span class="good">Correct!</span>`; }
+    else { state.vocab.streaks[item.german]=0; $('#vocabFeedback').innerHTML = `<span class="bad">Wrong.</span> Correct: <b>${item.article} ${item.german}</b> — ${item.plural||'—'}`; }
+    saveAll();
+    // auto level-up (default only)
+    if(APP.dsKey==='default'){
+      const pool = this.levelPool();
+      if(pool.length && pool.every(x=>(state.vocab.streaks[x.german]||0)>=APP.masteryTarget) && state.vocab.level*APP.wordsPerLevel < state.vocab.data.length){
+        state.vocab.level++; saveAll();
       }
-      if(adjad) adjad.hidden = true;
-      if(preps) preps.hidden = true;
-        // make absolutely sure it’s not visually collapsed
-      if (verbs && verbs.offsetParent === null) verbs.style.removeProperty('display');
-		  } else if (section==='adjadv'){
-			if(vocab) vocab.style.display='none';
-			if(verbs) verbs.hidden=true;
-			if(adjad) adjad.hidden=false;
-			if(preps) preps.hidden=true;
-		  } else if (section==='preps'){
-			if(vocab) vocab.style.display='none';
-			if(verbs) verbs.hidden=true;
-			if(adjad) adjad.hidden=true;
-			if(preps) preps.hidden=false;
-		  }
-		}
-
-        function renderForSection(section){
-		  if (section==='vocab'){
-			try { nextWord(); } catch {}
-		  } else if (section==='verbs'){
-			try { renderVerbsCard(); } catch {}
-		  } else if (section==='adjadv'){
-			try { aa_render(); } catch {}
-		  } else if (section==='preps'){
-			try { if (typeof pp_render === 'function') pp_render(); } catch {}
-		  }
-		  showOnly(section);
-		}
-
-        function pickRandomSectionAndRender(){
-		  if (window.__mix_busy) return;
-		  window.__mix_busy = true;                     // guard: one render at a time
-
-		  const s = pickRandomSection();
-		  renderForSection(s);
-
-		  // allow another pick after a short settle
-		  setTimeout(()=>{ window.__mix_busy = false; }, 300);
-		}
-
-        
-        /* Extend existing renderMode to include adjadv + mix */
-        const _origRenderMode = renderMode;
-        renderMode = function(){
-          _origRenderMode(); // keeps original show/hide for vocab & verbs
-          const mode = getMode();
-        
-          const vocab = document.getElementById('vocab-wrapper');
-          const verbs = document.getElementById('verbs-card');
-          const adjad = document.getElementById('adjadv-card');
-        
-          // Show Adj/Adv only in "adjadv" mode (Mix visibility is handled by renderForSection)
-		  if (adjad) adjad.hidden = (mode!=='adjadv');
-
-        
-          // For "vocab": (keep original) -> vocab visible, others hidden by original code
-          // For "verbs": (keep original) -> verbs visible
-          // For "adjadv": hide vocab & verbs, show adjadv
-          if (mode==='adjadv'){
-            if(vocab) vocab.style.display='none';
-            if(verbs) verbs.hidden = true;
-            if(adjad) { adjad.hidden = false; aa_render(); }
-          }
-        
-          // For "mix": gated start + keep rotating after each Next
-			if (mode === 'mix'){
-			  // Hide level badges in Kapitel+Mix
-			  if (isKapitelMixMode()){
-				const lvl = document.getElementById('level'); if (lvl) lvl.style.display='none';
-				const vi  = document.getElementById('verbs-level-indicator'); if (vi) vi.style.display='none';
-			  }
-
-				// reset per-session "seen" set so each pool must appear once
-				window.__mix_seen = { vocab:false, verbs:false, adjadv:false, preps:false };
-
-
-			  // If everything in this Kapitel is mastered → splash
-			  if (typeof allKapitelMastered === 'function' && allKapitelMastered()){
-				showKapitelDoneSplash?.();
-				return;
-			  }
-
-			  // Gate: don’t start Mix until at least one pool is ready. Keep polling briefly so verbs don’t get skipped.
-			  (function startMixWhenReady(tries=0){
-				const ready = mixPoolsStatus();
-				const anyReady = ready.vocab || ready.verbs || ready.adjadv || ready.preps;
-
-				if (!anyReady){
-				  if (tries === 0) console.warn('[debug] Mix waiting for pools…');
-				  return setTimeout(()=>startMixWhenReady(tries+1), 150);
-				}
-
-				// If Mix first starts with partial pools, log once so we know.
-				if (!(ready.verbs && ready.adjadv && ready.preps && ready.vocab)){
-				  if (tries < 8) console.warn('[debug] Mix started with partial pools (timeout).');
-				  // Keep a short watchdog that re-picks once late pools arrive
-				  setTimeout(()=>{
-					const r2 = mixPoolsStatus();
-					if (r2.verbs && r2.adjadv && r2.preps && r2.vocab){
-					  // All caught up → jump once to rebalance (so verbs enter rotation)
-					  pickRandomSectionAndRender();
-					}
-				  }, 400);
-				}
-
-				// Normal first pick
-				pickRandomSectionAndRender();
-
-				// Hook Vocab Next (one-time) to rotate
-				const vbNext = document.getElementById('nextBtn');
-				if (vbNext && !vbNext._mixHooked){
-				  vbNext._mixHooked = true;
-				  vbNext.addEventListener('click', ()=>{
-					setTimeout(()=>{ if(getMode()==='mix') pickRandomSectionAndRender(); }, 0);
-				  });
-				}
-				// Verbs / AdjAdv / Preps are already wired below in their own sections
-			  })();
-			}
-
-        };
-        
-		/* (Preps) — after Next, reset Enter phase and jump to a fresh random section in MIX */
-		const ppNext = document.getElementById('preps-next');
-		if (ppNext && !ppNext._mixHooked){
-		  ppNext._mixHooked = true;
-		  ppNext.addEventListener('click', ()=>{
-			window.ppEnterPhase = 0; // reset so first Enter = check again
-			setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
-		  });
-		}
-
-		/* Preps Enter behavior: first Enter checks, second Enter goes next */
-		(function(){
-		  // global-ish flag
-		  if (typeof window.ppEnterPhase === 'undefined') window.ppEnterPhase = 0;
-
-		  function qsPrepsInput(){
-			// Try common ids/selectors for the preps answer field
-			return document.getElementById('preps-input')
-				|| document.getElementById('preps-answer')
-				|| document.querySelector('#preps-card input[type="text"], #preps-card input');
-		  }
-		  function btnPrepsCheck(){
-			return document.getElementById('preps-check')
-				|| document.querySelector('#preps-card [data-role="preps-check"], #preps-card [data-action="check"]')
-				|| Array.from(document.querySelectorAll('#preps-card button'))
-					  .find(b => /check|prüfen|überprüfen/i.test(b.textContent||''));
-		  }
-		  function btnPrepsNext(){
-			return document.getElementById('preps-next')
-				|| document.querySelector('#preps-card [data-role="preps-next"], #preps-card [data-action="next"]')
-				|| Array.from(document.querySelectorAll('#preps-card button'))
-					  .find(b => /next|weiter|nächste/i.test(b.textContent||''));
-		  }
-
-		  function ensurePrepsEnterWiring(){
-			const input = qsPrepsInput();
-			if (!input || input._ppEnterWired) return;
-			input._ppEnterWired = true;
-
-			input.addEventListener('keydown', (e)=>{
-			  if (e.key !== 'Enter') return;
-
-			  // Always stop the default so we control the flow
-			  e.preventDefault();
-			  e.stopPropagation();
-
-			  const checkBtn = btnPrepsCheck();
-			  const nextBtn  = btnPrepsNext();
-
-			  // first Enter → check (if there is a check button), second Enter → next
-			  if (window.ppEnterPhase === 0){
-				// if no explicit check button, fall back to "Next" (some UIs auto-check on next)
-				if (checkBtn) { checkBtn.click(); }
-				else if (nextBtn) { nextBtn.click(); }
-				window.ppEnterPhase = 1;
-			  } else {
-				if (nextBtn) { nextBtn.click(); }
-				window.ppEnterPhase = 0; // reset for the next item
-			  }
-			});
-
-			// If the user edits the input again, go back to "first Enter = check"
-			input.addEventListener('input', ()=> { window.ppEnterPhase = 0; });
-		  }
-
-		  // Run now and also whenever Preps card becomes visible
-		  document.addEventListener('DOMContentLoaded', ensurePrepsEnterWiring);
-		  const prepsCard = document.getElementById('preps-card');
-		  if (prepsCard){
-			const obs = new MutationObserver(()=> ensurePrepsEnterWiring());
-			obs.observe(prepsCard, { childList:true, subtree:true, attributes:true });
-		  }
-		})();
-
-
-
-		/* (Verbs) — after Next, jump to a fresh random section in MIX */
-		(function(){
-		  const vc = document.getElementById('verbs-card');
-		  if (!vc || vc._mixHooked) return;
-		  vc._mixHooked = true;
-
-		  // Click: catch any plausible "Next" button inside verbs-card
-		  vc.addEventListener('click', (e)=>{
-			const t = e.target;
-			if (!t) return;
-			const isNext =
-			  t.id === 'verbs-next' ||
-			  t.id === 'vb-next' ||
-			  (t.matches && t.matches('[data-role="verbs-next"], [data-action="next"]')) ||
-			  (t.tagName === 'BUTTON' && /next/i.test(t.textContent || ''));
-			if (isNext){
-			  setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
-			}
-		  }, true);
-		})();
-
-		/* MIX wrappers: if the app has explicit next functions, wrap them so MIX rotates only after real advances. */
-		(function(){
-			function wrapNext(fnName){
-			  const w = (globalThis || window);
-			  if (typeof w[fnName] === 'function' && !w[fnName]._mixWrapped){
-				const orig = w[fnName];
-				w[fnName] = function(){
-				  const out = orig.apply(this, arguments);
-				  // New item loaded → reset Enter phase to "check first"
-				  window.ppEnterPhase = 0;
-				  setTimeout(()=>{ if (typeof getMode==='function' && getMode()==='mix') pickRandomSectionAndRender(); }, 0);
-				  return out;
-				};
-				w[fnName]._mixWrapped = true;
-			  }
-			}
-
-
-
-		  // Try common names you might be using:
-		  wrapNext('verbsNext');      // e.g., called when Verbs goes to the next item
-		  wrapNext('nextVerb');       // alternative common name
-		  wrapNext('renderVerbsNext'); // if you made a specific renderer for next
-		  wrapNext('pp_next');        // Preps: your Next handler if named like this
-		  wrapNext('prepsNext');      // alternative
-		})();
-
-		
-        /* Boot Adj/Adv together with verbs init */
-        (async function initAdjAdv(){
-          await aa_loadData();
-          aa_initState();
-          // If user switches to adjadv later, aa_render() will run via renderMode().
-        })();
-   
-		   // --- Mix readiness helpers ---
-		function mixPoolsStatus(){
-		  return {
-			vocab:  Array.isArray(window.words) && window.words.length>0,
-			verbs:  Array.isArray(window.verbsState?.data) && window.verbsState.data.length>0,
-			adjadv: Array.isArray(window.adjadvState?.data) && window.adjadvState.data.length>0,
-			preps:  Array.isArray(window.prepsState?.data) && window.prepsState.data.length>0,
-		  };
-		}
-		function mixAllReady(){
-		  const r = mixPoolsStatus();
-		  // In Kapitel+Mix we allow starting if at least one pool is ready,
-		  // but we keep polling for the rest so verbs won’t be “starved”.
-		  return (r.vocab || r.verbs || r.adjadv || r.preps);
-		}
-
-
-  </script>
-  
-  <script>
-		/* ===========================================================================================================
-		   Prepositions Trainer — CSV: prep,forms,de1..de10
-		   - "forms" is optional; list variants like: an;am;ans  |  in;im;ins  |  zu;zum;zur  |  bei;beim  |  von;vom
-		   - We pick a random non-empty sentence per row.
-		   - We blank the FIRST whole-word match from forms (or prep if forms empty).
-		   - The ONLY correct answer is the exact surface form found in that sentence (e.g., "am", not "an").
-		============================================================================================================= */
-
-		const PREPS_LEVEL_KEY    = 'preps_level';
-		const PREPS_UNLOCKED_KEY = 'preps_unlocked_count';
-		const PREPS_INDEX_KEY    = 'preps_index';
-		const PREPS_STREAKS_KEY  = 'preps_streaks';
-
-		const prepsState = {
-		  data: [],       // [{ id, prep, formsArr, sentences: [de1..de10], lastSlot: {left,right,correct,formsArrUsed} }]
-		  index: 0,
-		  level: 1,
-		  unlocked: 25,
-		  streaks: {}     // id -> 0..3
-		};
-		window.prepsState = prepsState; // expose prepositions to MIX
-
-		const elPrepsCard     = document.getElementById('preps-card');
-		const elPrepsSentence = document.getElementById('preps-sentence');
-		const elPrepsEn       = document.getElementById('preps-english'); // we keep it for layout; we won't show EN now
-		const elPrepsCheck    = document.getElementById('preps-check');
-		const elPrepsNext     = document.getElementById('preps-next');
-		const elPrepsFb       = document.getElementById('preps-feedback');
-
-		/* === Small helpers === */
-		function pp_lsGet(key, fallback){ try{const v=localStorage.getItem(key); return v?JSON.parse(v):fallback;}catch{ return fallback; } }
-		function pp_lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch{} }
-		function pp_lsGetInt(key, fallback){ const v=localStorage.getItem(key); const n=v===null?NaN:parseInt(v,10); return Number.isFinite(n)?n:fallback; }
-		function pp_lsSetInt(key, n){ try{ localStorage.setItem(key, String(n)); }catch{} }
-		function pp_norm(s){ return (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
-
-		/* CSV -> objects (expects headers) */
-		function pp_parseCSV(text){
-		  const lines = text.trim().split(/\r?\n/);
-		  if(!lines.length) return [];
-		  const headers = lines[0].split(',').map(h=>h.trim());
-		  return lines.slice(1).map(line=>{
-			const cells = []; let cur = '', inQ=false;
-			for(let i=0;i<line.length;i++){
-			  const ch=line[i];
-			  if(ch === '"'){ inQ = !inQ; continue; }
-			  if(ch === ',' && !inQ){ cells.push(cur); cur=''; continue; }
-			  cur += ch;
-			}
-			cells.push(cur);
-			const obj={};
-			headers.forEach((h,i)=> obj[h] = (cells[i]||'').trim());
-			return obj;
-		  });
-		}
-
-		/* Find first whole-word match of any token (prefer longer first) */
-		function firstMatchTokenInSentence(formsStr, basePrep, sentence){
-		  const base = (basePrep||'').trim();
-		  const variants = (formsStr && formsStr.trim())
-			  ? formsStr.split(';').map(s=>s.trim()).filter(Boolean)
-			  : (base ? [base] : []);
-		  const tokens = variants.sort((a,b)=> b.length - a.length);
-		  for (const t of tokens){
-			if(!t) continue;
-			const re = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\b`, 'i');
-			const m = sentence.match(re);
-			if (m) return { token: m[0], index: m.index, length: m[0].length, tried: tokens };
-		  }
-		  return null;
-		}
-
-		/* Replace matched token with an inline input */
-		function renderSentenceWithBlank(prep, forms, sentence){
-		  const hit = firstMatchTokenInSentence(forms, prep, sentence);
-		  if (!hit) return null;
-		  const left  = sentence.slice(0, hit.index);
-		  const right = sentence.slice(hit.index + hit.length);
-		  return { left, right, correct: hit.token, formsArrUsed: hit.tried };
-		}
-
-		/* === Load data (new CSV shape) === */
-		async function pp_loadData(){
-		  let rows = null;
-		  try{
-			const csv = await datasetRead('prepositions.csv');
-			rows = pp_parseCSV(csv);
-
-		  }catch(_){}
-		  if(!rows || !rows.length){
-			// tiny fallback
-			rows = [
-			  { prep:'an',  forms:'an;am;ans', de1:'Ich warte am Bahnhof', de2:'Er geht ans Fenster' },
-			  { prep:'in',  forms:'in;im;ins', de1:'Sie geht ins Kino', de2:'Er wohnt im Haus' },
-			  { prep:'zu',  forms:'zu;zum;zur', de1:'Ich gehe zum Arzt' },
-			];
-		  }
-
-		  // Normalize into our objects
-		  prepsState.data = rows.map((r,i)=>{
-			const prep = (r.prep||'').trim();
-			const forms = (r.forms||'').trim();
-			const sentences = [];
-			for (let n=1;n<=10;n++){
-			  const s = (r['de'+n]||'').trim();
-			  if (s) sentences.push(s);
-			}
-			return {
-			  id: 'pp_'+ (prep || 'row') +'_'+ i,
-			  prep,
-			  formsArr: forms ? forms.split(';').map(s=>s.trim()).filter(Boolean) : [],
-			  sentences,
-			  lastSlot: null
-			};
-		  }).filter(x => x.prep && x.sentences && x.sentences.length);
-		}
-
-		/* === State init/save === */
-		function pp_initState(){
-		  prepsState.level    = pp_lsGetInt(PREPS_LEVEL_KEY, 1);
-		  prepsState.unlocked = pp_lsGetInt(PREPS_UNLOCKED_KEY, 25);
-		  prepsState.index    = pp_lsGetInt(PREPS_INDEX_KEY, 0);
-		  prepsState.streaks  = pp_lsGet(PREPS_STREAKS_KEY, {});
-		}
-		function pp_saveState(){
-		  pp_lsSetInt(PREPS_LEVEL_KEY, prepsState.level);
-		  pp_lsSetInt(PREPS_UNLOCKED_KEY, prepsState.unlocked);
-		  pp_lsSetInt(PREPS_INDEX_KEY, prepsState.index);
-		  pp_lsSet(PREPS_STREAKS_KEY, prepsState.streaks);
-		}
-
-		/* Pool + current row */
-		function pp_pool(){
-		  if (isKapitelMixMode()) return prepsState.data.slice();
-		  return prepsState.data.slice(0, Math.min(prepsState.unlocked, prepsState.data.length));
-		}
-		function pp_current(){
-		  const p = pp_pool(); if(!p.length) return null;
-		  const i = Math.max(0, Math.min(prepsState.index % p.length, p.length-1));
-		  return p[i];
-		}
-
-		/* === Render round === */
-		function pp_render(){
-		  const row = pp_current();
-		  if(!row){ elPrepsCard.hidden = true; return; }
-		  elPrepsCard.hidden = false;
-		  elPrepsFb.textContent = '';
-		  if (elPrepsEn) elPrepsEn.textContent = ''; // (no EN for now)
-
-		  // Pick a random sentence that actually contains a match
-		  let tries = 0, slot = null, chosen = null;
-		  const shuffled = row.sentences.slice().sort(()=>Math.random()-0.5);
-		  for (const s of shuffled){
-			slot = renderSentenceWithBlank(row.prep, row.formsArr.join(';'), s);
-			if (slot){ chosen = s; break; }
-			if (++tries > row.sentences.length) break;
-		  }
-		  if (!slot){
-			// No safe blank found (e.g., malformed row). Skip gracefully.
-			elPrepsSentence.textContent = '(No place to blank in this sentence.)';
-			row.lastSlot = null;
-			return;
-		  }
-		  row.lastSlot = slot;
-
-		  // Build input
-			const input = document.createElement('input');
-			input.id = 'preps-input';
-			input.value = '';                 // make sure it starts empty
-			input.placeholder = '';           // no hints that give it away
-			input.autocomplete = 'off';
-			input.autocapitalize = 'off';
-			input.spellcheck = false;
-
-		  // Use per-row forms for better suggestions; else fall back to global datalist:
-		  if (row.formsArr && row.formsArr.length){
-			const dlId = 'preps-options-dyn';
-			let dl = document.getElementById(dlId);
-			if(!dl){
-			  dl = document.createElement('datalist');
-			  dl.id = dlId;
-			  document.body.appendChild(dl);
-			}
-			dl.innerHTML = row.formsArr.map(o=>`<option value="${o}"></option>`).join('');
-			input.setAttribute('list', dlId);
-		  } else {
-			input.setAttribute('list', 'preps-options');
-		  }
-		  input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); pp_check(); } });
-
-		  // Render sentence: left [input] right
-		  elPrepsSentence.innerHTML = '';
-		  elPrepsSentence.append(document.createTextNode(slot.left), input, document.createTextNode(slot.right));
-
-		  // Focus
-		  setTimeout(()=>{ input.focus(); }, 0);
-		}
-
-		/* Leveling like other trainers */
-		function pp_allInLevelMastered(){
-		  const need = prepsState.level * 25;
-		  const ids = prepsState.data.slice(0, Math.min(need, prepsState.data.length)).map(x=>x.id);
-		  return ids.length>0 && ids.every(id => (prepsState.streaks[id]||0) >= 3);
-		}
-		function pp_maybeUnlockNext(){
-		  if(pp_allInLevelMastered()){
-			prepsState.level += 1;
-			prepsState.unlocked = Math.min(prepsState.level * 25, prepsState.data.length);
-		  }
-		}
-
-		/* === Check === */
-		function pp_check(){
-		  const row = pp_current();
-		  if(!row || !row.lastSlot) return;
-		  const input = document.getElementById('preps-input');
-		  const val = (input?.value || '').trim();
-		  const correct = row.lastSlot.correct;           // exact surface form found in sentence
-		  const ok = val.toLowerCase() === correct.toLowerCase();
-
-		  input?.classList.remove('result-ok','result-bad');
-		  input?.classList.add(ok ? 'result-ok' : 'result-bad');
-
-		  const cur = prepsState.streaks[row.id] || 0;
-		  prepsState.streaks[row.id] = ok ? Math.min(3, cur+1) : 0;
-		  pp_maybeUnlockNext();
-		  pp_saveState();
-
-		  elPrepsFb.textContent = ok
-			? `✅ Correct! Streak now ${prepsState.streaks[row.id]}/3.`
-			: `❌ Wrong. Correct: ${correct}`;
-		}
-
-		/* === Next === */
-		function pp_next(){
-		  const p = pp_pool(); if(!p.length) return;
-		  let next = (prepsState.index + 1) % p.length;
-		  const start = next;
-		  do{
-			const id = p[next].id;
-			if ((prepsState.streaks[id]||0) < 3) break;
-			next = (next + 1) % p.length;
-		  }while(next !== start);
-		  prepsState.index = next;
-		  pp_saveState();
-		  pp_render();
-		    // MIX: rotate to another section after moving to next
-		  if ((typeof getMode==='function' ? getMode() : window.mode) === 'mix') {
-			const section = pickRandomSection();
-			renderForSection(section);
-			return;
-		  }
-
-		}
-
-		/* Wire buttons */
-		elPrepsCheck?.addEventListener('click', pp_check);
-		elPrepsNext ?.addEventListener('click', pp_next);
-
-		/* Load + init */
-		(async function initPreps(){
-		  await pp_loadData();
-		  pp_initState();
-		})();
-
-	
-	</script>
-
-	<script>
-	/* =======================
-	   DEBUG + READINESS KIT
-	   ======================= */
-	(function(){
-	  // --- live readiness flags ---
-	  const READY = window.__READY = { vocab:false, verbs:false, adjadv:false, preps:false };
-	  const counts = ()=>({
-		vocab:(window.words||[]).length|0,
-		verbs:(window.verbsState?.data||[]).length|0,
-		adjadv:(window.adjadvState?.data||[]).length|0,
-		preps:(window.prepsState?.data||[]).length|0
-	  });
-
-	  // --- tiny HUD so you can SEE status quickly ---
-	  const hud = document.createElement('div');
-	  hud.id = 'debug-hud';
-	  Object.assign(hud.style, {
-		position:'fixed', right:'8px', bottom:'8px', zIndex:99999,
-		background:'rgba(20,24,32,.9)', color:'#e8eaed', font:'12px/1.4 monospace',
-		border:'1px solid #2a3240', borderRadius:'8px', padding:'8px 10px', minWidth:'220px'
-	  });
-	  hud.innerHTML = `
-		<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">
-		  <strong>Debug</strong>
-		  <div>
-			<button id="dbg-dump" style="font:12px monospace;padding:2px 6px;border:1px solid #2a3240;background:#1a2230;color:#e8eaed;border-radius:4px;cursor:pointer">Dump</button>
-			<button id="dbg-hide" style="font:12px monospace;padding:2px 6px;border:1px solid #2a3240;background:#1a2230;color:#e8eaed;border-radius:4px;cursor:pointer">✕</button>
-		  </div>
-		</div>
-		<div id="dbg-lines" style="margin-top:6px;white-space:pre"></div>
-	  `;
-	  document.body.appendChild(hud);
-	  document.getElementById('dbg-hide').onclick = ()=> hud.remove();
-	  document.getElementById('dbg-dump').onclick = ()=> dump();
-
-	  function refreshHUD(){
-		const c = counts();
-		const mode = (typeof getMode==='function'?getMode():window.mode)||'(none)';
-		const ds   = (window.currentDataset?.key)||'default';
-		const mixK = (typeof window.isKapitelMixMode==='function' && window.isKapitelMixMode()) ? 'kapitel+mix' : '';
-		document.getElementById('dbg-lines').textContent =
-		  `mode: ${mode} ${mixK}\n` +
-		  `dataset: ${ds}\n` +
-		  `ready: vocab=${READY.vocab} verbs=${READY.verbs} adjadv=${READY.adjadv} preps=${READY.preps}\n` +
-		  `pools: vocab=${c.vocab} verbs=${c.verbs} adjadv=${c.adjadv} preps=${c.preps}\n` +
-		  `lastMix: ${window.__mix_last_section||'-'} rr=${window.__mix_rr_i??'-'}`;
-	  }
-
-	  function markReady(which){
-		READY[which] = true;
-		refreshHUD();
-		document.dispatchEvent(new CustomEvent('pools:updated', { detail:{which, ready:true} }));
-	  }
-
-	  // --- wrap your existing loaders to set flags ---
-	  function wrapLoader(name, fnName, flag, after){
-		const w = window;
-		if (typeof w[fnName] !== 'function') return;
-		const orig = w[fnName];
-		w[fnName] = async function(){
-		  const t0 = performance.now();
-		  const out = await orig.apply(this, arguments);
-		  try { after && after(); } catch(_) {}
-		  const c = counts();
-		  if (c[flag] > 0) markReady(flag);
-		  console.log(`[debug] ${name} loaded in ${(performance.now()-t0).toFixed(1)}ms, count=`, c[flag]);
-		  return out;
-		};
-	  }
-
-	  wrapLoader('Vocab','loadCSV','vocab', ()=>{ /* words on window */ });
-	  wrapLoader('Verbs','loadVerbsData','verbs');
-	  wrapLoader('AdjAdv','aa_loadData','adjadv');
-	  wrapLoader('Preps','pp_loadData','preps');
-
-	  // In case something was already loaded before this kit attached
-	  setTimeout(()=>{
-		const c = counts();
-		if (c.vocab) READY.vocab = true;
-		if (c.verbs) READY.verbs = true;
-		if (c.adjadv) READY.adjadv = true;
-		if (c.preps) READY.preps = true;
-		refreshHUD();
-	  }, 0);
-
-	  // --- readiness barrier for MIX ---
-	  async function waitForMixReady(timeoutMs=6000){
-		const need = ['vocab','verbs','adjadv','preps'];
-		const start = performance.now();
-		return await new Promise(resolve=>{
-		  function check(){
-			const ok = need.some(k => READY[k] && counts()[k]>0); // need at least 1 pool ready to start
-			const all = need.every(k => READY[k] || counts()[k]===0); // “ready or empty” for the rest
-			if (ok && all) return resolve(true);
-			if (performance.now() - start > timeoutMs) return resolve(false);
-			setTimeout(check, 60);
-		  }
-		  check();
-		});
-	  }
-
-	  // Patch renderMode so MIX doesn’t fire before pools are there
-	  if (typeof window.renderMode === 'function' && !window.renderMode._mixGated){
-		const origRenderMode = window.renderMode;
-		window.renderMode = async function(){
-		  const mode = (typeof getMode==='function'?getMode():window.mode);
-		  if (mode === 'mix'){
-			// show a small “loading” status in place of the app until pools are ready
-			const root = document.getElementById('dataset-context');
-			if (root) root.textContent = 'Preparing Mix… (waiting for pools)';
-			const ok = await waitForMixReady();
-			if (root) root.textContent = '';
-			if (!ok) console.warn('[debug] Mix started with partial pools (timeout).');
-		  }
-		  const out = origRenderMode.apply(this, arguments);
-		  refreshHUD();
-		  return out;
-		};
-		window.renderMode._mixGated = true;
-	  }
-
-	  // Convenience: one-click dump to console
-	  function dump(){
-		const snapshot = {
-		  datasetKey: window.currentDataset?.key,
-		  mode: (typeof getMode==='function'?getMode():window.mode),
-		  ready: {...READY},
-		  counts: counts(),
-		  verbsIndex: window.verbsState?.index,
-		  verbsLevel: window.verbsState?.level,
-		  lastMix: window.__mix_last_section,
-		  rr: window.__mix_rr_i,
-		  lsKeys: Object.keys(localStorage).filter(k=>/verbs_|adjadv_|preps_|vocabProgress|kapitel/i.test(k))
-		};
-		console.log('[DEBUG DUMP]', snapshot);
-		try{
-		  console.table({
-			verbs: snapshot.counts.verbs,
-			adjadv: snapshot.counts.adjadv,
-			preps: snapshot.counts.preps,
-			vocab: snapshot.counts.vocab
-		  });
-		}catch(_){}
-	  }
-	  window.__debugDump = dump;
-
-	  // Auto-refresh on pool updates
-	  document.addEventListener('pools:updated', refreshHUD);
-	})();
-	</script>
-
-
-  
+    }
+  }
+};
+
+/* ---------- VERBS ----------
+   CSV headers: id,lemma,english,aux,ich,du,er,wir,ihr,sie,partizip,past,preps,case,reflexive
+   aux = haben|sein|haben/sein ; preps="auf;an;mit" ; case=inf|akk|dat ; reflexive=true|false
+   id optional → derive from lemma+english
+*/
+const Verbs = {
+  async load(){
+    const txt = await datasetRead('verbs.csv');
+    const rows = parseCSV(txt.trim()); rows.shift();
+    state.verbs.data = rows.map(r=>{
+      const o = {
+        id: r[0] || `${(r[1]||'').trim()}__${(r[2]||'').trim()}`,
+        lemma: r[1]||'', english:r[2]||'', aux:(r[3]||'').trim().toLowerCase(),
+        ich:r[4]||'', du:r[5]||'', er:r[6]||'', wir:r[7]||'', ihr:r[8]||'', sie:r[9]||'',
+        partizip:r[10]||'', past:r[11]||'',
+        preps:(r[12]||'').split(';').map(s=>s.trim()).filter(Boolean),
+        case:(r[13]||'').trim().toLowerCase(),
+        reflexive:String(r[14]||'').trim().toLowerCase()
+      };
+      return o;
+    });
+  },
+  hasData(){ return state.verbs.data.length>0; },
+  levelPool(){ if(APP.dsKey==='kapitel') return state.verbs.data; const cut = state.verbs.level*APP.wordsPerLevel; return state.verbs.data.slice(0, cut); },
+  hasUnmastered(){ const p=this.levelPool(); return p.some(v=> (state.verbs.streaks[v.id]||0) < APP.masteryTarget); },
+  pick(){
+    const p=this.levelPool(); const prefer=p.filter(v=>(state.verbs.streaks[v.id]||0)<APP.masteryTarget);
+    return (prefer.length? APP.pick(prefer) : APP.pick(p)) || null;
+  },
+  render(v){
+    $('#verbEn').textContent = v.english;
+    $('#verbsFeedback').textContent='';
+    // wipe inputs
+    ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep'].forEach(s=>{ const el=$(s); if(el) el.value=''; });
+    // reset toggles
+    $all('[data-aux]').forEach(b=>b.classList.remove('active'));
+    $all('[data-case]').forEach(b=>b.classList.remove('active'));
+    $all('[data-refl]').forEach(b=>b.classList.remove('active'));
+    $('#auxHint').textContent=''; $('#caseHint').textContent='';
+    // show level
+    $('#verbsLevel').textContent = (APP.dsKey==='kapitel')? '' : `Level ${state.verbs.level}`;
+    $('#vInf').focus();
+  },
+  check(v){
+    let ok=true, msg=[];
+    const mustEqual = (a,b,label, norm=APP.normDe)=>{
+      const pass = norm(a)===norm(b);
+      if(!pass){ ok=false; msg.push(`${label} ➜ <b>${b}</b>`); }
+    };
+    mustEqual($('#vInf').value, v.lemma, 'infinitive');
+    // aux
+    const chosenAux = $all('[data-aux].active')[0]?.dataset.aux || '';
+    if(v.aux){ const allow = v.aux.split('/').map(s=>s.trim()); if(!allow.includes(chosenAux)){ ok=false; msg.push('aux ➜ <b>'+v.aux+'</b>'); } }
+    // Präsens (ich/du/er/ihr)
+    mustEqual($('#pIch').value, v.ich, 'ich');
+    mustEqual($('#pDu').value,  v.du,  'du');
+    mustEqual($('#pEr').value,  v.er,  'er/sie/es');
+    mustEqual($('#pIhr').value, v.ihr, 'ihr');
+    // past / partizip
+    mustEqual($('#vPast').value, v.past, 'Präteritum');
+    mustEqual($('#vPart').value, v.partizip, 'Partizip');
+    // optional preps
+    const givenPrep = APP.norm($('#vPrep').value);
+    if(v.preps?.length){
+      if(!v.preps.map(APP.norm).includes(givenPrep)){ ok=false; msg.push('prep ➜ <b>'+v.preps.join('; ')+'</b>'); }
+    }
+    // case
+    const chosenCase = $all('[data-case].active')[0]?.dataset.case || '';
+    if(v.case){ if(APP.norm(v.case)!==APP.norm(chosenCase)){ ok=false; msg.push('case ➜ <b>'+v.case+'</b>'); } }
+    // reflexive
+    const chosenRefl = $all('[data-refl].active')[0]?.dataset.refl || '';
+    if(v.reflexive){ if(APP.norm(v.reflexive)!==APP.norm(chosenRefl)){ ok=false; msg.push('reflexive ➜ <b>'+v.reflexive+'</b>'); } }
+
+    if(ok){ state.verbs.streaks[v.id]=(state.verbs.streaks[v.id]||0)+1; $('#verbsFeedback').innerHTML = `<span class="good">Correct!</span>`; }
+    else { state.verbs.streaks[v.id]=0; $('#verbsFeedback').innerHTML = `<span class="bad">Wrong.</span> ${msg.length? 'Correct: '+msg.join(', ') : ''}`; }
+    saveAll();
+
+    if(APP.dsKey==='default'){
+      const pool=this.levelPool();
+      if(pool.length && pool.every(x=>(state.verbs.streaks[x.id]||0)>=APP.masteryTarget) && state.verbs.level*APP.wordsPerLevel < state.verbs.data.length){
+        state.verbs.level++; saveAll();
+      }
+    }
+  }
+};
+
+/* ---------- ADJ/ADV ----------
+   CSV headers: english,german,example
+*/
+const AdjAdv = {
+  async load(){
+    const txt = await datasetRead('adjadv.csv');
+    const rows = parseCSV(txt.trim()); rows.shift();
+    state.adjadv.data = rows.map(r=>({ english:r[0]||'', german:r[1]||'', example:r[2]||'' }));
+  },
+  hasData(){ return state.adjadv.data.length>0; },
+  levelPool(){ if(APP.dsKey==='kapitel') return state.adjadv.data; return state.adjadv.data.slice(0, state.adjadv.level*APP.wordsPerLevel); },
+  hasUnmastered(){ const p=this.levelPool(); return p.some(x=> (state.adjadv.streaks[x.german]||0)<APP.masteryTarget); },
+  pick(){ const p=this.levelPool(); const pref=p.filter(x=>(state.adjadv.streaks[x.german]||0)<APP.masteryTarget); return (pref.length?APP.pick(pref):APP.pick(p))||null; },
+  render(x){
+    $('#aaEn').textContent = x.english;
+    $('#aaExample').textContent = x.example ? ('📝 '+x.example) : '';
+    $('#aaFeedback').textContent=''; $('#aaDe').value=''; $('#aaDe').focus();
+    $('#aaLevel').textContent = (APP.dsKey==='kapitel')? '' : `Level ${state.adjadv.level}`;
+  },
+  check(x){
+    const ok = APP.normDe($('#aaDe').value)===APP.normDe(x.german);
+    if(ok){ state.adjadv.streaks[x.german]=(state.adjadv.streaks[x.german]||0)+1; $('#aaFeedback').innerHTML='<span class="good">Correct!</span>'; }
+    else { state.adjadv.streaks[x.german]=0; $('#aaFeedback').innerHTML=`<span class="bad">Wrong.</span> Correct: <b>${x.german}</b>`; }
+    saveAll();
+    if(APP.dsKey==='default'){
+      const p=this.levelPool();
+      if(p.length && p.every(z=>(state.adjadv.streaks[z.german]||0)>=APP.masteryTarget) && state.adjadv.level*APP.wordsPerLevel<state.adjadv.data.length){
+        state.adjadv.level++; saveAll();
+      }
+    }
+  }
+};
+
+/* ---------- PREPOSITIONS (CLOZE) ----------
+   CSV headers:
+   prep,forms,de1,de2,de3,de4,de5,de6,de7,de8,de9,de10, en1,en2,en3,en4,en5,en6,en7,en8,en9,en10
+   - forms: semicolon list (e.g., "in;im;ins")
+   - we blank the FIRST whole-word match of ANY token from forms inside the chosen sentence.
+   - Only the exact surface form is correct.
+*/
+const Preps = {
+  async load(){
+    const txt = await datasetRead('prepositions.csv');
+    const rows = parseCSV(txt.trim()); rows.shift();
+    state.preps.data = rows.map(r=>{
+      return {
+        prep:r[0]||'', forms:(r[1]||'').split(';').map(s=>s.trim()).filter(Boolean),
+        de: r.slice(2,12).map(x=>x||''), // de1..de10
+        en: r.slice(12,22).map(x=>x||'') // en1..en10
+      };
+    });
+  },
+  hasData(){ return state.preps.data.length>0; },
+  levelPool(){ if(APP.dsKey==='kapitel') return state.preps.data; return state.preps.data.slice(0, state.preps.level*APP.wordsPerLevel); },
+  hasUnmastered(){ const p=this.levelPool(); return p.some(x=> (state.preps.streaks[x.prep]||0)<APP.masteryTarget); },
+  pick(){ const p=this.levelPool(); const pref=p.filter(x=>(state.preps.streaks[x.prep]||0)<APP.masteryTarget); return (pref.length?APP.pick(pref):APP.pick(p))||null; },
+  _blankOneSentence(item){
+    const idxs = item.de.map((s,i)=>({i,s})).filter(x=> (x.s||'').trim().length>0);
+    if(!idxs.length) return null;
+    const pick = APP.pick(idxs);
+    // Build regex for whole-word tokens (simple boundaries)
+    const tokens = item.forms.filter(Boolean).sort((a,b)=>b.length-a.length);
+    for(const t of tokens){
+      const re = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'u');
+      if(re.test(pick.s)){
+        const hole = `<span class="hole" contenteditable="true" id="ppHole"></span>`;
+        const sent = pick.s.replace(re, hole);
+        // store the exact answer for this sentence
+        state.preps.currentBlank = t;
+        state.preps.currentAnswer = t;
+        const en = item.en[pick.i] || '';
+        return { html:sent, en };
+      }
+    }
+    return null;
+  },
+  render(item){
+    const b = this._blankOneSentence(item);
+    $('#ppFeedback').textContent = '';
+    $('#ppLevel').textContent = (APP.dsKey==='kapitel')? '' : `Level ${state.preps.level}`;
+    if(!b){
+      // no sentence contained any surface form — fallback: choose again
+      $('#ppSentence').innerHTML = '<em class="muted">No cloze found for this item; picking another…</em>';
+      $('#ppEnglish').textContent = '';
+      return 'repick';
+    }
+    $('#ppSentence').innerHTML = b.html;
+    $('#ppEnglish').textContent = b.en? ('EN: '+b.en): '';
+    // focus the hole
+    setTimeout(()=>{ const h=$('#ppHole'); if(h){ h.focus(); } }, 0);
+  },
+  readHole(){ const h=$('#ppHole'); return h ? (h.textContent||'').trim() : ''; },
+  check(item){
+    const guess = this.readHole();
+    const answer = state.preps.currentAnswer || '';
+    const ok = guess === answer;
+    if(ok){ state.preps.streaks[item.prep]=(state.preps.streaks[item.prep]||0)+1; $('#ppFeedback').innerHTML='<span class="good">Correct!</span>'; }
+    else { state.preps.streaks[item.prep]=0; $('#ppFeedback').innerHTML = `<span class="bad">Wrong.</span> Correct: <b>${answer}</b>`; }
+    saveAll();
+    if(APP.dsKey==='default'){
+      const p=this.levelPool();
+      if(p.length && p.every(z=>(state.preps.streaks[z.prep]||0)>=APP.masteryTarget) && state.preps.level*APP.wordsPerLevel<state.preps.data.length){
+        state.preps.level++; saveAll();
+      }
+    }
+  }
+};
+
+/* ===========================================================
+   MIX CONTROLLERS
+   =========================================================== */
+
+// Default Mix: round-robin among 4 trainers, skips empty pools, prefers unmastered but respects levels
+const Mix = {
+  order: ['vocab','verbs','adjadv','preps'],
+  i: 0,
+  nextSection(){
+    for(let k=0;k<4;k++){
+      this.i = (this.i+1) % this.order.length;
+      const sec = this.order[this.i];
+      if(!Trainers[sec].hasData()) continue;
+      // must have at least something in the level-pool
+      const available = Trainers[sec].levelPool().length>0;
+      if(!available) continue;
+      return sec;
+    }
+    return 'vocab';
+  },
+  render(){
+    const mount = $('#mixMount');
+    mount.innerHTML = '';
+    let sec = this.nextSection();
+    this.showSection(sec, mount);
+    $('#mixInfo').textContent = `→ ${sec}`;
+  },
+  showSection(sec, mount){
+    // dynamically project the chosen card into the mix mount
+    const idMap = {vocab:'#vocab',verbs:'#verbs',adjadv:'#adjadv',preps:'#preps'};
+    const el = document.querySelector(idMap[sec]);
+    if(!el){ mount.innerHTML='<p class="muted">No section.</p>'; return; }
+    // render a fresh item:
+    Trainers[sec].next(true); // silent render inside its own card (hidden)
+    // clone the visible part
+    const clone = el.cloneNode(true);
+    clone.id = ''; clone.classList.remove('hidden');
+    // make buttons inside work by proxying to original handlers:
+    mount.appendChild(clone);
+  }
+};
+
+// Kapitel Mix: never touches default CSVs; rotates across the 4 pools, always prefers unmastered; no levels.
+// When ALL are mastered: show “Kapitel mastered” splash with Reset.
+const KapitelMix = {
+  order: ['vocab','verbs','adjadv','preps'],
+  i: -1,
+  pickSection(){
+    // prefer a section that still has unmastered; else any with data
+    const avail = this.order.filter(s=>Trainers[s].hasData());
+    const unmastered = avail.filter(s=>Trainers[s].hasUnmastered());
+    if(!avail.length) return null;
+    if(unmastered.length){
+      this.i = (this.i+1) % unmastered.length;
+      return unmastered[this.i];
+    } else {
+      this.i = (this.i+1) % avail.length;
+      return avail[this.i];
+    }
+  },
+  render(){
+    const mount = $('#kmxMount');
+    mount.innerHTML='';
+    if(this.allMastered()){
+      $('#kmxAllDone').classList.remove('hidden');
+      mount.innerHTML = `<div class="center" style="min-height:120px"><strong>Kapitel mastered 🎉</strong></div>`;
+      return;
+    } else {
+      $('#kmxAllDone').classList.add('hidden');
+    }
+    const sec = this.pickSection();
+    if(!sec){ mount.innerHTML='<p class="muted">No Kapitel data loaded.</p>'; return; }
+    Trainers[sec].next(true);
+    const idMap = {vocab:'#vocab',verbs:'#verbs',adjadv:'#adjadv',preps:'#preps'};
+    const el = document.querySelector(idMap[sec]);
+    const clone = el.cloneNode(true); clone.id=''; clone.classList.remove('hidden');
+    mount.appendChild(clone);
+  },
+  allMastered(){
+    return ['vocab','verbs','adjadv','preps'].every(s=> !Trainers[s].hasData() || !Trainers[s].hasUnmastered());
+  }
+};
+
+/* ===========================================================
+   TRAINER BRIDGE
+   =========================================================== */
+const Trainers = {
+  vocab: {
+    async load(){ await Vocab.load(); },
+    hasData:()=>Vocab.hasData(),
+    hasUnmastered:()=>Vocab.hasUnmastered(),
+    levelPool:()=>Vocab.levelPool(),
+    next(internal=false){ const x=Vocab.pick(); if(!x) return; Vocab.render(x); this._cur=x; if(!internal) setMode('vocab'); },
+    check(){ Vocab.check(this._cur); }
+  },
+  verbs: {
+    async load(){ await Verbs.load(); },
+    hasData:()=>Verbs.hasData(),
+    hasUnmastered:()=>Verbs.hasUnmastered(),
+    levelPool:()=>Verbs.levelPool(),
+    next(internal=false){ const x=Verbs.pick(); if(!x) return; Verbs.render(x); this._cur=x; if(!internal) setMode('verbs'); },
+    check(){ Verbs.check(this._cur); }
+  },
+  adjadv: {
+    async load(){ await AdjAdv.load(); },
+    hasData:()=>AdjAdv.hasData(),
+    hasUnmastered:()=>AdjAdv.hasUnmastered(),
+    levelPool:()=>AdjAdv.levelPool(),
+    next(internal=false){ const x=AdjAdv.pick(); if(!x) return; AdjAdv.render(x); this._cur=x; if(!internal) setMode('adjadv'); },
+    check(){ AdjAdv.check(this._cur); }
+  },
+  preps: {
+    async load(){ await Preps.load(); },
+    hasData:()=>Preps.hasData(),
+    hasUnmastered:()=>Preps.hasUnmastered(),
+    levelPool:()=>Preps.levelPool(),
+    next(internal=false){ 
+      let tries=0; let x=null; 
+      do{ x=Preps.pick(); tries++; if(!x) break; const r=Preps.render(x); if(r!=='repick') break; } while(tries<5);
+      this._cur=x; if(!internal) setMode('preps'); 
+    },
+    check(){ Preps.check(this._cur); }
+  }
+};
+
+/* ===========================================================
+   UI WIRING
+   =========================================================== */
+
+function renderMode(){
+  // show only the chosen section
+  ['#vocab','#verbs','#adjadv','#preps','#mix','#kapitelMix'].forEach(hide);
+  const m = APP.mode;
+  if(m==='mix'){ show('#mix'); Mix.render(); }
+  else if(m==='kapitelMix'){ show('#kapitelMix'); KapitelMix.render(); }
+  else { show('#'+m); }
+  $all('.mode-btn').forEach(b=> b.classList.toggle('active', b.dataset.mode===m));
+  updateHUD();
+}
+
+async function loadAll(){
+  // load data fresh according to dataset
+  loadAllProgress();
+  await Trainers.vocab.load().catch(()=>{});
+  await Trainers.verbs.load().catch(()=>{});
+  await Trainers.adjadv.load().catch(()=>{});
+  await Trainers.preps.load().catch(()=>{});
+  dsUI.update();
+  updateHUD();
+}
+
+function attachEvents(){
+  // modes
+  $all('.mode-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const m=b.dataset.mode;
+      if(m==='kapitelMix' && APP.dsKey!=='kapitel') return;
+      setMode(m);
+      if(m!=='mix' && m!=='kapitelMix') Trainers[m].next(true); // show fresh
+    });
+  });
+
+  // dataset selector
+  $('#datasetSel').addEventListener('change', async (e)=>{
+    const v=e.target.value;
+    if(v==='default'){ APP.dsKey='default'; }
+    else if(v==='kapitel'){ if(!localStorage.getItem('kapitel_current_v1')) { e.target.value='default'; return; } APP.dsKey='kapitel'; }
+    dsUI.update();
+    await loadAll();
+    if(APP.dsKey==='kapitel' && APP.mode==='mix') setMode('kapitelMix');
+    renderMode();
+  });
+
+  // Load Kapitel button
+  $('#btnLoadKapitel').addEventListener('click', ()=>{
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='.zip';
+    inp.onchange=async (ev)=>{ const f=ev.target.files?.[0]; if(!f) return; try{ await handleKapitelZip(f); Trainers.vocab.next(true); setMode('kapitelMix'); }catch(e){ alert(e?.message||String(e)); } };
+    inp.click();
+  });
+
+  // Vocab
+  $all('.article-bar .article-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{ state.vocab.article=b.dataset.a; $all('.article-bar .article-btn').forEach(x=>x.classList.toggle('active', x===b)); $('#vocabDe').focus(); });
+  });
+  $('#vocabCheck').addEventListener('click', ()=>Trainers.vocab.check());
+  $('#vocabNext').addEventListener('click', ()=>Trainers.vocab.next());
+  $('#vocabReset').addEventListener('click', ()=>{ if(confirm('Reset vocab progress?')){ state.vocab.level=1; state.vocab.streaks={}; saveAll(); Trainers.vocab.next(true); renderMode(); } });
+  $('#vocabShowEn').addEventListener('change', (e)=>{ state.vocab.showEn=e.target.checked; saveAll(); renderMode(); });
+
+  // Verbs toggles
+  $all('[data-aux]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-aux]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vPast').focus(); }));
+  $all('[data-case]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-case]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vPrep').focus(); }));
+  $all('[data-refl]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-refl]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vInf').focus(); }));
+  $('#verbsCheck').addEventListener('click', ()=>Trainers.verbs.check());
+  $('#verbsNext').addEventListener('click', ()=>Trainers.verbs.next());
+  $('#verbsReset').addEventListener('click', ()=>{ if(confirm('Reset verbs progress?')){ state.verbs.level=1; state.verbs.streaks={}; saveAll(); Trainers.verbs.next(true); renderMode(); } });
+
+  // Adj/Adv
+  $('#aaCheck').addEventListener('click', ()=>Trainers.adjadv.check());
+  $('#aaNext').addEventListener('click', ()=>Trainers.adjadv.next());
+  $('#aaReset').addEventListener('click', ()=>{ if(confirm('Reset adj/adv progress?')){ state.adjadv.level=1; state.adjadv.streaks={}; saveAll(); Trainers.adjadv.next(true); renderMode(); } });
+
+  // Preps
+  $('#ppCheck').addEventListener('click', ()=>Trainers.preps.check());
+  $('#ppNext').addEventListener('click', ()=>Trainers.preps.next());
+  $('#ppReset').addEventListener('click', ()=>{ if(confirm('Reset preps progress?')){ state.preps.level=1; state.preps.streaks={}; saveAll(); Trainers.preps.next(true); renderMode(); } });
+
+  // Mix
+  $('#mix').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); Mix.render(); } });
+
+  // Kapitel Mix
+  $('#kmxNext').addEventListener('click', ()=>KapitelMix.render());
+  $('#kmxReset').addEventListener('click', ()=>{ if(confirm('Reset Kapitel-only progress?')){ 
+    // wipe only Kapitel progress keys
+    localStorage.removeItem('vocabProgress::kapitel');
+    localStorage.removeItem('verbsProgress::kapitel');
+    localStorage.removeItem('adjadvProgress::kapitel');
+    localStorage.removeItem('prepsProgress::kapitel');
+    state.vocab.streaks={}; state.verbs.streaks={}; state.adjadv.streaks={}; state.preps.streaks={};
+    KapitelMix.render();
+  }});
+
+  // Sync
+  $('#btnSync').addEventListener('click', ()=> { $('#syncModal').style.display='flex'; $('#syncUser').value = localStorage.getItem('syncUser')||''; });
+  $('#syncCancel').addEventListener('click', ()=>{ $('#syncModal').style.display='none'; });
+  $('#syncEnable').addEventListener('click', async ()=>{
+    const u = ($('#syncUser').value||'').trim();
+    if(!u) return alert('Enter a username');
+    try{
+      const remote = await cloudPull(u);
+      if(remote){
+        if(confirm('Cloud data found. Load it now? (Overwrites local)')){
+          applyCloud(remote);
+        }
+      }
+      localStorage.setItem('syncUser', u);
+      $('#syncStatus').textContent = 'Sync: '+u;
+      $('#syncModal').style.display='none';
+      scheduleSyncSoon();
+    }catch(e){ alert('Sync error'); }
+  });
+
+  // Debug HUD
+  $('#btnDebug').addEventListener('click', ()=>{ const h=$('#debugHUD'); h.style.display = (h.style.display==='none'||!h.style.display)?'block':'none'; });
+  $('#dbgDump').addEventListener('click', ()=>{ console.log({APP,state}); alert('Dumped to console.'); });
+
+  // Enter-flow shortcuts (first Enter checks, second advances) — for the main text inputs
+  function bindEnterFlow(inputSel, checkFn, nextFn){
+    const el=$(inputSel); if(!el) return;
+    let armed=false;
+    el.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        if(!armed){ armed=true; checkFn(); el.focus(); }
+        else { armed=false; nextFn(); }
+      }
+    });
+  }
+  // Bind for each section
+  bindEnterFlow('#vocabPl', ()=>Trainers.vocab.check(), ()=>Trainers.vocab.next());
+  bindEnterFlow('#vPart', ()=>Trainers.verbs.check(), ()=>Trainers.verbs.next());
+  bindEnterFlow('#aaDe',  ()=>Trainers.adjadv.check(), ()=>Trainers.adjadv.next());
+  // Preps: Enter on hole
+  document.addEventListener('keydown', (e)=>{
+    if(APP.mode==='preps' || APP.mode==='kapitelMix'){
+      if(e.key==='Enter'){
+        const h=$('#ppHole');
+        if(h && document.activeElement===h){
+          e.preventDefault();
+          if(!h.dataset.once){ h.dataset.once='1'; Trainers.preps.check(); }
+          else { h.dataset.once=''; Trainers.preps.next(); }
+        }
+      }
+    }
+  });
+}
+
+/* ===========================================================
+   LOAD SAMPLE DATA (for quick testing)
+   =========================================================== */
+
+// FIND → PASTE BELOW: SAMPLE_CSVS
+const SAMPLE_VOCAB = `english,article,german,plural,example1,example2,example3
+book,das,Das Buch,Bücher,Ich lese ein Buch.,Das Buch ist interessant.,Sie kaufen viele Bücher.
+cat,die,Die Katze,Katzen,Die Katze schläft.,Ich mag Katzen.,Die Katzen sind süß.
+man,der,Der Mann,Männer,Der Mann arbeitet.,Ich sehe den Mann.,Viele Männer sind hier.`;
+
+const SAMPLE_VERBS = `id,lemma,english,aux,ich,du,er,wir,ihr,sie,partizip,past,preps,case,reflexive
+gehen,gehen,to go,sein,gehe,gehst,geht,gehen,geht,gehen,gegangen,ging,,-,false
+sprechen,sprechen,to speak,haben,spreche,sprichst,spricht,sprechen,sprecht,sprechen,gesprochen,sprach,über,akk,false
+sich-waschen,waschen,to wash,haben,wasche,waeschst,waescht,waschen,wascht,waschen,gewaschen,wusch,,inf,true`;
+
+const SAMPLE_AA = `english,german,example
+beautiful,schön,Das ist ein schönes Bild.
+dangerous,gefährlich,Das ist eine gefährliche Kreuzung.
+often,häufig,Ich fahre häufig mit dem Rad.`;
+
+const SAMPLE_PREPS = `prep,forms,de1,de2,de3,de4,de5,de6,de7,de8,de9,de10,en1,en2,en3,en4,en5,en6,en7,en8,en9,en10
+in,in;im;ins,Ich bin im Büro.,Wir gehen ins Kino.,Er wohnt in Berlin.,, , , , , ,I'm at the office.,We're going to the cinema.,He lives in Berlin.,,,,,,,
+auf,auf,Das Buch liegt auf dem Tisch.,Wir gehen auf den Markt.,Er ist auf der Bühne.,,,,,,,The book is on the table.,We are going to the market.,He is on the stage.,,,,,,,`;
+
+/* ===========================================================
+   APP INIT
+   =========================================================== */
+async function loadDefaultIfMissing(name, sample){
+  try{ await datasetRead(name); }catch{ /* create virtual for default */ if(APP.dsKey==='default'){ // inject sample into fetch fallback by caching via ServiceWorker? Too heavy. Use Blob URLs in memory:
+      // We can't intercept fetch easily here, so instead, when default dataset is active, we will use these strings directly:
+      if(!APP._inline){ APP._inline={}; }
+      APP._inline[name]=sample;
+      // monkey patch datasetRead to read inline if present
+      const orig = datasetRead;
+      datasetRead = async function(filename){
+        if(APP.dsKey==='kapitel' && APP.kapitel.files && APP.kapitel.files[filename]!=null) return APP.kapitel.files[filename];
+        if(APP._inline && APP._inline[filename]!=null) return APP._inline[filename];
+        return orig(filename);
+      }
+  } }
+}
+
+async function boot(){
+  // restore last mode
+  APP.mode = localStorage.getItem('mode') || 'vocab';
+
+  // inline samples if local files missing
+  await loadDefaultIfMissing('vocab.csv', SAMPLE_VOCAB);
+  await loadDefaultIfMissing('verbs.csv', SAMPLE_VERBS);
+  await loadDefaultIfMissing('adjadv.csv', SAMPLE_AA);
+  await loadDefaultIfMissing('prepositions.csv', SAMPLE_PREPS);
+
+  await loadAll();
+  attachEvents();
+  Trainers.vocab.next(true);
+  renderMode();
+
+  // set sync badge
+  $('#syncStatus').textContent = localStorage.getItem('syncUser')? 'Sync: '+localStorage.getItem('syncUser') : 'Sync: Off';
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+
+/* ===========================================================
+   Tiny extras (copy text markers)
+   =========================================================== */
+// FIND → PASTE BELOW: UI_COPY
+// (Leave empty — reserved for quick copy changes without searching the whole file.)
+
+</script>
 </body>
 </html>
