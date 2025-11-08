@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>German Trainer</title>
 
 <!-- JSZip for Kapitel package loading -->
@@ -20,6 +20,8 @@
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial,sans-serif;}
+  html{-webkit-text-size-adjust:100%}
+  body{touch-action:manipulation}
   a{color:var(--accent)}
   .wrap{max-width:720px;margin:0 auto;padding:14px}
   .bar{display:flex;gap:8px;align-items:center;margin:6px auto 10px;max-width:720px}
@@ -31,8 +33,9 @@
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
   .row{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin:8px 0}
   input[type="text"],input[type="search"],input[type="number"],select,textarea{
-    width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text)
-  }
+    width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);
+    font-size:16px; /* prevent iOS zoom */
+}
   .muted{color:var(--muted)}
   .small{font-size:12px}
   .good{color:var(--good)} .bad{color:var(--bad)}
@@ -54,6 +57,9 @@
   .kmx .badge{border:1px solid var(--accent);color:var(--accent);padding:2px 8px;border-radius:999px;font-size:12px}
 
   /* Debug HUD */
+  /* Sidebar helpers */
+  .side-open #side{ transform:translateX(0) }
+  .side-open #sideMask{ display:block }
   #debugHUD{position:fixed;right:8px;bottom:8px;background:#0b111a;border:1px solid var(--border);border-radius:10px;padding:8px 10px;color:#b7c6d8;font-size:12px;min-width:220px;z-index:9999;display:none}
   #debugHUD code{font-size:12px}
   #debugHUD .row{grid-template-columns:100px 1fr}
@@ -71,14 +77,43 @@
 <body>
 
 <div class="wrap">
-  <div class="bar">
-    <strong class="muted">Source:</strong>
-    <select id="datasetSel" title="Dataset">
-      <option value="default">Default</option>
-    </select>
-    <button id="btnLoadKapitel">Load Kapitel…</button>
-    <span id="datasetCtx" class="muted small"></span>
-  </div>
+  <!-- Header + Sidebar trigger -->
+	<div class="bar" style="justify-content:space-between;">
+	  <div style="display:flex;align-items:center;gap:10px">
+		<button id="btnSide" class="mode-btn" style="padding:8px 10px">☰</button>
+		<strong>German Trainer</strong>
+	  </div>
+	  <span id="datasetCtx" class="muted small"></span>
+	</div>
+
+	<!-- Slide-out Sidebar -->
+	<aside id="side" style="position:fixed;inset:0 0 0 auto; width:300px; max-width:85%; background:var(--card); border-left:1px solid var(--border); box-shadow:-18px 0 30px rgba(0,0,0,.35); transform:translateX(100%); transition:transform .22s ease; z-index:20000; padding:14px; display:flex; flex-direction:column; gap:12px">
+	  <div style="display:flex;justify-content:space-between;align-items:center">
+		<strong>Settings</strong>
+		<button id="btnSideClose" class="mode-btn" style="padding:6px 10px">✕</button>
+	  </div>
+
+	  <div class="card" style="padding:12px">
+		<div class="small muted" style="margin-bottom:6px">Dataset</div>
+		<select id="datasetSel" title="Dataset" style="width:100%">
+		  <option value="default">Default</option>
+		</select>
+		<button id="btnLoadKapitel" style="width:100%; margin-top:8px">Load Kapitel…</button>
+	  </div>
+
+	  <div class="card" style="padding:12px">
+		<div class="small muted" style="margin-bottom:6px">Cloud</div>
+		<button id="btnSync" title="Cloud Sync" style="width:100%">Sync</button>
+		<div id="syncStatus" class="muted small" style="margin-top:6px">Sync: Off</div>
+	  </div>
+
+	  <div class="card" style="padding:12px">
+		<div class="small muted" style="margin-bottom:6px">Debug</div>
+		<button id="btnDebug" style="width:100%">Debug HUD</button>
+	  </div>
+	</aside>
+	<div id="sideMask" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:19000;display:none"></div>
+
 
   <div class="mode-tabs" id="modeTabs">
     <button class="mode-btn" data-mode="vocab">Vocab</button>
@@ -317,6 +352,34 @@ function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
 function show(id){ const el=$(id.startsWith('#')?id:`#${id}`); el&&el.classList.remove('hidden'); }
 function hide(id){ const el=$(id.startsWith('#')?id:`#${id}`); el&&el.classList.add('hidden'); }
 function setMode(m){ APP.mode=m; localStorage.setItem('mode', m); renderMode(); updateHUD(); }
+// Mount trainer sections without cloning (preserves events)
+const mixMounts = { mix:'#mixMount', kapitel:'#kmxMount' };
+let mounted = null; // {sec, parentId}
+
+function mountSection(sec, where){ // where: 'mix' | 'kapitel'
+  const map = {vocab:'#vocab',verbs:'#verbs',adjadv:'#adjadv',preps:'#preps'};
+  const sel = map[sec]; if(!sel) return;
+  const el = document.querySelector(sel);
+  if(!el) return;
+
+  // unmount any previous
+  if(mounted && mounted.sec){
+    const oldEl = document.querySelector(map[mounted.sec]);
+    if(oldEl){
+      // return to root container (wrap)
+      document.querySelector('.wrap').appendChild(oldEl);
+      oldEl.classList.add('hidden');
+    }
+    mounted=null;
+  }
+
+  const host = document.querySelector(mixMounts[where]);
+  host.innerHTML='';
+  el.classList.remove('hidden');
+  host.appendChild(el);
+  mounted = { sec, parentId: mixMounts[where] };
+}
+
 
 // Debug HUD
 function updateHUD(){
@@ -734,25 +797,16 @@ const Mix = {
     return 'vocab';
   },
   render(){
-    const mount = $('#mixMount');
-    mount.innerHTML = '';
     let sec = this.nextSection();
-    this.showSection(sec, mount);
+    this.showSection(sec);
     $('#mixInfo').textContent = `→ ${sec}`;
   },
-  showSection(sec, mount){
-    // dynamically project the chosen card into the mix mount
-    const idMap = {vocab:'#vocab',verbs:'#verbs',adjadv:'#adjadv',preps:'#preps'};
-    const el = document.querySelector(idMap[sec]);
-    if(!el){ mount.innerHTML='<p class="muted">No section.</p>'; return; }
-    // render a fresh item:
-    Trainers[sec].next(true); // silent render inside its own card (hidden)
-    // clone the visible part
-    const clone = el.cloneNode(true);
-    clone.id = ''; clone.classList.remove('hidden');
-    // make buttons inside work by proxying to original handlers:
-    mount.appendChild(clone);
-  }
+
+  showSection(sec){
+    Trainers[sec].next(true);
+    mountSection(sec,'mix');
+}
+
 };
 
 // Kapitel Mix: never touches default CSVs; rotates across the 4 pools, always prefers unmastered; no levels.
@@ -786,11 +840,9 @@ const KapitelMix = {
     const sec = this.pickSection();
     if(!sec){ mount.innerHTML='<p class="muted">No Kapitel data loaded.</p>'; return; }
     Trainers[sec].next(true);
-    const idMap = {vocab:'#vocab',verbs:'#verbs',adjadv:'#adjadv',preps:'#preps'};
-    const el = document.querySelector(idMap[sec]);
-    const clone = el.cloneNode(true); clone.id=''; clone.classList.remove('hidden');
-    mount.appendChild(clone);
+    mountSection(sec,'kapitel');
   },
+
   allMastered(){
     return ['vocab','verbs','adjadv','preps'].every(s=> !Trainers[s].hasData() || !Trainers[s].hasUnmastered());
   }
@@ -935,6 +987,15 @@ function attachEvents(){
     KapitelMix.render();
   }});
 
+  // Sidebar toggle
+  const side = $('#side'), mask = $('#sideMask');
+  const openSide = ()=>{ document.body.classList.add('side-open'); };
+  const closeSide = ()=>{ document.body.classList.remove('side-open'); };
+  $('#btnSide').addEventListener('click', openSide);
+  $('#btnSideClose').addEventListener('click', closeSide);
+  mask.addEventListener('click', closeSide);
+
+
   // Sync
   $('#btnSync').addEventListener('click', ()=> { $('#syncModal').style.display='flex'; $('#syncUser').value = localStorage.getItem('syncUser')||''; });
   $('#syncCancel').addEventListener('click', ()=>{ $('#syncModal').style.display='none'; });
@@ -959,36 +1020,82 @@ function attachEvents(){
   $('#btnDebug').addEventListener('click', ()=>{ const h=$('#debugHUD'); h.style.display = (h.style.display==='none'||!h.style.display)?'block':'none'; });
   $('#dbgDump').addEventListener('click', ()=>{ console.log({APP,state}); alert('Dumped to console.'); });
 
-  // Enter-flow shortcuts (first Enter checks, second advances) — for the main text inputs
-  function bindEnterFlow(inputSel, checkFn, nextFn){
-    const el=$(inputSel); if(!el) return;
-    let armed=false;
-    el.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        if(!armed){ armed=true; checkFn(); el.focus(); }
-        else { armed=false; nextFn(); }
-      }
-    });
+  // GLOBAL ENTER ENGINE
+  let enterArmed = false;
+
+  function modeFields(mode){
+    // ordered focus list per trainer
+    if(mode==='vocab')   return ['#vocabDe','#vocabPl']; // article is buttons; after click we keep focus on #vocabDe
+    if(mode==='verbs')   return ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep']; // aux/case/refl are buttons
+    if(mode==='adjadv')  return ['#aaDe'];
+    if(mode==='preps')   return ['#ppHole']; // contenteditable in sentence
+    // In Mix/Kapitel Mix we mounted the real section, so APP.mode may be 'mix' or 'kapitelMix';
+    // detect the currently mounted section by checking which trainer element is visible:
+    if(mode==='mix' || mode==='kapitelMix'){
+      if(!mounted) return [];
+      const sec = mounted.sec;
+      return modeFields(sec);
+    }
+    return [];
   }
-  // Bind for each section
-  bindEnterFlow('#vocabPl', ()=>Trainers.vocab.check(), ()=>Trainers.vocab.next());
-  bindEnterFlow('#vPart', ()=>Trainers.verbs.check(), ()=>Trainers.verbs.next());
-  bindEnterFlow('#aaDe',  ()=>Trainers.adjadv.check(), ()=>Trainers.adjadv.next());
-  // Preps: Enter on hole
+
+  function sectionCheck(mode){
+    const m = (mode==='mix'||mode==='kapitelMix') && mounted ? mounted.sec : mode;
+    if(!m) return;
+    Trainers[m]?.check && Trainers[m].check();
+  }
+  function sectionNext(mode){
+    const m = (mode==='mix'||mode==='kapitelMix') && mounted ? mounted.sec : mode;
+    if(!m) return;
+    Trainers[m]?.next && Trainers[m].next(true);
+    // If we’re in Mix/Kapitel Mix, rotate controller
+    if(mode==='mix') Mix.render();
+    if(mode==='kapitelMix') KapitelMix.render();
+  }
+
   document.addEventListener('keydown', (e)=>{
+    if(e.key!=='Enter') return;
+    // Identify active fields
+    const fields = modeFields(APP.mode).map(s=>document.querySelector(s)).filter(Boolean);
+    if(!fields.length) return;
+
+    const active = document.activeElement;
+    const idx = fields.indexOf(active);
+
+    // Special case: if preps hole isn't focused, push focus first
     if(APP.mode==='preps' || APP.mode==='kapitelMix'){
-      if(e.key==='Enter'){
-        const h=$('#ppHole');
-        if(h && document.activeElement===h){
-          e.preventDefault();
-          if(!h.dataset.once){ h.dataset.once='1'; Trainers.preps.check(); }
-          else { h.dataset.once=''; Trainers.preps.next(); }
-        }
+      const hole = document.querySelector('#ppHole');
+      if(hole && fields[0]===hole && active!==hole){
+        e.preventDefault(); hole.focus(); return;
       }
     }
+
+    if(idx>-1 && idx < fields.length-1){
+      // go to next field
+      e.preventDefault();
+      fields[idx+1].focus();
+      enterArmed = false;
+      return;
+    }
+
+    // last field or not in list → run check/next logic
+    e.preventDefault();
+    if(!enterArmed){
+      enterArmed = true;
+      sectionCheck(APP.mode);
+      // Keep focus on the last field so user can see result; pressing Enter again advances.
+      const last = fields[fields.length-1]; if(last) last.focus();
+    } else {
+      enterArmed = false;
+      sectionNext(APP.mode);
+      // Focus first field of the new item
+      setTimeout(()=>{
+        const nf = modeFields(APP.mode).map(s=>document.querySelector(s)).filter(Boolean)[0];
+        nf && nf.focus();
+      },0);
+    }
   });
-}
+
 
 /* ===========================================================
    LOAD SAMPLE DATA (for quick testing)
