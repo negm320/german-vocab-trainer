@@ -2286,6 +2286,17 @@
 		  // Build candidate list
 		  let cand = MIX_SECTIONS.filter(sectionHasData);
 
+			// New: guarantee each section appears at least once per Mix session
+			window.__mix_seen = window.__mix_seen || {};
+			const unseen = cand.filter(s => !window.__mix_seen[s]);
+			if (unseen.length){
+			  const pick = unseen[0];               // first unseen section wins
+			  window.__mix_seen[pick] = true;       // mark visited
+			  window.__mix_last_section = pick;
+			  return pick;
+			}
+
+
 		  // In Kapitel+Mix → only unmastered sections
 		  if (typeof isKapitelMixMode === 'function' && isKapitelMixMode()) {
 			cand = cand.filter(s => (typeof sectionHasUnmastered==='function') ? sectionHasUnmastered(s) : true);
@@ -2476,6 +2487,10 @@
 				const lvl = document.getElementById('level'); if (lvl) lvl.style.display='none';
 				const vi  = document.getElementById('verbs-level-indicator'); if (vi) vi.style.display='none';
 			  }
+
+				// reset per-session "seen" set so each pool must appear once
+				window.__mix_seen = { vocab:false, verbs:false, adjadv:false, preps:false };
+
 
 			  // If everything in this Kapitel is mastered → splash
 			  if (typeof allKapitelMastered === 'function' && allKapitelMastered()){
