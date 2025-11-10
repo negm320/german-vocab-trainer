@@ -292,13 +292,7 @@
 
 <script>
 /* ===========================================================
-   CLEAN CORE — ENV & UTIL
-   =========================================================== */
-
-/* ====== EDIT HOOKS (use these markers for future edits) ======
-   FIND → PASTE BELOW: FIREBASE_CONFIG
-   FIND → PASTE BELOW: SAMPLE_CSVS
-   FIND → PASTE BELOW: UI_COPY
+   GERMAN TRAINER — STABLE CORE SCRIPT (no dangling blocks)
    =========================================================== */
 
 const APP = {
@@ -307,181 +301,80 @@ const APP = {
   masteryTarget: 3,
   wordsPerLevel: 25,
   debug: false,
-  kapitel: { title: '', counts: {vocab:0,verbs:0,adjadv:0,preps:0}, files:null }, // when loaded
-  rnd: (n)=>Math.floor(Math.random()*n),
+  kapitel: { title:'', counts:{vocab:0,verbs:0,adjadv:0,preps:0}, files:null },
+  pick: (arr)=> arr && arr.length? arr[Math.floor(Math.random()*arr.length)] : null,
   norm: (s)=> (s||'').trim().toLowerCase(),
-  normDe: (s)=> (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'),
-  pick: (arr)=> arr.length? arr[Math.floor(Math.random()*arr.length)] : null
+  normDe: (s)=> (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue')
 };
 
-// LocalStorage helpers (namespaced by dataset)
+// ---------- DOM helpers ----------
+function $(sel){ return document.querySelector(sel); }
+function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
+function show(id){ const el=$(id.startsWith('#')?id:`#${id}`); if(el) el.classList.remove('hidden'); }
+function hide(id){ const el=$(id.startsWith('#')?id:`#${id}`); if(el) el.classList.add('hidden'); }
+
+// ---------- Storage ----------
 const LS = {
-  key: (k)=> `${k}::${APP.dsKey}`,
-  get: (k, fb)=>{ try{ const v = localStorage.getItem(LS.key(k)); return v? JSON.parse(v): fb; }catch{ return fb; } },
-  set: (k, v)=>{ try{ localStorage.setItem(LS.key(k), JSON.stringify(v)); }catch{}; scheduleSyncSoon(); },
-  del: (k)=>{ try{ localStorage.removeItem(LS.key(k)); }catch{}; scheduleSyncSoon(); }
+  key:(k)=> `${k}::${APP.dsKey}`,
+  get:(k,fb)=>{ try{const v=localStorage.getItem(LS.key(k)); return v? JSON.parse(v):fb;}catch{return fb;} },
+  set:(k,v)=>{ try{localStorage.setItem(LS.key(k),JSON.stringify(v));}catch{} },
+  del:(k)=>{ try{localStorage.removeItem(LS.key(k));}catch{} }
 };
 
-// CSV parsing
-function parseCSV(text){
+// ---------- CSV ----------
+function parseCSV(txt){
   const rows=[]; let row=[]; let cur=''; let q=false;
-  for(let i=0;i<text.length;i++){
-    const c=text[i];
-    if(c==='"'){ if(q && text[i+1]==='"'){ cur+='"'; i++; } else { q=!q; } }
+  for(let i=0;i<txt.length;i++){
+    const c=txt[i];
+    if(c==='"'){ if(q && txt[i+1]==='"'){ cur+='"'; i++; } else q=!q; }
     else if(c===',' && !q){ row.push(cur); cur=''; }
     else if((c==='\n'||c==='\r') && !q){ if(cur!==''||row.length){ row.push(cur); rows.push(row); row=[]; cur=''; } }
-    else { cur+=c; }
+    else cur+=c;
   }
   if(cur!==''||row.length){ row.push(cur); rows.push(row); }
   return rows;
 }
 
-// datasetRead: read from Kapitel package or fetch local file
+// ---------- Dataset IO ----------
 async function datasetRead(name){
-  // Prefer Kapitel files when Kapitel dataset is active
+  // When Kapitel dataset is active, read from its in-memory files
   if(APP.dsKey==='kapitel' && APP.kapitel.files && APP.kapitel.files[name]!=null){
     return APP.kapitel.files[name];
   }
-  // If we have inline samples for Default, use them
+  // When Default and we have inline samples, use them
   if(APP.dsKey==='default' && APP._inline && APP._inline[name]!=null){
     return APP._inline[name];
   }
-  // Fallback: fetch local CSVs
+  // Fallback: fetch file (must be present in same dir)
   const res = await fetch(name, {cache:'no-store'});
   if(!res.ok) throw new Error('Failed to load ' + name);
   return await res.text();
 }
 
-
-// UI helpers
-function $(sel){ return document.querySelector(sel); }
-function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
-function show(id){ const el=$(id.startsWith('#')?id:`#${id}`); el&&el.classList.remove('hidden'); }
-function hide(id){ const el=$(id.startsWith('#')?id:`#${id}`); el&&el.classList.add('hidden'); }
-function setMode(m){ APP.mode=m; localStorage.setItem('mode', m); renderMode(); updateHUD(); }
-// Mount trainer sections without cloning (preserves events)
-const mixMounts = { mix:'#mixMount', kapitel:'#kmxMount' };
-let mounted = null; // {sec, parentId}
-
-function mountSection(sec, where){ // where: 'mix' | 'kapitel'
-  const map = {vocab:'#vocab',verbs:'#verbs',adjadv:'#adjadv',preps:'#preps'};
-  const sel = map[sec]; if(!sel) return;
-  const el = document.querySelector(sel);
-  if(!el) return;
-
-  // unmount any previous
-  if(mounted && mounted.sec){
-    const oldEl = document.querySelector(map[mounted.sec]);
-    if(oldEl){
-      // return to root container (wrap)
-      document.querySelector('.wrap').appendChild(oldEl);
-      oldEl.classList.add('hidden');
-    }
-    mounted=null;
-  }
-
-  const host = document.querySelector(mixMounts[where]);
-  host.innerHTML='';
-  el.classList.remove('hidden');
-  host.appendChild(el);
-  mounted = { sec, parentId: mixMounts[where] };
-}
-
-
-// Debug HUD
-function updateHUD(){
-  $('#dbgDataset').textContent = APP.dsKey;
-  $('#dbgMode').textContent = APP.mode;
-  const sizes = {
-    vocab: state.vocab.data.length,
-    verbs: state.verbs.data.length,
-    adjadv: state.adjadv.data.length,
-    preps: state.preps.data.length
-  };
-  $('#dbgSizes').textContent = JSON.stringify(sizes);
-}
-
-// ===== Firebase (optional) =====
-// FIND → PASTE BELOW: FIREBASE_CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSyAvMyNtFyWM3Ajg2sxpWp4uMErfyawEOMc",
-  authDomain: "german-52657.firebaseapp.com",
-  databaseURL: "https://german-52657-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "german-52657",
-  storageBucket: "german-52657.firebasestorage.app",
-  messagingSenderId: "364706857329",
-  appId: "1:364706857329:web:97779c21361db2423336d0"
-};
-try{ if(!window._fbApp) window._fbApp = firebase.initializeApp(firebaseConfig); }catch{}
-const db = firebase.database();
-const SYNC_KEYS = [
-  'vocabProgress','verbsProgress','adjadvProgress','prepsProgress',
-  'mixState','kapitel_current_v1'
-];
-const cloudPath = (u)=> 'users/'+encodeURIComponent(u);
-async function cloudPull(u){ const snap = await db.ref(cloudPath(u)).get(); return snap.exists()? snap.val(): null; }
-async function cloudPush(u, data){ await db.ref(cloudPath(u)).set(data); }
-function snapshotAll(){
-  const out={}; SYNC_KEYS.forEach(k=>{ out[k+'::default']=localStorage.getItem(k+'::default')??null; out[k+'::kapitel']=localStorage.getItem(k+'::kapitel')??null; });
-  out._meta = { t:Date.now(), ds:APP.dsKey, title: APP.kapitel.title||'Default' }; return out;
-}
-function applyCloud(data){
-  Object.entries(data||{}).forEach(([k,v])=>{
-    if(k==='_meta') return;
-    if(v!=null) localStorage.setItem(k,String(v));
-  });
-}
-let _syncTimer=null,_syncBusy=false;
-function scheduleSyncSoon(){ const u=localStorage.getItem('syncUser'); if(!u) return; clearTimeout(_syncTimer); _syncTimer=setTimeout(runSync,1200); }
-async function runSync(){ if(_syncBusy) return; const u=localStorage.getItem('syncUser'); if(!u) return; _syncBusy=true; try{ await cloudPush(u,snapshotAll()); }catch{} _syncBusy=false; }
-setInterval(()=>{ if(localStorage.getItem('syncUser')) runSync(); },15000);
-
-/* ===========================================================
-   DATASET LAYER
-   - Default: fetch local CSVs
-   - Kapitel: upload ZIP (manifest.json + 4 CSVs). Never touch local CSVs.
-   =========================================================== */
-
-const dsUI = {
-  update(){
-    const sel = $('#datasetSel');
-    // Rebuild
-    sel.innerHTML = `<option value="default">Default</option>` + (localStorage.getItem('kapitel_current_v1')? `<option value="kapitel">Kapitel</option>`:'');
-    sel.value = APP.dsKey;
-    // Context line
-    $('#datasetCtx').textContent = (APP.dsKey==='kapitel')
-      ? `Studying: ${APP.kapitel.title} • ${APP.kapitel.counts.vocab} vocab · ${APP.kapitel.counts.verbs} verbs · ${APP.kapitel.counts.adjadv} adj/adv · ${APP.kapitel.counts.preps} preps`
-      : '';
-    // Modes
-    $('#btnKapitelMix').disabled = (APP.dsKey!=='kapitel');
-    // Hide normal Mix + level badges when Kapitel active (we still allow seeing the tabs, but default Mix does nothing)
-    if(APP.dsKey==='kapitel' && APP.mode==='mix') setMode('kapitelMix');
-    $('#vocabLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
-    $('#verbsLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
-    $('#aaLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
-    $('#ppLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
-  }
-};
-
 async function handleKapitelZip(file){
   const zip = await JSZip.loadAsync(file);
-  async function readByName(b){ const e = Object.values(zip.files).find(f=>!f.dir && f.name.toLowerCase().endsWith('/'+b.toLowerCase())) || Object.values(zip.files).find(f=>!f.dir && f.name.toLowerCase()===b.toLowerCase()); return e? await e.async('string'): null; }
+  async function readByName(b){
+    const choices = Object.values(zip.files);
+    const exact = choices.find(f=>!f.dir && f.name.toLowerCase()===b.toLowerCase());
+    const loose = choices.find(f=>!f.dir && f.name.toLowerCase().endsWith('/'+b.toLowerCase()));
+    const entry = exact || loose;
+    return entry? await entry.async('string'): null;
+  }
   const manifestTxt = await readByName('manifest.json');
   const vocabTxt    = await readByName('vocab.csv');
   const verbsTxt    = await readByName('verbs.csv');
   const adjadvTxt   = await readByName('adjadv.csv');
   const prepsTxt    = await readByName('prepositions.csv');
 
-  if(!vocabTxt && !verbsTxt && !adjadvTxt && !prepsTxt){ alert('ZIP missing required CSVs.'); return; }
-  let manifest=null; try{ manifest = manifestTxt? JSON.parse(manifestTxt): null; }catch{}
-  const title = (manifest?.title) || (manifest?.kapitel? ('Kapitel '+manifest.kapitel): file.name.replace(/\.zip$/i,''));
+  let manifest=null; try{ manifest = manifestTxt? JSON.parse(manifestTxt): null; }catch{ manifest=null; }
+  const title = (manifest?.title) || (manifest?.kapitel? ('Kapitel '+manifest.kapitel): (file.name||'Kapitel'));
   const counts = {
-    vocab: (vocabTxt? vocabTxt.trim().split(/\r?\n/).length-1:0) || 0,
-    verbs: (verbsTxt? verbsTxt.trim().split(/\r?\n/).length-1:0) || 0,
-    adjadv: (adjadvTxt? adjadvTxt.trim().split(/\r?\n/).length-1:0) || 0,
-    preps: (prepsTxt? prepsTxt.trim().split(/\r?\n/).length-1:0) || 0
+    vocab: vocabTxt? Math.max(0, vocabTxt.trim().split(/\r?\n/).length-1) : 0,
+    verbs: verbsTxt? Math.max(0, verbsTxt.trim().split(/\r?\n/).length-1) : 0,
+    adjadv: adjadvTxt? Math.max(0, adjadvTxt.trim().split(/\r?\n/).length-1) : 0,
+    preps: prepsTxt? Math.max(0, prepsTxt.trim().split(/\r?\n/).length-1) : 0
   };
-  APP.kapitel = { title, counts, files: {
+  APP.kapitel = { title, counts, files:{
     'manifest.json': manifestTxt||'',
     'vocab.csv': vocabTxt||'',
     'verbs.csv': verbsTxt||'',
@@ -489,37 +382,41 @@ async function handleKapitelZip(file){
     'prepositions.csv': prepsTxt||''
   }};
   localStorage.setItem('kapitel_current_v1', JSON.stringify(APP.kapitel));
-  APP.dsKey = 'kapitel';
+  APP.dsKey='kapitel';
   dsUI.update();
-  await loadAll(); // reload data from dataset layer
+  await loadAll();
   setMode('kapitelMix');
 }
 
-// restore persisted Kapitel (if any)
-(function(){
-  const saved = localStorage.getItem('kapitel_current_v1');
-  if(saved){
-    try{
-      const k = JSON.parse(saved);
-      APP.kapitel = { title:k.title, counts:k.counts, files:k.files };
-      APP.dsKey = 'kapitel';
-    }catch{}
-  } else {
-    APP.dsKey = 'default';
-  }
-})();
+// ---------- UI small utils ----------
+function setMode(m){
+  APP.mode=m; localStorage.setItem('mode', m);
+  renderMode();
+  updateHUD();
+}
+const dsUI = {
+  update(){
+    const sel = $('#datasetSel');
+    sel.innerHTML = `<option value="default">Default</option>` + (localStorage.getItem('kapitel_current_v1')? `<option value="kapitel">Kapitel</option>`:'');
+    sel.value = APP.dsKey;
+    $('#datasetCtx').textContent = (APP.dsKey==='kapitel') ? `Studying: ${APP.kapitel.title}` : '';
+    $('#btnKapitelMix').disabled = (APP.dsKey!=='kapitel');
 
-/* ===========================================================
-   PROGRESS STRUCT
-   =========================================================== */
-const state = {
-  vocab: { data:[], level:1, streaks:{}, idx:0, showEn:true, article:'' },
-  verbs: { data:[], level:1, streaks:{}, idx:0 },
-  adjadv:{ data:[], level:1, streaks:{}, idx:0 },
-  preps: { data:[], level:1, streaks:{}, idx:0, // holds blanked token for check
-           currentBlank:'', currentAnswer:'' }
+    // Hide level badges on Kapitel
+    $('#vocabLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
+    $('#verbsLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
+    $('#aaLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
+    $('#ppLevel').classList.toggle('hidden', APP.dsKey==='kapitel');
+  }
 };
 
+// ---------- Progress structure ----------
+const state = {
+  vocab: { data:[], level:1, streaks:{}, article:'', idx:0, showEn:true },
+  verbs: { data:[], level:1, streaks:{}, idx:0 },
+  adjadv:{ data:[], level:1, streaks:{}, idx:0 },
+  preps: { data:[], level:1, streaks:{}, idx:0, currentAnswer:'' }
+};
 function saveAll(){
   LS.set('vocabProgress', state.vocab);
   LS.set('verbsProgress', state.verbs);
@@ -527,172 +424,120 @@ function saveAll(){
   LS.set('prepsProgress', state.preps);
 }
 function loadAllProgress(){
-  const v = LS.get('vocabProgress', null); if(v) Object.assign(state.vocab,v);
-  const vb= LS.get('verbsProgress', null); if(vb) Object.assign(state.verbs,vb);
-  const aa= LS.get('adjadvProgress', null); if(aa) Object.assign(state.adjadv,aa);
-  const pp= LS.get('prepsProgress', null); if(pp) Object.assign(state.preps,pp);
+  const v=LS.get('vocabProgress',null); if(v) Object.assign(state.vocab,v);
+  const b=LS.get('verbsProgress',null); if(b) Object.assign(state.verbs,b);
+  const a=LS.get('adjadvProgress',null); if(a) Object.assign(state.adjadv,a);
+  const p=LS.get('prepsProgress',null); if(p) Object.assign(state.preps,p);
 }
 
-/* ===========================================================
-   TRAINERS (each exposes: load(data), hasData(), hasUnmastered(), render(), next())
-   =========================================================== */
-
-/* ---------- VOCAB ---------- 
-   CSV headers: english,article,german,plural,example1,example2,example3
-*/
+// ---------- Trainers ----------
 const Vocab = {
   async load(){
     const txt = await datasetRead('vocab.csv');
     const rows = parseCSV(txt.trim()); rows.shift();
     state.vocab.data = rows.map(r=>({
       english:r[0]||'', article:r[1]||'', german:r[2]||'', plural:r[3]||'',
-      ex:[r[4]||'', r[5]||'', r[6]||''].filter(Boolean)
+      ex:[r[4]||'',r[5]||'',r[6]||''].filter(Boolean)
     }));
   },
+  levelPool(){ return APP.dsKey==='kapitel'? state.vocab.data : state.vocab.data.slice(0, state.vocab.level*APP.wordsPerLevel); },
   hasData(){ return state.vocab.data.length>0; },
-  levelPool(){ if(APP.dsKey==='kapitel') return state.vocab.data; return state.vocab.data.slice(0, state.vocab.level*APP.wordsPerLevel); },
-  hasUnmastered(){ const pool=this.levelPool(); return pool.some(x=> (state.vocab.streaks[x.german]||0) < APP.masteryTarget); },
+  hasUnmastered(){ return this.levelPool().some(x=> (state.vocab.streaks[x.german]||0) < APP.masteryTarget); },
   pick(){
-    const pool = this.levelPool();
-    const prefer = pool.filter(x=>(state.vocab.streaks[x.german]||0)<APP.masteryTarget);
-    return (prefer.length? APP.pick(prefer): APP.pick(pool)) || null;
+    const pool=this.levelPool(); const pref=pool.filter(x=>(state.vocab.streaks[x.german]||0)<APP.masteryTarget);
+    return (pref.length? APP.pick(pref): APP.pick(pool)) || null;
   },
-  render(item){
-    $('#vocabEn').textContent = state.vocab.showEn? item.english : '';
-    $('#vocabStreak').textContent = `${state.vocab.streaks[item.german]||0}/${APP.masteryTarget}`;
-    $('#vocabExamples').textContent = item.ex.length ? ('📝 '+ APP.pick(item.ex)) : '';
-    $('#vocabFeedback').textContent = '';
-    $('#vocabDe').value=''; $('#vocabPl').value=''; state.vocab.article='';
-    // level badge
+  render(x){
+    $('#vocabEn').textContent = state.vocab.showEn? x.english:'';
+    $('#vocabStreak').textContent = `${state.vocab.streaks[x.german]||0}/${APP.masteryTarget}`;
+    $('#vocabExamples').textContent = x.ex.length? ('📝 '+APP.pick(x.ex)) : '';
     $('#vocabLevel').textContent = (APP.dsKey==='kapitel')? '' : `Level ${state.vocab.level}`;
-    // article buttons
-    $all('.article-bar .article-btn').forEach(b=>{
-      b.classList.toggle('active', b.dataset.a===state.vocab.article);
-    });
+    $('#vocabFeedback').textContent='';
+    $('#vocabDe').value=''; $('#vocabPl').value=''; state.vocab.article='';
+    $all('.article-bar .article-btn').forEach(b=>b.classList.remove('active'));
     $('#vocabDe').focus();
   },
-  check(item){
-    const a = state.vocab.article;
-    const de = APP.norm($('#vocabDe').value);
-    const pl = APP.norm($('#vocabPl').value);
-    const ok = (a===item.article) && (de===APP.norm(item.german)) && (pl===APP.norm(item.plural||''));
-    if(ok){ state.vocab.streaks[item.german]=(state.vocab.streaks[item.german]||0)+1; $('#vocabFeedback').innerHTML = `<span class="good">Correct!</span>`; }
-    else { state.vocab.streaks[item.german]=0; $('#vocabFeedback').innerHTML = `<span class="bad">Wrong.</span> Correct: <b>${item.article} ${item.german}</b> — ${item.plural||'—'}`; }
+  check(x){
+    const ok = (state.vocab.article===x.article) &&
+               (APP.norm($('#vocabDe').value)===APP.norm(x.german)) &&
+               (APP.norm($('#vocabPl').value)===APP.norm(x.plural||''));
+    if(ok){ state.vocab.streaks[x.german]=(state.vocab.streaks[x.german]||0)+1; $('#vocabFeedback').innerHTML='<span class="good">Correct!</span>'; }
+    else { state.vocab.streaks[x.german]=0; $('#vocabFeedback').innerHTML=`<span class="bad">Wrong.</span> Correct: <b>${x.article} ${x.german}</b> — ${x.plural||'—'}`; }
     saveAll();
-    // auto level-up (default only)
     if(APP.dsKey==='default'){
-      const pool = this.levelPool();
-      if(pool.length && pool.every(x=>(state.vocab.streaks[x.german]||0)>=APP.masteryTarget) && state.vocab.level*APP.wordsPerLevel < state.vocab.data.length){
+      const pool=this.levelPool();
+      if(pool.length && pool.every(z=>(state.vocab.streaks[z.german]||0)>=APP.masteryTarget) && state.vocab.level*APP.wordsPerLevel < state.vocab.data.length){
         state.vocab.level++; saveAll();
       }
     }
   }
 };
 
-/* ---------- VERBS ----------
-   CSV headers: id,lemma,english,aux,ich,du,er,wir,ihr,sie,partizip,past,preps,case,reflexive
-   aux = haben|sein|haben/sein ; preps="auf;an;mit" ; case=inf|akk|dat ; reflexive=true|false
-   id optional → derive from lemma+english
-*/
 const Verbs = {
   async load(){
     const txt = await datasetRead('verbs.csv');
     const rows = parseCSV(txt.trim()); rows.shift();
     state.verbs.data = rows.map(r=>{
-      const o = {
+      return {
         id: r[0] || `${(r[1]||'').trim()}__${(r[2]||'').trim()}`,
-        lemma: r[1]||'', english:r[2]||'', aux:(r[3]||'').trim().toLowerCase(),
+        lemma:r[1]||'', english:r[2]||'', aux:(r[3]||'').trim().toLowerCase(),
         ich:r[4]||'', du:r[5]||'', er:r[6]||'', wir:r[7]||'', ihr:r[8]||'', sie:r[9]||'',
         partizip:r[10]||'', past:r[11]||'',
         preps:(r[12]||'').split(';').map(s=>s.trim()).filter(Boolean),
         case:(r[13]||'').trim().toLowerCase(),
         reflexive:String(r[14]||'').trim().toLowerCase()
       };
-      return o;
     });
   },
+  levelPool(){ return APP.dsKey==='kapitel'? state.verbs.data : state.verbs.data.slice(0, state.verbs.level*APP.wordsPerLevel); },
   hasData(){ return state.verbs.data.length>0; },
-  levelPool(){ if(APP.dsKey==='kapitel') return state.verbs.data; const cut = state.verbs.level*APP.wordsPerLevel; return state.verbs.data.slice(0, cut); },
-  hasUnmastered(){ const p=this.levelPool(); return p.some(v=> (state.verbs.streaks[v.id]||0) < APP.masteryTarget); },
-  pick(){
-    const p=this.levelPool(); const prefer=p.filter(v=>(state.verbs.streaks[v.id]||0)<APP.masteryTarget);
-    return (prefer.length? APP.pick(prefer) : APP.pick(p)) || null;
-  },
+  hasUnmastered(){ return this.levelPool().some(v=> (state.verbs.streaks[v.id]||0) < APP.masteryTarget); },
+  pick(){ const p=this.levelPool(); const pref=p.filter(v=>(state.verbs.streaks[v.id]||0)<APP.masteryTarget); return (pref.length?APP.pick(pref):APP.pick(p))||null; },
   render(v){
-    $('#verbEn').textContent = v.english;
-    $('#verbsFeedback').textContent='';
-    // wipe inputs
+    $('#verbEn').textContent = v.english; $('#verbsFeedback').textContent='';
     ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep'].forEach(s=>{ const el=$(s); if(el) el.value=''; });
-    // reset toggles
     $all('[data-aux]').forEach(b=>b.classList.remove('active'));
     $all('[data-case]').forEach(b=>b.classList.remove('active'));
     $all('[data-refl]').forEach(b=>b.classList.remove('active'));
-    $('#auxHint').textContent=''; $('#caseHint').textContent='';
-    // show level
     $('#verbsLevel').textContent = (APP.dsKey==='kapitel')? '' : `Level ${state.verbs.level}`;
     $('#vInf').focus();
   },
   check(v){
     let ok=true, msg=[];
-    const mustEqual = (a,b,label, norm=APP.normDe)=>{
-      const pass = norm(a)===norm(b);
-      if(!pass){ ok=false; msg.push(`${label} ➜ <b>${b}</b>`); }
-    };
-    mustEqual($('#vInf').value, v.lemma, 'infinitive');
-    // aux
+    const must=(a,b,label)=>{ if(APP.normDe(a)!==APP.normDe(b)){ ok=false; msg.push(`${label} ➜ <b>${b}</b>`);} };
+    must($('#vInf').value, v.lemma, 'infinitive');
     const chosenAux = $all('[data-aux].active')[0]?.dataset.aux || '';
-    if(v.aux){ const allow = v.aux.split('/').map(s=>s.trim()); if(!allow.includes(chosenAux)){ ok=false; msg.push('aux ➜ <b>'+v.aux+'</b>'); } }
-    // Präsens (ich/du/er/ihr)
-    mustEqual($('#pIch').value, v.ich, 'ich');
-    mustEqual($('#pDu').value,  v.du,  'du');
-    mustEqual($('#pEr').value,  v.er,  'er/sie/es');
-    mustEqual($('#pIhr').value, v.ihr, 'ihr');
-    // past / partizip
-    mustEqual($('#vPast').value, v.past, 'Präteritum');
-    mustEqual($('#vPart').value, v.partizip, 'Partizip');
-    // optional preps
-    const givenPrep = APP.norm($('#vPrep').value);
-    if(v.preps?.length){
-      if(!v.preps.map(APP.norm).includes(givenPrep)){ ok=false; msg.push('prep ➜ <b>'+v.preps.join('; ')+'</b>'); }
-    }
-    // case
-    const chosenCase = $all('[data-case].active')[0]?.dataset.case || '';
-    if(v.case){ if(APP.norm(v.case)!==APP.norm(chosenCase)){ ok=false; msg.push('case ➜ <b>'+v.case+'</b>'); } }
-    // reflexive
-    const chosenRefl = $all('[data-refl].active')[0]?.dataset.refl || '';
-    if(v.reflexive){ if(APP.norm(v.reflexive)!==APP.norm(chosenRefl)){ ok=false; msg.push('reflexive ➜ <b>'+v.reflexive+'</b>'); } }
-
-    if(ok){ state.verbs.streaks[v.id]=(state.verbs.streaks[v.id]||0)+1; $('#verbsFeedback').innerHTML = `<span class="good">Correct!</span>`; }
-    else { state.verbs.streaks[v.id]=0; $('#verbsFeedback').innerHTML = `<span class="bad">Wrong.</span> ${msg.length? 'Correct: '+msg.join(', ') : ''}`; }
+    if(v.aux){ const allow=v.aux.split('/').map(s=>s.trim()); if(!allow.includes(chosenAux)){ ok=false; msg.push('aux ➜ <b>'+v.aux+'</b>'); } }
+    must($('#pIch').value, v.ich, 'ich'); must($('#pDu').value,v.du,'du'); must($('#pEr').value,v.er,'er/sie/es'); must($('#pIhr').value,v.ihr,'ihr');
+    must($('#vPast').value, v.past, 'Präteritum'); must($('#vPart').value, v.partizip, 'Partizip');
+    const givenPrep = APP.norm($('#vPrep').value); if(v.preps?.length && !v.preps.map(APP.norm).includes(givenPrep)){ ok=false; msg.push('prep ➜ <b>'+v.preps.join('; ')+'</b>'); }
+    const chosenCase = $all('[data-case].active')[0]?.dataset.case || ''; if(v.case && APP.norm(v.case)!==APP.norm(chosenCase)){ ok=false; msg.push('case ➜ <b>'+v.case+'</b>'); }
+    const chosenRefl = $all('[data-refl].active')[0]?.dataset.refl || ''; if(v.reflexive && APP.norm(v.reflexive)!==APP.norm(chosenRefl)){ ok=false; msg.push('reflexive ➜ <b>'+v.reflexive+'</b>'); }
+    if(ok){ state.verbs.streaks[v.id]=(state.verbs.streaks[v.id]||0)+1; $('#verbsFeedback').innerHTML='<span class="good">Correct!</span>'; }
+    else { state.verbs.streaks[v.id]=0; $('#verbsFeedback').innerHTML=`<span class="bad">Wrong.</span> ${msg.length? 'Correct: '+msg.join(', ') : ''}`; }
     saveAll();
-
     if(APP.dsKey==='default'){
       const pool=this.levelPool();
-      if(pool.length && pool.every(x=>(state.verbs.streaks[x.id]||0)>=APP.masteryTarget) && state.verbs.level*APP.wordsPerLevel < state.verbs.data.length){
+      if(pool.length && pool.every(z=>(state.verbs.streaks[z.id]||0)>=APP.masteryTarget) && state.verbs.level*APP.wordsPerLevel<state.verbs.data.length){
         state.verbs.level++; saveAll();
       }
     }
   }
 };
 
-/* ---------- ADJ/ADV ----------
-   CSV headers: english,german,example
-*/
 const AdjAdv = {
   async load(){
     const txt = await datasetRead('adjadv.csv');
     const rows = parseCSV(txt.trim()); rows.shift();
     state.adjadv.data = rows.map(r=>({ english:r[0]||'', german:r[1]||'', example:r[2]||'' }));
   },
+  levelPool(){ return APP.dsKey==='kapitel'? state.adjadv.data : state.adjadv.data.slice(0, state.adjadv.level*APP.wordsPerLevel); },
   hasData(){ return state.adjadv.data.length>0; },
-  levelPool(){ if(APP.dsKey==='kapitel') return state.adjadv.data; return state.adjadv.data.slice(0, state.adjadv.level*APP.wordsPerLevel); },
-  hasUnmastered(){ const p=this.levelPool(); return p.some(x=> (state.adjadv.streaks[x.german]||0)<APP.masteryTarget); },
+  hasUnmastered(){ return this.levelPool().some(x=> (state.adjadv.streaks[x.german]||0)<APP.masteryTarget); },
   pick(){ const p=this.levelPool(); const pref=p.filter(x=>(state.adjadv.streaks[x.german]||0)<APP.masteryTarget); return (pref.length?APP.pick(pref):APP.pick(p))||null; },
   render(x){
-    $('#aaEn').textContent = x.english;
-    $('#aaExample').textContent = x.example ? ('📝 '+x.example) : '';
-    $('#aaFeedback').textContent=''; $('#aaDe').value=''; $('#aaDe').focus();
-    $('#aaLevel').textContent = (APP.dsKey==='kapitel')? '' : `Level ${state.adjadv.level}`;
+    $('#aaEn').textContent=x.english; $('#aaExample').textContent=x.example?('📝 '+x.example):''; $('#aaFeedback').textContent=''; $('#aaDe').value=''; $('#aaDe').focus();
+    $('#aaLevel').textContent=(APP.dsKey==='kapitel')? '' : `Level ${state.adjadv.level}`;
   },
   check(x){
     const ok = APP.normDe($('#aaDe').value)===APP.normDe(x.german);
@@ -708,71 +553,49 @@ const AdjAdv = {
   }
 };
 
-/* ---------- PREPOSITIONS (CLOZE) ----------
-   CSV headers:
-   prep,forms,de1,de2,de3,de4,de5,de6,de7,de8,de9,de10, en1,en2,en3,en4,en5,en6,en7,en8,en9,en10
-   - forms: semicolon list (e.g., "in;im;ins")
-   - we blank the FIRST whole-word match of ANY token from forms inside the chosen sentence.
-   - Only the exact surface form is correct.
-*/
 const Preps = {
   async load(){
     const txt = await datasetRead('prepositions.csv');
     const rows = parseCSV(txt.trim()); rows.shift();
-    state.preps.data = rows.map(r=>{
-      return {
-        prep:r[0]||'', forms:(r[1]||'').split(';').map(s=>s.trim()).filter(Boolean),
-        de: r.slice(2,12).map(x=>x||''), // de1..de10
-        en: r.slice(12,22).map(x=>x||'') // en1..en10
-      };
-    });
+    state.preps.data = rows.map(r=>({
+      prep:r[0]||'', forms:(r[1]||'').split(';').map(s=>s.trim()).filter(Boolean),
+      de:r.slice(2,12).map(x=>x||''), en:r.slice(12,22).map(x=>x||'')
+    }));
   },
+  levelPool(){ return APP.dsKey==='kapitel'? state.preps.data : state.preps.data.slice(0, state.preps.level*APP.wordsPerLevel); },
   hasData(){ return state.preps.data.length>0; },
-  levelPool(){ if(APP.dsKey==='kapitel') return state.preps.data; return state.preps.data.slice(0, state.preps.level*APP.wordsPerLevel); },
-  hasUnmastered(){ const p=this.levelPool(); return p.some(x=> (state.preps.streaks[x.prep]||0)<APP.masteryTarget); },
+  hasUnmastered(){ return this.levelPool().some(x=> (state.preps.streaks[x.prep]||0)<APP.masteryTarget); },
   pick(){ const p=this.levelPool(); const pref=p.filter(x=>(state.preps.streaks[x.prep]||0)<APP.masteryTarget); return (pref.length?APP.pick(pref):APP.pick(p))||null; },
-  _blankOneSentence(item){
+  _blank(item){
     const idxs = item.de.map((s,i)=>({i,s})).filter(x=> (x.s||'').trim().length>0);
     if(!idxs.length) return null;
     const pick = APP.pick(idxs);
-    // Build regex for whole-word tokens (simple boundaries)
     const tokens = item.forms.filter(Boolean).sort((a,b)=>b.length-a.length);
     for(const t of tokens){
       const re = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'u');
       if(re.test(pick.s)){
         const hole = `<span class="hole" contenteditable="true" id="ppHole"></span>`;
-        const sent = pick.s.replace(re, hole);
-        // store the exact answer for this sentence
-        state.preps.currentBlank = t;
+        const html = pick.s.replace(re, hole);
         state.preps.currentAnswer = t;
-        const en = item.en[pick.i] || '';
-        return { html:sent, en };
+        const en = item.en[pick.i]||'';
+        return {html,en};
       }
     }
     return null;
   },
-  render(item){
-    const b = this._blankOneSentence(item);
-    $('#ppFeedback').textContent = '';
-    $('#ppLevel').textContent = (APP.dsKey==='kapitel')? '' : `Level ${state.preps.level}`;
-    if(!b){
-      // no sentence contained any surface form — fallback: choose again
-      $('#ppSentence').innerHTML = '<em class="muted">No cloze found for this item; picking another…</em>';
-      $('#ppEnglish').textContent = '';
-      return 'repick';
-    }
-    $('#ppSentence').innerHTML = b.html;
-    $('#ppEnglish').textContent = b.en? ('EN: '+b.en): '';
-    // focus the hole
-    setTimeout(()=>{ const h=$('#ppHole'); if(h){ h.focus(); } }, 0);
+  render(it){
+    $('#ppFeedback').textContent='';
+    $('#ppLevel').textContent=(APP.dsKey==='kapitel')? '' : `Level ${state.preps.level}`;
+    const b = this._blank(it);
+    if(!b){ $('#ppSentence').innerHTML='<em class="muted">No cloze found for this item.</em>'; $('#ppEnglish').textContent=''; return 'repick'; }
+    $('#ppSentence').innerHTML=b.html; $('#ppEnglish').textContent=b.en?('EN: '+b.en):'';
+    setTimeout(()=>{ const h=$('#ppHole'); if(h) h.focus(); },0);
   },
-  readHole(){ const h=$('#ppHole'); return h ? (h.textContent||'').trim() : ''; },
-  check(item){
-    const guess = this.readHole();
-    const answer = state.preps.currentAnswer || '';
-    const ok = guess === answer;
-    if(ok){ state.preps.streaks[item.prep]=(state.preps.streaks[item.prep]||0)+1; $('#ppFeedback').innerHTML='<span class="good">Correct!</span>'; }
-    else { state.preps.streaks[item.prep]=0; $('#ppFeedback').innerHTML = `<span class="bad">Wrong.</span> Correct: <b>${answer}</b>`; }
+  check(){
+    const guess = ($('#ppHole')?.textContent||'').trim();
+    const ok = guess === state.preps.currentAnswer;
+    if(ok){ const key=this._curKey; state.preps.streaks[key]=(state.preps.streaks[key]||0)+1; $('#ppFeedback').innerHTML='<span class="good">Correct!</span>'; }
+    else { const key=this._curKey; state.preps.streaks[key]=0; $('#ppFeedback').innerHTML=`<span class="bad">Wrong.</span> Correct: <b>${state.preps.currentAnswer||''}</b>`; }
     saveAll();
     if(APP.dsKey==='default'){
       const p=this.levelPool();
@@ -783,174 +606,120 @@ const Preps = {
   }
 };
 
-/* ===========================================================
-   MIX CONTROLLERS
-   =========================================================== */
+// ---------- Trainer bridge ----------
+const Trainers = {
+  vocab:{ async load(){await Vocab.load();}, hasData:()=>Vocab.hasData?.()??(state.vocab.data.length>0), hasUnmastered:()=>Vocab.hasUnmastered(), levelPool:()=>Vocab.levelPool(), next(internal=false){ const x=Vocab.pick(); if(!x) return; Vocab.render(x); this._cur=x; if(!internal) setMode('vocab');}, check(){ Vocab.check(this._cur); } },
+  verbs:{ async load(){await Verbs.load();}, hasData:()=>Verbs.hasData?.()??(state.verbs.data.length>0), hasUnmastered:()=>Verbs.hasUnmastered(), levelPool:()=>Verbs.levelPool(), next(internal=false){ const x=Verbs.pick(); if(!x) return; Verbs.render(x); this._cur=x; if(!internal) setMode('verbs');}, check(){ Verbs.check(this._cur); } },
+  adjadv:{ async load(){await AdjAdv.load();},hasData:()=>AdjAdv.hasData?.()??(state.adjadv.data.length>0),hasUnmastered:()=>AdjAdv.hasUnmastered(),levelPool:()=>AdjAdv.levelPool(), next(internal=false){ const x=AdjAdv.pick(); if(!x) return; AdjAdv.render(x); this._cur=x; if(!internal) setMode('adjadv');}, check(){ AdjAdv.check(this._cur); } },
+  preps:{ async load(){await Preps.load();}, hasData:()=>Preps.hasData?.()??(state.preps.data.length>0), hasUnmastered:()=>Preps.hasUnmastered(), levelPool:()=>Preps.levelPool(), next(internal=false){ let tries=0,x=null,ok=false; do{ x=Preps.pick(); tries++; if(!x) break; Preps._curKey = x.prep; ok = (Preps.render(x)!=='repick'); } while(tries<12 && !ok); this._cur=x; if(!internal) setMode('preps');}, check(){ Preps.check(this._cur); } }
+};
 
-// Default Mix: round-robin among 4 trainers, skips empty pools, prefers unmastered but respects levels
+// ---------- Mix mounting (no cloning) ----------
+const mixMounts = { mix:'#mixMount', kapitel:'#kmxMount' };
+let mounted = null;
+function mountSection(sec, where){
+  const map={vocab:'#vocab',verbs:'#verbs',adjadv:'#adjadv',preps:'#preps'};
+  const sel=map[sec]; if(!sel) return;
+  const el=document.querySelector(sel); if(!el) return;
+
+  // unmount current
+  if(mounted && mounted.sec){
+    const backSel = map[mounted.sec];
+    const backEl = document.querySelector(backSel);
+    if(backEl){ document.querySelector('.wrap').appendChild(backEl); backEl.classList.add('hidden'); }
+    mounted=null;
+  }
+  const host=document.querySelector(mixMounts[where]); host.innerHTML='';
+  el.classList.remove('hidden'); host.appendChild(el); mounted={sec,parentId: mixMounts[where]};
+}
+
 const Mix = {
-  order: ['vocab','verbs','adjadv','preps'],
-  i: 0,
+  order:['vocab','verbs','adjadv','preps'], i:0,
   nextSection(){
     for(let k=0;k<4;k++){
-      this.i = (this.i+1) % this.order.length;
-      const sec = this.order[this.i];
-      if(!Trainers[sec].hasData()) continue;
-      const available = Trainers[sec].levelPool().length>0;
-      if(!available) continue;
-      return sec;
+      this.i=(this.i+1)%this.order.length;
+      const s=this.order[this.i];
+      if(!Trainers[s].hasData()) continue;
+      if(Trainers[s].levelPool().length===0) continue;
+      return s;
     }
     return 'vocab';
   },
-  render(){
-    let sec = this.nextSection();
-    this.showSection(sec);
-    $('#mixInfo').textContent = `→ ${sec}`;
-  },
-  showSection(sec){
-    Trainers[sec].next(true);
-    mountSection(sec,'mix');
-  }
+  render(){ const sec=this.nextSection(); Trainers[sec].next(true); mountSection(sec,'mix'); $('#mixInfo').textContent='→ '+sec; }
 };
 
-
-// Kapitel Mix: never touches default CSVs; rotates across the 4 pools, always prefers unmastered; no levels.
-// When ALL are mastered: show “Kapitel mastered” splash with Reset.
 const KapitelMix = {
-  order: ['vocab','verbs','adjadv','preps'],
-  i: -1,
+  order:['vocab','verbs','adjadv','preps'], i:-1,
   pickSection(){
-    // prefer a section that still has unmastered; else any with data
-    const avail = this.order.filter(s=>Trainers[s].hasData());
-    const unmastered = avail.filter(s=>Trainers[s].hasUnmastered());
-    if(!avail.length) return null;
-    if(unmastered.length){
-      this.i = (this.i+1) % unmastered.length;
-      return unmastered[this.i];
-    } else {
-      this.i = (this.i+1) % avail.length;
-      return avail[this.i];
-    }
+    const avail=this.order.filter(s=>Trainers[s].hasData());
+    const un=avail.filter(s=>Trainers[s].hasUnmastered());
+    if(un.length){ this.i=(this.i+1)%un.length; return un[this.i]; }
+    if(avail.length){ this.i=(this.i+1)%avail.length; return avail[this.i]; }
+    return null;
   },
+  allMastered(){ return ['vocab','verbs','adjadv','preps'].every(s=>!Trainers[s].hasData() || !Trainers[s].hasUnmastered()); },
   render(){
-    const mount = $('#kmxMount');
-    mount.innerHTML='';
-    if(this.allMastered()){
-      $('#kmxAllDone').classList.remove('hidden');
-      mount.innerHTML = `<div class="center" style="min-height:120px"><strong>Kapitel mastered 🎉</strong></div>`;
-      return;
-    } else {
-      $('#kmxAllDone').classList.add('hidden');
-    }
-    const sec = this.pickSection();
-    if(!sec){ mount.innerHTML='<p class="muted">No Kapitel data loaded.</p>'; return; }
-    Trainers[sec].next(true);
-    mountSection(sec,'kapitel');
-  },
-
-  allMastered(){
-    return ['vocab','verbs','adjadv','preps'].every(s=> !Trainers[s].hasData() || !Trainers[s].hasUnmastered());
+    const mount = $('#kmxMount'); mount.innerHTML='';
+    if(this.allMastered()){ $('#kmxAllDone').classList.remove('hidden'); mount.innerHTML='<div class="center" style="min-height:120px"><strong>Kapitel mastered 🎉</strong></div>'; return; }
+    $('#kmxAllDone').classList.add('hidden');
+    const sec=this.pickSection(); if(!sec){ mount.innerHTML='<p class="muted">No Kapitel data loaded.</p>'; return; }
+    Trainers[sec].next(true); mountSection(sec,'kapitel');
   }
 };
 
-/* ===========================================================
-   TRAINER BRIDGE
-   =========================================================== */
-const Trainers = {
-  vocab: {
-    async load(){ await Vocab.load(); },
-    hasData:()=>Vocab.hasData(),
-    hasUnmastered:()=>Vocab.hasUnmastered(),
-    levelPool:()=>Vocab.levelPool(),
-    next(internal=false){ const x=Vocab.pick(); if(!x) return; Vocab.render(x); this._cur=x; if(!internal) setMode('vocab'); },
-    check(){ Vocab.check(this._cur); }
-  },
-  verbs: {
-    async load(){ await Verbs.load(); },
-    hasData:()=>Verbs.hasData(),
-    hasUnmastered:()=>Verbs.hasUnmastered(),
-    levelPool:()=>Verbs.levelPool(),
-    next(internal=false){ const x=Verbs.pick(); if(!x) return; Verbs.render(x); this._cur=x; if(!internal) setMode('verbs'); },
-    check(){ Verbs.check(this._cur); }
-  },
-  adjadv: {
-    async load(){ await AdjAdv.load(); },
-    hasData:()=>AdjAdv.hasData(),
-    hasUnmastered:()=>AdjAdv.hasUnmastered(),
-    levelPool:()=>AdjAdv.levelPool(),
-    next(internal=false){ const x=AdjAdv.pick(); if(!x) return; AdjAdv.render(x); this._cur=x; if(!internal) setMode('adjadv'); },
-    check(){ AdjAdv.check(this._cur); }
-  },
-  preps: {
-    async load(){ await Preps.load(); },
-    hasData:()=>Preps.hasData(),
-    hasUnmastered:()=>Preps.hasUnmastered(),
-    levelPool:()=>Preps.levelPool(),
-    next(internal=false){ 
-      let tries=0; let x=null; 
-      do{ x=Preps.pick(); tries++; if(!x) break; const r=Preps.render(x); if(r!=='repick') break; } while(tries<5);
-      this._cur=x; if(!internal) setMode('preps'); 
-    },
-    check(){ Preps.check(this._cur); }
-  }
-};
+// ---------- HUD ----------
+function updateHUD(){
+  $('#dbgDataset').textContent = APP.dsKey;
+  $('#dbgMode').textContent = APP.mode;
+  $('#dbgSizes').textContent = JSON.stringify({
+    vocab: state.vocab.data.length, verbs: state.verbs.data.length, adjadv: state.adjadv.data.length, preps: state.preps.data.length
+  });
+}
 
-/* ===========================================================
-   UI WIRING
-   =========================================================== */
-
+// ---------- Mode rendering ----------
 function renderMode(){
-  // show only the chosen section
   ['#vocab','#verbs','#adjadv','#preps','#mix','#kapitelMix'].forEach(hide);
-  const m = APP.mode;
-  if(m==='mix'){ show('#mix'); Mix.render(); }
-  else if(m==='kapitelMix'){ show('#kapitelMix'); KapitelMix.render(); }
-  else { show('#'+m); }
-  $all('.mode-btn').forEach(b=> b.classList.toggle('active', b.dataset.mode===m));
+  if(APP.mode==='mix'){ show('#mix'); Mix.render(); }
+  else if(APP.mode==='kapitelMix'){ show('#kapitelMix'); KapitelMix.render(); }
+  else { show('#'+APP.mode); }
+  $all('.mode-btn').forEach(b=> b.classList.toggle('active', b.dataset.mode===APP.mode));
   updateHUD();
 }
 
-async function loadAll(){
-  // load data fresh according to dataset
-  loadAllProgress();
-  await Trainers.vocab.load().catch(()=>{});
-  await Trainers.verbs.load().catch(()=>{});
-  await Trainers.adjadv.load().catch(()=>{});
-  await Trainers.preps.load().catch(()=>{});
-  dsUI.update();
-  updateHUD();
-}
-
+// ---------- Events ----------
 function attachEvents(){
-  // modes
+  // Sidebar
+  const side=$('#side'), mask=$('#sideMask');
+  const openSide=()=>{ document.body.classList.add('side-open'); };
+  const closeSide=()=>{ document.body.classList.remove('side-open'); };
+  $('#btnSide').addEventListener('click', openSide);
+  $('#btnSideClose').addEventListener('click', closeSide);
+  mask.addEventListener('click', closeSide);
+
+  // Tabs
   $all('.mode-btn').forEach(b=>{
     b.addEventListener('click', ()=>{
       const m=b.dataset.mode;
       if(m==='kapitelMix' && APP.dsKey!=='kapitel') return;
       setMode(m);
-      if(m!=='mix' && m!=='kapitelMix') Trainers[m].next(true); // show fresh
+      if(m!=='mix' && m!=='kapitelMix') Trainers[m].next(true);
     });
   });
 
-  // dataset selector
+  // Dataset
   $('#datasetSel').addEventListener('change', async (e)=>{
     const v=e.target.value;
     if(v==='default'){ APP.dsKey='default'; }
-    else if(v==='kapitel'){ if(!localStorage.getItem('kapitel_current_v1')) { e.target.value='default'; return; } APP.dsKey='kapitel'; }
-    dsUI.update();
-    await loadAll();
-    if(APP.dsKey==='kapitel' && APP.mode==='mix') setMode('kapitelMix');
-    renderMode();
+    else if(v==='kapitel'){ if(!localStorage.getItem('kapitel_current_v1')){ e.target.value='default'; return; } APP.dsKey='kapitel'; }
+    dsUI.update(); await loadAll(); if(APP.dsKey==='kapitel' && APP.mode==='mix') setMode('kapitelMix'); renderMode();
   });
-
-  // Load Kapitel button
   $('#btnLoadKapitel').addEventListener('click', ()=>{
     const inp=document.createElement('input'); inp.type='file'; inp.accept='.zip';
     inp.onchange=async (ev)=>{ const f=ev.target.files?.[0]; if(!f) return; try{ await handleKapitelZip(f); Trainers.vocab.next(true); setMode('kapitelMix'); }catch(e){ alert(e?.message||String(e)); } };
     inp.click();
   });
 
-  // Vocab
+  // Vocab UI
   $all('.article-bar .article-btn').forEach(b=>{
     b.addEventListener('click', ()=>{ state.vocab.article=b.dataset.a; $all('.article-bar .article-btn').forEach(x=>x.classList.toggle('active', x===b)); $('#vocabDe').focus(); });
   });
@@ -959,7 +728,7 @@ function attachEvents(){
   $('#vocabReset').addEventListener('click', ()=>{ if(confirm('Reset vocab progress?')){ state.vocab.level=1; state.vocab.streaks={}; saveAll(); Trainers.vocab.next(true); renderMode(); } });
   $('#vocabShowEn').addEventListener('change', (e)=>{ state.vocab.showEn=e.target.checked; saveAll(); renderMode(); });
 
-  // Verbs toggles
+  // Verb toggles
   $all('[data-aux]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-aux]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vPast').focus(); }));
   $all('[data-case]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-case]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vPrep').focus(); }));
   $all('[data-refl]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-refl]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vInf').focus(); }));
@@ -977,185 +746,86 @@ function attachEvents(){
   $('#ppNext').addEventListener('click', ()=>Trainers.preps.next());
   $('#ppReset').addEventListener('click', ()=>{ if(confirm('Reset preps progress?')){ state.preps.level=1; state.preps.streaks={}; saveAll(); Trainers.preps.next(true); renderMode(); } });
 
-  // Mix
-  $('#mix').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); Mix.render(); } });
-
-  // Kapitel Mix
-  $('#kmxNext').addEventListener('click', ()=>KapitelMix.render());
-  $('#kmxReset').addEventListener('click', ()=>{ if(confirm('Reset Kapitel-only progress?')){ 
-    // wipe only Kapitel progress keys
-    localStorage.removeItem('vocabProgress::kapitel');
-    localStorage.removeItem('verbsProgress::kapitel');
-    localStorage.removeItem('adjadvProgress::kapitel');
-    localStorage.removeItem('prepsProgress::kapitel');
-    state.vocab.streaks={}; state.verbs.streaks={}; state.adjadv.streaks={}; state.preps.streaks={};
-    KapitelMix.render();
-  }});
-
-  // Sidebar toggle
-  const side = $('#side'), mask = $('#sideMask');
-  const openSide = ()=>{ document.body.classList.add('side-open'); };
-  const closeSide = ()=>{ document.body.classList.remove('side-open'); };
-  $('#btnSide').addEventListener('click', openSide);
-  $('#btnSideClose').addEventListener('click', closeSide);
-  mask.addEventListener('click', closeSide);
-
-
-  // Sync
-  $('#btnSync').addEventListener('click', ()=> { $('#syncModal').style.display='flex'; $('#syncUser').value = localStorage.getItem('syncUser')||''; });
-  $('#syncCancel').addEventListener('click', ()=>{ $('#syncModal').style.display='none'; });
-  $('#syncEnable').addEventListener('click', async ()=>{
-    const u = ($('#syncUser').value||'').trim();
-    if(!u) return alert('Enter a username');
-    try{
-      const remote = await cloudPull(u);
-      if(remote){
-        if(confirm('Cloud data found. Load it now? (Overwrites local)')){
-          applyCloud(remote);
-        }
-      }
-      localStorage.setItem('syncUser', u);
-      $('#syncStatus').textContent = 'Sync: '+u;
-      $('#syncModal').style.display='none';
-      scheduleSyncSoon();
-    }catch(e){ alert('Sync error'); }
-  });
-
-  // Debug HUD
+  // Debug HUD buttons already exist in DOM
   $('#btnDebug').addEventListener('click', ()=>{ const h=$('#debugHUD'); h.style.display = (h.style.display==='none'||!h.style.display)?'block':'none'; });
   $('#dbgDump').addEventListener('click', ()=>{ console.log({APP,state}); alert('Dumped to console.'); });
 
   // GLOBAL ENTER ENGINE
-  let enterArmed = false;
-
+  let enterArmed=false;
   function modeFields(mode){
-    // ordered focus list per trainer
-    if(mode==='vocab')   return ['#vocabDe','#vocabPl']; // article is buttons; after click we keep focus on #vocabDe
-    if(mode==='verbs')   return ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep']; // aux/case/refl are buttons
-    if(mode==='adjadv')  return ['#aaDe'];
-    if(mode==='preps')   return ['#ppHole']; // contenteditable in sentence
-    // In Mix/Kapitel Mix we mounted the real section, so APP.mode may be 'mix' or 'kapitelMix';
-    // detect the currently mounted section by checking which trainer element is visible:
-    if(mode==='mix' || mode==='kapitelMix'){
-      if(!mounted) return [];
-      const sec = mounted.sec;
-      return modeFields(sec);
-    }
+    if(mode==='vocab') return ['#vocabDe','#vocabPl'];
+    if(mode==='verbs') return ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep'];
+    if(mode==='adjadv') return ['#aaDe'];
+    if(mode==='preps') return ['#ppHole'];
+    if(mode==='mix'||mode==='kapitelMix'){ if(!mounted) return []; return modeFields(mounted.sec); }
     return [];
   }
-
-  function sectionCheck(mode){
-    const m = (mode==='mix'||mode==='kapitelMix') && mounted ? mounted.sec : mode;
-    if(!m) return;
-    Trainers[m]?.check && Trainers[m].check();
-  }
+  function sectionCheck(mode){ const m=(mode==='mix'||mode==='kapitelMix')&&mounted? mounted.sec:mode; Trainers[m]?.check && Trainers[m].check(); }
   function sectionNext(mode){
-    const m = (mode==='mix'||mode==='kapitelMix') && mounted ? mounted.sec : mode;
-    if(!m) return;
+    const m=(mode==='mix'||mode==='kapitelMix')&&mounted? mounted.sec:mode;
     Trainers[m]?.next && Trainers[m].next(true);
-    // If we’re in Mix/Kapitel Mix, rotate controller
     if(mode==='mix') Mix.render();
     if(mode==='kapitelMix') KapitelMix.render();
   }
-
-  document.addEventListener('keydown', (e)=>{
+  document.addEventListener('keydown',(e)=>{
     if(e.key!=='Enter') return;
-    // Identify active fields
-    const fields = modeFields(APP.mode).map(s=>document.querySelector(s)).filter(Boolean);
+    const fields=modeFields(APP.mode).map(s=>document.querySelector(s)).filter(Boolean);
     if(!fields.length) return;
-
-    const active = document.activeElement;
-    const idx = fields.indexOf(active);
-
-    // Special case: if preps hole isn't focused, push focus first
-    if(APP.mode==='preps' || APP.mode==='kapitelMix'){
-      const hole = document.querySelector('#ppHole');
-      if(hole && fields[0]===hole && active!==hole){
-        e.preventDefault(); hole.focus(); return;
-      }
+    const active=document.activeElement; const idx=fields.indexOf(active);
+    if(APP.mode==='preps'||APP.mode==='kapitelMix'){
+      const hole=document.querySelector('#ppHole'); if(hole && fields[0]===hole && active!==hole){ e.preventDefault(); hole.focus(); return; }
     }
-
-    if(idx>-1 && idx < fields.length-1){
-      // go to next field
-      e.preventDefault();
-      fields[idx+1].focus();
-      enterArmed = false;
-      return;
-    }
-
-    // last field or not in list → run check/next logic
+    if(idx>-1 && idx<fields.length-1){ e.preventDefault(); fields[idx+1].focus(); enterArmed=false; return; }
     e.preventDefault();
-    if(!enterArmed){
-      enterArmed = true;
-      sectionCheck(APP.mode);
-      // Keep focus on the last field so user can see result; pressing Enter again advances.
-      const last = fields[fields.length-1]; if(last) last.focus();
-    } else {
-      enterArmed = false;
-      sectionNext(APP.mode);
-      // Focus first field of the new item
-      setTimeout(()=>{
-        const nf = modeFields(APP.mode).map(s=>document.querySelector(s)).filter(Boolean)[0];
-        nf && nf.focus();
-      },0);
-    }
+    if(!enterArmed){ enterArmed=true; sectionCheck(APP.mode); const last=fields[fields.length-1]; if(last) last.focus(); }
+    else { enterArmed=false; sectionNext(APP.mode); setTimeout(()=>{ const nf=modeFields(APP.mode).map(s=>document.querySelector(s)).filter(Boolean)[0]; nf&&nf.focus(); },0); }
   });
+}
 
-
-/* ===========================================================
-   LOAD SAMPLE DATA (for quick testing)
-   =========================================================== */
-
-// FIND → PASTE BELOW: SAMPLE_CSVS
+// ---------- Samples (no backticks) ----------
 const SAMPLE_VOCAB = [
   "english,article,german,plural,example1,example2,example3",
   "book,das,Das Buch,Bücher,Ich lese ein Buch.,Das Buch ist interessant.,Sie kaufen viele Bücher.",
   "cat,die,Die Katze,Katzen,Die Katze schläft.,Ich mag Katzen.,Die Katzen sind süß.",
   "man,der,Der Mann,Männer,Der Mann arbeitet.,Ich sehe den Mann.,Viele Männer sind hier."
 ].join("\n");
-
-
 const SAMPLE_VERBS = [
   "id,lemma,english,aux,ich,du,er,wir,ihr,sie,partizip,past,preps,case,reflexive",
   "gehen,gehen,to go,sein,gehe,gehst,geht,gehen,geht,gehen,gegangen,ging,,-,false",
   "sprechen,sprechen,to speak,haben,spreche,sprichst,spricht,sprechen,sprecht,sprechen,gesprochen,sprach,über,akk,false",
   "sich-waschen,waschen,to wash,haben,wasche,waeschst,waescht,waschen,wascht,waschen,gewaschen,wusch,,inf,true"
 ].join("\n");
-
-
 const SAMPLE_AA = [
   "english,german,example",
   "beautiful,schön,Das ist ein schönes Bild.",
   "dangerous,gefährlich,Das ist eine gefährliche Kreuzung.",
   "often,häufig,Ich fahre häufig mit dem Rad."
 ].join("\n");
-
-
 const SAMPLE_PREPS = [
   "prep,forms,de1,de2,de3,de4,de5,de6,de7,de8,de9,de10,en1,en2,en3,en4,en5,en6,en7,en8,en9,en10",
   "in,in;im;ins,Ich bin im Büro.,Wir gehen ins Kino.,Er wohnt in Berlin.,,,,,,I'm at the office.,We're going to the cinema.,He lives in Berlin.,,,,,,,",
   "auf,auf,Das Buch liegt auf dem Tisch.,Wir gehen auf den Markt.,Er ist auf der Bühne.,,,,,,The book is on the table.,We are going to the market.,He is on the stage.,,,,,,,"
 ].join("\n");
 
-/* ===========================================================
-   APP INIT
-   =========================================================== */
+// ---------- Boot ----------
 async function loadDefaultIfMissing(name, sample){
-  try{
-	  await datasetRead(name);
-	}catch{
-	  if(APP.dsKey==='default'){
-		if(!APP._inline){ APP._inline = {}; }
-		APP._inline[name] = sample; // datasetRead will now read inline safely
-	  }
-	}
+  try{ await datasetRead(name); }catch{ if(APP.dsKey==='default'){ if(!APP._inline){ APP._inline={}; } APP._inline[name]=sample; } }
 }
-
+async function loadAll(){
+  loadAllProgress();
+  await Trainers.vocab.load().catch(()=>{});
+  await Trainers.verbs.load().catch(()=>{});
+  await Trainers.adjadv.load().catch(()=>{});
+  await Trainers.preps.load().catch(()=>{});
+  dsUI.update();
+  updateHUD();
+}
 async function boot(){
-  // restore last mode
   APP.mode = localStorage.getItem('mode') || 'vocab';
+  // Restore Kapitel if present
+  const saved = localStorage.getItem('kapitel_current_v1');
+  if(saved){ try{ const k=JSON.parse(saved); APP.kapitel={title:k.title,counts:k.counts,files:k.files}; APP.dsKey='kapitel'; }catch{} }
 
-  // inline samples if local files missing
   await loadDefaultIfMissing('vocab.csv', SAMPLE_VOCAB);
   await loadDefaultIfMissing('verbs.csv', SAMPLE_VERBS);
   await loadDefaultIfMissing('adjadv.csv', SAMPLE_AA);
@@ -1165,19 +835,11 @@ async function boot(){
   attachEvents();
   Trainers.vocab.next(true);
   renderMode();
-
-  // set sync badge
-  $('#syncStatus').textContent = localStorage.getItem('syncUser')? 'Sync: '+localStorage.getItem('syncUser') : 'Sync: Off';
+  // Sync status text is static (we removed cloud wiring for stability)
+  const ss=$('#syncStatus'); if(ss) ss.textContent='Sync: Off';
 }
-
 document.addEventListener('DOMContentLoaded', boot);
-
-/* ===========================================================
-   Tiny extras (copy text markers)
-   =========================================================== */
-// FIND → PASTE BELOW: UI_COPY
-// (Leave empty — reserved for quick copy changes without searching the whole file.)
-
 </script>
+
 </body>
 </html>
