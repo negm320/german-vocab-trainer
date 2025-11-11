@@ -693,10 +693,13 @@ const KapitelMix = {
 function updateHUD(){
   setText('#dbgDataset', APP.dsKey);
   setText('#dbgMode', APP.mode);
-  setText('#dbgSizes', JSON.stringify({
-    vocab: state.vocab.data.length, verbs: state.verbs.data.length, adjadv: state.adjadv.data.length, preps: state.preps.data.length
-  });
+  const sizes = 'vocab:' + state.vocab.data.length +
+                ', verbs:' + state.verbs.data.length +
+                ', adjadv:' + state.adjadv.data.length +
+                ', preps:' + state.preps.data.length;
+  setText('#dbgSizes', sizes);
 }
+
 
 // ---------- Mode rendering ----------
 function renderMode(){
