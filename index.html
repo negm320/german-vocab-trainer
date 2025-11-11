@@ -308,8 +308,24 @@ const APP = {
 };
 
 // ---------- DOM helpers ----------
-function $(sel){ return document.querySelector(sel); }
+function $(sel){
+  const el = document.querySelector(sel);
+  return el || null;
+}
 function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
+function setText(sel, text){
+  const el = $(sel);
+  if(el) el.textContent = text;
+}
+function setHTML(sel, html){
+  const el = $(sel);
+  if(el) el.innerHTML = html;
+}
+function setVal(sel, v){
+  const el = $(sel);
+  if(el) el.value = v;
+}
+
 function show(id){ const el=$(id.startsWith('#')?id:`#${id}`); if(el) el.classList.remove('hidden'); }
 function hide(id){ const el=$(id.startsWith('#')?id:`#${id}`); if(el) el.classList.add('hidden'); }
 
@@ -448,21 +464,21 @@ const Vocab = {
     return (pref.length? APP.pick(pref): APP.pick(pool)) || null;
   },
   render(x){
-    $('#vocabEn').textContent = state.vocab.showEn? x.english:'';
-    $('#vocabStreak').textContent = `${state.vocab.streaks[x.german]||0}/${APP.masteryTarget}`;
-    $('#vocabExamples').textContent = x.ex.length? ('📝 '+APP.pick(x.ex)) : '';
-    $('#vocabLevel').textContent = (APP.dsKey==='kapitel')? '' : `Level ${state.vocab.level}`;
-    $('#vocabFeedback').textContent='';
-    $('#vocabDe').value=''; $('#vocabPl').value=''; state.vocab.article='';
-    $all('.article-bar .article-btn').forEach(b=>b.classList.remove('active'));
-    $('#vocabDe').focus();
+    setText('#vocabEn', state.vocab.showEn? x.english:'');
+	setText('#vocabStreak', `${state.vocab.streaks[x.german]||0}/${APP.masteryTarget}`);
+	setText('#vocabExamples', x.ex.length? ('📝 '+APP.pick(x.ex)) : '');
+	setText('#vocabLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.vocab.level}`);
+	setText('#vocabFeedback','');
+	setVal('#vocabDe',''); setVal('#vocabPl',''); state.vocab.article='';
+	$all('.article-bar .article-btn').forEach(b=>b.classList.remove('active'));
+	const vd=$('#vocabDe'); if(vd) vd.focus();
   },
   check(x){
     const ok = (state.vocab.article===x.article) &&
                (APP.norm($('#vocabDe').value)===APP.norm(x.german)) &&
                (APP.norm($('#vocabPl').value)===APP.norm(x.plural||''));
-    if(ok){ state.vocab.streaks[x.german]=(state.vocab.streaks[x.german]||0)+1; $('#vocabFeedback').innerHTML='<span class="good">Correct!</span>'; }
-    else { state.vocab.streaks[x.german]=0; $('#vocabFeedback').innerHTML=`<span class="bad">Wrong.</span> Correct: <b>${x.article} ${x.german}</b> — ${x.plural||'—'}`; }
+    if(ok){ state.vocab.streaks[x.german]=(state.vocab.streaks[x.german]||0)+1; setHTML('#vocabFeedback','<span class="good">Correct!</span>'); }
+    else { state.vocab.streaks[x.german]=0; setHTML('#vocabFeedback',`<span class="bad">Wrong.</span> Correct: <b>${x.article} ${x.german}</b> — ${x.plural||'—'}`); }
     saveAll();
     if(APP.dsKey==='default'){
       const pool=this.levelPool();
@@ -494,13 +510,14 @@ const Verbs = {
   hasUnmastered(){ return this.levelPool().some(v=> (state.verbs.streaks[v.id]||0) < APP.masteryTarget); },
   pick(){ const p=this.levelPool(); const pref=p.filter(v=>(state.verbs.streaks[v.id]||0)<APP.masteryTarget); return (pref.length?APP.pick(pref):APP.pick(p))||null; },
   render(v){
-    $('#verbEn').textContent = v.english; $('#verbsFeedback').textContent='';
-    ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep'].forEach(s=>{ const el=$(s); if(el) el.value=''; });
-    $all('[data-aux]').forEach(b=>b.classList.remove('active'));
-    $all('[data-case]').forEach(b=>b.classList.remove('active'));
-    $all('[data-refl]').forEach(b=>b.classList.remove('active'));
-    $('#verbsLevel').textContent = (APP.dsKey==='kapitel')? '' : `Level ${state.verbs.level}`;
-    $('#vInf').focus();
+    setText('#verbEn', v.english); setText('#verbsFeedback','');
+	['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep'].forEach(s=>{ const el=$(s); if(el) el.value=''; });
+	$all('[data-aux]').forEach(b=>b.classList.remove('active'));
+	$all('[data-case]').forEach(b=>b.classList.remove('active'));
+	$all('[data-refl]').forEach(b=>b.classList.remove('active'));
+	setText('#verbsLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.verbs.level}`);
+	const vi=$('#vInf'); if(vi) vi.focus();
+
   },
   check(v){
     let ok=true, msg=[];
@@ -513,8 +530,8 @@ const Verbs = {
     const givenPrep = APP.norm($('#vPrep').value); if(v.preps?.length && !v.preps.map(APP.norm).includes(givenPrep)){ ok=false; msg.push('prep ➜ <b>'+v.preps.join('; ')+'</b>'); }
     const chosenCase = $all('[data-case].active')[0]?.dataset.case || ''; if(v.case && APP.norm(v.case)!==APP.norm(chosenCase)){ ok=false; msg.push('case ➜ <b>'+v.case+'</b>'); }
     const chosenRefl = $all('[data-refl].active')[0]?.dataset.refl || ''; if(v.reflexive && APP.norm(v.reflexive)!==APP.norm(chosenRefl)){ ok=false; msg.push('reflexive ➜ <b>'+v.reflexive+'</b>'); }
-    if(ok){ state.verbs.streaks[v.id]=(state.verbs.streaks[v.id]||0)+1; $('#verbsFeedback').innerHTML='<span class="good">Correct!</span>'; }
-    else { state.verbs.streaks[v.id]=0; $('#verbsFeedback').innerHTML=`<span class="bad">Wrong.</span> ${msg.length? 'Correct: '+msg.join(', ') : ''}`; }
+    if(ok){ state.verbs.streaks[v.id]=(state.verbs.streaks[v.id]||0)+1; setHTML('#verbsFeedback','<span class="good">Correct!</span>'); }
+    else { state.verbs.streaks[v.id]=0; setHTML('#verbsFeedback',`<span class="bad">Wrong.</span> ${msg.length? 'Correct: '+msg.join(', ') : ''}`); }
     saveAll();
     if(APP.dsKey==='default'){
       const pool=this.levelPool();
@@ -536,13 +553,17 @@ const AdjAdv = {
   hasUnmastered(){ return this.levelPool().some(x=> (state.adjadv.streaks[x.german]||0)<APP.masteryTarget); },
   pick(){ const p=this.levelPool(); const pref=p.filter(x=>(state.adjadv.streaks[x.german]||0)<APP.masteryTarget); return (pref.length?APP.pick(pref):APP.pick(p))||null; },
   render(x){
-    $('#aaEn').textContent=x.english; $('#aaExample').textContent=x.example?('📝 '+x.example):''; $('#aaFeedback').textContent=''; $('#aaDe').value=''; $('#aaDe').focus();
-    $('#aaLevel').textContent=(APP.dsKey==='kapitel')? '' : `Level ${state.adjadv.level}`;
+	setText('#aaEn', x.english);
+	setText('#aaExample', x.example?('📝 '+x.example):'');
+	setText('#aaFeedback','');
+	setVal('#aaDe',''); const a=$('#aaDe'); if(a) a.focus();
+	setText('#aaLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.adjadv.level}`);
+
   },
   check(x){
     const ok = APP.normDe($('#aaDe').value)===APP.normDe(x.german);
-    if(ok){ state.adjadv.streaks[x.german]=(state.adjadv.streaks[x.german]||0)+1; $('#aaFeedback').innerHTML='<span class="good">Correct!</span>'; }
-    else { state.adjadv.streaks[x.german]=0; $('#aaFeedback').innerHTML=`<span class="bad">Wrong.</span> Correct: <b>${x.german}</b>`; }
+    if(ok){ state.adjadv.streaks[x.german]=(state.adjadv.streaks[x.german]||0)+1; setHTML('#aaFeedback','<span class="good">Correct!</span>'); }
+    else { state.adjadv.streaks[x.german]=0; setHTML('#aaFeedback',`<span class="bad">Wrong.</span> Correct: <b>${x.german}</b>`); }
     saveAll();
     if(APP.dsKey==='default'){
       const p=this.levelPool();
@@ -584,18 +605,19 @@ const Preps = {
     return null;
   },
   render(it){
-    $('#ppFeedback').textContent='';
-    $('#ppLevel').textContent=(APP.dsKey==='kapitel')? '' : `Level ${state.preps.level}`;
-    const b = this._blank(it);
-    if(!b){ $('#ppSentence').innerHTML='<em class="muted">No cloze found for this item.</em>'; $('#ppEnglish').textContent=''; return 'repick'; }
-    $('#ppSentence').innerHTML=b.html; $('#ppEnglish').textContent=b.en?('EN: '+b.en):'';
-    setTimeout(()=>{ const h=$('#ppHole'); if(h) h.focus(); },0);
+    setText('#ppFeedback','');
+	setText('#ppLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.preps.level}`);
+	if(!b){ setHTML('#ppSentence','<em class="muted">No cloze found for this item.</em>'); setText('#ppEnglish',''); return 'repick'; }
+	setHTML('#ppSentence', b.html);
+	setText('#ppEnglish', b.en?('EN: '+b.en):'');
+	setTimeout(()=>{ const h=$('#ppHole'); if(h) h.focus(); },0);
+
   },
   check(){
     const guess = ($('#ppHole')?.textContent||'').trim();
     const ok = guess === state.preps.currentAnswer;
-    if(ok){ const key=this._curKey; state.preps.streaks[key]=(state.preps.streaks[key]||0)+1; $('#ppFeedback').innerHTML='<span class="good">Correct!</span>'; }
-    else { const key=this._curKey; state.preps.streaks[key]=0; $('#ppFeedback').innerHTML=`<span class="bad">Wrong.</span> Correct: <b>${state.preps.currentAnswer||''}</b>`; }
+    if(ok){ const key=this._curKey; state.preps.streaks[key]=(state.preps.streaks[key]||0)+1; setHTML('#ppFeedback','<span class="good">Correct!</span>'); }
+    else { const key=this._curKey; state.preps.streaks[key]=0; setHTML('#ppFeedback',`<span class="bad">Wrong.</span> Correct: <b>${state.preps.currentAnswer||''}</b>`); }
     saveAll();
     if(APP.dsKey==='default'){
       const p=this.levelPool();
@@ -645,7 +667,7 @@ const Mix = {
     }
     return 'vocab';
   },
-  render(){ const sec=this.nextSection(); Trainers[sec].next(true); mountSection(sec,'mix'); $('#mixInfo').textContent='→ '+sec; }
+  render(){ const sec=this.nextSection(); Trainers[sec].next(true); mountSection(sec,'mix'); setText('#mixInfo', '→ '+sec); }
 };
 
 const KapitelMix = {
@@ -669,9 +691,9 @@ const KapitelMix = {
 
 // ---------- HUD ----------
 function updateHUD(){
-  $('#dbgDataset').textContent = APP.dsKey;
-  $('#dbgMode').textContent = APP.mode;
-  $('#dbgSizes').textContent = JSON.stringify({
+  setText('#dbgDataset', APP.dsKey);
+  setText('#dbgMode', APP.mode);
+  setText('#dbgSizes', JSON.stringify({
     vocab: state.vocab.data.length, verbs: state.verbs.data.length, adjadv: state.adjadv.data.length, preps: state.preps.data.length
   });
 }
@@ -685,6 +707,28 @@ function renderMode(){
   $all('.mode-btn').forEach(b=> b.classList.toggle('active', b.dataset.mode===APP.mode));
   updateHUD();
 }
+
+function activeSectionKey(){
+  // If we're in mix/kapitelMix, use the mounted section. Else use mode as-is.
+  if((APP.mode==='mix' || APP.mode==='kapitelMix') && mounted && mounted.sec) return mounted.sec;
+  return APP.mode;
+}
+function safeNext(forcedSection){
+  const key = forcedSection || activeSectionKey();
+  const T = Trainers[key];
+  if(!T || !T.next) return;
+  // internal=true prevents setMode bounce
+  T.next(true);
+  if(APP.mode==='mix') Mix.render();
+  if(APP.mode==='kapitelMix') KapitelMix.render();
+}
+function safeCheck(forcedSection){
+  const key = forcedSection || activeSectionKey();
+  const T = Trainers[key];
+  if(!T || !T.check) return;
+  T.check();
+}
+
 
 // ---------- Events ----------
 function attachEvents(){
@@ -723,8 +767,8 @@ function attachEvents(){
   $all('.article-bar .article-btn').forEach(b=>{
     b.addEventListener('click', ()=>{ state.vocab.article=b.dataset.a; $all('.article-bar .article-btn').forEach(x=>x.classList.toggle('active', x===b)); $('#vocabDe').focus(); });
   });
-  $('#vocabCheck').addEventListener('click', ()=>Trainers.vocab.check());
-  $('#vocabNext').addEventListener('click', ()=>Trainers.vocab.next());
+  $('#vocabCheck').addEventListener('click', ()=>safeCheck('vocab'));
+  $('#vocabNext').addEventListener('click', ()=>safeNext('vocab'));
   $('#vocabReset').addEventListener('click', ()=>{ if(confirm('Reset vocab progress?')){ state.vocab.level=1; state.vocab.streaks={}; saveAll(); Trainers.vocab.next(true); renderMode(); } });
   $('#vocabShowEn').addEventListener('change', (e)=>{ state.vocab.showEn=e.target.checked; saveAll(); renderMode(); });
 
@@ -732,18 +776,18 @@ function attachEvents(){
   $all('[data-aux]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-aux]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vPast').focus(); }));
   $all('[data-case]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-case]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vPrep').focus(); }));
   $all('[data-refl]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-refl]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vInf').focus(); }));
-  $('#verbsCheck').addEventListener('click', ()=>Trainers.verbs.check());
-  $('#verbsNext').addEventListener('click', ()=>Trainers.verbs.next());
+  $('#verbsCheck').addEventListener('click', ()=>safeCheck('verbs'));
+  $('#verbsNext').addEventListener('click', ()=>safeNext('verbs'));
   $('#verbsReset').addEventListener('click', ()=>{ if(confirm('Reset verbs progress?')){ state.verbs.level=1; state.verbs.streaks={}; saveAll(); Trainers.verbs.next(true); renderMode(); } });
 
   // Adj/Adv
-  $('#aaCheck').addEventListener('click', ()=>Trainers.adjadv.check());
-  $('#aaNext').addEventListener('click', ()=>Trainers.adjadv.next());
+  $('#aaCheck').addEventListener('click', ()=>safeCheck('adjadv'));
+  $('#aaNext').addEventListener('click', ()=>safeNext('adjadv'));
   $('#aaReset').addEventListener('click', ()=>{ if(confirm('Reset adj/adv progress?')){ state.adjadv.level=1; state.adjadv.streaks={}; saveAll(); Trainers.adjadv.next(true); renderMode(); } });
 
   // Preps
-  $('#ppCheck').addEventListener('click', ()=>Trainers.preps.check());
-  $('#ppNext').addEventListener('click', ()=>Trainers.preps.next());
+  $('#ppCheck').addEventListener('click', ()=>safeCheck('preps'));
+  $('#ppNext').addEventListener('click', ()=>safeNext('preps'));
   $('#ppReset').addEventListener('click', ()=>{ if(confirm('Reset preps progress?')){ state.preps.level=1; state.preps.streaks={}; saveAll(); Trainers.preps.next(true); renderMode(); } });
 
   // Debug HUD buttons already exist in DOM
