@@ -605,14 +605,19 @@ const Preps = {
     return null;
   },
   render(it){
-    setText('#ppFeedback','');
-	setText('#ppLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.preps.level}`);
-	if(!b){ setHTML('#ppSentence','<em class="muted">No cloze found for this item.</em>'); setText('#ppEnglish',''); return 'repick'; }
-	setHTML('#ppSentence', b.html);
-	setText('#ppEnglish', b.en?('EN: '+b.en):'');
-	setTimeout(()=>{ const h=$('#ppHole'); if(h) h.focus(); },0);
+	  setText('#ppFeedback','');
+	  setText('#ppLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.preps.level}`);
+	  const b = this._blank(it);
+	  if(!b){
+		setHTML('#ppSentence','<em class="muted">No cloze found for this item.</em>');
+		setText('#ppEnglish','');
+		return 'repick';
+	  }
+	  setHTML('#ppSentence', b.html);
+	  setText('#ppEnglish', b.en?('EN: '+b.en):'');
+	  setTimeout(()=>{ const h=$('#ppHole'); if(h) h.focus(); },0);
+},
 
-  },
   check(){
     const guess = ($('#ppHole')?.textContent||'').trim();
     const ok = guess === state.preps.currentAnswer;
@@ -743,15 +748,17 @@ function attachEvents(){
   $('#btnSideClose').addEventListener('click', closeSide);
   mask.addEventListener('click', closeSide);
 
-  // Tabs
-  $all('.mode-btn').forEach(b=>{
+    // Tabs (only buttons that actually declare a data-mode)
+  $all('.mode-btn[data-mode]').forEach(b=>{
     b.addEventListener('click', ()=>{
-      const m=b.dataset.mode;
+      const m = b.dataset.mode;
+      if(!m) return;
       if(m==='kapitelMix' && APP.dsKey!=='kapitel') return;
       setMode(m);
       if(m!=='mix' && m!=='kapitelMix') Trainers[m].next(true);
     });
   });
+
 
   // Dataset
   $('#datasetSel').addEventListener('change', async (e)=>{
