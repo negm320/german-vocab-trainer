@@ -58,8 +58,10 @@
 
   /* Debug HUD */
   /* Sidebar helpers */
-  .side-open #side{ transform:translateX(0) }
-  .side-open #sideMask{ display:block }
+  #side{ transform:translateX(100%); }         /* default hidden */
+  #sideMask{ display:none; }                    /* default hidden */
+  .side-open #side{ transform:translateX(0) !important; }
+  .side-open #sideMask{ display:block !important; }
   #debugHUD{position:fixed;right:8px;bottom:8px;background:#0b111a;border:1px solid var(--border);border-radius:10px;padding:8px 10px;color:#b7c6d8;font-size:12px;min-width:220px;z-index:9999;display:none}
   #debugHUD code{font-size:12px}
   #debugHUD .row{grid-template-columns:100px 1fr}
@@ -87,7 +89,7 @@
 	</div>
 
 	<!-- Slide-out Sidebar -->
-	<aside id="side" style="position:fixed;inset:0 0 0 auto; width:300px; max-width:85%; background:var(--card); border-left:1px solid var(--border); box-shadow:-18px 0 30px rgba(0,0,0,.35); transform:translateX(100%); transition:transform .22s ease; z-index:20000; padding:14px; display:flex; flex-direction:column; gap:12px">
+	<aside id="side" style="position:fixed;inset:0 0 0 auto; width:300px; max-width:85%; background:var(--card); border-left:1px solid var(--border); box-shadow:-18px 0 30px rgba(0,0,0,.35); transition:transform .22s ease; z-index:20000; padding:14px; display:flex; flex-direction:column; gap:12px">
 	  <div style="display:flex;justify-content:space-between;align-items:center">
 		<strong>Settings</strong>
 		<button id="btnSideClose" class="mode-btn" style="padding:6px 10px">✕</button>
@@ -103,16 +105,16 @@
 
 	  <div class="card" style="padding:12px">
 		<div class="small muted" style="margin-bottom:6px">Cloud</div>
-		<button id="btnSync" title="Cloud Sync" style="width:100%">Sync</button>
-		<div id="syncStatus" class="muted small" style="margin-top:6px">Sync: Off</div>
+		<button id="btnSyncSide" title="Cloud Sync" style="width:100%">Sync</button>
+		<div id="syncStatusSide" class="muted small" style="margin-top:6px">Sync: Off</div>
 	  </div>
 
 	  <div class="card" style="padding:12px">
 		<div class="small muted" style="margin-bottom:6px">Debug</div>
-		<button id="btnDebug" style="width:100%">Debug HUD</button>
+		<button id="btnDebugSide" style="width:100%">Debug HUD</button>
 	  </div>
 	</aside>
-	<div id="sideMask" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:19000;display:none"></div>
+	<div id="sideMask" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:19000;"></div>
 
 
   <div class="mode-tabs" id="modeTabs">
@@ -800,9 +802,29 @@ function attachEvents(){
   $('#ppNext').addEventListener('click', ()=>safeNext('preps'));
   $('#ppReset').addEventListener('click', ()=>{ if(confirm('Reset preps progress?')){ state.preps.level=1; state.preps.streaks={}; saveAll(); Trainers.preps.next(true); renderMode(); } });
 
-  // Debug HUD buttons already exist in DOM
-  $('#btnDebug').addEventListener('click', ()=>{ const h=$('#debugHUD'); h.style.display = (h.style.display==='none'||!h.style.display)?'block':'none'; });
-  $('#dbgDump').addEventListener('click', ()=>{ console.log({APP,state}); alert('Dumped to console.'); });
+  // Debug HUD buttons (footer + sidebar)
+	['#btnDebug','#btnDebugSide'].forEach(sel=>{
+	  const el=$(sel); if(!el) return;
+	  el.addEventListener('click', ()=>{
+		const h=$('#debugHUD');
+		h.style.display = (h.style.display==='none'||!h.style.display)?'block':'none';
+	  });
+	});
+	$('#dbgDump').addEventListener('click', ()=>{ console.log({APP,state}); alert('Dumped to console.'); });
+	function openSync(){ const m=$('#syncModal'); if(m) m.style.display='flex'; }
+	function closeSync(){ const m=$('#syncModal'); if(m) m.style.display='none'; }
+	['#btnSync','#btnSyncSide'].forEach(sel=>{
+	  const el=$(sel); if(!el) return;
+	  el.addEventListener('click', openSync);
+	});
+	$('#syncCancel').addEventListener('click', closeSync);
+	$('#syncEnable').addEventListener('click', ()=>{
+	  // Stub: pretend sync enabled
+	  closeSync();
+	  setText('#syncStatus','Sync: On');
+	  setText('#syncStatusSide','Sync: On');
+	});
+
 
   // GLOBAL ENTER ENGINE
   let enterArmed=false;
