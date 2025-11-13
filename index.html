@@ -565,31 +565,28 @@ const Vocab = {
     const pool=this.levelPool(); const pref=pool.filter(x=>(state.vocab.streaks[x.german]||0)<APP.masteryTarget);
     return (pref.length? APP.pick(pref): APP.pick(pool)) || null;
   },
-  render(x){
+    render(x){
     setText('#vocabEn', state.vocab.showEn? x.english:'');
-	setText('#vocabStreak', `${state.vocab.streaks[x.german]||0}/${APP.masteryTarget}`);
-	setText('#vocabExamples', x.ex.length? ('📝 '+APP.pick(x.ex)) : '');
-	setText('#vocabLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.vocab.level}`);
-	setText('#vocabFeedback','');
-	setVal('#vocabDe',''); setVal('#vocabPl',''); state.vocab.article='';
-	$all('.article-bar .article-btn').forEach(b=>b.classList.remove('active'));
-	const vd=$('#vocabDe'); if(vd) vd.focus();
+    setText('#vocabStreak', `${state.vocab.streaks[x.german]||0}/${APP.masteryTarget}`);
+    setText('#vocabExamples',''); // hide example until after Check
+    setText('#vocabLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.vocab.level}`);
+    setText('#vocabFeedback','');
+    setVal('#vocabDe',''); setVal('#vocabPl',''); state.vocab.article='';
+    $all('.article-bar .article-btn').forEach(b=>b.classList.remove('active'));
+    const vd=$('#vocabDe'); if(vd) setTimeout(()=>vd.focus(),0);
   },
-  check(x){
-    const ok = (state.vocab.article===x.article) &&
-               (APP.norm($('#vocabDe').value)===APP.norm(x.german)) &&
-               (APP.norm($('#vocabPl').value)===APP.norm(x.plural||''));
-    if(ok){ state.vocab.streaks[x.german]=(state.vocab.streaks[x.german]||0)+1; setHTML('#vocabFeedback','<span class="good">Correct!</span>'); }
-    else { state.vocab.streaks[x.german]=0; setHTML('#vocabFeedback',`<span class="bad">Wrong.</span> Correct: <b>${x.article} ${x.german}</b> — ${x.plural||'—'}`); }
-    saveAll();
-    if(APP.dsKey==='kapitel'){ updateKapitelProgress(); }
-    if(APP.dsKey==='default'){
-      const pool=this.levelPool();
-      if(pool.length && pool.every(z=>(state.vocab.streaks[z.german]||0)>=APP.masteryTarget) && state.vocab.level*APP.wordsPerLevel < state.vocab.data.length){
-        state.vocab.level++; saveAll();
-      }
+      if(ok){
+      state.vocab.streaks[x.german]=(state.vocab.streaks[x.german]||0)+1;
+      setHTML('#vocabFeedback','<span class="good">Correct!</span>');
+    } else {
+      state.vocab.streaks[x.german]=0;
+      setHTML('#vocabFeedback',`<span class="bad">Wrong.</span> Correct: <b>${x.article} ${x.german}</b> — ${x.plural||'—'}`);
     }
-  }
+    // show one example only after checking
+    if(x.ex && x.ex.length){
+      setText('#vocabExamples','📝 '+APP.pick(x.ex));
+    }
+    saveAll();
 };
 
 const Verbs = {
@@ -624,7 +621,7 @@ const Verbs = {
     setText('#verbsLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.verbs.level}`);
     const rowPast = $('#rowPast');
     if(rowPast) rowPast.classList.toggle('hidden', !APP.verbsIncludePast);
-    const vi=$('#vInf'); if(vi) vi.focus();
+    const vi=$('#vInf'); if(vi) setTimeout(()=>vi.focus(),0);
   },
   check(v){
     let ok=true, msg=[];
@@ -663,10 +660,11 @@ const AdjAdv = {
   pick(){ const p=this.levelPool(); const pref=p.filter(x=>(state.adjadv.streaks[x.german]||0)<APP.masteryTarget); return (pref.length?APP.pick(pref):APP.pick(p))||null; },
   render(x){
 	setText('#aaEn', x.english);
-	setText('#aaExample', x.example?('📝 '+x.example):'');
-	setText('#aaFeedback','');
-	setVal('#aaDe',''); const a=$('#aaDe'); if(a) a.focus();
-	setText('#aaLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.adjadv.level}`);
+  setText('#aaExample', x.example?('📝 '+x.example):'');
+    setText('#aaFeedback','');
+    setVal('#aaDe','');
+    const a=$('#aaDe'); if(a) setTimeout(()=>a.focus(),0);
+    setText('#aaLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.adjadv.level}`);
 
   },
   check(x){
