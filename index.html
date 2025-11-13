@@ -124,6 +124,14 @@
 		<button id="btnSyncSide" title="Cloud Sync" style="width:100%">Sync</button>
 		<div id="syncStatusSide" class="muted small" style="margin-top:6px">Sync: Off</div>
 	  </div>
+    
+      <div class="card" style="padding:12px">
+      <div class="small muted" style="margin-bottom:6px">Verbs</div>
+      <label class="small muted" style="display:flex;align-items:center;gap:6px;">
+        <input type="checkbox" id="verbsPastToggle" checked>
+        include Präteritum field
+      </label>
+    </div>
 
 	  <div class="card" style="padding:12px">
 		<div class="small muted" style="margin-bottom:6px">Debug</div>
@@ -168,15 +176,14 @@
     </div>
   </section>
 
-  <!-- ====== VERBS ====== -->
+    <!-- ====== VERBS ====== -->
   <section id="verbs" class="card hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
       <div><strong id="verbEn" class="muted"></strong> <span id="verbsLevel" class="pill"></span></div>
       <div class="pill">Streak target: 3</div>
     </div>
 
-    <div class="row"><div class="label">Infinitive</div><div><input id="vInf" type="text" autocomplete="off"></div></div>
-
+    <!-- Controls first: Aux, Case, Reflexive -->
     <div class="row"><div class="label">Aux</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="article-btn" data-aux="haben">haben</button>
@@ -185,16 +192,6 @@
         <span id="auxHint" class="pill"></span>
       </div>
     </div>
-
-    <div class="row"><div class="label">ich</div><div><input id="pIch" type="text"></div></div>
-    <div class="row"><div class="label">du</div><div><input id="pDu" type="text"></div></div>
-    <div class="row"><div class="label">er/sie/es</div><div><input id="pEr" type="text"></div></div>
-    <div class="row"><div class="label">ihr</div><div><input id="pIhr" type="text"></div></div>
-
-    <div class="row"><div class="label">Präteritum</div><div><input id="vPast" type="text" placeholder="z. B. ging"></div></div>
-    <div class="row"><div class="label">Partizip II</div><div><input id="vPart" type="text" placeholder="z. B. gegangen"></div></div>
-
-    <div class="row"><div class="label">Preposition(s)</div><div><input id="vPrep" type="text" placeholder="auf;über;mit (optional)"></div></div>
     <div class="row"><div class="label">Case</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="article-btn" data-case="inf">inf</button>
@@ -209,6 +206,18 @@
         <button class="article-btn" data-refl="false">false</button>
       </div>
     </div>
+
+    <!-- Then verb forms -->
+    <div class="row"><div class="label">Infinitive</div><div><input id="vInf" type="text" autocomplete="off"></div></div>
+    <div class="row"><div class="label">ich</div><div><input id="pIch" type="text"></div></div>
+    <div class="row"><div class="label">du</div><div><input id="pDu" type="text"></div></div>
+    <div class="row"><div class="label">er/sie/es</div><div><input id="pEr" type="text"></div></div>
+    <div class="row"><div class="label">ihr</div><div><input id="pIhr" type="text"></div></div>
+
+    <div class="row"><div class="label">Partizip II</div><div><input id="vPart" type="text" placeholder="z. B. gegangen"></div></div>
+    <div class="row" id="rowPast"><div class="label">Präteritum</div><div><input id="vPast" type="text" placeholder="z. B. ging"></div></div>
+
+    <div class="row"><div class="label">Preposition(s)</div><div><input id="vPrep" type="text" placeholder="auf;über;mit (optional)"></div></div>
 
     <div id="verbsFeedback" class="small" style="margin-top:8px"></div>
     <div class="actions">
@@ -323,6 +332,7 @@ const APP = {
   mode: 'vocab',        // 'vocab'|'verbs'|'adjadv'|'preps'|'mix'|'kapitelMix'
   masteryTarget: 3,
   wordsPerLevel: 25,
+  verbsIncludePast: true,   // NEW: toggle for Präteritum field
   debug: false,
   kapitel: { title:'', counts:{vocab:0,verbs:0,adjadv:0,preps:0}, files:null },
   pick: (arr)=> arr && arr.length? arr[Math.floor(Math.random()*arr.length)] : null,
@@ -602,15 +612,19 @@ const Verbs = {
   hasData(){ return state.verbs.data.length>0; },
   hasUnmastered(){ return this.levelPool().some(v=> (state.verbs.streaks[v.id]||0) < APP.masteryTarget); },
   pick(){ const p=this.levelPool(); const pref=p.filter(v=>(state.verbs.streaks[v.id]||0)<APP.masteryTarget); return (pref.length?APP.pick(pref):APP.pick(p))||null; },
-  render(v){
-    setText('#verbEn', v.english); setText('#verbsFeedback','');
-	['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep'].forEach(s=>{ const el=$(s); if(el) el.value=''; });
-	$all('[data-aux]').forEach(b=>b.classList.remove('active'));
-	$all('[data-case]').forEach(b=>b.classList.remove('active'));
-	$all('[data-refl]').forEach(b=>b.classList.remove('active'));
-	setText('#verbsLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.verbs.level}`);
-	const vi=$('#vInf'); if(vi) vi.focus();
-
+    render(v){
+    setText('#verbEn', v.english);
+    setText('#verbsFeedback','');
+    ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep'].forEach(s=>{
+      const el=$(s); if(el) el.value='';
+    });
+    $all('[data-aux]').forEach(b=>b.classList.remove('active'));
+    $all('[data-case]').forEach(b=>b.classList.remove('active'));
+    $all('[data-refl]').forEach(b=>b.classList.remove('active'));
+    setText('#verbsLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.verbs.level}`);
+    const rowPast = $('#rowPast');
+    if(rowPast) rowPast.classList.toggle('hidden', !APP.verbsIncludePast);
+    const vi=$('#vInf'); if(vi) vi.focus();
   },
   check(v){
     let ok=true, msg=[];
@@ -619,7 +633,8 @@ const Verbs = {
     const chosenAux = $all('[data-aux].active')[0]?.dataset.aux || '';
     if(v.aux){ const allow=v.aux.split('/').map(s=>s.trim()); if(!allow.includes(chosenAux)){ ok=false; msg.push('aux ➜ <b>'+v.aux+'</b>'); } }
     must($('#pIch').value, v.ich, 'ich'); must($('#pDu').value,v.du,'du'); must($('#pEr').value,v.er,'er/sie/es'); must($('#pIhr').value,v.ihr,'ihr');
-    must($('#vPast').value, v.past, 'Präteritum'); must($('#vPart').value, v.partizip, 'Partizip');
+    if(APP.verbsIncludePast) must($('#vPast').value, v.past, 'Präteritum');
+    must($('#vPart').value, v.partizip, 'Partizip');
     const givenPrep = APP.norm($('#vPrep').value); if(v.preps?.length && !v.preps.map(APP.norm).includes(givenPrep)){ ok=false; msg.push('prep ➜ <b>'+v.preps.join('; ')+'</b>'); }
     const chosenCase = $all('[data-case].active')[0]?.dataset.case || ''; if(v.case && APP.norm(v.case)!==APP.norm(chosenCase)){ ok=false; msg.push('case ➜ <b>'+v.case+'</b>'); }
     const chosenRefl = $all('[data-refl].active')[0]?.dataset.refl || ''; if(v.reflexive && APP.norm(v.reflexive)!==APP.norm(chosenRefl)){ ok=false; msg.push('reflexive ➜ <b>'+v.reflexive+'</b>'); }
@@ -910,8 +925,12 @@ function attachEvents(){
   $('#vocabReset').addEventListener('click', ()=>{ if(confirm('Reset vocab progress?')){ state.vocab.level=1; state.vocab.streaks={}; saveAll(); Trainers.vocab.next(true); renderMode(); } });
   $('#vocabShowEn').addEventListener('change', (e)=>{ state.vocab.showEn=e.target.checked; saveAll(); renderMode(); });
 
-  // Verb toggles
-  $all('[data-aux]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-aux]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vPast').focus(); }));
+    // Verb toggles
+  $all('[data-aux]').forEach(b=>b.addEventListener('click', ()=>{
+    $all('[data-aux]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const vi = $('#vInf'); if(vi) vi.focus();
+  }));
   $all('[data-case]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-case]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vPrep').focus(); }));
   $all('[data-refl]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-refl]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vInf').focus(); }));
   $('#verbsCheck').addEventListener('click', ()=>safeCheck('verbs'));
@@ -927,6 +946,29 @@ function attachEvents(){
   $('#ppCheck').addEventListener('click', ()=>safeCheck('preps'));
   $('#ppNext').addEventListener('click', ()=>safeNext('preps'));
   $('#ppReset').addEventListener('click', ()=>{ if(confirm('Reset preps progress?')){ state.preps.level=1; state.preps.streaks={}; saveAll(); Trainers.preps.next(true); renderMode(); } });
+  
+    // Kapitel Mix controls
+  const kmxNextBtn = $('#kmxNext');
+  if(kmxNextBtn){
+    kmxNextBtn.addEventListener('click', ()=>{
+      // just request a new section/card
+      KapitelMix.render();
+    });
+  }
+  const kmxResetBtn = $('#kmxReset');
+  if(kmxResetBtn){
+    kmxResetBtn.addEventListener('click', ()=>{
+      if(!confirm('Reset this Kapitel progress?')) return;
+      // clear streaks ONLY in current dataset (kapitel)
+      state.vocab.streaks = {};
+      state.verbs.streaks = {};
+      state.adjadv.streaks = {};
+      state.preps.streaks = {};
+      saveAll();
+      updateKapitelProgress();
+      KapitelMix.render();
+    });
+  }
 
   // Debug HUD buttons (footer + sidebar)
 	['#btnDebug','#btnDebugSide'].forEach(sel=>{
@@ -935,6 +977,17 @@ function attachEvents(){
 		const h=$('#debugHUD');
 		h.style.display = (h.style.display==='none'||!h.style.display)?'block':'none';
 	  });
+      // Verbs: include/exclude Präteritum field
+  const verbsTgl = $('#verbsPastToggle');
+  if(verbsTgl){
+    verbsTgl.checked = APP.verbsIncludePast;
+    verbsTgl.addEventListener('change', (e)=>{
+      APP.verbsIncludePast = !!e.target.checked;
+      localStorage.setItem('verbsIncludePast', APP.verbsIncludePast ? 'true' : 'false');
+      const row = $('#rowPast');
+      if(row) row.classList.toggle('hidden', !APP.verbsIncludePast);
+    });
+  }
 	});
 	$('#dbgDump').addEventListener('click', ()=>{ console.log({APP,state}); alert('Dumped to console.'); });
   function openSync(){ const m=$('#syncModal'); if(m) m.style.display='flex'; }
@@ -944,24 +997,34 @@ function attachEvents(){
     el.addEventListener('click', openSync);
   });
   $('#syncCancel').addEventListener('click', closeSync);
-  $('#syncEnable').addEventListener('click', async ()=>{
-    const user = ($('#syncUser')?.value||'').trim();
-    if(!user){ alert('Enter a username.'); return; }
-    localStorage.setItem('syncActive','true');
-    localStorage.setItem('syncUser', user);
-    const ok = fbInit();
-    if(ok){ try{ await syncPull(user); await syncPush(user);}catch(e){ console.warn(e); } }
-    syncOnUI(user);
-    closeSync();
-  });
+    $('#syncEnable').addEventListener('click', async ()=>{
+      const input = $('#syncUser');
+      const user = input ? input.value.trim() : '';
+      if(!user){
+        alert('Enter a username.');
+        return;
+      }
+      localStorage.setItem('syncActive','true');
+      localStorage.setItem('syncUser', user);
+      const ok = fbInit();
+      if(ok){
+        try{
+          await syncPull(user);
+          await syncPush(user);
+        }catch(e){
+          console.warn(e);
+        }
+      }
+      syncOnUI(user);
+      closeSync();
+    });
   
   // restore sync on load
-  const wasOn = localStorage.getItem('syncActive')==='true';
+    const wasOn = localStorage.getItem('syncActive')==='true';
   const lastUser = localStorage.getItem('syncUser') || '';
   if(wasOn && lastUser){
     fbInit();
     syncOnUI(lastUser);
-    // pull latest silently, then push our local after merge
     syncPull(lastUser).then(()=>syncPush(lastUser)).catch(()=>{});
   } else {
     syncOffUI();
@@ -971,8 +1034,13 @@ function attachEvents(){
   // GLOBAL ENTER ENGINE
   let enterArmed=false;
   function modeFields(mode){
-    if(mode==='vocab') return ['#vocabDe','#vocabPl'];
-    if(mode==='verbs') return ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep'];
+        if(mode==='vocab') return ['#vocabDe','#vocabPl'];
+    if(mode==='verbs'){
+      const base = ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPart'];
+      if(APP.verbsIncludePast) base.push('#vPast');
+      base.push('#vPrep');
+      return base;
+    }
     if(mode==='adjadv') return ['#aaDe'];
     if(mode==='preps') return ['#ppHole'];
     if(mode==='mix'||mode==='kapitelMix'){ if(!mounted) return []; return modeFields(mounted.sec); }
@@ -1042,6 +1110,8 @@ async function boot(){
   APP.mode = localStorage.getItem('mode') || 'vocab';
   // Restore Kapitel if present
   const saved = localStorage.getItem('kapitel_current_v1');
+  const incPast = localStorage.getItem('verbsIncludePast');
+  if(incPast === 'false') APP.verbsIncludePast = false;
   if(saved){ try{ const k=JSON.parse(saved); APP.kapitel={title:k.title,counts:k.counts,files:k.files}; APP.dsKey='kapitel'; }catch{} }
 
   await loadDefaultIfMissing('vocab.csv', SAMPLE_VOCAB);
@@ -1053,8 +1123,7 @@ async function boot(){
   attachEvents();
   Trainers.vocab.next(true);
   renderMode();
-  // Sync status text is static (we removed cloud wiring for stability)
-  const ss=$('#syncStatus'); if(ss) ss.textContent='Sync: Off';
+  
 }
 document.addEventListener('DOMContentLoaded', boot);
 </script>
