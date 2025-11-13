@@ -11,7 +11,19 @@
 <!-- Firebase (optional username-only sync; safe if unused) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
+<!-- FIND → PASTE BELOW: put your Firebase config here -->
+<script>
+  // Replace the placeholder values with your project's config
+  window.firebaseConfig = window.firebaseConfig || {
+    apiKey: "YOUR-API-KEY",
+    authDomain: "YOUR-PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR-PROJECT-default-rtdb.firebaseio.com",
+    projectId: "YOUR-PROJECT",
+    storageBucket: "YOUR-PROJECT.appspot.com",
+    messagingSenderId: "YOUR-SENDER-ID",
+    appId: "YOUR-APP-ID"
+  };
+</script>
 <style>
   :root{
     --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041; --accent:#6aa6ff;
@@ -58,7 +70,7 @@
 
   /* Debug HUD */
   /* Sidebar helpers */
-  #side{ transform:translateX(100%); }         /* default hidden */
+  #side{ transform:translateX(-100%); }   /* hidden to the LEFT */
   #sideMask{ display:none; }                    /* default hidden */
   .side-open #side{ transform:translateX(0) !important; }
   .side-open #sideMask{ display:block !important; }
@@ -70,6 +82,10 @@
   .article-bar{display:flex;gap:8px;margin:8px 0}
   .article-btn{flex:1;border:1px solid var(--border);border-radius:10px;background:var(--btn);color:var(--text);padding:10px 12px}
   .article-btn.active{outline:2px solid var(--accent)}
+  /* Article color accents */
+  .article-btn.art-der.active  { background:#0f1420; border-color:#2b63ff; color:#a8c4ff; outline-color:#2b63ff; }
+  .article-btn.art-die.active  { background:#201018; border-color:#ff4d6d; color:#ff99ad; outline-color:#ff4d6d; }
+  .article-btn.art-das.active  { background:#0f1a13; border-color:#22c55e; color:#9bf2c4; outline-color:#22c55e; }
 
   /* Splash modal */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:10000}
@@ -89,7 +105,7 @@
 	</div>
 
 	<!-- Slide-out Sidebar -->
-	<aside id="side" style="position:fixed;inset:0 0 0 auto; width:300px; max-width:85%; background:var(--card); border-left:1px solid var(--border); box-shadow:-18px 0 30px rgba(0,0,0,.35); transition:transform .22s ease; z-index:20000; padding:14px; display:flex; flex-direction:column; gap:12px">
+	<aside id="side" style="position:fixed;inset:0 auto 0 0; width:300px; max-width:85%; background:var(--card); border-right:1px solid var(--border); box-shadow:18px 0 30px rgba(0,0,0,.35); transition:transform .22s ease; z-index:20000; padding:14px; display:flex; flex-direction:column; gap:12px">
 	  <div style="display:flex;justify-content:space-between;align-items:center">
 		<strong>Settings</strong>
 		<button id="btnSideClose" class="mode-btn" style="padding:6px 10px">✕</button>
@@ -249,7 +265,12 @@
     <div class="kmx">
       <div class="big-card">
         <div class="title">Kapitel Mix</div>
-        <div class="sub" id="kmxCtx">Rotates across Vocab, Verbs, Adj/Adv, Preps • prefers unmastered • no levels.</div>
+        <div style="margin-top:8px;">
+        <div id="kmxProgressOuter" style="width:100%;height:6px;background:#1a2230;border-radius:4px;">
+          <div id="kmxProgressInner" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width .3s;"></div>
+        </div>
+        <div id="kmxProgressText" class="small muted" style="margin-top:4px;text-align:right">0%</div>
+      </div>
       </div>
       <div id="kmxMount"></div>
       <div class="actions">
@@ -330,6 +351,71 @@ function setVal(sel, v){
 
 function show(id){ const el=$(id.startsWith('#')?id:`#${id}`); if(el) el.classList.remove('hidden'); }
 function hide(id){ const el=$(id.startsWith('#')?id:`#${id}`); if(el) el.classList.add('hidden'); }
+
+// ---------- Firebase Sync ----------
+let FBAPP=null, DBrt=null;
+
+function fbInit(){
+  try{
+    if(window.firebase && window.firebaseConfig){
+      FBAPP = firebase.apps?.length ? firebase.app() : firebase.initializeApp(window.firebaseConfig);
+      DBrt = firebase.database();
+      return true;
+    }
+  }catch(e){ console.warn('Firebase init failed:', e); }
+  return false;
+}
+function syncPath(user){ return `/users/${encodeURIComponent(user)}`; }
+
+function buildSyncPayload(){
+  return {
+    meta: {
+      dsKey: APP.dsKey,
+      masteryTarget: APP.masteryTarget,
+      wordsPerLevel: APP.wordsPerLevel,
+      ts: Date.now()
+    },
+    progress: {
+      vocab: state.vocab,
+      verbs: state.verbs,
+      adjadv: state.adjadv,
+      preps: state.preps
+    },
+    kapitel: APP.kapitel
+  };
+}
+function applyPayload(p){
+  try{
+    if(p?.progress){
+      Object.assign(state.vocab,  p.progress.vocab  || {});
+      Object.assign(state.verbs,  p.progress.verbs  || {});
+      Object.assign(state.adjadv, p.progress.adjadv || {});
+      Object.assign(state.preps,  p.progress.preps  || {});
+      saveAll(); // persist locally too
+      renderMode();
+    }
+    if(p?.kapitel){ APP.kapitel = p.kapitel; dsUI.update(); }
+  }catch(e){ console.warn('applyPayload failed', e); }
+}
+async function syncPull(user){
+  if(!DBrt) return;
+  const snap = await DBrt.ref(syncPath(user)).get();
+  if(snap.exists()){ applyPayload(snap.val()); }
+}
+async function syncPush(user){
+  if(!DBrt) return;
+  await DBrt.ref(syncPath(user)).set(buildSyncPayload());
+}
+
+// helpers
+function syncOnUI(user){
+  setText('#syncStatus', `Sync: On ✅ (${user})`);
+  setText('#syncStatusSide', `Sync: On ✅ (${user})`);
+}
+function syncOffUI(){
+  setText('#syncStatus', 'Sync: Off');
+  setText('#syncStatusSide', 'Sync: Off');
+}
 
 // ---------- Storage ----------
 const LS = {
@@ -440,6 +526,10 @@ function saveAll(){
   LS.set('verbsProgress', state.verbs);
   LS.set('adjadvProgress', state.adjadv);
   LS.set('prepsProgress', state.preps);
+  // auto-push if sync is active
+  const on = localStorage.getItem('syncActive')==='true';
+  const user = localStorage.getItem('syncUser') || '';
+  if(on && user && DBrt){ syncPush(user).catch(()=>{}); }
 }
 function loadAllProgress(){
   const v=LS.get('vocabProgress',null); if(v) Object.assign(state.vocab,v);
@@ -482,6 +572,7 @@ const Vocab = {
     if(ok){ state.vocab.streaks[x.german]=(state.vocab.streaks[x.german]||0)+1; setHTML('#vocabFeedback','<span class="good">Correct!</span>'); }
     else { state.vocab.streaks[x.german]=0; setHTML('#vocabFeedback',`<span class="bad">Wrong.</span> Correct: <b>${x.article} ${x.german}</b> — ${x.plural||'—'}`); }
     saveAll();
+    if(APP.dsKey==='kapitel'){ updateKapitelProgress(); }
     if(APP.dsKey==='default'){
       const pool=this.levelPool();
       if(pool.length && pool.every(z=>(state.vocab.streaks[z.german]||0)>=APP.masteryTarget) && state.vocab.level*APP.wordsPerLevel < state.vocab.data.length){
@@ -535,6 +626,7 @@ const Verbs = {
     if(ok){ state.verbs.streaks[v.id]=(state.verbs.streaks[v.id]||0)+1; setHTML('#verbsFeedback','<span class="good">Correct!</span>'); }
     else { state.verbs.streaks[v.id]=0; setHTML('#verbsFeedback',`<span class="bad">Wrong.</span> ${msg.length? 'Correct: '+msg.join(', ') : ''}`); }
     saveAll();
+    if(APP.dsKey==='kapitel'){ updateKapitelProgress(); }
     if(APP.dsKey==='default'){
       const pool=this.levelPool();
       if(pool.length && pool.every(z=>(state.verbs.streaks[z.id]||0)>=APP.masteryTarget) && state.verbs.level*APP.wordsPerLevel<state.verbs.data.length){
@@ -567,6 +659,7 @@ const AdjAdv = {
     if(ok){ state.adjadv.streaks[x.german]=(state.adjadv.streaks[x.german]||0)+1; setHTML('#aaFeedback','<span class="good">Correct!</span>'); }
     else { state.adjadv.streaks[x.german]=0; setHTML('#aaFeedback',`<span class="bad">Wrong.</span> Correct: <b>${x.german}</b>`); }
     saveAll();
+    if(APP.dsKey==='kapitel'){ updateKapitelProgress(); }
     if(APP.dsKey==='default'){
       const p=this.levelPool();
       if(p.length && p.every(z=>(state.adjadv.streaks[z.german]||0)>=APP.masteryTarget) && state.adjadv.level*APP.wordsPerLevel<state.adjadv.data.length){
@@ -626,6 +719,7 @@ const Preps = {
     if(ok){ const key=this._curKey; state.preps.streaks[key]=(state.preps.streaks[key]||0)+1; setHTML('#ppFeedback','<span class="good">Correct!</span>'); }
     else { const key=this._curKey; state.preps.streaks[key]=0; setHTML('#ppFeedback',`<span class="bad">Wrong.</span> Correct: <b>${state.preps.currentAnswer||''}</b>`); }
     saveAll();
+    if(APP.dsKey==='kapitel'){ updateKapitelProgress(); }
     if(APP.dsKey==='default'){
       const p=this.levelPool();
       if(p.length && p.every(z=>(state.preps.streaks[z.prep]||0)>=APP.masteryTarget) && state.preps.level*APP.wordsPerLevel<state.preps.data.length){
@@ -693,6 +787,7 @@ const KapitelMix = {
     $('#kmxAllDone').classList.add('hidden');
     const sec=this.pickSection(); if(!sec){ mount.innerHTML='<p class="muted">No Kapitel data loaded.</p>'; return; }
     Trainers[sec].next(true); mountSection(sec,'kapitel');
+    updateKapitelProgress();
   }
 };
 
@@ -707,6 +802,30 @@ function updateHUD(){
   setText('#dbgSizes', sizes);
 }
 
+// Kapitel Mix progress (% mastered across all four pools)
+function updateKapitelProgress(){
+  // total items (prefer live data; fallback to manifest counts)
+  const totals = {
+    vocab: state.vocab.data.length || (APP.kapitel.counts?.vocab||0),
+    verbs: state.verbs.data.length || (APP.kapitel.counts?.verbs||0),
+    adjadv: state.adjadv.data.length || (APP.kapitel.counts?.adjadv||0),
+    preps: state.preps.data.length || (APP.kapitel.counts?.preps||0)
+  };
+  const mastered = {
+    vocab: state.vocab.data.filter(x => (state.vocab.streaks[x.german]||0) >= APP.masteryTarget).length,
+    verbs: state.verbs.data.filter(x => (state.verbs.streaks[x.id]||0)     >= APP.masteryTarget).length,
+    adjadv:state.adjadv.data.filter(x => (state.adjadv.streaks[x.german]||0)>= APP.masteryTarget).length,
+    preps: state.preps.data.filter(x => (state.preps.streaks[x.prep]||0)   >= APP.masteryTarget).length
+  };
+  const totalAll = totals.vocab + totals.verbs + totals.adjadv + totals.preps;
+  const doneAll  = mastered.vocab + mastered.verbs + mastered.adjadv + mastered.preps;
+  const pct = !totalAll ? 0 : Math.round(100 * doneAll / totalAll);
+
+  const inner = $('#kmxProgressInner');
+  const txt   = $('#kmxProgressText');
+  if(inner){ inner.style.width = pct + '%'; }
+  if(txt){ txt.textContent = `${pct}% (${doneAll}/${totalAll})`; }
+}
 
 // ---------- Mode rendering ----------
 function renderMode(){
@@ -777,7 +896,14 @@ function attachEvents(){
 
   // Vocab UI
   $all('.article-bar .article-btn').forEach(b=>{
-    b.addEventListener('click', ()=>{ state.vocab.article=b.dataset.a; $all('.article-bar .article-btn').forEach(x=>x.classList.toggle('active', x===b)); $('#vocabDe').focus(); });
+    b.addEventListener('click', ()=>{
+      state.vocab.article=b.dataset.a;
+      $all('.article-bar .article-btn').forEach(x=>{
+        x.classList.remove('active','art-der','art-die','art-das');
+      });
+      b.classList.add('active', 'art-' + b.dataset.a); // der/die/das
+      $('#vocabDe')?.focus();
+    });
   });
   $('#vocabCheck').addEventListener('click', ()=>safeCheck('vocab'));
   $('#vocabNext').addEventListener('click', ()=>safeNext('vocab'));
@@ -811,19 +937,35 @@ function attachEvents(){
 	  });
 	});
 	$('#dbgDump').addEventListener('click', ()=>{ console.log({APP,state}); alert('Dumped to console.'); });
-	function openSync(){ const m=$('#syncModal'); if(m) m.style.display='flex'; }
-	function closeSync(){ const m=$('#syncModal'); if(m) m.style.display='none'; }
-	['#btnSync','#btnSyncSide'].forEach(sel=>{
-	  const el=$(sel); if(!el) return;
-	  el.addEventListener('click', openSync);
-	});
-	$('#syncCancel').addEventListener('click', closeSync);
-	$('#syncEnable').addEventListener('click', ()=>{
-	  // Stub: pretend sync enabled
-	  closeSync();
-	  setText('#syncStatus','Sync: On');
-	  setText('#syncStatusSide','Sync: On');
-	});
+  function openSync(){ const m=$('#syncModal'); if(m) m.style.display='flex'; }
+  function closeSync(){ const m=$('#syncModal'); if(m) m.style.display='none'; }
+  ['#btnSync','#btnSyncSide'].forEach(sel=>{
+    const el=$(sel); if(!el) return;
+    el.addEventListener('click', openSync);
+  });
+  $('#syncCancel').addEventListener('click', closeSync);
+  $('#syncEnable').addEventListener('click', async ()=>{
+    const user = ($('#syncUser')?.value||'').trim();
+    if(!user){ alert('Enter a username.'); return; }
+    localStorage.setItem('syncActive','true');
+    localStorage.setItem('syncUser', user);
+    const ok = fbInit();
+    if(ok){ try{ await syncPull(user); await syncPush(user);}catch(e){ console.warn(e); } }
+    syncOnUI(user);
+    closeSync();
+  });
+  
+  // restore sync on load
+  const wasOn = localStorage.getItem('syncActive')==='true';
+  const lastUser = localStorage.getItem('syncUser') || '';
+  if(wasOn && lastUser){
+    fbInit();
+    syncOnUI(lastUser);
+    // pull latest silently, then push our local after merge
+    syncPull(lastUser).then(()=>syncPush(lastUser)).catch(()=>{});
+  } else {
+    syncOffUI();
+  }
 
 
   // GLOBAL ENTER ENGINE
