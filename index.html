@@ -51,6 +51,24 @@
   .muted{color:var(--muted)}
   .small{font-size:12px}
   .good{color:var(--good)} .bad{color:var(--bad)}
+    /* Verb correctness highlights */
+  .good-field{
+    border-color: var(--good) !important;
+    box-shadow:0 0 0 1px rgba(34,197,94,.45);
+  }
+  .bad-field{
+    border-color: var(--bad) !important;
+    box-shadow:0 0 0 1px rgba(239,68,68,.45);
+  }
+  .article-btn.good-btn{
+    border-color: var(--good) !important;
+    color:var(--good) !important;
+  }
+  .article-btn.bad-btn{
+    border-color: var(--bad) !important;
+    color:var(--bad) !important;
+  }
+
   .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:12px;color:var(--muted)}
   .actions{display:flex;gap:8px;margin-top:10px}
   .actions button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer}
@@ -661,8 +679,16 @@ const Verbs = {
     setText('#verbEn', v.english);
     setText('#verbsFeedback','');
     ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPast','#vPart','#vPrep'].forEach(s=>{
-      const el=$(s); if(el) el.value='';
-    });
+	  const el=$(s);
+	  if(el){
+		el.value='';
+		el.classList.remove('good-field','bad-field'); // ← reset color
+	  }
+	});
+	$all('[data-aux],[data-case],[data-refl]').forEach(b=>{
+	  b.classList.remove('good-btn','bad-btn'); // ← reset button colors
+	});
+
     $all('[data-aux]').forEach(b=>b.classList.remove('active'));
     $all('[data-case]').forEach(b=>b.classList.remove('active'));
     $all('[data-refl]').forEach(b=>b.classList.remove('active'));
@@ -681,28 +707,131 @@ const Verbs = {
 
   },
   check(v){
-    let ok=true, msg=[];
-    const must=(a,b,label)=>{ if(APP.normDe(a)!==APP.normDe(b)){ ok=false; msg.push(`${label} ➜ <b>${b}</b>`);} };
-    must($('#vInf').value, v.lemma, 'infinitive');
-    const chosenAux = $all('[data-aux].active')[0]?.dataset.aux || '';
-    if(v.aux){ const allow=v.aux.split('/').map(s=>s.trim()); if(!allow.includes(chosenAux)){ ok=false; msg.push('aux ➜ <b>'+v.aux+'</b>'); } }
-    must($('#pIch').value, v.ich, 'ich'); must($('#pDu').value,v.du,'du'); must($('#pEr').value,v.er,'er/sie/es'); must($('#pIhr').value,v.ihr,'ihr');
-    if(APP.verbsIncludePast) must($('#vPast').value, v.past, 'Präteritum');
-    must($('#vPart').value, v.partizip, 'Partizip');
-    const givenPrep = APP.norm($('#vPrep').value); if(v.preps?.length && !v.preps.map(APP.norm).includes(givenPrep)){ ok=false; msg.push('prep ➜ <b>'+v.preps.join('; ')+'</b>'); }
-    const chosenCase = $all('[data-case].active')[0]?.dataset.case || ''; if(v.case && APP.norm(v.case)!==APP.norm(chosenCase)){ ok=false; msg.push('case ➜ <b>'+v.case+'</b>'); }
-    const chosenRefl = $all('[data-refl].active')[0]?.dataset.refl || ''; if(v.reflexive && APP.norm(v.reflexive)!==APP.norm(chosenRefl)){ ok=false; msg.push('reflexive ➜ <b>'+v.reflexive+'</b>'); }
-    if(ok){ state.verbs.streaks[v.id]=(state.verbs.streaks[v.id]||0)+1; setHTML('#verbsFeedback','<span class="good">Correct!</span>'); }
-    else { state.verbs.streaks[v.id]=0; setHTML('#verbsFeedback',`<span class="bad">Wrong.</span> ${msg.length? 'Correct: '+msg.join(', ') : ''}`); }
-    saveAll();
-    if(APP.dsKey==='kapitel'){ updateKapitelProgress(); }
-    if(APP.dsKey==='default'){
-      const pool=this.levelPool();
-      if(pool.length && pool.every(z=>(state.verbs.streaks[z.id]||0)>=APP.masteryTarget) && state.verbs.level*APP.wordsPerLevel<state.verbs.data.length){
-        state.verbs.level++; saveAll();
-      }
-    }
-  }
+	  let ok = true;
+	  let msg = [];
+
+	  // RESET previous button states
+	  $all('[data-aux],[data-case],[data-refl]').forEach(b=>{
+		b.classList.remove('good-btn','bad-btn');
+	  });
+
+	  // helper: check & highlight input fields
+	  const checkField = (sel, correctRaw, label)=>{
+		const el = $(sel);
+		if(!el || !correctRaw){
+		  if(el) el.classList.remove('good-field','bad-field');
+		  return;
+		}
+		const isCorrect = APP.normDe(el.value) === APP.normDe(correctRaw);
+		el.classList.toggle('good-field', isCorrect);
+		el.classList.toggle('bad-field', !isCorrect);
+		if(!isCorrect){
+		  ok = false;
+		  msg.push(`${label} ➜ <b>${correctRaw}</b>`);
+		  el.value = correctRaw; // fill with correct answer
+		}
+	  };
+
+	  // TEXT FIELDS
+	  checkField('#vInf',  v.lemma,    'infinitive');
+	  checkField('#pIch',  v.ich,      'ich');
+	  checkField('#pDu',   v.du,       'du');
+	  checkField('#pEr',   v.er,       'er/sie/es');
+	  checkField('#pIhr',  v.ihr,      'ihr');
+	  if(APP.verbsIncludePast) checkField('#vPast', v.past, 'Präteritum');
+	  checkField('#vPart', v.partizip, 'Partizip');
+
+	  // PREPOSITION field (ONLY if verb has preps)
+	  if(v.preps && v.preps.length > 0){
+		const inp = $('#vPrep');
+		if(inp){
+		  const normPreps = v.preps.map(APP.norm);
+		  const user = APP.norm(inp.value);
+		  const isCorrect = normPreps.includes(user);
+
+		  inp.classList.toggle('good-field', isCorrect);
+		  inp.classList.toggle('bad-field', !isCorrect);
+
+		  if(!isCorrect){
+			ok = false;
+			msg.push('prep ➜ <b>'+v.preps.join('; ')+'</b>');
+			inp.value = v.preps[0];
+		  }
+		}
+	  } else {
+		const inp = $('#vPrep');
+		if(inp) inp.classList.remove('good-field','bad-field');
+	  }
+
+	  // AUX BUTTONS
+	  const chosenAuxBtn = $all('[data-aux].active')[0] || null;
+	  const chosenAux = chosenAuxBtn?.dataset.aux || '';
+
+	  if(v.aux){
+		const allowed = v.aux.split('/').map(s=>s.trim());
+		// mark correct ones green
+		$all('[data-aux]').forEach(b=>{
+		  if(allowed.includes(b.dataset.aux)){
+			b.classList.add('good-btn');
+		  }
+		});
+		// chosen wrong? → red
+		if(chosenAux && !allowed.includes(chosenAux)){
+		  ok = false;
+		  msg.push('aux ➜ <b>'+v.aux+'</b>');
+		  if(chosenAuxBtn) chosenAuxBtn.classList.add('bad-btn');
+		}
+	  }
+
+	  // CASE BUTTONS
+	  const chosenCaseBtn = $all('[data-case].active')[0] || null;
+	  const chosenCase = chosenCaseBtn?.dataset.case || '';
+
+	  if(v.case){
+		const target = APP.norm(v.case);
+		// mark correct button green
+		$all('[data-case]').forEach(b=>{
+		  if(APP.norm(b.dataset.case) === target){
+			b.classList.add('good-btn');
+		  }
+		});
+		if(!chosenCase || APP.norm(chosenCase) !== target){
+		  ok = false;
+		  msg.push('case ➜ <b>'+v.case+'</b>');
+		  if(chosenCaseBtn) chosenCaseBtn.classList.add('bad-btn');
+		}
+	  }
+
+	  // REFLEXIVE BUTTONS
+	  const chosenReflBtn = $all('[data-refl].active')[0] || null;
+	  const chosenRefl = chosenReflBtn?.dataset.refl || '';
+
+	  if(v.reflexive){
+		const target = APP.norm(v.reflexive);
+		$all('[data-refl]').forEach(b=>{
+		  if(APP.norm(b.dataset.refl) === target){
+			b.classList.add('good-btn');
+		  }
+		});
+		if(!chosenRefl || APP.norm(chosenRefl) !== target){
+		  ok = false;
+		  msg.push('reflexive ➜ <b>'+v.reflexive+'</b>');
+		  if(chosenReflBtn) chosenReflBtn.classList.add('bad-btn');
+		}
+	  }
+
+	  // feedback + streak
+	  if(ok){
+		state.verbs.streaks[v.id]=(state.verbs.streaks[v.id]||0)+1;
+		setHTML('#verbsFeedback','<span class="good">Correct!</span>');
+	  } else {
+		state.verbs.streaks[v.id]=0;
+		setHTML('#verbsFeedback',`<span class="bad">Wrong.</span> Correct: ${msg.join(', ')}`);
+	  }
+	  saveAll();
+	  if(APP.dsKey==='kapitel') updateKapitelProgress();
+	}
+
 };
 
 const AdjAdv = {
