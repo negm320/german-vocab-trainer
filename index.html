@@ -1104,11 +1104,22 @@ function attachEvents(){
   }
   function sectionCheck(mode){ const m=(mode==='mix'||mode==='kapitelMix')&&mounted? mounted.sec:mode; Trainers[m]?.check && Trainers[m].check(); }
   function sectionNext(mode){
-    const m=(mode==='mix'||mode==='kapitelMix')&&mounted? mounted.sec:mode;
-    Trainers[m]?.next && Trainers[m].next(true);
-    if(mode==='mix') Mix.render();
-    if(mode==='kapitelMix') KapitelMix.render();
+  // Kapitel Mix: let the KapitelMix engine handle section selection + mounting.
+  if(mode === 'kapitelMix'){
+    KapitelMix.render();
+    return;
   }
+
+  // Normal / default Mix behaviour:
+  const m = (mode === 'mix' && mounted) ? mounted.sec : mode;
+  const T = Trainers[m];
+  if(T && T.next) T.next(true);
+
+  if(mode === 'mix'){
+    Mix.render();
+  }
+}
+
   document.addEventListener('keydown',(e)=>{
     if(e.key!=='Enter') return;
     const fields=modeFields(APP.mode).map(s=>document.querySelector(s)).filter(Boolean);
