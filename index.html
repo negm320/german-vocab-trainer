@@ -217,7 +217,11 @@
     <div class="row"><div class="label">Partizip II</div><div><input id="vPart" type="text" placeholder="z. B. gegangen"></div></div>
     <div class="row" id="rowPast"><div class="label">Präteritum</div><div><input id="vPast" type="text" placeholder="z. B. ging"></div></div>
 
-    <div class="row"><div class="label">Preposition(s)</div><div><input id="vPrep" type="text" placeholder="auf;über;mit (optional)"></div></div>
+    <div class="row" id="rowPrep">
+	  <div class="label">Preposition(s)</div>
+	  <div><input id="vPrep" type="text" placeholder="auf;über;mit (optional)"></div>
+	</div>
+
 
     <div id="verbsFeedback" class="small" style="margin-top:8px"></div>
     <div class="actions">
@@ -328,16 +332,17 @@
    =========================================================== */
 
 const APP = {
-  dsKey: 'default',     // 'default' | 'kapitel'
-  mode: 'vocab',        // 'vocab'|'verbs'|'adjadv'|'preps'|'mix'|'kapitelMix'
+  dsKey: 'default',
+  mode: 'vocab',
   masteryTarget: 3,
   wordsPerLevel: 25,
-  verbsIncludePast: true,   // NEW: toggle for Präteritum field
+  verbsIncludePast: true,
   debug: false,
   kapitel: { title:'', counts:{vocab:0,verbs:0,adjadv:0,preps:0}, files:null },
   pick: (arr)=> arr && arr.length? arr[Math.floor(Math.random()*arr.length)] : null,
   norm: (s)=> (s||'').trim().toLowerCase(),
-  normDe: (s)=> (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue')
+  normDe: (s)=> (s||'').trim().toLowerCase().replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'),
+  currentVerbHasPrep: false   // 👈 add this line
 };
 
 // ---------- DOM helpers ----------
@@ -662,9 +667,18 @@ const Verbs = {
     $all('[data-case]').forEach(b=>b.classList.remove('active'));
     $all('[data-refl]').forEach(b=>b.classList.remove('active'));
     setText('#verbsLevel', (APP.dsKey==='kapitel')? '' : `Level ${state.verbs.level}`);
+
     const rowPast = $('#rowPast');
     if(rowPast) rowPast.classList.toggle('hidden', !APP.verbsIncludePast);
+
+    // NEW: show/hide preposition row depending on whether the verb has preps
+    const hasPrep = v.preps && v.preps.length > 0;
+    const rowPrep = $('#rowPrep');
+    if(rowPrep) rowPrep.classList.toggle('hidden', !hasPrep);
+    APP.currentVerbHasPrep = hasPrep;
+
     const vi=$('#vInf'); if(vi) setTimeout(()=>vi.focus(),0);
+
   },
   check(v){
     let ok=true, msg=[];
@@ -972,7 +986,7 @@ function attachEvents(){
     b.classList.add('active');
     const vi = $('#vInf'); if(vi) vi.focus();
   }));
-  $all('[data-case]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-case]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vPrep').focus(); }));
+  $all('[data-case]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-case]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
   $all('[data-refl]').forEach(b=>b.addEventListener('click', ()=>{ $all('[data-refl]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#vInf').focus(); }));
   $('#verbsCheck').addEventListener('click', ()=>safeCheck('verbs'));
   $('#verbsNext').addEventListener('click', ()=>safeNext('verbs'));
@@ -1076,12 +1090,13 @@ function attachEvents(){
   let enterArmed=false;
   function modeFields(mode){
         if(mode==='vocab') return ['#vocabDe','#vocabPl'];
-    if(mode==='verbs'){
+        if(mode==='verbs'){
       const base = ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPart'];
       if(APP.verbsIncludePast) base.push('#vPast');
-      base.push('#vPrep');
+      if(APP.currentVerbHasPrep) base.push('#vPrep'); // only include if this verb actually has a prep
       return base;
     }
+
     if(mode==='adjadv') return ['#aaDe'];
     if(mode==='preps') return ['#ppHole'];
     if(mode==='mix'||mode==='kapitelMix'){ if(!mounted) return []; return modeFields(mounted.sec); }
