@@ -852,7 +852,7 @@ const KapitelMix = {
   },
   allMastered(){ return ['vocab','verbs','adjadv','preps'].every(s=>!Trainers[s].hasData() || !Trainers[s].hasUnmastered()); },
   render(){
-    const mount = $('#kmxMount'); mount.innerHTML='';
+    const mount = $('#kmxMount');
     if(this.allMastered()){ $('#kmxAllDone').classList.remove('hidden'); mount.innerHTML='<div class="center" style="min-height:120px"><strong>Kapitel mastered 🎉</strong></div>'; return; }
     $('#kmxAllDone').classList.add('hidden');
     const sec=this.pickSection(); if(!sec){ mount.innerHTML='<p class="muted">No Kapitel data loaded.</p>'; return; }
