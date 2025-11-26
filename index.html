@@ -159,14 +159,44 @@
 	<div id="sideMask" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:19000;"></div>
 
 
-  <div class="mode-tabs" id="modeTabs">
+   <div class="mode-tabs" id="modeTabs">
     <button class="mode-btn" data-mode="vocab">Vocab</button>
+    <button class="mode-btn" data-mode="top5k">5k Words</button>
     <button class="mode-btn" data-mode="verbs">Verbs</button>
     <button class="mode-btn" data-mode="adjadv">Adj/Adv</button>
     <button class="mode-btn" data-mode="preps">Preps</button>
     <button class="mode-btn" data-mode="mix">Mix</button>
     <button class="mode-btn" data-mode="kapitelMix" id="btnKapitelMix" disabled>Kapitel Mix</button>
   </div>
+
+  <!-- ====== 5K CORE WORDS ====== -->
+  <section id="top5k" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div>
+        <div class="muted small">English word</div>
+        <strong id="coreEn"></strong>
+      </div>
+      <div id="coreLevel" class="pill"></div>
+    </div>
+
+    <div id="coreEnSentence" class="muted small" style="margin-top:4px;"></div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="label">German</div>
+      <div><input id="coreDe" type="text" autocomplete="off"></div>
+    </div>
+
+    <div id="coreDeSentence" class="muted small" style="margin-top:4px;"></div>
+
+    <div id="coreFeedback" class="small" style="margin-top:8px;"></div>
+
+    <div class="actions">
+      <button id="coreCheck">Check</button>
+      <button id="coreNext">Next</button>
+      <button id="coreReset" class="muted">Reset</button>
+    </div>
+  </section>
+
 
   <!-- ====== VOCAB ====== -->
   <section id="vocab" class="card hidden">
@@ -412,7 +442,8 @@ function buildSyncPayload(){
       vocab: state.vocab,
       verbs: state.verbs,
       adjadv: state.adjadv,
-      preps: state.preps
+      preps: state.preps,
+      top5k: state.top5k
     },
     kapitel: APP.kapitel
   };
@@ -420,16 +451,18 @@ function buildSyncPayload(){
 function applyPayload(p){
   try{
     if(p?.progress){
-      Object.assign(state.vocab,  p.progress.vocab  || {});
-      Object.assign(state.verbs,  p.progress.verbs  || {});
-      Object.assign(state.adjadv, p.progress.adjadv || {});
-      Object.assign(state.preps,  p.progress.preps  || {});
+      Object.assign(state.vocab,  p.progress.vocab   || {});
+      Object.assign(state.verbs,  p.progress.verbs   || {});
+      Object.assign(state.adjadv, p.progress.adjadv  || {});
+      Object.assign(state.preps,  p.progress.preps   || {});
+      Object.assign(state.top5k,  p.progress.top5k   || {});
       saveAll(); // persist locally too
       renderMode();
     }
     if(p?.kapitel){ APP.kapitel = p.kapitel; dsUI.update(); }
   }catch(e){ console.warn('applyPayload failed', e); }
 }
+
 async function syncPull(user){
   if(!DBrt) return;
   const snap = await DBrt.ref(syncPath(user)).get();
@@ -552,13 +585,15 @@ const state = {
   vocab: { data:[], level:1, streaks:{}, article:'', idx:0, showEn:true },
   verbs: { data:[], level:1, streaks:{}, idx:0 },
   adjadv:{ data:[], level:1, streaks:{}, idx:0 },
-  preps: { data:[], level:1, streaks:{}, idx:0, currentAnswer:'' }
+  preps: { data:[], level:1, streaks:{}, idx:0, currentAnswer:'' },
+  top5k: { data:[], level:1, streaks:{}, idx:0 }
 };
 function saveAll(){
   LS.set('vocabProgress', state.vocab);
   LS.set('verbsProgress', state.verbs);
   LS.set('adjadvProgress', state.adjadv);
   LS.set('prepsProgress', state.preps);
+  LS.set('top5kProgress', state.top5k);
   // auto-push if sync is active
   const on = localStorage.getItem('syncActive')==='true';
   const user = localStorage.getItem('syncUser') || '';
@@ -569,7 +604,9 @@ function loadAllProgress(){
   const b=LS.get('verbsProgress',null); if(b) Object.assign(state.verbs,b);
   const a=LS.get('adjadvProgress',null); if(a) Object.assign(state.adjadv,a);
   const p=LS.get('prepsProgress',null); if(p) Object.assign(state.preps,p);
+  const c=LS.get('top5kProgress',null); if(c) Object.assign(state.top5k,c);
 }
+
 
 // ---------- Trainers ----------
 const Vocab = {
@@ -928,13 +965,199 @@ const Preps = {
   }
 };
 
+const Core5k = {
+  async load(){
+    let txt;
+    try{
+      txt = await datasetRead('5k.csv');
+    } catch(e){
+      state.top5k.data = [];
+      return;
+    }
+    const rows = parseCSV(txt.trim());
+    rows.shift(); // drop header
+
+    state.top5k.data = rows.map((r, idx) => ({
+      id: (r[0] || String(idx+1)).toString().trim(),           // # column
+      german: r[1] || '',                                      // German
+      english: r[2] || '',                                     // English
+      deSent: r[3] || '',                                      // German example sentence
+      enSent: r[4] || '',                                      // English translation
+      category: r[5] || '',                                    // Category
+      lvl: Math.floor(idx / APP.wordsPerLevel) + 1             // level this word belongs to
+    }));
+  },
+  levelPool(){
+    return state.top5k.data.slice(0, state.top5k.level * APP.wordsPerLevel);
+  },
+  hasData(){
+    return state.top5k.data.length > 0;
+  },
+  requiredFor(item){
+    // Dynamic mastery requirement:
+    // For word level k and current level L:
+    // d = L - k
+    // d <= 1  → 3
+    // d == 2  → 2
+    // d >= 3  → 1
+    const L = state.top5k.level;
+    const k = item.lvl || 1;
+    const d = L - k;
+    if(d <= 1) return 3;
+    if(d === 2) return 2;
+    return 1;
+  },
+  hasUnmastered(){
+    const pool = this.levelPool();
+    return pool.some(it => {
+      const need = this.requiredFor(it);
+      return (state.top5k.streaks[it.id] || 0) < need;
+    });
+  },
+  pick(){
+    const pool = this.levelPool();
+    if(!pool.length) return null;
+    const unmastered = pool.filter(it => {
+      const need = this.requiredFor(it);
+      return (state.top5k.streaks[it.id] || 0) < need;
+    });
+    const chosen = (unmastered.length ? APP.pick(unmastered) : APP.pick(pool));
+    return chosen || null;
+  },
+  render(x){
+    setText('#coreEn', x.english || '');
+    setText('#coreLevel', `Level ${state.top5k.level}`);
+    setText('#coreEnSentence', x.enSent || '');
+    setText('#coreDeSentence', '');
+    setText('#coreFeedback', '');
+
+    const inp = $('#coreDe');
+    if(inp){
+      inp.value = '';
+      inp.classList.remove('good-field','bad-field');
+      setTimeout(() => inp.focus(), 0);
+    }
+  },
+  check(x){
+    const inp = $('#coreDe');
+    if(!inp) return;
+
+    const guess  = APP.normDe(inp.value);
+    const target = APP.normDe(x.german);
+    const need   = this.requiredFor(x);
+    let streak   = state.top5k.streaks[x.id] || 0;
+
+    inp.classList.remove('good-field','bad-field');
+
+    if(guess && guess === target){
+      streak += 1;
+      state.top5k.streaks[x.id] = streak;
+      inp.classList.add('good-field');
+      setHTML('#coreFeedback', `<span class="good">Correct!</span> (${streak}/${need})`);
+    } else {
+      streak = 0;
+      state.top5k.streaks[x.id] = streak;
+      inp.value = x.german || '';
+      inp.classList.add('bad-field');
+      setHTML('#coreFeedback', `<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> (0/${need})`);
+    }
+
+    // Always show German sentence after checking
+    setText('#coreDeSentence', x.deSent || '');
+
+    saveAll();
+
+    // Auto-level-up when current pool is mastered, then reset streaks for the new level
+    const pool = this.levelPool();
+    const allMastered = pool.length && pool.every(it => {
+      const req = this.requiredFor(it);
+      return (state.top5k.streaks[it.id] || 0) >= req;
+    });
+    if(
+      allMastered &&
+      state.top5k.level * APP.wordsPerLevel < state.top5k.data.length
+    ){
+      state.top5k.level++;
+      // On unlocking next level, reset streaks as requested
+      state.top5k.streaks = {};
+      saveAll();
+    }
+  }
+};
+
+
 // ---------- Trainer bridge ----------
 const Trainers = {
-  vocab:{ async load(){await Vocab.load();}, hasData:()=>Vocab.hasData?.()??(state.vocab.data.length>0), hasUnmastered:()=>Vocab.hasUnmastered(), levelPool:()=>Vocab.levelPool(), next(internal=false){ const x=Vocab.pick(); if(!x) return; Vocab.render(x); this._cur=x; if(!internal) setMode('vocab');}, check(){ Vocab.check(this._cur); } },
-  verbs:{ async load(){await Verbs.load();}, hasData:()=>Verbs.hasData?.()??(state.verbs.data.length>0), hasUnmastered:()=>Verbs.hasUnmastered(), levelPool:()=>Verbs.levelPool(), next(internal=false){ const x=Verbs.pick(); if(!x) return; Verbs.render(x); this._cur=x; if(!internal) setMode('verbs');}, check(){ Verbs.check(this._cur); } },
-  adjadv:{ async load(){await AdjAdv.load();},hasData:()=>AdjAdv.hasData?.()??(state.adjadv.data.length>0),hasUnmastered:()=>AdjAdv.hasUnmastered(),levelPool:()=>AdjAdv.levelPool(), next(internal=false){ const x=AdjAdv.pick(); if(!x) return; AdjAdv.render(x); this._cur=x; if(!internal) setMode('adjadv');}, check(){ AdjAdv.check(this._cur); } },
-  preps:{ async load(){await Preps.load();}, hasData:()=>Preps.hasData?.()??(state.preps.data.length>0), hasUnmastered:()=>Preps.hasUnmastered(), levelPool:()=>Preps.levelPool(), next(internal=false){ let tries=0,x=null,ok=false; do{ x=Preps.pick(); tries++; if(!x) break; Preps._curKey = x.prep; ok = (Preps.render(x)!=='repick'); } while(tries<12 && !ok); this._cur=x; if(!internal) setMode('preps');}, check(){ Preps.check(this._cur); } }
+  vocab:{
+    async load(){ await Vocab.load(); },
+    hasData:()=>Vocab.hasData?.() ?? (state.vocab.data.length>0),
+    hasUnmastered:()=>Vocab.hasUnmastered(),
+    levelPool:()=>Vocab.levelPool(),
+    next(internal=false){
+      const x = Vocab.pick(); if(!x) return;
+      Vocab.render(x); this._cur=x;
+      if(!internal) setMode('vocab');
+    },
+    check(){ Vocab.check(this._cur); }
+  },
+  verbs:{
+    async load(){ await Verbs.load(); },
+    hasData:()=>Verbs.hasData?.() ?? (state.verbs.data.length>0),
+    hasUnmastered:()=>Verbs.hasUnmastered(),
+    levelPool:()=>Verbs.levelPool(),
+    next(internal=false){
+      const x = Verbs.pick(); if(!x) return;
+      Verbs.render(x); this._cur=x;
+      if(!internal) setMode('verbs');
+    },
+    check(){ Verbs.check(this._cur); }
+  },
+  adjadv:{
+    async load(){ await AdjAdv.load(); },
+    hasData:()=>AdjAdv.hasData?.() ?? (state.adjadv.data.length>0),
+    hasUnmastered:()=>AdjAdv.hasUnmastered(),
+    levelPool:()=>AdjAdv.levelPool(),
+    next(internal=false){
+      const x = AdjAdv.pick(); if(!x) return;
+      AdjAdv.render(x); this._cur=x;
+      if(!internal) setMode('adjadv');
+    },
+    check(){ AdjAdv.check(this._cur); }
+  },
+  preps:{
+    async load(){ await Preps.load(); },
+    hasData:()=>Preps.hasData?.() ?? (state.preps.data.length>0),
+    hasUnmastered:()=>Preps.hasUnmastered(),
+    levelPool:()=>Preps.levelPool(),
+    next(internal=false){
+      let x = Preps.pick(); if(!x) return;
+      let rep = Preps.render(x);
+      // if render() returns 'repick', pick another
+      if(rep === 'repick'){
+        x = Preps.pick();
+        if(!x) return;
+        rep = Preps.render(x);
+        if(rep === 'repick') return;
+      }
+      this._cur = x;
+      if(!internal) setMode('preps');
+    },
+    check(){ Preps.check(this._cur); }
+  },
+  top5k:{
+    async load(){ await Core5k.load(); },
+    hasData:()=>Core5k.hasData?.() ?? (state.top5k.data.length>0),
+    hasUnmastered:()=>Core5k.hasUnmastered(),
+    levelPool:()=>Core5k.levelPool(),
+    next(internal=false){
+      const x = Core5k.pick(); if(!x) return;
+      Core5k.render(x); this._cur=x;
+      if(!internal) setMode('top5k');
+    },
+    check(){ if(this._cur) Core5k.check(this._cur); }
+  }
 };
+
 
 // ---------- Mix mounting (no cloning) ----------
 const mixMounts = { mix:'#mixMount', kapitel:'#kmxMount' };
@@ -997,9 +1220,11 @@ function updateHUD(){
   const sizes = 'vocab:' + state.vocab.data.length +
                 ', verbs:' + state.verbs.data.length +
                 ', adjadv:' + state.adjadv.data.length +
-                ', preps:' + state.preps.data.length;
+                ', preps:' + state.preps.data.length +
+                ', 5k:' + (state.top5k.data.length || 0);
   setText('#dbgSizes', sizes);
 }
+
 
 // Kapitel Mix progress (% mastered across all four pools)
 function updateKapitelProgress(){
@@ -1028,13 +1253,14 @@ function updateKapitelProgress(){
 
 // ---------- Mode rendering ----------
 function renderMode(){
-  ['#vocab','#verbs','#adjadv','#preps','#mix','#kapitelMix'].forEach(hide);
+  ['#vocab','#top5k','#verbs','#adjadv','#preps','#mix','#kapitelMix'].forEach(hide);
   if(APP.mode==='mix'){ show('#mix'); Mix.render(); }
   else if(APP.mode==='kapitelMix'){ show('#kapitelMix'); KapitelMix.render(); }
   else { show('#'+APP.mode); }
   $all('.mode-btn').forEach(b=> b.classList.toggle('active', b.dataset.mode===APP.mode));
   updateHUD();
 }
+
 
 function activeSectionKey(){
   // If we're in mix/kapitelMix, use the mounted section. Else use mode as-is.
@@ -1131,6 +1357,27 @@ function attachEvents(){
   $('#ppNext').addEventListener('click', ()=>safeNext('preps'));
   $('#ppReset').addEventListener('click', ()=>{ if(confirm('Reset preps progress?')){ state.preps.level=1; state.preps.streaks={}; saveAll(); Trainers.preps.next(true); renderMode(); } });
   
+    // 5k Core words
+  const coreCheckBtn = $('#coreCheck');
+  if(coreCheckBtn){
+    coreCheckBtn.addEventListener('click', ()=>safeCheck('top5k'));
+  }
+  const coreNextBtn = $('#coreNext');
+  if(coreNextBtn){
+    coreNextBtn.addEventListener('click', ()=>safeNext('top5k'));
+  }
+  const coreResetBtn = $('#coreReset');
+  if(coreResetBtn){
+    coreResetBtn.addEventListener('click', ()=>{
+      if(!confirm('Reset 5k words progress?')) return;
+      state.top5k.level = 1;
+      state.top5k.streaks = {};
+      saveAll();
+      Trainers.top5k.next(true);
+      renderMode();
+    });
+  }
+
     // Kapitel Mix controls
   const kmxNextBtn = $('#kmxNext');
   if(kmxNextBtn){
@@ -1217,20 +1464,24 @@ function attachEvents(){
 
   // GLOBAL ENTER ENGINE
   let enterArmed=false;
-  function modeFields(mode){
-        if(mode==='vocab') return ['#vocabDe','#vocabPl'];
-        if(mode==='verbs'){
+    function modeFields(mode){
+    if(mode==='vocab') return ['#vocabDe','#vocabPl'];
+    if(mode==='top5k') return ['#coreDe'];
+    if(mode==='verbs'){
       const base = ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPart'];
       if(APP.verbsIncludePast) base.push('#vPast');
       if(APP.currentVerbHasPrep) base.push('#vPrep'); // only include if this verb actually has a prep
       return base;
     }
-
     if(mode==='adjadv') return ['#aaDe'];
     if(mode==='preps') return ['#ppHole'];
-    if(mode==='mix'||mode==='kapitelMix'){ if(!mounted) return []; return modeFields(mounted.sec); }
+    if(mode==='mix'||mode==='kapitelMix'){
+      if(!mounted) return [];
+      return modeFields(mounted.sec);
+    }
     return [];
   }
+
   function sectionCheck(mode){ const m=(mode==='mix'||mode==='kapitelMix')&&mounted? mounted.sec:mode; Trainers[m]?.check && Trainers[m].check(); }
   function sectionNext(mode){
   // Kapitel Mix: let the KapitelMix engine handle section selection + mounting.
@@ -1299,9 +1550,11 @@ async function loadAll(){
   await Trainers.verbs.load().catch(()=>{});
   await Trainers.adjadv.load().catch(()=>{});
   await Trainers.preps.load().catch(()=>{});
+  await Trainers.top5k.load().catch(()=>{});
   dsUI.update();
   updateHUD();
 }
+
 async function boot(){
   APP.mode = localStorage.getItem('mode') || 'vocab';
   // Restore Kapitel if present
