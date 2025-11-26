@@ -1561,7 +1561,13 @@ async function boot(){
   const saved = localStorage.getItem('kapitel_current_v1');
   const incPast = localStorage.getItem('verbsIncludePast');
   if(incPast === 'false') APP.verbsIncludePast = false;
-  if(saved){ try{ const k=JSON.parse(saved); APP.kapitel={title:k.title,counts:k.counts,files:k.files}; APP.dsKey='kapitel'; }catch{} }
+  if(saved){
+    try{
+      const k = JSON.parse(saved);
+      APP.kapitel = { title:k.title, counts:k.counts, files:k.files };
+      APP.dsKey = 'kapitel';
+    }catch{}
+  }
 
   await loadDefaultIfMissing('vocab.csv', SAMPLE_VOCAB);
   await loadDefaultIfMissing('verbs.csv', SAMPLE_VERBS);
@@ -1570,9 +1576,17 @@ async function boot(){
 
   await loadAll();
   attachEvents();
-  Trainers.vocab.next(true);
+
+  // Start in whatever mode was last used (fallback to vocab)
+  if (!Trainers[APP.mode]) {
+    APP.mode = 'vocab';
+  }
+  const startTrainer = Trainers[APP.mode];
+  if (startTrainer && startTrainer.next) {
+    startTrainer.next(true);   // pick first item for that mode
+  }
+
   renderMode();
-  
 }
 document.addEventListener('DOMContentLoaded', boot);
 </script>
