@@ -180,11 +180,13 @@
     </div>
 
     <div id="coreEnSentence" class="muted small" style="margin-top:4px;"></div>
+    <div id="coreMasri" class="muted small" style="margin-top:4px;"></div>
 
     <div class="row" style="margin-top:10px;">
       <div class="label">German</div>
       <div><input id="coreDe" type="text" autocomplete="off"></div>
     </div>
+
 
     <div id="coreDeSentence" class="muted small" style="margin-top:4px;"></div>
 
@@ -978,14 +980,16 @@ const Core5k = {
     rows.shift(); // drop header
 
     state.top5k.data = rows.map((r, idx) => ({
-      id: (r[0] || String(idx+1)).toString().trim(),           // # column
-      german: r[1] || '',                                      // German
-      english: r[2] || '',                                     // English
-      deSent: r[3] || '',                                      // German example sentence
-      enSent: r[4] || '',                                      // English translation
-      category: r[5] || '',                                    // Category
-      lvl: Math.floor(idx / APP.wordsPerLevel) + 1             // level this word belongs to
+      id:      (r[0] || String(idx+1)).toString().trim(), // #
+      german:  r[1] || '',                               // German
+      english: r[2] || '',                               // English
+      deSent:  r[3] || '',                               // German example sentence
+      enSent:  r[4] || '',                               // English translation
+      masri:   r[5] || '',                               // Masri (6th column)
+      category:r[6] || '',                               // Category (7th column)
+      lvl: Math.floor(idx / APP.wordsPerLevel) + 1
     }));
+
   },
   levelPool(){
     return state.top5k.data.slice(0, state.top5k.level * APP.wordsPerLevel);
@@ -1028,8 +1032,10 @@ const Core5k = {
     setText('#coreEn', x.english || '');
     setText('#coreLevel', `Level ${state.top5k.level}`);
     setText('#coreEnSentence', x.enSent || '');
+    setText('#coreMasri', x.masri ? ('Masri: ' + x.masri) : '');
     setText('#coreDeSentence', '');
     setText('#coreFeedback', '');
+
 
     const inp = $('#coreDe');
     if(inp){
