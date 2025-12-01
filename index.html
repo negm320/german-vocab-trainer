@@ -985,9 +985,9 @@ const Core5k = {
       english: r[2] || '',                               // English
       deSent:  r[3] || '',                               // German example sentence
       enSent:  r[4] || '',                               // English translation
-      masri:   r[5] || '',                               // Masri (6th column)
-      category:r[6] || '',                               // Category (7th column)
-      lvl: Math.floor(idx / APP.wordsPerLevel) + 1
+      category:r[5] || '',                               // Category (5th column)
+      masri:   r[6] || '',                               // Masri (6th column)
+	  lvl: Math.floor(idx / APP.wordsPerLevel) + 1
     }));
 
   },
