@@ -1112,29 +1112,30 @@ const Core5k = {
 
 	  state.top5k.streaks = {};
 	  saveAll();
+	      this.updateProgress();
+
 	}
 
   },
-    updateProgress(){
-    const start = (state.top5k.level - 1) * APP.wordsPerLevel;
-    const end   = state.top5k.level * APP.wordsPerLevel;
-    const slice = state.top5k.data.slice(start, end);
+	  updateProgress(){
+		// Show progress across ALL unlocked words (level 1 → current level)
+		const pool = this.levelPool();
+		if(!pool.length) return;
 
-    if(!slice.length) return;
+		const done = pool.filter(w => {
+		  const need = this.requiredFor(w);                 // 1/2/3 depending on difficulty
+		  return (state.top5k.streaks[w.id] || 0) >= need;  // reached required streak
+		}).length;
 
-    const done = slice.filter(w => {
-      const need = this.requiredFor(w);
-      return (state.top5k.streaks[w.id] || 0) >= need;
-    }).length;
+		const pct = Math.round(100 * done / pool.length);
 
-    const pct = Math.round(100 * done / slice.length);
+		const bar = $('#coreProgBar');
+		const txt = $('#coreProgText');
 
-    const bar = $('#coreProgBar');
-    const txt = $('#coreProgText');
+		if(bar) bar.style.width = pct + '%';
+		if(txt) txt.textContent = `${done} / ${pool.length}`;
+	  }
 
-    if(bar) bar.style.width = pct + '%';
-    if(txt) txt.textContent = `${done} / ${slice.length} mastered`;
-  }
 
 };
 
