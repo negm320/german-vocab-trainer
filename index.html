@@ -197,6 +197,14 @@
       <button id="coreNext">Next</button>
       <button id="coreReset" class="muted">Reset</button>
     </div>
+	
+	    <div style="margin-top:8px">
+      <div style="width:100%;height:6px;background:#1a2230;border-radius:4px;">
+        <div id="coreProgBar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width .3s;"></div>
+      </div>
+      <div id="coreProgText" class="small muted" style="margin-top:4px;text-align:right"></div>
+    </div>
+
   </section>
 
 
@@ -588,7 +596,14 @@ const state = {
   verbs: { data:[], level:1, streaks:{}, idx:0 },
   adjadv:{ data:[], level:1, streaks:{}, idx:0 },
   preps: { data:[], level:1, streaks:{}, idx:0, currentAnswer:'' },
-  top5k: { data:[], level:1, streaks:{}, idx:0 }
+  top5k: {
+  data:[],
+  level:1,
+  streaks:{},      // correct-in-a-row
+  difficulty:{},   // 1 | 2 | 3  (sticky difficulty)
+  idx:0
+}
+
 };
 function saveAll(){
   LS.set('vocabProgress', state.vocab);
@@ -998,19 +1013,10 @@ const Core5k = {
     return state.top5k.data.length > 0;
   },
   requiredFor(item){
-    // Dynamic mastery requirement:
-    // For word level k and current level L:
-    // d = L - k
-    // d <= 1  → 3
-    // d == 2  → 2
-    // d >= 3  → 1
-    const L = state.top5k.level;
-    const k = item.lvl || 1;
-    const d = L - k;
-    if(d <= 1) return 3;
-    if(d === 2) return 2;
-    return 1;
-  },
+  // adaptive difficulty (default = 1)
+  return state.top5k.difficulty[item.id] || 1;
+},
+
   hasUnmastered(){
     const pool = this.levelPool();
     return pool.some(it => {
@@ -1036,14 +1042,17 @@ const Core5k = {
     setText('#coreDeSentence', '');
     setText('#coreFeedback', '');
 
-
     const inp = $('#coreDe');
     if(inp){
       inp.value = '';
       inp.classList.remove('good-field','bad-field');
       setTimeout(() => inp.focus(), 0);
     }
+
+    // 👇 ADD THIS
+    this.updateProgress();
   },
+
   check(x){
     const inp = $('#coreDe');
     if(!inp) return;
@@ -1055,18 +1064,29 @@ const Core5k = {
 
     inp.classList.remove('good-field','bad-field');
 
-    if(guess && guess === target){
-      streak += 1;
-      state.top5k.streaks[x.id] = streak;
-      inp.classList.add('good-field');
-      setHTML('#coreFeedback', `<span class="good">Correct!</span> (${streak}/${need})`);
-    } else {
-      streak = 0;
-      state.top5k.streaks[x.id] = streak;
-      inp.value = x.german || '';
-      inp.classList.add('bad-field');
-      setHTML('#coreFeedback', `<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> (0/${need})`);
-    }
+	const diff = state.top5k.difficulty[x.id] || 1;
+
+	if(guess && guess === target){
+	  streak += 1;
+	  state.top5k.streaks[x.id] = streak;
+	  inp.classList.add('good-field');
+	  setHTML('#coreFeedback', `<span class="good">Correct!</span> (${streak}/${need})`);
+
+	  // mastered → allow decay later
+	} else {
+	  // wrong → increase difficulty
+	  const newDiff = Math.min(3, diff + 1);
+	  state.top5k.difficulty[x.id] = newDiff;
+	  state.top5k.streaks[x.id] = 0;
+
+	  inp.value = x.german || '';
+	  inp.classList.add('bad-field');
+	  setHTML(
+		'#coreFeedback',
+		`<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> (now ${newDiff}-streak)`
+	  );
+	}
+
 
     // Always show German sentence after checking
     setText('#coreDeSentence', x.deSent || '');
@@ -1079,16 +1099,43 @@ const Core5k = {
       const req = this.requiredFor(it);
       return (state.top5k.streaks[it.id] || 0) >= req;
     });
-    if(
-      allMastered &&
-      state.top5k.level * APP.wordsPerLevel < state.top5k.data.length
-    ){
-      state.top5k.level++;
-      // On unlocking next level, reset streaks as requested
-      state.top5k.streaks = {};
-      saveAll();
-    }
+	if(
+	  allMastered &&
+	  state.top5k.level * APP.wordsPerLevel < state.top5k.data.length
+	){
+	  state.top5k.level++;
+
+	  // decay difficulty (3 → 2 → 1)
+	  for(const id in state.top5k.difficulty){
+		state.top5k.difficulty[id] = Math.max(1, state.top5k.difficulty[id] - 1);
+	  }
+
+	  state.top5k.streaks = {};
+	  saveAll();
+	}
+
   }
+    updateProgress(){
+    const start = (state.top5k.level - 1) * APP.wordsPerLevel;
+    const end   = state.top5k.level * APP.wordsPerLevel;
+    const slice = state.top5k.data.slice(start, end);
+
+    if(!slice.length) return;
+
+    const done = slice.filter(w => {
+      const need = this.requiredFor(w);
+      return (state.top5k.streaks[w.id] || 0) >= need;
+    }).length;
+
+    const pct = Math.round(100 * done / slice.length);
+
+    const bar = $('#coreProgBar');
+    const txt = $('#coreProgText');
+
+    if(bar) bar.style.width = pct + '%';
+    if(txt) txt.textContent = `${done} / ${slice.length} mastered`;
+  }
+
 };
 
 
