@@ -1024,16 +1024,26 @@ const Core5k = {
       return (state.top5k.streaks[it.id] || 0) < need;
     });
   },
-  pick(){
-    const pool = this.levelPool();
-    if(!pool.length) return null;
-    const unmastered = pool.filter(it => {
-      const need = this.requiredFor(it);
-      return (state.top5k.streaks[it.id] || 0) < need;
-    });
-    const chosen = (unmastered.length ? APP.pick(unmastered) : APP.pick(pool));
-    return chosen || null;
-  },
+	pick(){
+	  const pool = this.levelPool();
+	  if(!pool.length) return null;
+
+	  // 🔴 ENSURE new words start at difficulty 3
+	  for(const w of pool){
+		if(state.top5k.difficulty[w.id] == null){
+		  state.top5k.difficulty[w.id] = 3;
+		}
+	  }
+
+	  const unmastered = pool.filter(it => {
+		const need = this.requiredFor(it);
+		return (state.top5k.streaks[it.id] || 0) < need;
+	  });
+
+	  const chosen = (unmastered.length ? APP.pick(unmastered) : APP.pick(pool));
+	  return chosen || null;
+	},
+
   render(x){
     setText('#coreEn', x.english || '');
     setText('#coreLevel', `Level ${state.top5k.level}`);
