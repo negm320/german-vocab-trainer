@@ -1075,16 +1075,22 @@ const Core5k = {
 	  // mastered → allow decay later
 	} else {
 	  // wrong → increase difficulty
-	  const newDiff = Math.min(3, diff + 1);
-	  state.top5k.difficulty[x.id] = newDiff;
-	  state.top5k.streaks[x.id] = 0;
+		const newDiff = Math.min(3, diff + 1);
+		state.top5k.difficulty[x.id] = newDiff;
+		state.top5k.streaks[x.id] = 0;
 
-	  inp.value = x.german || '';
-	  inp.classList.add('bad-field');
-	  setHTML(
-		'#coreFeedback',
-		`<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> (now ${newDiff}-streak)`
-	  );
+		const diffMsg =
+		  newDiff > diff
+			? `now ${newDiff}-streak`
+			: `still ${newDiff}-streak`;
+
+		inp.value = x.german || '';
+		inp.classList.add('bad-field');
+		setHTML(
+		  '#coreFeedback',
+		  `<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> (${diffMsg})`
+		);
+
 	}
 
 
