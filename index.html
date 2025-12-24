@@ -600,8 +600,10 @@ const state = {
   data:[],
   level:1,
   streaks:{},      // correct-in-a-row
-  difficulty:{},   // 1 | 2 | 3  (sticky difficulty)
-  idx:0
+	difficulty:{},         // (legacy, can remain but won't be used)
+	penalty:{},            // { [id]: { target:2|3, untilLevel:number } }
+	idx:0
+
 }
 
 };
@@ -1012,10 +1014,26 @@ const Core5k = {
   hasData(){
     return state.top5k.data.length > 0;
   },
-  requiredFor(item){
-  // adaptive difficulty (default = 1)
-  return state.top5k.difficulty[item.id] || 1;
-},
+	requiredFor(item){
+	  // Base requirement by distance from current level (your diagram)
+	  const CL = state.top5k.level;
+	  const WL = item.lvl || 1;
+	  const d = CL - WL;
+
+	  let base;
+	  if(d <= 1) base = 3;       // current + previous level
+	  else if(d === 2) base = 2; // two levels behind
+	  else base = 1;             // 3+ levels behind
+
+	  // Temporary penalty override (sticks for current + next level)
+	  const pen = state.top5k.penalty?.[item.id];
+	  if(pen && CL <= pen.untilLevel){
+		return Math.max(base, pen.target);
+	  }
+
+	  return base;
+	},
+
 
   hasUnmastered(){
     const pool = this.levelPool();
@@ -1028,12 +1046,6 @@ const Core5k = {
 	  const pool = this.levelPool();
 	  if(!pool.length) return null;
 
-	  // 🔴 ENSURE new words start at difficulty 3
-	  for(const w of pool){
-		if(state.top5k.difficulty[w.id] == null){
-		  state.top5k.difficulty[w.id] = 3;
-		}
-	  }
 
 	  const unmastered = pool.filter(it => {
 		const need = this.requiredFor(it);
@@ -1084,24 +1096,37 @@ const Core5k = {
 
 	  // mastered → allow decay later
 	} else {
-	  // wrong → increase difficulty
-		const newDiff = Math.min(3, diff + 1);
-		state.top5k.difficulty[x.id] = newDiff;
-		state.top5k.streaks[x.id] = 0;
+	  // wrong → apply penalty based on the word's CURRENT required streak
+	  const curNeed = this.requiredFor(x);
 
-		const diffMsg =
-		  newDiff > diff
-			? `now ${newDiff}-streak`
-			: `still ${newDiff}-streak`;
+	  // If it's currently 1 → penalty to 2
+	  // If it's currently 2 → penalty to 3
+	  // If it's currently 3 → stay 3 (no extra penalty needed)
+	  let targetPenalty = 0;
+	  if(curNeed === 1) targetPenalty = 2;
+	  else if(curNeed === 2) targetPenalty = 3;
+	  else targetPenalty = 3;
 
-		inp.value = x.german || '';
-		inp.classList.add('bad-field');
-		setHTML(
-		  '#coreFeedback',
-		  `<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> (${diffMsg})`
-		);
+	  // Store penalty for current level + next level
+	  // (example: wrong at level 10 => untilLevel = 11)
+	  if(!state.top5k.penalty) state.top5k.penalty = {};
+	  state.top5k.penalty[x.id] = { target: targetPenalty, untilLevel: state.top5k.level + 1 };
 
+	  state.top5k.streaks[x.id] = 0;
+
+	  inp.value = x.german || '';
+	  inp.classList.add('bad-field');
+
+	  const msg = (curNeed === 3)
+		? `still 3-streak`
+		: `now ${targetPenalty}-streak (for this + next level)`;
+
+	  setHTML(
+		'#coreFeedback',
+		`<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> (${msg})`
+	  );
 	}
+
 
 
     // Always show German sentence after checking
@@ -1121,10 +1146,6 @@ const Core5k = {
 	){
 	  state.top5k.level++;
 
-	  // decay difficulty (3 → 2 → 1)
-	  for(const id in state.top5k.difficulty){
-		state.top5k.difficulty[id] = Math.max(1, state.top5k.difficulty[id] - 1);
-	  }
 
 	  state.top5k.streaks = {};
 	  saveAll();
