@@ -1008,64 +1008,64 @@ const Core5k = {
     const rows = parseCSV(txt.trim());
     rows.shift(); // drop header
 
+    // NOTE: adjust indices if your CSV order differs
     state.top5k.data = rows.map((r, idx) => ({
       id:      (r[0] || String(idx+1)).toString().trim(), // #
-      german:  r[1] || '',                               // German
-      english: r[2] || '',                               // English
-      deSent:  r[3] || '',                               // German example sentence
-      enSent:  r[4] || '',                               // English translation
-      category:r[5] || '',                               // Category (5th column)
-      masri:   r[6] || '',                               // Masri (6th column)
-	  lvl: Math.floor(idx / APP.wordsPerLevel) + 1
+      german:  r[1] || '',
+      english: r[2] || '',
+      deSent:  r[3] || '',
+      enSent:  r[4] || '',
+      category:r[5] || '',
+      masri:   r[6] || '',
+      lvl: Math.floor(idx / APP.wordsPerLevel) + 1
     }));
-
   },
+
+  levelPool(){
+    return state.top5k.data.slice(0, state.top5k.level * APP.wordsPerLevel);
+  },
+
   isSentenceMode(){
     return !!state.top5k.sentenceMode;
   },
+
   sentencePool(){
     // Only unlocked words with both sentences present
     return this.levelPool().filter(w => (w.deSent || '').trim() && (w.enSent || '').trim());
   },
+
   hasData(){
     return state.top5k.data.length > 0;
   },
-	requiredFor(item){
-	  // Base requirement by distance from current level (your diagram)
-	  const CL = state.top5k.level;
-	  const WL = item.lvl || 1;
-	  const d = CL - WL;
 
-	  let base;
-	  if(d <= 1) base = 3;       // current + previous level
-	  else if(d === 2) base = 2; // two levels behind
-	  else base = 1;             // 3+ levels behind
+  requiredFor(item){
+    // Base requirement by distance from current level
+    const CL = state.top5k.level;
+    const WL = item.lvl || 1;
+    const d = CL - WL;
 
-	  // Temporary penalty override (sticks for current + next level)
-	  const pen = state.top5k.penalty?.[item.id];
-	  if(pen && CL <= pen.untilLevel){
-		return Math.max(base, pen.target);
-	  }
-
-	  return base;
-	},
-
+    if(d <= 1) return 3;       // current + previous level
+    if(d === 2) return 2;      // two levels behind
+    return 1;                  // 3+ levels behind
+  },
 
   hasUnmastered(){
+    // Only meaningful in word-mode
     const pool = this.levelPool();
     return pool.some(it => {
       const need = this.requiredFor(it);
       return (state.top5k.streaks[it.id] || 0) < need;
     });
   },
+
   pick(){
-    // Sentence mode: pure random from unlocked sentence pool (no mastery/streak logic)
+    // Sentence mode: pure random from unlocked sentence pool
     if(this.isSentenceMode()){
       const sp = this.sentencePool();
       return APP.pick(sp) || null;
     }
 
-    // Word mode: keep your mastery logic (unchanged)
+    // Word mode: mastery-driven selection
     const pool = this.levelPool();
     if(!pool.length) return null;
 
@@ -1074,22 +1074,18 @@ const Core5k = {
       return (state.top5k.streaks[it.id] || 0) < need;
     });
 
-    const chosen = (unmastered.length ? APP.pick(unmastered) : APP.pick(pool));
-    return chosen || null;
+    return (unmastered.length ? APP.pick(unmastered) : APP.pick(pool)) || null;
   },
 
   render(x){
     const sentenceMode = this.isSentenceMode();
 
-    // Labels + layout
     setText('#coreEnLabel', sentenceMode ? 'English sentence' : 'English word');
 
     if(sentenceMode){
-      // Big: EN sentence, Small: EN word below
       setText('#coreEn', x.enSent || '');
       setText('#coreEnSentence', x.english ? ('Word: ' + x.english) : '');
     } else {
-      // Normal: EN word, EN sentence below
       setText('#coreEn', x.english || '');
       setText('#coreEnSentence', x.enSent || '');
     }
@@ -1101,7 +1097,6 @@ const Core5k = {
     setHTML('#coreFeedback', '');
     setHTML('#coreDiff', '');
 
-    // Inputs
     const wordInp = $('#coreDe');
     const sentInp = $('#coreDeSent');
 
@@ -1116,7 +1111,6 @@ const Core5k = {
       sentInp.classList.toggle('hidden', !sentenceMode);
     }
 
-    // focus
     setTimeout(() => {
       if(sentenceMode) sentInp?.focus();
       else wordInp?.focus();
@@ -1127,11 +1121,9 @@ const Core5k = {
 
   check(x){
     const sentenceMode = this.isSentenceMode();
-
-    // Always show German sentence after checking (both modes)
     const showCorrectSentence = () => setText('#coreDeSentence', x.deSent || '');
 
-    // ---------------- Sentence mode ----------------
+    // ---------- Sentence mode ----------
     if(sentenceMode){
       const inp = $('#coreDeSent');
       if(!inp) return;
@@ -1139,7 +1131,6 @@ const Core5k = {
       const userRaw = inp.value || '';
       const expRaw  = x.deSent || '';
 
-      // normalize for tolerant comparison (caps, ß/umlauts, spacing)
       const userN = this._tok(userRaw).map(t=>this._normTok(t)).join(' ');
       const expN  = this._tok(expRaw).map(t=>this._normTok(t)).join(' ');
 
@@ -1154,17 +1145,15 @@ const Core5k = {
       } else {
         inp.classList.add('bad-field');
         setHTML('#coreFeedback', `<span class="bad">Wrong.</span>`);
-        // Highlight expected sentence with wrong/missing parts + show extras
         setHTML('#coreDiff', this._renderDiff(expRaw, userRaw));
       }
 
       showCorrectSentence();
-      // No streak / no mastery / no level changes in sentence mode
       this.updateProgress();
       return;
     }
 
-    // ---------------- Word mode (your existing logic) ----------------
+    // ---------- Word mode ----------
     const inp = $('#coreDe');
     if(!inp) return;
 
@@ -1190,7 +1179,6 @@ const Core5k = {
     showCorrectSentence();
     saveAll();
 
-    // Level-up logic stays exactly as you already have it
     const pool = this.levelPool();
     const allMastered = pool.length && pool.every(it => {
       const req = this.requiredFor(it);
@@ -1206,41 +1194,35 @@ const Core5k = {
     this.updateProgress();
   },
 
+  updateProgress(){
+    // Progress across ALL unlocked words (level 1 → current level)
+    const pool = this.levelPool();
+    if(!pool.length) return;
+
+    const done = pool.filter(w => {
+      const need = this.requiredFor(w);
+      return (state.top5k.streaks[w.id] || 0) >= need;
+    }).length;
+
+    const pct = Math.round(100 * done / pool.length);
+
+    const bar = $('#coreProgBar');
+    const txt = $('#coreProgText');
+
+    if(bar) bar.style.width = pct + '%';
+    if(txt) txt.textContent = `${done} / ${pool.length}`;
   },
-	  updateProgress(){
-		// Show progress across ALL unlocked words (level 1 → current level)
-		const pool = this.levelPool();
-		if(!pool.length) return;
 
-		const done = pool.filter(w => {
-		  const need = this.requiredFor(w);                 // 1/2/3 depending on difficulty
-		  return (state.top5k.streaks[w.id] || 0) >= need;  // reached required streak
-		}).length;
-
-		const pct = Math.round(100 * done / pool.length);
-
-		const bar = $('#coreProgBar');
-		const txt = $('#coreProgText');
-
-		if(bar) bar.style.width = pct + '%';
-		if(txt) txt.textContent = `${done} / ${pool.length}`;
-	  },
-    
-      _tok(s){
-    // Tokenize into words + punctuation (keeps German chars)
+  _tok(s){
     const raw = (s || '').trim();
     if(!raw) return [];
-    // words (letters incl. umlauts) OR numbers OR punctuation
     return raw.match(/[A-Za-zÄÖÜäöüß]+|\d+|[^\sA-Za-zÄÖÜäöüß\d]+/g) || [];
   },
   _normTok(t){
-    // ignore capitalization + tolerate ß/umlauts like your app
-    // punctuation stays as-is
     if(/[A-Za-zÄÖÜäöüß]/.test(t)) return APP.normDe(t);
     return t.trim();
   },
   _joinTokens(tokens){
-    // Join tokens with nicer spacing (no space before punctuation)
     let out = '';
     for(const t of tokens){
       if(!out){ out = t; continue; }
@@ -1251,7 +1233,6 @@ const Core5k = {
     return out;
   },
   _lcs(a, b){
-    // LCS table (indices based) for token arrays
     const n = a.length, m = b.length;
     const dp = Array.from({length:n+1}, () => Array(m+1).fill(0));
     for(let i=1;i<=n;i++){
@@ -1259,7 +1240,6 @@ const Core5k = {
         dp[i][j] = (a[i-1] === b[j-1]) ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
       }
     }
-    // backtrack to get matched positions
     const matchA = new Set();
     const matchB = new Set();
     let i=n, j=m;
@@ -1282,14 +1262,12 @@ const Core5k = {
 
     const { matchA, matchB } = this._lcs(expN, actN);
 
-    // Build highlighted expected line
     const expHtml = expT.map((t, idx) => {
       const safe = t.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
       if(matchA.has(idx)) return `<span class="good">${safe}</span>`;
       return `<span class="bad" style="text-decoration:underline">${safe}</span>`;
     });
 
-    // Extras in user answer
     const extras = actT
       .map((t, idx) => ({t, idx}))
       .filter(x => !matchB.has(x.idx))
@@ -1304,8 +1282,6 @@ const Core5k = {
 
     return `<div>${expLine}</div>${extraLine}`;
   }
-
-
 };
 
 
