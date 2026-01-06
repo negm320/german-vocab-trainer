@@ -172,11 +172,18 @@
   <!-- ====== 5K CORE WORDS ====== -->
   <section id="top5k" class="card hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-      <div>
-        <div class="muted small">English word</div>
+      <div style="flex:1">
+        <div class="muted small" id="coreEnLabel">English word</div>
         <strong id="coreEn"></strong>
       </div>
-      <div id="coreLevel" class="pill"></div>
+
+      <div style="display:flex;align-items:center;gap:10px;">
+        <label class="muted small" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+          <input type="checkbox" id="coreSentenceMode">
+          sentence mode
+        </label>
+        <div id="coreLevel" class="pill"></div>
+      </div>
     </div>
 
     <div id="coreEnSentence" class="muted small" style="margin-top:4px;"></div>
@@ -184,8 +191,13 @@
 
     <div class="row" style="margin-top:10px;">
       <div class="label">German</div>
-      <div><input id="coreDe" type="text" autocomplete="off"></div>
+      <div>
+        <input id="coreDe" type="text" autocomplete="off">
+        <textarea id="coreDeSent" class="hidden" rows="3" style="margin-top:8px;resize:vertical" placeholder="Write the full German sentence..."></textarea>
+      </div>
     </div>
+
+    <div id="coreDiff" class="small" style="margin-top:6px;"></div>
 
 
     <div id="coreDeSentence" class="muted small" style="margin-top:4px;"></div>
@@ -597,14 +609,14 @@ const state = {
   adjadv:{ data:[], level:1, streaks:{}, idx:0 },
   preps: { data:[], level:1, streaks:{}, idx:0, currentAnswer:'' },
   top5k: {
-  data:[],
-  level:1,
-  streaks:{},      // correct-in-a-row
-	difficulty:{},         // (legacy, can remain but won't be used)
-	penalty:{},            // { [id]: { target:2|3, untilLevel:number } }
-	idx:0
-
-}
+    data: [],
+    level: 1,
+    streaks: {},       // correct-in-a-row (word mode only)
+    difficulty: {},    // legacy (unused)
+    penalty: {},       // legacy (unused)
+    sentenceMode: false,
+    idx: 0
+  }
 
 };
 function saveAll(){
@@ -1008,8 +1020,12 @@ const Core5k = {
     }));
 
   },
-  levelPool(){
-    return state.top5k.data.slice(0, state.top5k.level * APP.wordsPerLevel);
+  isSentenceMode(){
+    return !!state.top5k.sentenceMode;
+  },
+  sentencePool(){
+    // Only unlocked words with both sentences present
+    return this.levelPool().filter(w => (w.deSent || '').trim() && (w.enSent || '').trim());
   },
   hasData(){
     return state.top5k.data.length > 0;
@@ -1042,40 +1058,113 @@ const Core5k = {
       return (state.top5k.streaks[it.id] || 0) < need;
     });
   },
-	pick(){
-	  const pool = this.levelPool();
-	  if(!pool.length) return null;
-
-
-	  const unmastered = pool.filter(it => {
-		const need = this.requiredFor(it);
-		return (state.top5k.streaks[it.id] || 0) < need;
-	  });
-
-	  const chosen = (unmastered.length ? APP.pick(unmastered) : APP.pick(pool));
-	  return chosen || null;
-	},
-
-  render(x){
-    setText('#coreEn', x.english || '');
-    setText('#coreLevel', `Level ${state.top5k.level}`);
-    setText('#coreEnSentence', x.enSent || '');
-    setText('#coreMasri', x.masri ? ('Masri: ' + x.masri) : '');
-    setText('#coreDeSentence', '');
-    setText('#coreFeedback', '');
-
-    const inp = $('#coreDe');
-    if(inp){
-      inp.value = '';
-      inp.classList.remove('good-field','bad-field');
-      setTimeout(() => inp.focus(), 0);
+  pick(){
+    // Sentence mode: pure random from unlocked sentence pool (no mastery/streak logic)
+    if(this.isSentenceMode()){
+      const sp = this.sentencePool();
+      return APP.pick(sp) || null;
     }
 
-    // 👇 ADD THIS
+    // Word mode: keep your mastery logic (unchanged)
+    const pool = this.levelPool();
+    if(!pool.length) return null;
+
+    const unmastered = pool.filter(it => {
+      const need = this.requiredFor(it);
+      return (state.top5k.streaks[it.id] || 0) < need;
+    });
+
+    const chosen = (unmastered.length ? APP.pick(unmastered) : APP.pick(pool));
+    return chosen || null;
+  },
+
+  render(x){
+    const sentenceMode = this.isSentenceMode();
+
+    // Labels + layout
+    setText('#coreEnLabel', sentenceMode ? 'English sentence' : 'English word');
+
+    if(sentenceMode){
+      // Big: EN sentence, Small: EN word below
+      setText('#coreEn', x.enSent || '');
+      setText('#coreEnSentence', x.english ? ('Word: ' + x.english) : '');
+    } else {
+      // Normal: EN word, EN sentence below
+      setText('#coreEn', x.english || '');
+      setText('#coreEnSentence', x.enSent || '');
+    }
+
+    setText('#coreLevel', `Level ${state.top5k.level}`);
+    setText('#coreMasri', x.masri ? ('Masri: ' + x.masri) : '');
+
+    setText('#coreDeSentence', '');
+    setHTML('#coreFeedback', '');
+    setHTML('#coreDiff', '');
+
+    // Inputs
+    const wordInp = $('#coreDe');
+    const sentInp = $('#coreDeSent');
+
+    if(wordInp){
+      wordInp.value = '';
+      wordInp.classList.remove('good-field','bad-field');
+      wordInp.classList.toggle('hidden', sentenceMode);
+    }
+    if(sentInp){
+      sentInp.value = '';
+      sentInp.classList.remove('good-field','bad-field');
+      sentInp.classList.toggle('hidden', !sentenceMode);
+    }
+
+    // focus
+    setTimeout(() => {
+      if(sentenceMode) sentInp?.focus();
+      else wordInp?.focus();
+    }, 0);
+
     this.updateProgress();
   },
 
   check(x){
+    const sentenceMode = this.isSentenceMode();
+
+    // Always show German sentence after checking (both modes)
+    const showCorrectSentence = () => setText('#coreDeSentence', x.deSent || '');
+
+    // ---------------- Sentence mode ----------------
+    if(sentenceMode){
+      const inp = $('#coreDeSent');
+      if(!inp) return;
+
+      const userRaw = inp.value || '';
+      const expRaw  = x.deSent || '';
+
+      // normalize for tolerant comparison (caps, ß/umlauts, spacing)
+      const userN = this._tok(userRaw).map(t=>this._normTok(t)).join(' ');
+      const expN  = this._tok(expRaw).map(t=>this._normTok(t)).join(' ');
+
+      inp.classList.remove('good-field','bad-field');
+      setHTML('#coreDiff','');
+      setHTML('#coreFeedback','');
+
+      if(userN && userN === expN){
+        inp.classList.add('good-field');
+        setHTML('#coreFeedback', `<span class="good">Correct!</span>`);
+        setHTML('#coreDiff', '');
+      } else {
+        inp.classList.add('bad-field');
+        setHTML('#coreFeedback', `<span class="bad">Wrong.</span>`);
+        // Highlight expected sentence with wrong/missing parts + show extras
+        setHTML('#coreDiff', this._renderDiff(expRaw, userRaw));
+      }
+
+      showCorrectSentence();
+      // No streak / no mastery / no level changes in sentence mode
+      this.updateProgress();
+      return;
+    }
+
+    // ---------------- Word mode (your existing logic) ----------------
     const inp = $('#coreDe');
     if(!inp) return;
 
@@ -1086,72 +1175,36 @@ const Core5k = {
 
     inp.classList.remove('good-field','bad-field');
 
-	const diff = state.top5k.difficulty[x.id] || 1;
+    if(guess && guess === target){
+      streak += 1;
+      state.top5k.streaks[x.id] = streak;
+      inp.classList.add('good-field');
+      setHTML('#coreFeedback', `<span class="good">Correct!</span> (${streak}/${need})`);
+    } else {
+      state.top5k.streaks[x.id] = 0;
+      inp.value = x.german || '';
+      inp.classList.add('bad-field');
+      setHTML('#coreFeedback', `<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b>`);
+    }
 
-	if(guess && guess === target){
-	  streak += 1;
-	  state.top5k.streaks[x.id] = streak;
-	  inp.classList.add('good-field');
-	  setHTML('#coreFeedback', `<span class="good">Correct!</span> (${streak}/${need})`);
-
-	  // mastered → allow decay later
-	} else {
-	  // wrong → apply penalty based on the word's CURRENT required streak
-	  const curNeed = this.requiredFor(x);
-
-	  // If it's currently 1 → penalty to 2
-	  // If it's currently 2 → penalty to 3
-	  // If it's currently 3 → stay 3 (no extra penalty needed)
-	  let targetPenalty = 0;
-	  if(curNeed === 1) targetPenalty = 2;
-	  else if(curNeed === 2) targetPenalty = 3;
-	  else targetPenalty = 3;
-
-	  // Store penalty for current level + next level
-	  // (example: wrong at level 10 => untilLevel = 11)
-	  if(!state.top5k.penalty) state.top5k.penalty = {};
-	  state.top5k.penalty[x.id] = { target: targetPenalty, untilLevel: state.top5k.level + 1 };
-
-	  state.top5k.streaks[x.id] = 0;
-
-	  inp.value = x.german || '';
-	  inp.classList.add('bad-field');
-
-	  const msg = (curNeed === 3)
-		? `still 3-streak`
-		: `now ${targetPenalty}-streak (for this + next level)`;
-
-	  setHTML(
-		'#coreFeedback',
-		`<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> (${msg})`
-	  );
-	}
-
-
-
-    // Always show German sentence after checking
-    setText('#coreDeSentence', x.deSent || '');
-
+    showCorrectSentence();
     saveAll();
 
-    // Auto-level-up when current pool is mastered, then reset streaks for the new level
+    // Level-up logic stays exactly as you already have it
     const pool = this.levelPool();
     const allMastered = pool.length && pool.every(it => {
       const req = this.requiredFor(it);
       return (state.top5k.streaks[it.id] || 0) >= req;
     });
-	if(
-	  allMastered &&
-	  state.top5k.level * APP.wordsPerLevel < state.top5k.data.length
-	){
-	  state.top5k.level++;
 
+    if(allMastered && state.top5k.level * APP.wordsPerLevel < state.top5k.data.length){
+      state.top5k.level++;
+      state.top5k.streaks = {};
+      saveAll();
+    }
 
-	  state.top5k.streaks = {};
-	  saveAll();
-	      this.updateProgress();
-
-	}
+    this.updateProgress();
+  },
 
   },
 	  updateProgress(){
@@ -1171,7 +1224,86 @@ const Core5k = {
 
 		if(bar) bar.style.width = pct + '%';
 		if(txt) txt.textContent = `${done} / ${pool.length}`;
-	  }
+	  },
+    
+      _tok(s){
+    // Tokenize into words + punctuation (keeps German chars)
+    const raw = (s || '').trim();
+    if(!raw) return [];
+    // words (letters incl. umlauts) OR numbers OR punctuation
+    return raw.match(/[A-Za-zÄÖÜäöüß]+|\d+|[^\sA-Za-zÄÖÜäöüß\d]+/g) || [];
+  },
+  _normTok(t){
+    // ignore capitalization + tolerate ß/umlauts like your app
+    // punctuation stays as-is
+    if(/[A-Za-zÄÖÜäöüß]/.test(t)) return APP.normDe(t);
+    return t.trim();
+  },
+  _joinTokens(tokens){
+    // Join tokens with nicer spacing (no space before punctuation)
+    let out = '';
+    for(const t of tokens){
+      if(!out){ out = t; continue; }
+      if(/^[\.,!\?:;\)\]\}]/.test(t)) out += t;
+      else if(/^[\(\[\{]/.test(t)) out += ' ' + t;
+      else out += ' ' + t;
+    }
+    return out;
+  },
+  _lcs(a, b){
+    // LCS table (indices based) for token arrays
+    const n = a.length, m = b.length;
+    const dp = Array.from({length:n+1}, () => Array(m+1).fill(0));
+    for(let i=1;i<=n;i++){
+      for(let j=1;j<=m;j++){
+        dp[i][j] = (a[i-1] === b[j-1]) ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+      }
+    }
+    // backtrack to get matched positions
+    const matchA = new Set();
+    const matchB = new Set();
+    let i=n, j=m;
+    while(i>0 && j>0){
+      if(a[i-1] === b[j-1]){
+        matchA.add(i-1);
+        matchB.add(j-1);
+        i--; j--;
+      } else if(dp[i-1][j] >= dp[i][j-1]) i--;
+      else j--;
+    }
+    return { matchA, matchB };
+  },
+  _renderDiff(expected, actual){
+    const expT = this._tok(expected);
+    const actT = this._tok(actual);
+
+    const expN = expT.map(t => this._normTok(t));
+    const actN = actT.map(t => this._normTok(t));
+
+    const { matchA, matchB } = this._lcs(expN, actN);
+
+    // Build highlighted expected line
+    const expHtml = expT.map((t, idx) => {
+      const safe = t.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+      if(matchA.has(idx)) return `<span class="good">${safe}</span>`;
+      return `<span class="bad" style="text-decoration:underline">${safe}</span>`;
+    });
+
+    // Extras in user answer
+    const extras = actT
+      .map((t, idx) => ({t, idx}))
+      .filter(x => !matchB.has(x.idx))
+      .map(x => x.t);
+
+    const expLine = this._joinTokens(expHtml);
+    let extraLine = '';
+    if(extras.length){
+      const safeExtras = extras.map(t => t.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'));
+      extraLine = `<div class="bad" style="margin-top:4px">Extra: ${this._joinTokens(safeExtras)}</div>`;
+    }
+
+    return `<div>${expLine}</div>${extraLine}`;
+  }
 
 
 };
@@ -1449,6 +1581,17 @@ function attachEvents(){
   $('#ppReset').addEventListener('click', ()=>{ if(confirm('Reset preps progress?')){ state.preps.level=1; state.preps.streaks={}; saveAll(); Trainers.preps.next(true); renderMode(); } });
   
     // 5k Core words
+  // 5k sentence mode toggle
+  const coreTgl = $('#coreSentenceMode');
+  if(coreTgl){
+    coreTgl.checked = !!state.top5k.sentenceMode;
+    coreTgl.addEventListener('change', (e)=>{
+      state.top5k.sentenceMode = !!e.target.checked;
+      saveAll();
+      Trainers.top5k.next(true);
+      renderMode();
+    });
+  }
   const coreCheckBtn = $('#coreCheck');
   if(coreCheckBtn){
     coreCheckBtn.addEventListener('click', ()=>safeCheck('top5k'));
@@ -1557,7 +1700,7 @@ function attachEvents(){
   let enterArmed=false;
     function modeFields(mode){
     if(mode==='vocab') return ['#vocabDe','#vocabPl'];
-    if(mode==='top5k') return ['#coreDe'];
+    if(mode==='top5k') return [ state.top5k.sentenceMode ? '#coreDeSent' : '#coreDe' ];
     if(mode==='verbs'){
       const base = ['#vInf','#pIch','#pDu','#pEr','#pIhr','#vPart'];
       if(APP.verbsIncludePast) base.push('#vPast');
