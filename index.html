@@ -178,10 +178,6 @@
       </div>
 
       <div style="display:flex;align-items:center;gap:10px;">
-        <label class="muted small" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
-          <input type="checkbox" id="coreSentenceMode">
-          sentence mode
-        </label>
         <div id="coreLevel" class="pill"></div>
       </div>
     </div>
@@ -210,13 +206,16 @@
       <button id="coreReset" class="muted">Reset</button>
     </div>
 	
-	    <div style="margin-top:8px">
+    <div id="coreProgressWrap" style="margin-top:8px">
       <div style="width:100%;height:6px;background:#1a2230;border-radius:4px;">
         <div id="coreProgBar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width .3s;"></div>
       </div>
       <div id="coreProgText" class="small muted" style="margin-top:4px;text-align:right"></div>
     </div>
-
+    <label class="muted small" style="margin-top:10px;display:flex;align-items:center;gap:6px;">
+      <input type="checkbox" id="coreSentenceMode">
+      sentence mode
+    </label>
   </section>
 
 
@@ -1121,6 +1120,9 @@ const Core5k = {
 
   check(x){
     const sentenceMode = this.isSentenceMode();
+        // Hide progress bar in sentence mode
+    const pw = $('#coreProgressWrap');
+    if(pw) pw.classList.toggle('hidden', sentenceMode);
     const showCorrectSentence = () => setText('#coreDeSentence', x.deSent || '');
 
     // ---------- Sentence mode ----------
@@ -1131,8 +1133,15 @@ const Core5k = {
       const userRaw = inp.value || '';
       const expRaw  = x.deSent || '';
 
-      const userN = this._tok(userRaw).map(t=>this._normTok(t)).join(' ');
-      const expN  = this._tok(expRaw).map(t=>this._normTok(t)).join(' ');
+  const userN = this._tok(userRaw)
+    .filter(t => !this._isPunctTok(t))      // ignore punctuation
+    .map(t => this._normTok(t))
+    .join(' ');
+  
+  const expN = this._tok(expRaw)
+    .filter(t => !this._isPunctTok(t))      // ignore punctuation
+    .map(t => this._normTok(t))
+    .join(' ');
 
       inp.classList.remove('good-field','bad-field');
       setHTML('#coreDiff','');
@@ -1218,6 +1227,10 @@ const Core5k = {
     if(!raw) return [];
     return raw.match(/[A-Za-zÄÖÜäöüß]+|\d+|[^\sA-Za-zÄÖÜäöüß\d]+/g) || [];
   },
+    _isPunctTok(t){
+    // token has no letters/numbers (only punctuation/symbols)
+    return !/[A-Za-zÄÖÜäöüß0-9]/.test(t);
+  },
   _normTok(t){
     if(/[A-Za-zÄÖÜäöüß]/.test(t)) return APP.normDe(t);
     return t.trim();
@@ -1254,9 +1267,8 @@ const Core5k = {
     return { matchA, matchB };
   },
   _renderDiff(expected, actual){
-    const expT = this._tok(expected);
-    const actT = this._tok(actual);
-
+    const expT = this._tok(expected).filter(t => !this._isPunctTok(t));
+    const actT = this._tok(actual).filter(t => !this._isPunctTok(t));
     const expN = expT.map(t => this._normTok(t));
     const actN = actT.map(t => this._normTok(t));
 
