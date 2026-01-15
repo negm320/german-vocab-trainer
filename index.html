@@ -1037,16 +1037,20 @@ const Core5k = {
     return state.top5k.data.length > 0;
   },
 
-  requiredFor(item){
-    // Base requirement by distance from current level
+  // BASE requirement only (ignores penalty)
+  baseRequiredFor(item){
     const CL = state.top5k.level;
     const WL = item.lvl || 1;
     const d = CL - WL;
 
-    let base;
-    if(d <= 1) base = 3;       // current + previous level
-    else if(d === 2) base = 2; // two levels behind
-    else base = 1;             // 3+ levels behind
+    if(d <= 1) return 3;       // current + previous level
+    if(d === 2) return 2;      // two levels behind
+    return 1;                  // 3+ levels behind
+  },
+
+  requiredFor(item){
+    const CL = state.top5k.level;
+    const base = this.baseRequiredFor(item);
 
     // Penalty override (sticks for current + next level)
     const pen = state.top5k.penalty?.[item.id];
@@ -1193,7 +1197,7 @@ const Core5k = {
 
       // Apply penalty: 1→2, 2→3, 3 stays 3 (lasts current + next level)
       const CL = state.top5k.level;
-      const currentNeed = this.requiredFor(x); // base+penalty-aware, but that's OK
+      const currentNeed = this.baseRequiredFor(x); // base-only (THIS fixes the "always 3" feeling)
       const nextTarget =
         currentNeed >= 3 ? 3 :
         currentNeed === 2 ? 3 :
@@ -1630,6 +1634,7 @@ function attachEvents(){
       if(!confirm('Reset 5k words progress?')) return;
       state.top5k.level = 1;
       state.top5k.streaks = {};
+      state.top5k.penalty = {};
       saveAll();
       Trainers.top5k.next(true);
       renderMode();
