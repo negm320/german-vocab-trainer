@@ -1043,9 +1043,18 @@ const Core5k = {
     const WL = item.lvl || 1;
     const d = CL - WL;
 
-    if(d <= 1) return 3;       // current + previous level
-    if(d === 2) return 2;      // two levels behind
-    return 1;                  // 3+ levels behind
+    let base;
+    if(d <= 1) base = 3;       // current + previous level
+    else if(d === 2) base = 2; // two levels behind
+    else base = 1;             // 3+ levels behind
+
+    // Penalty override (sticks for current + next level)
+    const pen = state.top5k.penalty?.[item.id];
+    if(pen && CL <= pen.untilLevel){
+      return Math.max(base, pen.target);
+    }
+
+    return base;
   },
 
   hasUnmastered(){
@@ -1179,10 +1188,37 @@ const Core5k = {
       inp.classList.add('good-field');
       setHTML('#coreFeedback', `<span class="good">Correct!</span> (${streak}/${need})`);
     } else {
+      // reset streak
       state.top5k.streaks[x.id] = 0;
+
+      // Apply penalty: 1→2, 2→3, 3 stays 3 (lasts current + next level)
+      const CL = state.top5k.level;
+      const currentNeed = this.requiredFor(x); // base+penalty-aware, but that's OK
+      const nextTarget =
+        currentNeed >= 3 ? 3 :
+        currentNeed === 2 ? 3 :
+        2;
+
+      if(!state.top5k.penalty) state.top5k.penalty = {};
+      const prev = state.top5k.penalty[x.id];
+
+      // If a stronger penalty is already active, keep it.
+      const finalTarget = Math.max(prev?.target || 0, nextTarget);
+
+      state.top5k.penalty[x.id] = {
+        target: finalTarget,
+        untilLevel: CL + 1
+      };
+
+      // UI
       inp.value = x.german || '';
       inp.classList.add('bad-field');
-      setHTML('#coreFeedback', `<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b>`);
+
+      // Show penalty info so it matches your expectations
+      setHTML(
+        '#coreFeedback',
+        `<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> <span class="muted small">• now ${finalTarget}-streak (until level ${CL+1})</span>`
+      );
     }
 
     showCorrectSentence();
