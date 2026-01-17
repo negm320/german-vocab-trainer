@@ -514,15 +514,50 @@ const LS = {
 
 // ---------- CSV ----------
 function parseCSV(txt){
-  const rows=[]; let row=[]; let cur=''; let q=false;
-  for(let i=0;i<txt.length;i++){
-    const c=txt[i];
-    if(c==='"'){ if(q && txt[i+1]==='"'){ cur+='"'; i++; } else q=!q; }
-    else if(c===',' && !q){ row.push(cur); cur=''; }
-    else if((c==='\n'||c==='\r') && !q){ if(cur!==''||row.length){ row.push(cur); rows.push(row); row=[]; cur=''; } }
-    else cur+=c;
+  // auto-detect delimiter from header line (comma vs semicolon)
+  const head = (txt.split(/\r?\n/)[0] || '');
+  const commaCount = (head.match(/,/g) || []).length;
+  const semiCount  = (head.match(/;/g) || []).length;
+  const DELIM = semiCount > commaCount ? ';' : ',';
+
+  const rows = [];
+  let row = [];
+  let cur = '';
+  let q = false;
+
+  for(let i = 0; i < txt.length; i++){
+    const c = txt[i];
+
+    if(c === '"'){
+      if(q && txt[i+1] === '"'){
+        cur += '"';
+        i++;
+      } else {
+        q = !q;
+      }
+    }
+    else if(c === DELIM && !q){
+      row.push(cur);
+      cur = '';
+    }
+    else if((c === '\n' || c === '\r') && !q){
+      if(cur !== '' || row.length){
+        row.push(cur);
+        rows.push(row);
+        row = [];
+        cur = '';
+      }
+    }
+    else{
+      cur += c;
+    }
   }
-  if(cur!==''||row.length){ row.push(cur); rows.push(row); }
+
+  if(cur !== '' || row.length){
+    row.push(cur);
+    rows.push(row);
+  }
+
   return rows;
 }
 
