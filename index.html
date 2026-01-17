@@ -555,7 +555,7 @@ async function syncPull(user){
   if(!DBrt) return;
 
   // preferred: devices tree
-  const snap = await DBrt.ref(devicesPath(user)).get();
+	const snap = await DBrt.ref(devicesPath(user)).once('value');
   if(snap.exists()){
     const devices = snap.val() || {};
     const merged = { vocab:{}, verbs:{}, adjadv:{}, preps:{}, top5k:{} };
@@ -595,7 +595,7 @@ async function syncPull(user){
   }
 
   // fallback: old single-node payload (if you have old data)
-  const old = await DBrt.ref(syncPath(user)).get();
+  const old = await DBrt.ref(syncPath(user)).once('value');
   if(old.exists()){
     const p = old.val()?.progress;
     if(p) applyMergedProgress(p);
@@ -611,10 +611,11 @@ async function syncPush(user){
 }
 
 // helpers
-function syncOnUI(user){
-  setText('#syncStatus', `Sync: On ✅ (${user})`);
-  setText('#syncStatusSide', `Sync: On ✅ (${user})`);
+function syncOnUI(user, extra=''){
+  setText('#syncStatus', `Sync: On ✅ (${user})${extra}`);
+  setText('#syncStatusSide', `Sync: On ✅ (${user})${extra}`);
 }
+
 function syncOffUI(){
   setText('#syncStatus', 'Sync: Off');
   setText('#syncStatusSide', 'Sync: Off');
@@ -1854,8 +1855,11 @@ function attachEvents(){
       const ok = fbInit();
       if(ok){
         try{
-          await syncPull(user);
-          await syncPush(user);
+			syncOnUI(user, ' • syncing…');
+			await syncPull(user);
+			await syncPush(user);
+			syncOnUI(user, ' • done');
+
         }catch(e){
           console.warn(e);
         }
