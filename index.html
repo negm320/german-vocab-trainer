@@ -591,6 +591,11 @@ async function syncPull(user){
     }
 
     applyMergedProgress(merged);
+
+    // Visible proof sync worked
+    const n = Object.keys(devices).length;
+    syncOnUI(user, ` • merged ${n} device(s) • 5k lvl ${state.top5k.level}`);
+
     return;
   }
 
@@ -598,8 +603,12 @@ async function syncPull(user){
   const old = await DBrt.ref(syncPath(user)).once('value');
   if(old.exists()){
     const p = old.val()?.progress;
-    if(p) applyMergedProgress(p);
+    if(p){
+      applyMergedProgress(p);
+      syncOnUI(user, ` • merged legacy • 5k lvl ${state.top5k.level}`);
+    }
   }
+
 }
 
 // Push THIS device’s progress under its own node
@@ -1861,10 +1870,11 @@ function attachEvents(){
 			syncOnUI(user, ' • done');
 
         }catch(e){
-          console.warn(e);
+          console.warn('Sync failed:', e);
+          alert('Sync failed: ' + (e?.message || e));
         }
+
       }
-      syncOnUI(user);
       closeSync();
     });
   
