@@ -462,6 +462,27 @@ function getDeviceId(){
 }
 function devicesPath(user){ return `${syncPath(user)}/devices`; }
 
+function safeKey(k){
+  k = String(k || '').trim();
+  // Firebase RTDB disallowed characters in keys: . # $ [ ] /
+  if(!k) return null;
+  if(/[.#$\[\]\/]/.test(k)) return null;
+  // also reject keys that look like full CSV rows (tons of delimiters)
+  if(k.includes(';') || k.includes(',')) return null;
+  return k;
+}
+function sanitizeObjKeys(obj){
+  const out = {};
+  if(!obj) return out;
+  for(const raw of Object.keys(obj)){
+    const k = safeKey(raw);
+    if(!k) continue;
+    out[k] = obj[raw];
+  }
+  return out;
+}
+
+
 // IMPORTANT: only sync PROGRESS (never .data arrays)
 function buildSyncPayload(){
   return {
@@ -470,14 +491,14 @@ function buildSyncPayload(){
       ts: Date.now()
     },
     progress: {
-      vocab:  { level: state.vocab.level||1,  streaks: state.vocab.streaks||{},  showEn: !!state.vocab.showEn },
-      verbs:  { level: state.verbs.level||1,  streaks: state.verbs.streaks||{} },
-      adjadv: { level: state.adjadv.level||1, streaks: state.adjadv.streaks||{} },
-      preps:  { level: state.preps.level||1,  streaks: state.preps.streaks||{} },
+      vocab:  { level: state.vocab.level||1,  streaks: sanitizeObjKeys(state.vocab.streaks||{}),  showEn: !!state.vocab.showEn },
+      verbs:  { level: state.verbs.level||1,  streaks: sanitizeObjKeys(state.verbs.streaks||{}) },
+      adjadv: { level: state.adjadv.level||1, streaks: sanitizeObjKeys(state.adjadv.streaks||{}) },
+      preps:  { level: state.preps.level||1,  streaks: sanitizeObjKeys(state.preps.streaks||{}) },
       top5k:  {
         level: state.top5k.level||1,
-        streaks: state.top5k.streaks||{},
-        penalty: state.top5k.penalty||{},
+        streaks: sanitizeObjKeys(state.top5k.streaks||{}),
+        penalty: sanitizeObjKeys(state.top5k.penalty||{}),
         sentenceMode: !!state.top5k.sentenceMode
       }
     }
@@ -796,6 +817,17 @@ function loadAllProgress(){
   const a=LS.get('adjadvProgress',null); if(a) Object.assign(state.adjadv,a);
   const p=LS.get('prepsProgress',null); if(p) Object.assign(state.preps,p);
   const c=LS.get('top5kProgress',null); if(c) Object.assign(state.top5k,c);
+  
+  // Clean invalid Firebase keys from top5k streaks/penalty (legacy pollution)
+if(state.top5k && state.top5k.streaks){
+  const cleaned = sanitizeObjKeys(state.top5k.streaks);
+  state.top5k.streaks = cleaned;
+}
+if(state.top5k && state.top5k.penalty){
+  const cleanedP = sanitizeObjKeys(state.top5k.penalty);
+  state.top5k.penalty = cleanedP;
+}
+
 }
 
 
