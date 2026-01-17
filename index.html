@@ -451,47 +451,163 @@ function fbInit(){
 }
 function syncPath(user){ return `/users/${encodeURIComponent(user)}`; }
 
+// stable per-device id
+function getDeviceId(){
+  let id = localStorage.getItem('deviceId_v1');
+  if(!id){
+    id = 'd_' + Math.random().toString(36).slice(2,10) + '_' + Date.now().toString(36);
+    localStorage.setItem('deviceId_v1', id);
+  }
+  return id;
+}
+function devicesPath(user){ return `${syncPath(user)}/devices`; }
+
+// IMPORTANT: only sync PROGRESS (never .data arrays)
 function buildSyncPayload(){
   return {
     meta: {
-      dsKey: APP.dsKey,
-      masteryTarget: APP.masteryTarget,
-      wordsPerLevel: APP.wordsPerLevel,
+      deviceId: getDeviceId(),
       ts: Date.now()
     },
     progress: {
-      vocab: state.vocab,
-      verbs: state.verbs,
-      adjadv: state.adjadv,
-      preps: state.preps,
-      top5k: state.top5k
-    },
-    kapitel: APP.kapitel
+      vocab:  { level: state.vocab.level||1,  streaks: state.vocab.streaks||{},  showEn: !!state.vocab.showEn },
+      verbs:  { level: state.verbs.level||1,  streaks: state.verbs.streaks||{} },
+      adjadv: { level: state.adjadv.level||1, streaks: state.adjadv.streaks||{} },
+      preps:  { level: state.preps.level||1,  streaks: state.preps.streaks||{} },
+      top5k:  {
+        level: state.top5k.level||1,
+        streaks: state.top5k.streaks||{},
+        penalty: state.top5k.penalty||{},
+        sentenceMode: !!state.top5k.sentenceMode
+      }
+    }
   };
 }
-function applyPayload(p){
-  try{
-    if(p?.progress){
-      Object.assign(state.vocab,  p.progress.vocab   || {});
-      Object.assign(state.verbs,  p.progress.verbs   || {});
-      Object.assign(state.adjadv, p.progress.adjadv  || {});
-      Object.assign(state.preps,  p.progress.preps   || {});
-      Object.assign(state.top5k,  p.progress.top5k   || {});
-      saveAll(); // persist locally too
-      renderMode();
+
+// merge helpers (take the "best"/highest)
+function mergeStreaks(into, from){
+  if(!from) return;
+  for(const k of Object.keys(from)){
+    const a = into[k] || 0;
+    const b = from[k] || 0;
+    if(b > a) into[k] = b;
+  }
+}
+function mergePenalty(into, from){
+  if(!from) return;
+  for(const k of Object.keys(from)){
+    const A = into[k] || null;
+    const B = from[k] || null;
+    if(!B) continue;
+    if(!A){
+      into[k] = { target: B.target||0, untilLevel: B.untilLevel||0 };
+      continue;
     }
-    if(p?.kapitel){ APP.kapitel = p.kapitel; dsUI.update(); }
-  }catch(e){ console.warn('applyPayload failed', e); }
+    into[k] = {
+      target: Math.max(A.target||0, B.target||0),
+      untilLevel: Math.max(A.untilLevel||0, B.untilLevel||0)
+    };
+  }
 }
 
+// Apply a merged progress object into local state
+function applyMergedProgress(progress){
+  if(!progress) return;
+
+  if(progress.vocab){
+    state.vocab.level = Math.max(state.vocab.level||1, progress.vocab.level||1);
+    state.vocab.streaks = state.vocab.streaks || {};
+    mergeStreaks(state.vocab.streaks, progress.vocab.streaks||{});
+    if(typeof progress.vocab.showEn === 'boolean') state.vocab.showEn = progress.vocab.showEn;
+  }
+  if(progress.verbs){
+    state.verbs.level = Math.max(state.verbs.level||1, progress.verbs.level||1);
+    state.verbs.streaks = state.verbs.streaks || {};
+    mergeStreaks(state.verbs.streaks, progress.verbs.streaks||{});
+  }
+  if(progress.adjadv){
+    state.adjadv.level = Math.max(state.adjadv.level||1, progress.adjadv.level||1);
+    state.adjadv.streaks = state.adjadv.streaks || {};
+    mergeStreaks(state.adjadv.streaks, progress.adjadv.streaks||{});
+  }
+  if(progress.preps){
+    state.preps.level = Math.max(state.preps.level||1, progress.preps.level||1);
+    state.preps.streaks = state.preps.streaks || {};
+    mergeStreaks(state.preps.streaks, progress.preps.streaks||{});
+  }
+  if(progress.top5k){
+    state.top5k.level = Math.max(state.top5k.level||1, progress.top5k.level||1);
+    state.top5k.streaks = state.top5k.streaks || {};
+    mergeStreaks(state.top5k.streaks, progress.top5k.streaks||{});
+
+    state.top5k.penalty = state.top5k.penalty || {};
+    mergePenalty(state.top5k.penalty, progress.top5k.penalty||{});
+
+    if(typeof progress.top5k.sentenceMode === 'boolean') state.top5k.sentenceMode = progress.top5k.sentenceMode;
+  }
+
+  saveAll();
+  renderMode();
+}
+
+// Pull ALL devices and merge the “best”
 async function syncPull(user){
   if(!DBrt) return;
-  const snap = await DBrt.ref(syncPath(user)).get();
-  if(snap.exists()){ applyPayload(snap.val()); }
+
+  // preferred: devices tree
+  const snap = await DBrt.ref(devicesPath(user)).get();
+  if(snap.exists()){
+    const devices = snap.val() || {};
+    const merged = { vocab:{}, verbs:{}, adjadv:{}, preps:{}, top5k:{} };
+
+    for(const devId of Object.keys(devices)){
+      const p = devices[devId]?.progress;
+      if(!p) continue;
+
+      // merge by max
+      merged.vocab.level  = Math.max(merged.vocab.level||1,  p.vocab?.level||1);
+      merged.verbs.level  = Math.max(merged.verbs.level||1,  p.verbs?.level||1);
+      merged.adjadv.level = Math.max(merged.adjadv.level||1, p.adjadv?.level||1);
+      merged.preps.level  = Math.max(merged.preps.level||1,  p.preps?.level||1);
+      merged.top5k.level  = Math.max(merged.top5k.level||1,  p.top5k?.level||1);
+
+      merged.vocab.streaks  = merged.vocab.streaks  || {};
+      merged.verbs.streaks  = merged.verbs.streaks  || {};
+      merged.adjadv.streaks = merged.adjadv.streaks || {};
+      merged.preps.streaks  = merged.preps.streaks  || {};
+      merged.top5k.streaks  = merged.top5k.streaks  || {};
+
+      mergeStreaks(merged.vocab.streaks,  p.vocab?.streaks||{});
+      mergeStreaks(merged.verbs.streaks,  p.verbs?.streaks||{});
+      mergeStreaks(merged.adjadv.streaks, p.adjadv?.streaks||{});
+      mergeStreaks(merged.preps.streaks,  p.preps?.streaks||{});
+      mergeStreaks(merged.top5k.streaks,  p.top5k?.streaks||{});
+
+      merged.top5k.penalty = merged.top5k.penalty || {};
+      mergePenalty(merged.top5k.penalty, p.top5k?.penalty||{});
+
+      if(typeof p.vocab?.showEn === 'boolean') merged.vocab.showEn = p.vocab.showEn;
+      if(typeof p.top5k?.sentenceMode === 'boolean') merged.top5k.sentenceMode = p.top5k.sentenceMode;
+    }
+
+    applyMergedProgress(merged);
+    return;
+  }
+
+  // fallback: old single-node payload (if you have old data)
+  const old = await DBrt.ref(syncPath(user)).get();
+  if(old.exists()){
+    const p = old.val()?.progress;
+    if(p) applyMergedProgress(p);
+  }
 }
+
+// Push THIS device’s progress under its own node
 async function syncPush(user){
   if(!DBrt) return;
-  await DBrt.ref(syncPath(user)).set(buildSyncPayload());
+  const payload = buildSyncPayload();
+  const devId = payload.meta.deviceId;
+  await DBrt.ref(`${devicesPath(user)}/${devId}`).set(payload);
 }
 
 // helpers
