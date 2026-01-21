@@ -41,7 +41,7 @@
 40;um;at / around;Wir treffen uns um acht.;We’re meeting at eight.;prep;علشان / عشان;;;FALSE;;;;;;;;;;
 41;aus;from / out of;Ich komme aus Berlin.;I come from Berlin.;prep;من / برا;;;FALSE;;;;;;;;;;
 42;dann;then;Wir essen und dann gehen wir.;We eat and then we go.;adverb;بعدين;;;FALSE;;;;;;;;;;
-43;hör;hear / listen;Hör zu!;Listen!;verb;اسمع / وقف (من hören/aufhören);;;FALSE;;;;;;;;;;
+43;hör;hear / listen;Hör zu!;Listen!;verb;اسمع / وقف ;;;FALSE;;;;;;;;;;
 44;doch;though / but;Komm doch mit!;Come with us (come on)!;particle;برضه / ما هو;;;FALSE;;;;;;;;;;
 45;oder;or;Tee oder Kaffee?;Tea or coffee?;conjunction;أو;;;FALSE;;;;;;;;;;
 46;dachte;thought;Ich dachte, du schläfst.;I thought you were sleeping.;verb;افتكرت / كنت فاكر;;;FALSE;;;;;;;;;;
@@ -681,7 +681,7 @@
 692;Geschenk;gift / present;Ich habe ein Geschenk für dich.;I have a gift for you.;noun;هدية;;;FALSE;;;;;;;;;;
 693;Streit;argument / fight;Sie hatten einen Streit.;They had an argument.;noun;خناقة;;;FALSE;;;;;;;;;;
 694;blick;glance / view;Ein kurzer Blick genügt.;A quick glance is enough.;noun;نظرة;;;FALSE;;;;;;;;;;
-695;bescheid;notification (and in “Bescheid sagen”: to let someone know);Sag mir Bescheid.;Let me know.;noun;خبر / معلومة  يقولّي);;;FALSE;;;;;;;;;;
+695;bescheid;notification (and in “sagen”: to let someone know);Sag mir Bescheid.;Let me know.;noun;خبر / معلومة  يقولّي);;;FALSE;;;;;;;;;;
 696;verfolgt;followed / chased;Ich fühle mich verfolgt.;I feel like I’m being followed.;verb;متتبع / متراقَب;;;FALSE;;;;;;;;;;
 697;feiern;to celebrate;Wir feiern heute Abend.;We’re celebrating tonight.;verb;يحتفل;;;FALSE;;;;;;;;;;
 698;Seele;soul;Er hat eine gute Seele.;He has a good soul.;noun;روح;;;FALSE;;;;;;;;;;
