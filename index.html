@@ -1616,14 +1616,11 @@ const Trainers = {
     next(internal=false){
       const x = Core5k.pick(); if(!x) return;
       Core5k.render(x); this._cur=x;
-	  state.ui.cur.top5kId = x.id || '';
-		saveAll();
+      state.ui.cur.top5kId = x.id || '';
+      saveAll();
       if(!internal) setMode('top5k');
     },
     check(){ if(this._cur) Core5k.check(this._cur); }
-  }
-};
-
   }
 };
 
