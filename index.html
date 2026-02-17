@@ -792,11 +792,21 @@ const state = {
   top5k: {
     data: [],
     level: 1,
-    streaks: {},       // correct-in-a-row (word mode only)
-    difficulty: {},    // legacy (unused)
-    penalty: {},       // legacy (unused)
+    streaks: {},
+    difficulty: {},
+    penalty: {},
     sentenceMode: false,
     idx: 0
+  },
+
+  ui: {
+    cur: {
+      vocabKey: null,
+      verbsKey: null,
+      adjadvKey: null,
+      prepsKey: null,
+      top5kId: null
+    }
   }
 
 };
@@ -806,6 +816,7 @@ function saveAll(){
   LS.set('adjadvProgress', state.adjadv);
   LS.set('prepsProgress', state.preps);
   LS.set('top5kProgress', state.top5k);
+  LS.set('uiProgress', state.ui);
   // auto-push if sync is active
   const on = localStorage.getItem('syncActive')==='true';
   const user = localStorage.getItem('syncUser') || '';
@@ -817,6 +828,7 @@ function loadAllProgress(){
   const a=LS.get('adjadvProgress',null); if(a) Object.assign(state.adjadv,a);
   const p=LS.get('prepsProgress',null); if(p) Object.assign(state.preps,p);
   const c=LS.get('top5kProgress',null); if(c) Object.assign(state.top5k,c);
+  const u=LS.get('uiProgress',null); if(u) Object.assign(state.ui,u);
   
   // Clean invalid Firebase keys from top5k streaks/penalty (legacy pollution)
 if(state.top5k && state.top5k.streaks){
@@ -1540,6 +1552,8 @@ const Trainers = {
     next(internal=false){
       const x = Vocab.pick(); if(!x) return;
       Vocab.render(x); this._cur=x;
+		state.ui.cur.vocabKey = x.german || '';
+		saveAll();
       if(!internal) setMode('vocab');
     },
     check(){ Vocab.check(this._cur); }
@@ -1552,6 +1566,8 @@ const Trainers = {
     next(internal=false){
       const x = Verbs.pick(); if(!x) return;
       Verbs.render(x); this._cur=x;
+	  state.ui.cur.verbsKey = x.id || '';
+		saveAll();
       if(!internal) setMode('verbs');
     },
     check(){ Verbs.check(this._cur); }
@@ -1564,6 +1580,8 @@ const Trainers = {
     next(internal=false){
       const x = AdjAdv.pick(); if(!x) return;
       AdjAdv.render(x); this._cur=x;
+	  state.ui.cur.adjadvKey = x.german || '';
+		saveAll();
       if(!internal) setMode('adjadv');
     },
     check(){ AdjAdv.check(this._cur); }
@@ -1584,6 +1602,8 @@ const Trainers = {
         if(rep === 'repick') return;
       }
       this._cur = x;
+	  state.ui.cur.prepsKey = x.prep || '';
+		saveAll();
       if(!internal) setMode('preps');
     },
     check(){ Preps.check(this._cur); }
@@ -1596,12 +1616,65 @@ const Trainers = {
     next(internal=false){
       const x = Core5k.pick(); if(!x) return;
       Core5k.render(x); this._cur=x;
+	  state.ui.cur.top5kId = x.id || '';
+		saveAll();
       if(!internal) setMode('top5k');
     },
     check(){ if(this._cur) Core5k.check(this._cur); }
   }
 };
 
+  }
+};
+
+function restoreCurrentOrPick(){
+  const m = APP.mode;
+
+  const findBy = (arr, fn) => (arr || []).find(fn) || null;
+
+  if(m === 'vocab'){
+    const key = state.ui?.cur?.vocabKey;
+    const x = key ? findBy(state.vocab.data, it => (it.german || '') === key) : null;
+    if(x){ Vocab.render(x); Trainers.vocab._cur = x; return; }
+    Trainers.vocab.next(true); return;
+  }
+
+  if(m === 'verbs'){
+    const key = state.ui?.cur?.verbsKey;
+    const x = key ? findBy(state.verbs.data, it => (it.id || '') === key) : null;
+    if(x){ Verbs.render(x); Trainers.verbs._cur = x; return; }
+    Trainers.verbs.next(true); return;
+  }
+
+  if(m === 'adjadv'){
+    const key = state.ui?.cur?.adjadvKey;
+    const x = key ? findBy(state.adjadv.data, it => (it.german || '') === key) : null;
+    if(x){ AdjAdv.render(x); Trainers.adjadv._cur = x; return; }
+    Trainers.adjadv.next(true); return;
+  }
+
+  if(m === 'preps'){
+    const key = state.ui?.cur?.prepsKey;
+    const x = key ? findBy(state.preps.data, it => (it.prep || '') === key) : null;
+    if(x){
+      const rep = Preps.render(x);
+      if(rep !== 'repick'){ Trainers.preps._cur = x; return; }
+    }
+    Trainers.preps.next(true); return;
+  }
+
+  if(m === 'top5k'){
+    const id = state.ui?.cur?.top5kId;
+    const x = id ? findBy(state.top5k.data, it => (it.id || '') === id) : null;
+    if(x){ Core5k.render(x); Trainers.top5k._cur = x; return; }
+    Trainers.top5k.next(true); return;
+  }
+
+  if(m === 'mix'){ Mix.render(); return; }
+  if(m === 'kapitelMix'){ KapitelMix.render(); return; }
+
+  Trainers.vocab.next(true);
+}
 
 // ---------- Mix mounting (no cloning) ----------
 const mixMounts = { mix:'#mixMount', kapitel:'#kmxMount' };
@@ -2041,12 +2114,9 @@ async function boot(){
   if (!Trainers[APP.mode]) {
     APP.mode = 'vocab';
   }
-  const startTrainer = Trainers[APP.mode];
-  if (startTrainer && startTrainer.next) {
-    startTrainer.next(true);   // pick first item for that mode
-  }
-
-  renderMode();
+// Start by restoring the exact current card (no repick), else pick
+restoreCurrentOrPick();
+renderMode();
 }
 document.addEventListener('DOMContentLoaded', boot);
 </script>
