@@ -36,6 +36,11 @@
   .bad-field{border-color:var(--bad)!important; box-shadow:0 0 0 1px rgba(239,68,68,.45);}
   .actions{display:flex;gap:8px;margin-top:10px;align-items:center}
   .actions button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer}
+  /* Sentence toggle button */
+.toggle.active{
+  outline:2px solid var(--accent);
+  background:#0f1420;
+}
   .actions button:hover{background:var(--btn2)}
   .hidden{display:none!important}
 </style>
@@ -84,14 +89,12 @@
     <div id="coreDeSentence" class="muted small" style="margin-top:4px;"></div>
     <div id="coreFeedback" class="small" style="margin-top:8px;"></div>
 
-    <div class="actions">
-      <button id="coreCheck">Check</button>
-      <button id="coreNext">Next</button>
-      <button id="coreReset" class="muted">Reset</button>
-      <label class="muted small" style="margin-left:auto;display:flex;align-items:center;gap:6px;">
-        <input type="checkbox" id="coreSentenceMode"> sentence mode
-      </label>
-    </div>
+	<div class="actions">
+	  <button id="coreCheck">Check</button>
+	  <button id="coreNext">Next</button>
+	  <button id="coreSentenceBtn" class="muted toggle">Sentence</button>
+	  <button id="coreReset" class="muted">Reset</button>
+	</div>
 
     <div id="coreProgressWrap" style="margin-top:10px">
       <div style="width:100%;height:6px;background:#1a2230;border-radius:4px;">
@@ -535,6 +538,32 @@ async function boot(){
     nextCard();
     state._enterStage = 0;
   });
+  
+    // Sentence mode toggle button (replaces checkbox)
+  function syncSentenceBtnUI(){
+    const b = $('#coreSentenceBtn');
+    if(!b) return;
+    const on = !!state.sentenceMode;
+    b.classList.toggle('active', on);
+    b.textContent = on ? 'Sentence ✓' : 'Sentence';
+  }
+  syncSentenceBtnUI();
+
+  // Prevent losing keyboard focus when tapping Sentence button
+  const sBtn = $('#coreSentenceBtn');
+  if(sBtn){
+    sBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); }, {passive:false});
+    sBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); }, {passive:false});
+    sBtn.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
+
+    sBtn.addEventListener('click', ()=>{
+      state.sentenceMode = !state.sentenceMode;
+      state._enterStage = 0;
+      saveState();
+      syncSentenceBtnUI();
+      nextCard(); // re-render in the new mode
+    });
+  }
 
   $('#coreReset').addEventListener('click', ()=>{
     if(!confirm('Reset 5k progress?')) return;
