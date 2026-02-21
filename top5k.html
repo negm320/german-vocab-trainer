@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>German Trainer — 5k Only</title>
+<style>
+  :root{
+    --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041; --accent:#6aa6ff;
+    --good:#22c55e; --bad:#ef4444; --btn:#1a2230; --btn2:#1e2a3c; --hole:#0f141c;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial,sans-serif;}
+  .wrap{max-width:720px;margin:0 auto;padding:14px}
+  .bar{display:flex;gap:8px;align-items:center;margin:6px auto 10px;max-width:720px}
+  .bar button{background:var(--btn);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer}
+  .bar button:hover{background:var(--btn2)}
+  .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:12px;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .row{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin:8px 0}
+  input,textarea{
+    width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);
+    font-size:16px;
+  }
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .good{color:var(--good)} .bad{color:var(--bad)}
+  .good-field{border-color:var(--good)!important; box-shadow:0 0 0 1px rgba(34,197,94,.45);}
+  .bad-field{border-color:var(--bad)!important; box-shadow:0 0 0 1px rgba(239,68,68,.45);}
+  .actions{display:flex;gap:8px;margin-top:10px;align-items:center}
+  .actions button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer}
+  .actions button:hover{background:var(--btn2)}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar" style="justify-content:space-between;">
+    <strong>5k Trainer (isolated)</strong>
+    <span id="dbg" class="muted small"></span>
+  </div>
+
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div style="flex:1">
+        <div class="muted small" id="coreEnLabel">English word</div>
+        <strong id="coreEn"></strong>
+      </div>
+      <div class="pill" id="coreLevel"></div>
+    </div>
+
+    <div id="coreEnSentence" class="muted small" style="margin-top:4px;"></div>
+    <div id="coreMasri" class="muted small" style="margin-top:4px;"></div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="label">German</div>
+      <div>
+        <input id="coreDe" type="text" autocomplete="off">
+        <textarea id="coreDeSent" class="hidden" rows="3" style="margin-top:8px;resize:vertical" placeholder="Write the full German sentence..."></textarea>
+      </div>
+    </div>
+
+    <div id="coreDiff" class="small" style="margin-top:6px;"></div>
+    <div id="coreDeSentence" class="muted small" style="margin-top:4px;"></div>
+    <div id="coreFeedback" class="small" style="margin-top:8px;"></div>
+
+    <div class="actions">
+      <button id="coreCheck">Check</button>
+      <button id="coreNext">Next</button>
+      <button id="coreReset" class="muted">Reset</button>
+      <label class="muted small" style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <input type="checkbox" id="coreSentenceMode"> sentence mode
+      </label>
+    </div>
+
+    <div id="coreProgressWrap" style="margin-top:10px">
+      <div style="width:100%;height:6px;background:#1a2230;border-radius:4px;">
+        <div id="coreProgBar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width .3s;"></div>
+      </div>
+      <div id="coreProgText" class="small muted" style="margin-top:4px;text-align:right"></div>
+    </div>
+
+    <div class="actions" style="margin-top:10px;justify-content:space-between">
+      <button id="btnDump">Dump state</button>
+      <button id="btnHardSave">Force save</button>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ========= helpers ========= */
+function $(sel){ return document.querySelector(sel); }
+function setText(sel,t){ const el=$(sel); if(el) el.textContent=t; }
+function setHTML(sel,h){ const el=$(sel); if(el) el.innerHTML=h; }
+function norm(s){ return (s||'').trim().toLowerCase(); }
+function normDe(s){ return (s||'').trim().toLowerCase()
+  .replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
+function pick(arr){ return arr && arr.length ? arr[Math.floor(Math.random()*arr.length)] : null; }
+
+/* ========= CSV parser with auto delimiter ========= */
+function parseCSV(txt){
+  const head = (txt.split(/\r?\n/)[0] || '');
+  const commaCount = (head.match(/,/g) || []).length;
+  const semiCount  = (head.match(/;/g) || []).length;
+  const DELIM = semiCount > commaCount ? ';' : ',';
+
+  const rows = [];
+  let row = [];
+  let cur = '';
+  let q = false;
+
+  for(let i=0;i<txt.length;i++){
+    const c = txt[i];
+    if(c === '"'){
+      if(q && txt[i+1] === '"'){ cur += '"'; i++; }
+      else q = !q;
+    } else if(c === DELIM && !q){
+      row.push(cur); cur='';
+    } else if((c === '\n' || c === '\r') && !q){
+      if(cur !== '' || row.length){
+        row.push(cur); rows.push(row);
+        row=[]; cur='';
+      }
+    } else {
+      cur += c;
+    }
+  }
+  if(cur !== '' || row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+
+/* ========= storage ========= */
+const LS_KEY = 'top5k_state_v1';
+function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+function loadState(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const obj = JSON.parse(raw);
+    if(obj && typeof obj === 'object') Object.assign(state, obj);
+  }catch(e){}
+}
+
+/* ========= state ========= */
+const APP = { wordsPerLevel: 25 };
+
+const state = {
+  data: [],
+  level: 1,
+  streaks: {},
+  penalty: {},
+  sentenceMode: false,
+  currentId: null
+};
+
+/* ========= 5k core ========= */
+const Core = {
+  async load(){
+    const res = await fetch('5k.csv', { cache:'no-store' });
+    if(!res.ok) throw new Error('Could not fetch 5k.csv');
+    const txt = await res.text();
+
+    const rows = parseCSV(txt.trim());
+    rows.shift(); // header
+
+    state.data = rows.map((r, idx) => ({
+      id:      (r[0] || String(idx+1)).toString().trim(),
+      german:  r[1] || '',
+      english: r[2] || '',
+      deSent:  r[3] || '',
+      enSent:  r[4] || '',
+      category:r[5] || '',
+      masri:   r[6] || '',
+      lvl: Math.floor(idx / APP.wordsPerLevel) + 1
+    }));
+  },
+
+  levelPool(){
+    return state.data.slice(0, state.level * APP.wordsPerLevel);
+  },
+
+  baseRequiredFor(item){
+    const CL = state.level;
+    const WL = item.lvl || 1;
+    const d = CL - WL;
+    if(d <= 1) return 3;   // current + previous
+    if(d === 2) return 2;  // two behind
+    return 1;              // 3+ behind
+  },
+
+  requiredFor(item){
+    const base = this.baseRequiredFor(item);
+    const pen = state.penalty?.[item.id];
+    if(pen && state.level <= pen.untilLevel){
+      return Math.max(base, pen.target);
+    }
+    return base;
+  },
+
+  sentencePool(){
+    return this.levelPool().filter(w => (w.deSent||'').trim() && (w.enSent||'').trim());
+  },
+
+  pick(){
+    if(state.sentenceMode){
+      return pick(this.sentencePool());
+    }
+    const pool = this.levelPool();
+    if(!pool.length) return null;
+
+    const unmastered = pool.filter(it => {
+      const need = this.requiredFor(it);
+      return (state.streaks[it.id] || 0) < need;
+    });
+
+    return pick(unmastered.length ? unmastered : pool);
+  },
+
+  render(x){
+    state.currentId = x?.id || null;
+
+    const sentenceMode = !!state.sentenceMode;
+    setText('#coreEnLabel', sentenceMode ? 'English sentence' : 'English word');
+
+    if(sentenceMode){
+      setText('#coreEn', x.enSent || '');
+      setText('#coreEnSentence', x.english ? ('Word: ' + x.english) : '');
+    } else {
+      setText('#coreEn', x.english || '');
+      setText('#coreEnSentence', x.enSent || '');
+    }
+
+    setText('#coreLevel', `Level ${state.level}`);
+    setText('#coreMasri', x.masri ? ('Masri: ' + x.masri) : '');
+
+    setText('#coreDeSentence', '');
+    setHTML('#coreFeedback', '');
+    setHTML('#coreDiff', '');
+
+    const wordInp = $('#coreDe');
+    const sentInp = $('#coreDeSent');
+
+    if(wordInp){
+      wordInp.value = '';
+      wordInp.classList.remove('good-field','bad-field');
+      wordInp.classList.toggle('hidden', sentenceMode);
+    }
+    if(sentInp){
+      sentInp.value = '';
+      sentInp.classList.remove('good-field','bad-field');
+      sentInp.classList.toggle('hidden', !sentenceMode);
+    }
+
+    $('#coreProgressWrap')?.classList.toggle('hidden', sentenceMode);
+
+    setTimeout(()=>{ (sentenceMode?sentInp:wordInp)?.focus(); },0);
+
+    this.updateProgress();
+    this.updateDbg();
+  },
+
+  check(x){
+    const sentenceMode = !!state.sentenceMode;
+    const showCorrectSentence = () => setText('#coreDeSentence', x.deSent || '');
+
+    if(sentenceMode){
+      const inp = $('#coreDeSent');
+      if(!inp) return;
+      const userRaw = inp.value || '';
+      const expRaw  = x.deSent || '';
+
+      const userN = normDe(userRaw.replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
+      const expN  = normDe(expRaw.replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
+
+      inp.classList.remove('good-field','bad-field');
+      if(userN && userN === expN){
+        inp.classList.add('good-field');
+        setHTML('#coreFeedback', `<span class="good">Correct!</span>`);
+      } else {
+        inp.classList.add('bad-field');
+        setHTML('#coreFeedback', `<span class="bad">Wrong.</span>`);
+      }
+      showCorrectSentence();
+      saveState();
+      this.updateDbg();
+      return;
+    }
+
+    const inp = $('#coreDe');
+    if(!inp) return;
+
+    const guess  = normDe(inp.value);
+    const target = normDe(x.german);
+    const baseNeed = this.baseRequiredFor(x);
+    const need = this.requiredFor(x);
+
+    inp.classList.remove('good-field','bad-field');
+
+    if(guess && guess === target){
+      state.streaks[x.id] = (state.streaks[x.id] || 0) + 1;
+      inp.classList.add('good-field');
+      setHTML('#coreFeedback', `<span class="good">Correct!</span> (${state.streaks[x.id]}/${need})`);
+    } else {
+      state.streaks[x.id] = 0;
+
+      // penalty bump (based on baseNeed, not already-penalized need)
+      const CL = state.level;
+      const nextTarget =
+        baseNeed >= 3 ? 3 :
+        baseNeed === 2 ? 3 :
+        2;
+
+      const prev = state.penalty[x.id];
+      const finalTarget = Math.max(prev?.target || 0, nextTarget);
+
+      state.penalty[x.id] = { target: finalTarget, untilLevel: CL + 1 };
+
+      inp.value = x.german || '';
+      inp.classList.add('bad-field');
+
+      setHTML(
+        '#coreFeedback',
+        `<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> <span class="muted small">• now ${finalTarget}-streak (until level ${CL+1})</span>`
+      );
+    }
+
+    showCorrectSentence();
+
+    saveState();
+
+    // IMPORTANT: keep your existing behavior for now:
+    // level up only when ALL unlocked words meet requiredFor()
+    const pool = this.levelPool();
+    const allMastered = pool.length && pool.every(it => {
+      const req = this.requiredFor(it);
+      return (state.streaks[it.id] || 0) >= req;
+    });
+
+    if(allMastered && state.level * APP.wordsPerLevel < state.data.length){
+      state.level++;
+      // keep streaks or reset? you can decide later.
+      // For now we match your current app: reset streaks on level up.
+      state.streaks = {};
+      saveState();
+    }
+
+    this.updateProgress();
+    this.updateDbg();
+  },
+
+  updateProgress(){
+    const pool = this.levelPool();
+    if(!pool.length) return;
+
+    const done = pool.filter(w => {
+      const need = this.requiredFor(w);
+      return (state.streaks[w.id] || 0) >= need;
+    }).length;
+
+    const pct = Math.round(100 * done / pool.length);
+    $('#coreProgBar').style.width = pct + '%';
+    setText('#coreProgText', `${done} / ${pool.length}`);
+  },
+
+  updateDbg(){
+    const pool = this.levelPool();
+    setText('#dbg', `unlocked=${pool.length} • lvl=${state.level} • current=${state.currentId||'-'}`);
+  }
+};
+
+/* ========= wiring ========= */
+async function boot(){
+  loadState();
+
+  // apply UI toggle from state
+  const t = $('#coreSentenceMode');
+  if(t){
+    t.checked = !!state.sentenceMode;
+    t.addEventListener('change', (e)=>{
+      state.sentenceMode = !!e.target.checked;
+      saveState();
+      nextCard();
+    });
+  }
+
+  $('#coreCheck').addEventListener('click', ()=> {
+    const x = state.data.find(w => w.id === state.currentId);
+    if(x) Core.check(x);
+  });
+  $('#coreNext').addEventListener('click', ()=> nextCard());
+
+  $('#coreReset').addEventListener('click', ()=>{
+    if(!confirm('Reset 5k progress?')) return;
+    state.level = 1;
+    state.streaks = {};
+    state.penalty = {};
+    state.sentenceMode = false;
+    state.currentId = null;
+    saveState();
+    location.reload();
+  });
+
+  $('#btnDump').addEventListener('click', ()=>{
+    console.log('TOP5K STATE:', JSON.parse(JSON.stringify(state)));
+    alert('Dumped to console.');
+  });
+
+  $('#btnHardSave').addEventListener('click', ()=>{
+    saveState();
+    alert('Saved.');
+  });
+
+  await Core.load();
+  nextCard();
+}
+
+function nextCard(){
+  const x = Core.pick();
+  if(!x){
+    setText('#coreEn', 'No data / nothing to pick');
+    return;
+  }
+  Core.render(x);
+  saveState();
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
