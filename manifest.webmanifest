@@ -1,0 +1,11 @@
+{
+  "name": "German Trainer — 5k Only",
+  "short_name": "German 5k",
+  "start_url": "./top5k.html",
+  "display": "standalone",
+  "background_color": "#0b0e12",
+  "theme_color": "#0b0e12",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+  ]
+}
