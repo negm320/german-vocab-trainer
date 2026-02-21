@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>German Trainer — 5k Only</title>
+<title>German 5K Trainer</title>
+<!-- App icon / PWA -->
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b0e12">
 <style>
   :root{
     --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041; --accent:#6aa6ff;
@@ -36,9 +42,22 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="bar" style="justify-content:space-between;">
+  <div class="bar" style="justify-content:space-between;flex-wrap:wrap;">
     <strong>5k Trainer (isolated)</strong>
-    <span id="dbg" class="muted small"></span>
+
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+      <label class="muted small" style="display:flex;gap:6px;align-items:center;">
+        Level
+        <select id="levelSelect" style="padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--hole);color:var(--text);">
+          <option value="1">1</option>
+        </select>
+      </label>
+
+      <button id="btnExport" class="muted">Export</button>
+      <button id="btnImport" class="muted">Import</button>
+
+      <span id="dbg" class="muted small"></span>
+    </div>
   </div>
 
   <section class="card">
@@ -174,6 +193,8 @@ const Core = {
       masri:   r[6] || '',
       lvl: Math.floor(idx / APP.wordsPerLevel) + 1
     }));
+	    // Build level selector options after data is loaded
+    UI.buildLevelSelector();
   },
 
   levelPool(){
@@ -255,6 +276,29 @@ const Core = {
     $('#coreProgressWrap')?.classList.toggle('hidden', sentenceMode);
 
     setTimeout(()=>{ (sentenceMode?sentInp:wordInp)?.focus(); },0);
+	
+	    // --- Enter behavior: 1st Enter = Check, 2nd Enter = Next ---
+    state._enterStage = 0; // reset when a new card renders
+    const activeInput = (sentenceMode ? sentInp : wordInp);
+
+    if(activeInput){
+      activeInput.onkeydown = (e)=>{
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          if(state._enterStage === 0){
+            // First Enter => Check
+            $('#coreCheck')?.click();
+            state._enterStage = 1;
+            // keep focus so keyboard stays up
+            setTimeout(()=> activeInput.focus(), 0);
+          } else {
+            // Second Enter => Next
+            $('#coreNext')?.click();
+            state._enterStage = 0;
+          }
+        }
+      };
+    }
 
     this.updateProgress();
     this.updateDbg();
@@ -369,6 +413,81 @@ const Core = {
   }
 };
 
+/* ========= UI extras (Level selector + Import/Export) ========= */
+const UI = {
+  maxLevel(){
+    return Math.max(1, Math.ceil((state.data?.length || 0) / APP.wordsPerLevel));
+  },
+
+  buildLevelSelector(){
+    const sel = $('#levelSelect');
+    if(!sel) return;
+
+    const maxL = this.maxLevel();
+    sel.innerHTML = '';
+    for(let i=1;i<=maxL;i++){
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = String(i);
+      sel.appendChild(opt);
+    }
+    sel.value = String(state.level || 1);
+
+    sel.onchange = ()=>{
+      const v = parseInt(sel.value, 10);
+      if(!Number.isFinite(v)) return;
+      state.level = Math.max(1, Math.min(v, maxL));
+      // Optional: clear current card stage
+      state._enterStage = 0;
+      saveState();
+      nextCard();
+    };
+  },
+
+  exportState(){
+    // Export ONLY progress (not the full CSV data)
+    const payload = {
+      level: state.level,
+      streaks: state.streaks || {},
+      penalty: state.penalty || {},
+      sentenceMode: !!state.sentenceMode
+    };
+    const txt = JSON.stringify(payload);
+    // show in prompt for easy copy
+    window.prompt('Copy your progress JSON:', txt);
+  },
+
+  importState(){
+    const txt = window.prompt('Paste your progress JSON here:');
+    if(!txt) return;
+    try{
+      const obj = JSON.parse(txt);
+
+      if(obj && typeof obj === 'object'){
+        if(typeof obj.level === 'number') state.level = obj.level;
+        if(obj.streaks && typeof obj.streaks === 'object') state.streaks = obj.streaks;
+        if(obj.penalty && typeof obj.penalty === 'object') state.penalty = obj.penalty;
+        if(typeof obj.sentenceMode === 'boolean') state.sentenceMode = obj.sentenceMode;
+
+        // clamp level to available
+        const maxL = this.maxLevel();
+        state.level = Math.max(1, Math.min(state.level || 1, maxL));
+
+        // sync checkbox UI
+        const t = $('#coreSentenceMode');
+        if(t) t.checked = !!state.sentenceMode;
+
+        saveState();
+        this.buildLevelSelector();
+        nextCard();
+        alert('Imported ✅');
+      }
+    }catch(e){
+      alert('Import failed: invalid JSON');
+    }
+  }
+};
+
 /* ========= wiring ========= */
 async function boot(){
   loadState();
@@ -384,11 +503,38 @@ async function boot(){
     });
   }
 
-  $('#coreCheck').addEventListener('click', ()=> {
+  // Keep keyboard open on mobile: prevent buttons from stealing focus
+  function refocusActiveInput(){
+    const sentenceMode = !!state.sentenceMode;
+    const el = sentenceMode ? $('#coreDeSent') : $('#coreDe');
+    setTimeout(()=>{ el?.focus(); }, 0);
+  }
+
+  function bindNoFocusClick(btnSel, onClick){
+    const btn = $(btnSel);
+    if(!btn) return;
+
+    // pointer/touch: prevent focus loss
+    btn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); }, {passive:false});
+    btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); }, {passive:false});
+    btn.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
+
+    btn.addEventListener('click', ()=>{
+      onClick();
+      refocusActiveInput();
+    });
+  }
+
+  bindNoFocusClick('#coreCheck', ()=>{
     const x = state.data.find(w => w.id === state.currentId);
     if(x) Core.check(x);
+    state._enterStage = 1; // after clicking Check, next Enter should go Next
   });
-  $('#coreNext').addEventListener('click', ()=> nextCard());
+
+  bindNoFocusClick('#coreNext', ()=>{
+    nextCard();
+    state._enterStage = 0;
+  });
 
   $('#coreReset').addEventListener('click', ()=>{
     if(!confirm('Reset 5k progress?')) return;
@@ -410,6 +556,10 @@ async function boot(){
     saveState();
     alert('Saved.');
   });
+  
+    // Level selector + Import/Export
+  $('#btnExport')?.addEventListener('click', ()=> UI.exportState());
+  $('#btnImport')?.addEventListener('click', ()=> UI.importState());
 
   await Core.load();
   nextCard();
