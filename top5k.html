@@ -172,6 +172,12 @@ const state = {
   level: 1,
   streaks: {},
   penalty: {},
+
+  // Tracks the last required streak number we used for each word.
+  // If the requirement changes later (due to level-up or penalty expiring),
+  // we reset streak for that word so it can't auto-master.
+  reqSeen: {},
+
   sentenceMode: false,
   currentId: null
 };
@@ -216,10 +222,31 @@ const Core = {
   requiredFor(item){
     const base = this.baseRequiredFor(item);
     const pen = state.penalty?.[item.id];
-    if(pen && state.level <= pen.untilLevel){
-      return Math.max(base, pen.target);
+
+    const req = (pen && state.level <= pen.untilLevel)
+      ? Math.max(base, pen.target)
+      : base;
+
+    // --- IMPORTANT FIX ---
+    // If a word's required streak changes (e.g., 2 -> 1 when you level up),
+    // we must NOT let old streak instantly count as mastery.
+    // So: when req changes for this word, reset its streak.
+    const id = item.id;
+    const prev = state.reqSeen?.[id];
+
+    if(prev === undefined){
+      // First time we track this word: record req but DON'T wipe existing streak
+      // (so imports / existing progress isn't destroyed immediately).
+      state.reqSeen[id] = req;
+      return req;
     }
-    return base;
+
+    if(prev !== req){
+      state.streaks[id] = 0;
+      state.reqSeen[id] = req;
+    }
+
+    return req;
   },
 
   sentencePool(){
