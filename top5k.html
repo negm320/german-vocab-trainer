@@ -156,15 +156,38 @@ function parseCSV(txt){
 }
 
 /* ========= storage ========= */
-const LS_KEY = 'top5k_state_v2'; // bump version because we're adding overrides
+const LS_KEY = 'top5k_state_v2';
+const LS_KEY_OLD = 'top5k_state_v1';
 function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 function loadState(){
+  // Try new key first
+  let raw = localStorage.getItem(LS_KEY);
+
+  // If empty, try old key and migrate
+  if(!raw){
+    const old = localStorage.getItem(LS_KEY_OLD);
+    if(old){
+      raw = old;
+      localStorage.setItem(LS_KEY, old); // migrate forward
+    }
+  }
+
+  if(!raw) return;
+
   try{
-    const raw = localStorage.getItem(LS_KEY);
-    if(!raw) return;
     const obj = JSON.parse(raw);
-    if(obj && typeof obj === 'object') Object.assign(state, obj);
-  }catch(e){}
+    if(!obj || typeof obj !== 'object') return;
+
+    if(typeof obj.level === 'number') state.level = obj.level;
+    if(obj.streaks && typeof obj.streaks === 'object') state.streaks = obj.streaks;
+    if(obj.penalty && typeof obj.penalty === 'object') state.penalty = obj.penalty;
+    if(obj.reqSeen && typeof obj.reqSeen === 'object') state.reqSeen = obj.reqSeen;
+    if(obj.overrides && typeof obj.overrides === 'object') state.overrides = obj.overrides;
+    if(typeof obj.sentenceMode === 'boolean') state.sentenceMode = obj.sentenceMode;
+
+  }catch(e){
+    console.warn('Failed to load state:', e);
+  }
 }
 
 /* ========= state ========= */
