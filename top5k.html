@@ -115,6 +115,9 @@
       <button id="btnDump">Dump state</button>
       <button id="btnHardSave">Force save</button>
     </div>
+	<div class="actions" style="margin-top:6px;">
+  <button id="btnCheckV1">Check v1 Key</button>
+</div>
 	
 	<div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:center;">
 
@@ -872,6 +875,23 @@ async function boot(){
     saveState();
     alert('Saved.');
   });
+  // Debug: check if old v1 storage still exists
+$('#btnCheckV1')?.addEventListener('click', ()=>{
+  const raw = localStorage.getItem('top5k_state_v1');
+  if(!raw){
+    alert('v1 key NOT found in this container.');
+    return;
+  }
+  try{
+    const obj = JSON.parse(raw);
+    alert('v1 found. Level = ' + (obj.level ?? 'unknown'));
+    console.log('V1 STATE:', obj);
+    window.prompt('Copy v1 JSON:', raw);
+  }catch(e){
+    alert('v1 exists but JSON invalid');
+    console.log('RAW V1:', raw);
+  }
+});
   
     // Level selector + Import/Export
   $('#btnExport')?.addEventListener('click', ()=> UI.exportState());
@@ -895,5 +915,3 @@ document.addEventListener('DOMContentLoaded', boot);
 </script>
 </body>
 </html>
-
-
