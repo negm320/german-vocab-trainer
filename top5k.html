@@ -396,45 +396,41 @@ const Core = {
     const rows = parseCSV(txt.trim());
     rows.shift(); // header
 
-	state.data = rows.map((r, idx) => {
-	  const id = (r[0] || String(idx+1)).toString().trim();
+    state.data = rows.map((r, idx) => {
+      const id = (r[0] || String(idx+1)).toString().trim();
 
-	  // Base data from CSV
-	  const base = {
-		id,
-		german:  r[1] || '',
-		english: r[2] || '',
-		deSent:  r[3] || '',
-		enSent:  r[4] || '',
-		category:r[5] || '',
-		masri:   r[6] || '',
-		lvl: Math.floor(idx / APP.wordsPerLevel) + 1
-	  };
+      const base = {
+        id,
+        german:  r[1] || '',
+        english: r[2] || '',
+        deSent:  r[3] || '',
+        enSent:  r[4] || '',
+        category:r[5] || '',
+        masri:   r[6] || '',
+        lvl: Math.floor(idx / APP.wordsPerLevel) + 1
+      };
 
-	  // Apply local overrides (edit / delete / super)
-	  const ov = state.overrides?.[id];
-	  if(ov && ov.deleted) return null;
+      const ov = state.overrides?.[id];
+      if(ov && ov.deleted) return null;
 
-	  if(ov && typeof ov === 'object'){
-		return {
-		  ...base,
-		  german:  (ov.german  ?? base.german),
-		  english: (ov.english ?? base.english),
-		  deSent:  (ov.deSent  ?? base.deSent),
-		  enSent:  (ov.enSent  ?? base.enSent),
-		  category:(ov.category?? base.category),
-		  masri:   (ov.masri   ?? base.masri),
+      if(ov && typeof ov === 'object'){
+        return {
+          ...base,
+          german:  (ov.german  ?? base.german),
+          english: (ov.english ?? base.english),
+          deSent:  (ov.deSent  ?? base.deSent),
+          enSent:  (ov.enSent  ?? base.enSent),
+          category:(ov.category?? base.category),
+          masri:   (ov.masri   ?? base.masri),
+          super: !!ov.super,
+          superEvery: ov.superEvery ?? 3,
+          superNext: ov.superNext ?? null
+        };
+      }
 
-		  // keep override flags accessible
-		  super: !!ov.super,
-		  superEvery: ov.superEvery ?? 3,
-		  superNext: ov.superNext ?? null
-		};
-	  }
+      return base;
+    }).filter(Boolean);
 
-	  return base;
-	}).filter(Boolean);
-	    // Build level selector options after data is loaded
     UI.buildLevelSelector();
   },
 
