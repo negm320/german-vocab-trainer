@@ -165,6 +165,7 @@
 		<button id="btnCheckV1">Check v1 Key</button>
 		<button id="btnCopyV1" class="muted">Copy v1 JSON</button>
 		<button id="btnRestoreV1" class="muted">Restore v1 → current</button>
+		<button id="btnRestoreBackup" class="muted">Restore latest backup</button>
 	  </div>
 	</details>
 	
@@ -243,7 +244,21 @@ function saveState(){
     sentenceMode: !!state.sentenceMode,
     currentId: state.currentId || null
   };
-  localStorage.setItem(LS_KEY, JSON.stringify(payload));
+
+  try{
+    // rolling backups (keep last 15)
+    const BK = 'top5k_backups_v1';
+    const raw = localStorage.getItem(BK);
+    const arr = raw ? JSON.parse(raw) : [];
+    arr.unshift({ t: Date.now(), data: payload });
+    while(arr.length > 15) arr.pop();
+    localStorage.setItem(BK, JSON.stringify(arr));
+
+    localStorage.setItem(LS_KEY, JSON.stringify(payload));
+  }catch(e){
+    alert('Save failed. Please tap Export NOW to back up your progress.');
+    console.error('Save failed:', e);
+  }
 }
 function loadState(){
 
@@ -937,6 +952,26 @@ async function boot(){
     saveState();
     alert('Saved.');
   });
+  
+  $('#btnRestoreBackup')?.addEventListener('click', ()=>{
+  try{
+    const BK = 'top5k_backups_v1';
+    const raw = localStorage.getItem(BK);
+    const arr = raw ? JSON.parse(raw) : [];
+    if(!arr.length){ alert('No backups found.'); return; }
+
+    const newest = arr[0];
+    const when = new Date(newest.t).toLocaleString();
+    if(!confirm(`Restore latest backup?\n${when}`)) return;
+
+    localStorage.setItem(LS_KEY, JSON.stringify(newest.data));
+    alert('Restored ✅ Reloading…');
+    location.reload();
+  }catch(e){
+    alert('Restore failed.');
+    console.error(e);
+  }
+});
   // Debug: check if old v1 storage still exists
 // --- v1 tools (Home Screen recovery) ---
 function getV1Raw(){
