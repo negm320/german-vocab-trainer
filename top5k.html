@@ -115,9 +115,11 @@
       <button id="btnDump">Dump state</button>
       <button id="btnHardSave">Force save</button>
     </div>
-	<div class="actions" style="margin-top:6px;">
-  <button id="btnCheckV1">Check v1 Key</button>
-</div>
+	<div class="actions" style="margin-top:6px;flex-wrap:wrap;">
+	  <button id="btnCheckV1">Check v1 Key</button>
+	  <button id="btnCopyV1" class="muted">Copy v1 JSON</button>
+	  <button id="btnRestoreV1" class="muted">Restore v1 → current</button>
+	</div>
 	
 	<div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:center;">
 
@@ -843,8 +845,28 @@ async function boot(){
     alert('Saved.');
   });
   // Debug: check if old v1 storage still exists
+// --- v1 tools (Home Screen recovery) ---
+function getV1Raw(){
+  return localStorage.getItem('top5k_state_v1');
+}
+
+// iOS-friendly copy helper
+async function copyTextToClipboard(txt){
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(txt);
+      alert('Copied ✅');
+      return true;
+    }
+  }catch(e){}
+
+  // Fallback: prompt (user can long-press select/copy)
+  window.prompt('Copy this JSON:', txt);
+  return false;
+}
+
 $('#btnCheckV1')?.addEventListener('click', ()=>{
-  const raw = localStorage.getItem('top5k_state_v1');
+  const raw = getV1Raw();
   if(!raw){
     alert('v1 key NOT found in this container.');
     return;
@@ -853,11 +875,30 @@ $('#btnCheckV1')?.addEventListener('click', ()=>{
     const obj = JSON.parse(raw);
     alert('v1 found. Level = ' + (obj.level ?? 'unknown'));
     console.log('V1 STATE:', obj);
-    window.prompt('Copy v1 JSON:', raw);
   }catch(e){
     alert('v1 exists but JSON invalid');
     console.log('RAW V1:', raw);
   }
+});
+
+$('#btnCopyV1')?.addEventListener('click', async ()=>{
+  const raw = getV1Raw();
+  if(!raw){ alert('No v1 key found.'); return; }
+  await copyTextToClipboard(raw);
+});
+
+// This is the REAL fix: force-migrate v1 -> v2 and reload
+$('#btnRestoreV1')?.addEventListener('click', ()=>{
+  const raw = getV1Raw();
+  if(!raw){ alert('No v1 key found.'); return; }
+
+  if(!confirm('Restore Level 36 progress from v1 and make it the current state?')) return;
+
+  // Copy v1 into v2
+  localStorage.setItem(LS_KEY, raw);
+
+  alert('Restored ✅ App will reload now.');
+  location.reload();
 });
   
     // Level selector + Import/Export
