@@ -372,20 +372,23 @@ function loadState(){
 const APP = { wordsPerLevel: 25 };
 
 const state = {
+  // Raw CSV rows (kept so we can rebuild data instantly on Hide/Edit)
+  rawRows: [],
+
+  // The active working list (after overrides + deletions)
   data: [],
+
   level: 1,
   streaks: {},
   penalty: {},
   reqSeen: {},
 
-  // Local per-word overrides (do NOT touch CSV):
-  // { [id]: { deleted?, super?, superEvery?, superNext?, german?, english?, deSent?, enSent?, category?, masri? } }
+  // Local per-word overrides (do NOT touch CSV)
   overrides: {},
 
   sentenceMode: false,
   currentId: null
 };
-
 /* ========= 5k core ========= */
 const Core = {
   async load(){
@@ -396,7 +399,18 @@ const Core = {
     const rows = parseCSV(txt.trim());
     rows.shift(); // header
 
-    state.data = rows.map((r, idx) => {
+	state.rawRows = rows;       // keep raw CSV rows
+	this.rebuildData();         // build state.data from rawRows + overrides
+
+    UI.buildLevelSelector();
+  },
+  
+    rebuildData(){
+    // Build working list from rawRows + overrides, then recompute lvl by position
+    const built = [];
+
+    for(let idx = 0; idx < state.rawRows.length; idx++){
+      const r = state.rawRows[idx];
       const id = (r[0] || String(idx+1)).toString().trim();
 
       const base = {
@@ -406,15 +420,15 @@ const Core = {
         deSent:  r[3] || '',
         enSent:  r[4] || '',
         category:r[5] || '',
-        masri:   r[6] || '',
-        lvl: Math.floor(idx / APP.wordsPerLevel) + 1
+        masri:   r[6] || ''
       };
 
       const ov = state.overrides?.[id];
-      if(ov && ov.deleted) return null;
+      if(ov && ov.deleted) continue; // instant delete
 
+      let item = base;
       if(ov && typeof ov === 'object'){
-        return {
+        item = {
           ...base,
           german:  (ov.german  ?? base.german),
           english: (ov.english ?? base.english),
@@ -428,15 +442,37 @@ const Core = {
         };
       }
 
-      return base;
-    }).filter(Boolean);
+      built.push(item);
+    }
+
+    // IMPORTANT: simulate "deleting a CSV line":
+    // after deletions, recompute lvl by the *new* position so the pool stays full.
+    state.data = built.map((it, i)=> ({
+      ...it,
+      lvl: Math.floor(i / APP.wordsPerLevel) + 1
+    }));
+
+    // Make sure level isn't beyond the max possible after deletions
+    const maxLvl = Math.max(1, Math.ceil(state.data.length / APP.wordsPerLevel));
+    if(state.level > maxLvl) state.level = maxLvl;
 
     UI.buildLevelSelector();
   },
 
-  levelPool(){
-    return state.data.slice(0, state.level * APP.wordsPerLevel);
-  },
+	levelPool(){
+	  const target = state.level * APP.wordsPerLevel;
+
+	  // Super behaves like "temporarily deleted" from learning pool:
+	  // skip it, and keep filling so the pool stays full.
+	  const out = [];
+	  for(let i = 0; i < state.data.length && out.length < target; i++){
+		const it = state.data[i];
+		const ov = state.overrides?.[it.id];
+		if(ov?.super) continue; // temporarily removed from learning pool
+		out.push(it);
+	  }
+	  return out;
+	},
 
   baseRequiredFor(item){
     const CL = state.level;
@@ -481,37 +517,45 @@ const Core = {
     return this.levelPool().filter(w => (w.deSent||'').trim() && (w.enSent||'').trim());
   },
 
-  pick(){
-    if(state.sentenceMode){
-      return pick(this.sentencePool());
-    }
-    const pool = this.levelPool();
-    if(!pool.length) return null;
+pick(){
+  if(state.sentenceMode){
+    return pick(this.sentencePool());
+  }
 
-	const unmastered = pool.filter(it => {
-	  const need = this.requiredFor(it);
-	  return (state.streaks[it.id] || 0) < need;
-	});
+  // Learning pool (filled to level*25, excluding super)
+  const learnPool = this.levelPool();
+  if(!learnPool.length) return null;
 
-	// Due super-review words (even if mastered), only when due
-	const dueSuper = pool.filter(it => {
-	  const ov = state.overrides?.[it.id];
-	  if(!ov || !ov.super) return false;
+  // Due Super visitors: any super word that is due can appear as an "extra review"
+  // This does NOT shrink or change learnPool size.
+  const dueSuper = [];
+  const maxUnlocked = state.level * APP.wordsPerLevel;
 
-	  const every = ov.superEvery ?? 3;
-	  const nextDue = ov.superNext ?? (state.level + every);
+  // Due super should only consider "unlocked scope" like a visitor from anywhere up to unlocked boundary.
+  // We'll scan the first maxUnlocked items of the ORIGINAL ordered list (state.data).
+  for(let i=0; i<Math.min(state.data.length, maxUnlocked); i++){
+    const it = state.data[i];
+    const ov = state.overrides?.[it.id];
+    if(!ov?.super) continue;
 
-	  // due when we've reached scheduled level
-	  return state.level >= nextDue;
-	});
+    const every = ov.superEvery ?? 3;
+    const nextDue = ov.superNext ?? (state.level + every);
+    if(state.level >= nextDue) dueSuper.push(it);
+  }
 
-	// If there’s due super review, show it sometimes (but don’t block learning)
-	if(dueSuper.length && Math.random() < 0.25){
-	  return pick(dueSuper);
-	}
+  // If any super reviews are due, show one first (visitor)
+  if(dueSuper.length){
+    return pick(dueSuper);
+  }
 
-	return pick(unmastered.length ? unmastered : pool);
-  },
+  // Normal selection from learning pool (excluding super)
+  const unmastered = learnPool.filter(it => {
+    const need = this.requiredFor(it);
+    return (state.streaks[it.id] || 0) < need;
+  });
+
+  return pick(unmastered.length ? unmastered : learnPool);
+},
 
   render(x){
     state.currentId = x?.id || null;
@@ -577,6 +621,9 @@ const Core = {
 
     this.updateProgress();
     this.updateDbg();
+
+    // Always sync tool buttons (Super/Hide) when a new card renders
+    if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
   },
 
   check(x){
@@ -986,9 +1033,13 @@ async function boot(){
 
     if(next && !confirm('Hide this word? (It will stop appearing, CSV unchanged)')) return;
 
-    state.overrides[id] = { ...ov, deleted: next };
-    saveState();
-    nextCard();
+	state.overrides[id] = { ...ov, deleted: next };
+
+	// Apply instantly like deleting a CSV line
+	Core.rebuildData();
+
+	saveState();
+	nextCard();
   });
 
   // Super-master toggle (review only every N levels)
@@ -1022,8 +1073,9 @@ async function boot(){
     }
 
     state.overrides[id] = updated;
-    saveState();
-    nextCard();
+	Core.rebuildData();
+	saveState();
+	nextCard();
   });
 
   $('#coreReset').addEventListener('click', ()=>{
