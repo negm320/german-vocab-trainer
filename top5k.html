@@ -23,6 +23,26 @@
   .bar button{background:var(--btn);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer}
   .bar button:hover{background:var(--btn2)}
   .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:12px;color:var(--muted)}
+  /* Top row: left tools + right level pill */
+.topRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.topLeft{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+/* Slightly smaller pill buttons for the top row */
+.pillbtn-sm{
+  padding:6px 10px !important;
+  font-size:12px;
+  line-height:1.1;
+}
   /* pill-style buttons (for Edit/Hide/Super) */
 .pillbtn{
   border-radius:999px !important;
@@ -126,7 +146,13 @@
     <button id="btnBackupDismiss" class="muted">Dismiss</button>
   </div>
 </div>
-<div style="display:flex;justify-content:flex-end;margin:6px 2px 10px;">
+<div class="topRow" style="margin:6px 2px 10px;">
+  <div class="topLeft">
+    <button id="coreEdit" class="muted pillbtn pillbtn-sm">Edit</button>
+    <button id="coreHide" class="muted pillbtn pillbtn-sm">Hide</button>
+    <button id="coreSuper" class="muted toggle pillbtn pillbtn-sm">Super</button>
+  </div>
+
   <div class="pill" id="topLevelPill">Level 1</div>
 </div>
   <section class="card">
@@ -135,16 +161,6 @@
 	  <div style="flex:1">
 		<div class="muted small" id="coreEnLabel">English word</div>
 		<strong id="coreEn"></strong>
-	  </div>
-
-	  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-		
-		<div style="display:flex;gap:8px;align-items:center;">
-			<button id="coreEdit" class="muted pillbtn">Edit</button>
-			<button id="coreHide" class="muted pillbtn">Hide</button>
-			<button id="coreSuper" class="muted toggle pillbtn">Super</button>
-		</div>
-
 	  </div>
 
 	</div>
