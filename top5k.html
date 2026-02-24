@@ -300,8 +300,8 @@ function updateBackupBanner(){
   meta.textContent = `Last backup: ${fmtWhen(last)} • Recommended every 48h`;
   banner.classList.remove('hidden');
 }
-function saveState(){
-  const payload = {
+function buildStatePayload(){
+  return {
     level: state.level,
     streaks: state.streaks || {},
     penalty: state.penalty || {},
@@ -310,6 +310,9 @@ function saveState(){
     sentenceMode: !!state.sentenceMode,
     currentId: state.currentId || null
   };
+}
+function saveState(){
+  const payload = buildStatePayload();
 
   try{
     // rolling backups (keep last 15)
@@ -750,6 +753,19 @@ const UI = {
 	  overrides: state.overrides || {},
 	  sentenceMode: !!state.sentenceMode
 	};
+	
+	  backupToFile(){
+    const payload = buildStatePayload();
+    const ts = new Date();
+    const pad = (n)=> String(n).padStart(2,'0');
+    const name = `top5k-backup-L${payload.level}-${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}.json`;
+
+    downloadJSONFile(payload, name);
+
+    // Mark as backed up (best-effort; user still needs to save file)
+    setLastCloudBackupNow();
+    updateBackupBanner();
+  },
     const txt = JSON.stringify(payload);
     // show in prompt for easy copy
     openCopyModal(txt, 'Export (current state)');
@@ -790,6 +806,17 @@ const UI = {
   }
 };
 
+function downloadJSONFile(obj, filename){
+  const blob = new Blob([JSON.stringify(obj)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 5000);
+}
 /* ========= copy modal (iOS-friendly) ========= */
 function openCopyModal(text, title='Copy JSON'){
   const modal = $('#copyModal');
@@ -1103,10 +1130,7 @@ $('#btnRestoreV1')?.addEventListener('click', ()=>{
   $('#btnImport')?.addEventListener('click', ()=> UI.importState());
   // Backup reminder buttons
 $('#btnBackupNow')?.addEventListener('click', ()=>{
-  // Open export modal, and assume user will copy/save it now
-  UI.exportState();
-  setLastCloudBackupNow();
-  updateBackupBanner();
+  UI.backupToFile();
 });
 
 $('#btnBackupDismiss')?.addEventListener('click', ()=>{
