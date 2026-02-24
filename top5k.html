@@ -42,6 +42,16 @@
   background:#0f1420;
 }
   .actions button:hover{background:var(--btn2)}
+    /* Make buttons consistent everywhere (header buttons too) */
+  button{
+    background:var(--btn);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px 12px;
+    color:var(--text);
+    cursor:pointer;
+  }
+  button:hover{ background:var(--btn2); }
   .hidden{display:none!important}
 </style>
 </head>
@@ -171,7 +181,18 @@ function parseCSV(txt){
 /* ========= storage ========= */
 const LS_KEY = 'top5k_state_v2';
 const LS_KEY_OLD = 'top5k_state_v1';
-function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+function saveState(){
+  const payload = {
+    level: state.level,
+    streaks: state.streaks || {},
+    penalty: state.penalty || {},
+    reqSeen: state.reqSeen || {},
+    overrides: state.overrides || {},
+    sentenceMode: !!state.sentenceMode,
+    currentId: state.currentId || null
+  };
+  localStorage.setItem(LS_KEY, JSON.stringify(payload));
+}
 function loadState(){
   // Helper: score a candidate saved object (bigger score = more likely real progress)
   function score(obj){
