@@ -754,7 +754,15 @@ const UI = {
 	  sentenceMode: !!state.sentenceMode
 	};
 	
-	  backupToFile(){
+
+    const txt = JSON.stringify(payload);
+    // show in prompt for easy copy
+    openCopyModal(txt, 'Export (current state)');
+	setLastCloudBackupNow();
+	updateBackupBanner();
+  },
+
+  backupToFile(){
     const payload = buildStatePayload();
     const ts = new Date();
     const pad = (n)=> String(n).padStart(2,'0');
@@ -765,12 +773,6 @@ const UI = {
     // Mark as backed up (best-effort; user still needs to save file)
     setLastCloudBackupNow();
     updateBackupBanner();
-  },
-    const txt = JSON.stringify(payload);
-    // show in prompt for easy copy
-    openCopyModal(txt, 'Export (current state)');
-	setLastCloudBackupNow();
-	updateBackupBanner();
   },
 
   importState(){
