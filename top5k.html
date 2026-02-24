@@ -59,7 +59,23 @@
   }
   button:hover{ background:var(--btn2); }
   .hidden{display:none!important}
-  
+  /* Backup reminder banner */
+.banner{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+  background:rgba(106,166,255,.10);
+  border:1px solid rgba(106,166,255,.35);
+  border-radius:12px;
+  padding:10px 12px;
+  margin:10px 0 12px;
+}
+.banner .left{display:flex;flex-direction:column;gap:2px}
+.banner .title{font-weight:700}
+.banner .meta{font-size:12px;color:var(--muted)}
+.banner .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.banner .btns button{padding:8px 10px;border-radius:999px}
   /* Copy Modal (for long JSON on iOS) */
 .modal{
   position:fixed;
@@ -98,6 +114,17 @@
 <div class="wrap">
 <div class="bar">
   <strong>5k Trainer (isolated)</strong>
+</div>
+<!-- Backup reminder (Option 1) -->
+<div id="backupBanner" class="banner hidden" aria-live="polite">
+  <div class="left">
+    <div class="title">Cloud backup overdue</div>
+    <div id="backupMeta" class="meta"></div>
+  </div>
+  <div class="btns">
+    <button id="btnBackupNow">Backup now</button>
+    <button id="btnBackupDismiss" class="muted">Dismiss</button>
+  </div>
 </div>
 <div style="display:flex;justify-content:flex-end;margin:6px 2px 10px;">
   <div class="pill" id="topLevelPill">Level 1</div>
@@ -234,6 +261,45 @@ function parseCSV(txt){
 /* ========= storage ========= */
 const LS_KEY = 'top5k_state_v2';
 const LS_KEY_OLD = 'top5k_state_v1';
+// Backup reminder settings
+const LAST_CLOUD_BACKUP_KEY = 'top5k_last_cloud_backup_v1';
+const BACKUP_DISMISS_SESSION_KEY = 'top5k_backup_dismissed_v1';
+const BACKUP_INTERVAL_MS = 48 * 60 * 60 * 1000; // 48 hours
+
+function fmtWhen(ts){
+  if(!ts) return 'never';
+  try{ return new Date(ts).toLocaleString(); }catch(e){ return 'never'; }
+}
+
+function setLastCloudBackupNow(){
+  localStorage.setItem(LAST_CLOUD_BACKUP_KEY, String(Date.now()));
+}
+
+function updateBackupBanner(){
+  const banner = $('#backupBanner');
+  const meta = $('#backupMeta');
+  if(!banner || !meta) return;
+
+  // If user dismissed this session, don't nag until reload/new session
+  if(sessionStorage.getItem(BACKUP_DISMISS_SESSION_KEY) === '1'){
+    banner.classList.add('hidden');
+    return;
+  }
+
+  const raw = localStorage.getItem(LAST_CLOUD_BACKUP_KEY);
+  const last = raw ? parseInt(raw, 10) : 0;
+
+  const age = Date.now() - (Number.isFinite(last) ? last : 0);
+  const overdue = !last || age >= BACKUP_INTERVAL_MS;
+
+  if(!overdue){
+    banner.classList.add('hidden');
+    return;
+  }
+
+  meta.textContent = `Last backup: ${fmtWhen(last)} • Recommended every 48h`;
+  banner.classList.remove('hidden');
+}
 function saveState(){
   const payload = {
     level: state.level,
@@ -687,6 +753,8 @@ const UI = {
     const txt = JSON.stringify(payload);
     // show in prompt for easy copy
     openCopyModal(txt, 'Export (current state)');
+	setLastCloudBackupNow();
+	updateBackupBanner();
   },
 
   importState(){
@@ -771,6 +839,7 @@ document.addEventListener('click', (e)=>{
 /* ========= wiring ========= */
 async function boot(){
   loadState();
+    updateBackupBanner();
 
   // apply UI toggle from state
 // sentence mode is controlled by the Sentence button now
@@ -1032,6 +1101,18 @@ $('#btnRestoreV1')?.addEventListener('click', ()=>{
     // Level selector + Import/Export
   $('#btnExport')?.addEventListener('click', ()=> UI.exportState());
   $('#btnImport')?.addEventListener('click', ()=> UI.importState());
+  // Backup reminder buttons
+$('#btnBackupNow')?.addEventListener('click', ()=>{
+  // Open export modal, and assume user will copy/save it now
+  UI.exportState();
+  setLastCloudBackupNow();
+  updateBackupBanner();
+});
+
+$('#btnBackupDismiss')?.addEventListener('click', ()=>{
+  sessionStorage.setItem(BACKUP_DISMISS_SESSION_KEY, '1');
+  updateBackupBanner();
+});
 
   await Core.load();
   nextCard();
