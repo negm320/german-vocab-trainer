@@ -47,32 +47,30 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="bar" style="justify-content:space-between;flex-wrap:wrap;">
-    <strong>5k Trainer (isolated)</strong>
-
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
-      <label class="muted small" style="display:flex;gap:6px;align-items:center;">
-        Level
-        <select id="levelSelect" style="padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--hole);color:var(--text);">
-          <option value="1">1</option>
-        </select>
-      </label>
-
-      <button id="btnExport" class="muted">Export</button>
-      <button id="btnImport" class="muted">Import</button>
-
-      <span id="dbg" class="muted small"></span>
-    </div>
-  </div>
+<div class="bar">
+  <strong>5k Trainer (isolated)</strong>
+</div>
 
   <section class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-      <div style="flex:1">
-        <div class="muted small" id="coreEnLabel">English word</div>
-        <strong id="coreEn"></strong>
-      </div>
-      <div class="pill" id="coreLevel"></div>
-    </div>
+	<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+	  
+	  <div style="flex:1">
+		<div class="muted small" id="coreEnLabel">English word</div>
+		<strong id="coreEn"></strong>
+	  </div>
+
+	  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+		
+		<div style="display:flex;gap:8px;align-items:center;">
+		  <button id="coreEdit" class="muted">Edit</button>
+		  <button id="coreHide" class="muted">Hide</button>
+		  <button id="coreSuper" class="muted toggle">Super</button>
+		  <div class="pill" id="coreLevel"></div>
+		</div>
+
+	  </div>
+
+	</div>
 
     <div id="coreEnSentence" class="muted small" style="margin-top:4px;"></div>
     <div id="coreMasri" class="muted small" style="margin-top:4px;"></div>
@@ -93,9 +91,6 @@
 	  <button id="coreCheck">Check</button>
 	  <button id="coreNext">Next</button>
 	  <button id="coreSentenceBtn" class="muted toggle">Sentence</button>
-	  <button id="coreEdit" class="muted">Edit</button>
-	  <button id="coreHide" class="muted">Hide</button>
-	  <button id="coreSuper" class="muted toggle">Super</button>
 	  <button id="coreReset" class="muted">Reset</button>
 	</div>
 
@@ -110,6 +105,24 @@
       <button id="btnDump">Dump state</button>
       <button id="btnHardSave">Force save</button>
     </div>
+	
+	<div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:center;">
+
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <label class="muted small" style="display:flex;gap:6px;align-items:center;">
+      Level
+      <select id="levelSelect" style="padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--hole);color:var(--text);">
+        <option value="1">1</option>
+      </select>
+    </label>
+
+    <button id="btnExport" class="muted">Export</button>
+    <button id="btnImport" class="muted">Import</button>
+  </div>
+
+  <div id="dbg" class="muted small"></div>
+
+</div>
   </section>
 </div>
 
@@ -156,8 +169,8 @@ function parseCSV(txt){
 }
 
 /* ========= storage ========= */
-const LS_KEY = 'top5k_state_v1';
-const LS_KEY_OLD = 'top5k_state_v2';
+const LS_KEY = 'top5k_state_v2';
+const LS_KEY_OLD = 'top5k_state_v1';
 function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 function loadState(){
   // Helper: score a candidate saved object (bigger score = more likely real progress)
