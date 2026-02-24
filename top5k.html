@@ -197,75 +197,42 @@ function saveState(){
   localStorage.setItem(LS_KEY, JSON.stringify(payload));
 }
 function loadState(){
-  // Helper: score a candidate saved object (bigger score = more likely real progress)
-  function score(obj){
-    if(!obj || typeof obj !== 'object') return -1;
-    const s = obj.streaks && typeof obj.streaks === 'object' ? Object.keys(obj.streaks).length : 0;
-    const p = obj.penalty && typeof obj.penalty === 'object' ? Object.keys(obj.penalty).length : 0;
-    const o = obj.overrides && typeof obj.overrides === 'object' ? Object.keys(obj.overrides).length : 0;
-    const lvl = typeof obj.level === 'number' ? obj.level : 0;
-    return (lvl * 10) + s + p + o;
-  }
 
-  function tryParse(raw){
-    try { return JSON.parse(raw); } catch { return null; }
-  }
-
-  // 1) Read v2 first
   const rawV2 = localStorage.getItem(LS_KEY);
-  const objV2 = rawV2 ? tryParse(rawV2) : null;
-
-  // Decide if v2 looks "empty"
-  const v2LooksEmpty = !objV2 || score(objV2) <= 10; // level 1 + almost no streaks
-
-  // 2) Collect candidates: explicit old key + any localStorage entry that looks like our state
-  const candidates = [];
-
   const rawV1 = localStorage.getItem(LS_KEY_OLD);
-  if(rawV1) candidates.push({ key: LS_KEY_OLD, raw: rawV1, obj: tryParse(rawV1) });
 
-  // Scan everything (covers if your old key name was different)
-  for(let i=0;i<localStorage.length;i++){
-    const key = localStorage.key(i);
-    if(!key) continue;
+  let obj = null;
 
-    const raw = localStorage.getItem(key);
-    if(!raw || raw.length < 20) continue;
-
-    const obj = tryParse(raw);
-    // Must look like our state shape
-    if(obj && typeof obj === 'object' && ('streaks' in obj || 'level' in obj) && typeof obj.streaks === 'object'){
-      candidates.push({ key, raw, obj });
-    }
+  // Prefer v2 if valid and not empty
+  if(rawV2){
+    try{
+      const parsed = JSON.parse(rawV2);
+      if(parsed && typeof parsed === 'object' && parsed.level && parsed.level > 1){
+        obj = parsed;
+      }
+    }catch(e){}
   }
 
-  // Pick best candidate
-  let best = null;
-  for(const c of candidates){
-    const sc = score(c.obj);
-    if(sc < 0) continue;
-    if(!best || sc > best.score) best = { ...c, score: sc };
+  // If v2 is empty or invalid, but v1 exists, use v1
+  if(!obj && rawV1){
+    try{
+      const parsed = JSON.parse(rawV1);
+      if(parsed && typeof parsed === 'object'){
+        obj = parsed;
+        // Migrate v1 → v2 permanently
+        localStorage.setItem(LS_KEY, JSON.stringify(parsed));
+      }
+    }catch(e){}
   }
 
-  // 3) Choose: if v2 is not empty, keep it. If v2 empty and we found a better candidate, migrate it into v2.
-  let finalObj = objV2;
+  if(!obj) return;
 
-  if(v2LooksEmpty && best && score(best.obj) > score(objV2)){
-    finalObj = best.obj;
-    // migrate into v2 so we stop losing it again
-    localStorage.setItem(LS_KEY, JSON.stringify(finalObj));
-    console.warn('Recovered state from:', best.key);
-  }
-
-  if(!finalObj || typeof finalObj !== 'object') return;
-
-  // Apply to current state
-  if(typeof finalObj.level === 'number') state.level = finalObj.level;
-  if(finalObj.streaks && typeof finalObj.streaks === 'object') state.streaks = finalObj.streaks;
-  if(finalObj.penalty && typeof finalObj.penalty === 'object') state.penalty = finalObj.penalty;
-  if(finalObj.reqSeen && typeof finalObj.reqSeen === 'object') state.reqSeen = finalObj.reqSeen;
-  if(finalObj.overrides && typeof finalObj.overrides === 'object') state.overrides = finalObj.overrides;
-  if(typeof finalObj.sentenceMode === 'boolean') state.sentenceMode = finalObj.sentenceMode;
+  state.level = obj.level || 1;
+  state.streaks = obj.streaks || {};
+  state.penalty = obj.penalty || {};
+  state.reqSeen = obj.reqSeen || {};
+  state.overrides = obj.overrides || {};
+  state.sentenceMode = !!obj.sentenceMode;
 }
 
 /* ========= state ========= */
