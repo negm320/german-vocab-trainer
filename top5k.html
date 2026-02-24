@@ -23,6 +23,12 @@
   .bar button{background:var(--btn);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer}
   .bar button:hover{background:var(--btn2)}
   .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:12px;color:var(--muted)}
+  /* pill-style buttons (for Edit/Hide/Super) */
+.pillbtn{
+  border-radius:999px !important;
+  padding:8px 12px !important;
+  font-size:13px;
+}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
   .row{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin:8px 0}
   input,textarea{
@@ -53,6 +59,39 @@
   }
   button:hover{ background:var(--btn2); }
   .hidden{display:none!important}
+  
+  /* Copy Modal (for long JSON on iOS) */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  z-index:9999;
+}
+.modal.hidden{display:none!important}
+.modalBox{
+  width:min(720px, 100%);
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:12px;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);
+}
+#copyModalText{
+  width:100%;
+  height:45vh;
+  margin-top:10px;
+  background:var(--hole);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px;
+  color:var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size:12px;
+}
 </style>
 </head>
 <body>
@@ -60,7 +99,9 @@
 <div class="bar">
   <strong>5k Trainer (isolated)</strong>
 </div>
-
+<div style="display:flex;justify-content:flex-end;margin:6px 2px 10px;">
+  <div class="pill" id="topLevelPill">Level 1</div>
+</div>
   <section class="card">
 	<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
 	  
@@ -72,10 +113,9 @@
 	  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
 		
 		<div style="display:flex;gap:8px;align-items:center;">
-		  <button id="coreEdit" class="muted">Edit</button>
-		  <button id="coreHide" class="muted">Hide</button>
-		  <button id="coreSuper" class="muted toggle">Super</button>
-		  <div class="pill" id="coreLevel"></div>
+			<button id="coreEdit" class="muted pillbtn">Edit</button>
+			<button id="coreHide" class="muted pillbtn">Hide</button>
+			<button id="coreSuper" class="muted toggle pillbtn">Super</button>
 		</div>
 
 	  </div>
@@ -111,15 +151,22 @@
       <div id="coreProgText" class="small muted" style="margin-top:4px;text-align:right"></div>
     </div>
 
-    <div class="actions" style="margin-top:10px;justify-content:space-between">
-      <button id="btnDump">Dump state</button>
-      <button id="btnHardSave">Force save</button>
-    </div>
-	<div class="actions" style="margin-top:6px;flex-wrap:wrap;">
-	  <button id="btnCheckV1">Check v1 Key</button>
-	  <button id="btnCopyV1" class="muted">Copy v1 JSON</button>
-	  <button id="btnRestoreV1" class="muted">Restore v1 → current</button>
-	</div>
+	<details id="toolsBox" style="margin-top:10px;">
+	  <summary class="muted small" style="cursor:pointer;user-select:none;">
+		Tools
+	  </summary>
+
+	  <div class="actions" style="margin-top:10px;justify-content:space-between;flex-wrap:wrap;">
+		<button id="btnDump">Dump state</button>
+		<button id="btnHardSave">Force save</button>
+	  </div>
+
+	  <div class="actions" style="margin-top:6px;flex-wrap:wrap;">
+		<button id="btnCheckV1">Check v1 Key</button>
+		<button id="btnCopyV1" class="muted">Copy v1 JSON</button>
+		<button id="btnRestoreV1" class="muted">Restore v1 → current</button>
+	  </div>
+	</details>
 	
 	<div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:center;">
 
@@ -400,7 +447,7 @@ const Core = {
       setText('#coreEnSentence', x.enSent || '');
     }
 
-    setText('#coreLevel', `Level ${state.level}`);
+    setText('#topLevelPill', `Level ${state.level}`);
     setText('#coreMasri', x.masri ? ('Masri: ' + x.masri) : '');
 
     setText('#coreDeSentence', '');
@@ -624,7 +671,7 @@ const UI = {
 	};
     const txt = JSON.stringify(payload);
     // show in prompt for easy copy
-    window.prompt('Copy your progress JSON:', txt);
+    openCopyModal(txt, 'Export (current state)');
   },
 
   importState(){
@@ -659,6 +706,52 @@ const UI = {
     }
   }
 };
+
+/* ========= copy modal (iOS-friendly) ========= */
+function openCopyModal(text, title='Copy JSON'){
+  const modal = $('#copyModal');
+  const ta = $('#copyModalText');
+  const ttl = $('#copyModalTitle');
+  const hint = $('#copyModalHint');
+  if(!modal || !ta || !ttl) return;
+
+  ttl.textContent = title;
+  ta.value = text || '';
+  if(hint) hint.textContent = 'Tip: If Copy fails, long-press inside → Select All → Copy.';
+  modal.classList.remove('hidden');
+  modal.setAttribute('aria-hidden', 'false');
+
+  setTimeout(()=>{
+    ta.focus();
+    ta.select();
+  }, 50);
+}
+
+async function copyModalNow(){
+  const ta = $('#copyModalText');
+  const hint = $('#copyModalHint');
+  if(!ta) return;
+  try{
+    await navigator.clipboard.writeText(ta.value);
+    if(hint) hint.textContent = 'Copied ✅';
+  }catch(e){
+    if(hint) hint.textContent = 'Copy failed. Long-press → Select All → Copy.';
+  }
+}
+
+function closeCopyModal(){
+  const modal = $('#copyModal');
+  if(!modal) return;
+  modal.classList.add('hidden');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+document.addEventListener('click', (e)=>{
+  const id = e.target?.id;
+  if(id === 'copyModalClose') closeCopyModal();
+  if(id === 'copyModalCopy') copyModalNow();
+  if(id === 'copyModal') closeCopyModal(); // click outside box
+});
 
 /* ========= wiring ========= */
 async function boot(){
@@ -881,10 +974,10 @@ $('#btnCheckV1')?.addEventListener('click', ()=>{
   }
 });
 
-$('#btnCopyV1')?.addEventListener('click', async ()=>{
-  const raw = getV1Raw();
+$('#btnCopyV1')?.addEventListener('click', ()=>{
+  const raw = localStorage.getItem('top5k_state_v1');
   if(!raw){ alert('No v1 key found.'); return; }
-  await copyTextToClipboard(raw);
+  openCopyModal(raw, 'Export (v1 key)');
 });
 
 // This is the REAL fix: force-migrate v1 -> v2 and reload
@@ -921,5 +1014,22 @@ function nextCard(){
 
 document.addEventListener('DOMContentLoaded', boot);
 </script>
+<!-- Copy Modal (for long JSON on iOS) -->
+<div id="copyModal" class="modal hidden" aria-hidden="true">
+  <div class="modalBox">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <strong id="copyModalTitle">Copy</strong>
+      <button id="copyModalClose" class="muted">Close</button>
+    </div>
+
+    <textarea id="copyModalText" spellcheck="false"></textarea>
+
+    <div class="actions" style="justify-content:flex-end;margin-top:10px;">
+      <button id="copyModalCopy">Copy</button>
+    </div>
+    <div id="copyModalHint" class="muted small" style="margin-top:6px;"></div>
+  </div>
+</div>
+
 </body>
 </html>
