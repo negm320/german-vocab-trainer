@@ -93,6 +93,9 @@
 	  <button id="coreCheck">Check</button>
 	  <button id="coreNext">Next</button>
 	  <button id="coreSentenceBtn" class="muted toggle">Sentence</button>
+	  <button id="coreEdit" class="muted">Edit</button>
+	  <button id="coreHide" class="muted">Hide</button>
+	  <button id="coreSuper" class="muted toggle">Super</button>
 	  <button id="coreReset" class="muted">Reset</button>
 	</div>
 
@@ -153,7 +156,7 @@ function parseCSV(txt){
 }
 
 /* ========= storage ========= */
-const LS_KEY = 'top5k_state_v1';
+const LS_KEY = 'top5k_state_v2'; // bump version because we're adding overrides
 function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 function loadState(){
   try{
@@ -172,11 +175,11 @@ const state = {
   level: 1,
   streaks: {},
   penalty: {},
-
-  // Tracks the last required streak number we used for each word.
-  // If the requirement changes later (due to level-up or penalty expiring),
-  // we reset streak for that word so it can't auto-master.
   reqSeen: {},
+
+  // Local per-word overrides (do NOT touch CSV):
+  // { [id]: { deleted?, super?, superEvery?, superNext?, german?, english?, deSent?, enSent?, category?, masri? } }
+  overrides: {},
 
   sentenceMode: false,
   currentId: null
@@ -192,16 +195,44 @@ const Core = {
     const rows = parseCSV(txt.trim());
     rows.shift(); // header
 
-    state.data = rows.map((r, idx) => ({
-      id:      (r[0] || String(idx+1)).toString().trim(),
-      german:  r[1] || '',
-      english: r[2] || '',
-      deSent:  r[3] || '',
-      enSent:  r[4] || '',
-      category:r[5] || '',
-      masri:   r[6] || '',
-      lvl: Math.floor(idx / APP.wordsPerLevel) + 1
-    }));
+	state.data = rows.map((r, idx) => {
+	  const id = (r[0] || String(idx+1)).toString().trim();
+
+	  // Base data from CSV
+	  const base = {
+		id,
+		german:  r[1] || '',
+		english: r[2] || '',
+		deSent:  r[3] || '',
+		enSent:  r[4] || '',
+		category:r[5] || '',
+		masri:   r[6] || '',
+		lvl: Math.floor(idx / APP.wordsPerLevel) + 1
+	  };
+
+	  // Apply local overrides (edit / delete / super)
+	  const ov = state.overrides?.[id];
+	  if(ov && ov.deleted) return null;
+
+	  if(ov && typeof ov === 'object'){
+		return {
+		  ...base,
+		  german:  (ov.german  ?? base.german),
+		  english: (ov.english ?? base.english),
+		  deSent:  (ov.deSent  ?? base.deSent),
+		  enSent:  (ov.enSent  ?? base.enSent),
+		  category:(ov.category?? base.category),
+		  masri:   (ov.masri   ?? base.masri),
+
+		  // keep override flags accessible
+		  super: !!ov.super,
+		  superEvery: ov.superEvery ?? 3,
+		  superNext: ov.superNext ?? null
+		};
+	  }
+
+	  return base;
+	}).filter(Boolean);
 	    // Build level selector options after data is loaded
     UI.buildLevelSelector();
   },
@@ -260,12 +291,29 @@ const Core = {
     const pool = this.levelPool();
     if(!pool.length) return null;
 
-    const unmastered = pool.filter(it => {
-      const need = this.requiredFor(it);
-      return (state.streaks[it.id] || 0) < need;
-    });
+	const unmastered = pool.filter(it => {
+	  const need = this.requiredFor(it);
+	  return (state.streaks[it.id] || 0) < need;
+	});
 
-    return pick(unmastered.length ? unmastered : pool);
+	// Due super-review words (even if mastered), only when due
+	const dueSuper = pool.filter(it => {
+	  const ov = state.overrides?.[it.id];
+	  if(!ov || !ov.super) return false;
+
+	  const every = ov.superEvery ?? 3;
+	  const nextDue = ov.superNext ?? (state.level + every);
+
+	  // due when we've reached scheduled level
+	  return state.level >= nextDue;
+	});
+
+	// If there’s due super review, show it sometimes (but don’t block learning)
+	if(dueSuper.length && Math.random() < 0.25){
+	  return pick(dueSuper);
+	}
+
+	return pick(unmastered.length ? unmastered : pool);
   },
 
   render(x){
@@ -371,12 +419,31 @@ const Core = {
 
     inp.classList.remove('good-field','bad-field');
 
-    if(guess && guess === target){
-      state.streaks[x.id] = (state.streaks[x.id] || 0) + 1;
-      inp.classList.add('good-field');
-      setHTML('#coreFeedback', `<span class="good">Correct!</span> (${state.streaks[x.id]}/${need})`);
-    } else {
+	if(guess && guess === target){
+	  state.streaks[x.id] = (state.streaks[x.id] || 0) + 1;
+
+	  // If this is a Super word and it’s (already) mastered, treat it as review:
+	  const ov = state.overrides?.[x.id];
+	  const nowMastered = (state.streaks[x.id] || 0) >= need;
+
+	  if(ov?.super && nowMastered){
+		const every = ov.superEvery ?? 3;
+		ov.superNext = state.level + every;
+		state.overrides[x.id] = ov;
+	  }
+
+	  inp.classList.add('good-field');
+	  setHTML('#coreFeedback', `<span class="good">Correct!</span> (${state.streaks[x.id]}/${need})`);
+	} else {
       state.streaks[x.id] = 0;
+	    // If a SUPER word is answered wrong, remove super status and return it to normal rotation
+  const ov = state.overrides?.[x.id];
+  if(ov?.super){
+    ov.super = false;
+    delete ov.superNext;     // no longer scheduled as super
+    // keep superEvery value stored, so you can re-enable later without losing the preference
+    state.overrides[x.id] = ov;
+  }
 
       // penalty bump (based on baseNeed, not already-penalized need)
       const CL = state.level;
@@ -419,8 +486,9 @@ const Core = {
       saveState();
     }
 
-    this.updateProgress();
-    this.updateDbg();
+	this.updateProgress();
+	this.updateDbg();
+	if(typeof syncWordToolsUI === 'function') syncWordToolsUI();
   },
 
   updateProgress(){
@@ -476,12 +544,14 @@ const UI = {
 
   exportState(){
     // Export ONLY progress (not the full CSV data)
-    const payload = {
-      level: state.level,
-      streaks: state.streaks || {},
-      penalty: state.penalty || {},
-      sentenceMode: !!state.sentenceMode
-    };
+	const payload = {
+	  level: state.level,
+	  streaks: state.streaks || {},
+	  penalty: state.penalty || {},
+	  reqSeen: state.reqSeen || {},
+	  overrides: state.overrides || {},
+	  sentenceMode: !!state.sentenceMode
+	};
     const txt = JSON.stringify(payload);
     // show in prompt for easy copy
     window.prompt('Copy your progress JSON:', txt);
@@ -498,14 +568,16 @@ const UI = {
         if(obj.streaks && typeof obj.streaks === 'object') state.streaks = obj.streaks;
         if(obj.penalty && typeof obj.penalty === 'object') state.penalty = obj.penalty;
         if(typeof obj.sentenceMode === 'boolean') state.sentenceMode = obj.sentenceMode;
+		if(obj.reqSeen && typeof obj.reqSeen === 'object') state.reqSeen = obj.reqSeen;
+		if(obj.overrides && typeof obj.overrides === 'object') state.overrides = obj.overrides;
 
         // clamp level to available
         const maxL = this.maxLevel();
         state.level = Math.max(1, Math.min(state.level || 1, maxL));
 
-        // sync checkbox UI
-        const t = $('#coreSentenceMode');
-        if(t) t.checked = !!state.sentenceMode;
+		// sync sentence button UI
+		if(typeof window.syncSentenceBtnUI === 'function') window.syncSentenceBtnUI();
+		if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
 
         saveState();
         this.buildLevelSelector();
@@ -523,15 +595,7 @@ async function boot(){
   loadState();
 
   // apply UI toggle from state
-  const t = $('#coreSentenceMode');
-  if(t){
-    t.checked = !!state.sentenceMode;
-    t.addEventListener('change', (e)=>{
-      state.sentenceMode = !!e.target.checked;
-      saveState();
-      nextCard();
-    });
-  }
+// sentence mode is controlled by the Sentence button now
 
   // Keep keyboard open on mobile: prevent buttons from stealing focus
   function refocusActiveInput(){
@@ -566,16 +630,34 @@ async function boot(){
     state._enterStage = 0;
   });
   
-    // Sentence mode toggle button (replaces checkbox)
-  function syncSentenceBtnUI(){
+  // Sentence mode toggle button (replaces checkbox) — make global so Core/UI can use it
+  window.syncSentenceBtnUI = function(){
     const b = $('#coreSentenceBtn');
     if(!b) return;
     const on = !!state.sentenceMode;
     b.classList.toggle('active', on);
     b.textContent = on ? 'Sentence ✓' : 'Sentence';
-  }
-  syncSentenceBtnUI();
+  };
+  window.syncSentenceBtnUI();
 
+  // Word tools UI (Super/Hide) — make global so Core/UI can use it
+  window.syncWordToolsUI = function(){
+    const id = state.currentId;
+    const ov = id ? (state.overrides?.[id] || null) : null;
+
+    const superBtn = $('#coreSuper');
+    if(superBtn){
+      const on = !!ov?.super;
+      superBtn.classList.toggle('active', on);
+      superBtn.textContent = on ? 'Super ✓' : 'Super';
+    }
+
+    const hideBtn = $('#coreHide');
+    if(hideBtn){
+      hideBtn.textContent = ov?.deleted ? 'Hidden ✓' : 'Hide';
+    }
+  };
+  
   // Prevent losing keyboard focus when tapping Sentence button
   const sBtn = $('#coreSentenceBtn');
   if(sBtn){
@@ -591,6 +673,86 @@ async function boot(){
       nextCard(); // re-render in the new mode
     });
   }
+  
+    // Edit current word (local override, does not touch CSV)
+  $('#coreEdit')?.addEventListener('click', ()=>{
+    const id = state.currentId;
+    if(!id) return;
+    const base = state.data.find(w => w.id === id);
+    if(!base) return;
+
+    const ov = state.overrides[id] || {};
+
+    const german  = window.prompt('German:',  ov.german  ?? base.german  ?? '');
+    if(german === null) return;
+    const english = window.prompt('English:', ov.english ?? base.english ?? '');
+    if(english === null) return;
+    const deSent  = window.prompt('German sentence:', ov.deSent ?? base.deSent ?? '');
+    if(deSent === null) return;
+    const enSent  = window.prompt('English sentence:', ov.enSent ?? base.enSent ?? '');
+    if(enSent === null) return;
+    const category= window.prompt('Category:', ov.category ?? base.category ?? '');
+    if(category === null) return;
+    const masri   = window.prompt('Masri:', ov.masri ?? base.masri ?? '');
+    if(masri === null) return;
+
+    state.overrides[id] = {
+      ...ov,
+      german, english, deSent, enSent, category, masri
+    };
+
+    saveState();
+    nextCard();
+  });
+
+  // Hide current word (soft delete)
+  $('#coreHide')?.addEventListener('click', ()=>{
+    const id = state.currentId;
+    if(!id) return;
+    const ov = state.overrides[id] || {};
+    const next = !ov.deleted;
+
+    if(next && !confirm('Hide this word? (It will stop appearing, CSV unchanged)')) return;
+
+    state.overrides[id] = { ...ov, deleted: next };
+    saveState();
+    nextCard();
+  });
+
+  // Super-master toggle (review only every N levels)
+  $('#coreSuper')?.addEventListener('click', ()=>{
+    const id = state.currentId;
+    if(!id) return;
+    const ov = state.overrides[id] || {};
+    const on = !ov.super;
+
+    const everyDefault = ov.superEvery ?? 3;
+    let every = everyDefault;
+
+    if(on){
+      const v = window.prompt('Show this word every how many levels? (default 3)', String(everyDefault));
+      if(v === null) return;
+      const n = parseInt(v,10);
+      if(Number.isFinite(n) && n >= 1) every = n;
+    }
+
+    const updated = {
+      ...ov,
+      super: on,
+      superEvery: every
+    };
+
+    // schedule next due
+    if(on){
+      updated.superNext = state.level + every;
+    } else {
+      delete updated.superNext;
+    }
+
+    state.overrides[id] = updated;
+    saveState();
+    nextCard();
+  });
 
   $('#coreReset').addEventListener('click', ()=>{
     if(!confirm('Reset 5k progress?')) return;
