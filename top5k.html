@@ -150,6 +150,7 @@
   <div class="topLeft">
     <button id="coreEdit" class="muted pillbtn pillbtn-sm">Edit</button>
     <button id="coreHide" class="muted pillbtn pillbtn-sm">Hide</button>
+    <button id="coreOneStreak" class="muted toggle pillbtn pillbtn-sm">1-Streak</button>
     <button id="coreSuper" class="muted toggle pillbtn pillbtn-sm">Super</button>
   </div>
 
@@ -158,9 +159,13 @@
   <section class="card">
 	<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
 	  
-	  <div style="flex:1">
+	  <div style="flex:1;min-width:0;">
 		<div class="muted small" id="coreEnLabel">English word</div>
-		<strong id="coreEn"></strong>
+		<strong id="coreEn" style="display:block;word-break:break-word;"></strong>
+	  </div>
+
+	  <div>
+		<button id="coreTypo" class="muted pillbtn pillbtn-sm">Typo</button>
 	  </div>
 
 	</div>
@@ -184,6 +189,7 @@
 	  <button id="coreCheck">Check</button>
 	  <button id="coreNext">Next</button>
 	  <button id="coreSentenceBtn" class="muted toggle">Sentence</button>
+	  <button id="coreBack" class="muted">Back</button>
 	  <button id="coreReset" class="muted">Reset</button>
 	</div>
 
@@ -403,8 +409,83 @@ const state = {
   overrides: {},
 
   sentenceMode: false,
-  currentId: null
+  currentId: null,
+
+  // Last checked card snapshot (for Back / Typo)
+  lastReview: null
 };
+
+function cloneProgressState(){
+  return JSON.parse(JSON.stringify({
+    level: state.level,
+    streaks: state.streaks || {},
+    penalty: state.penalty || {},
+    reqSeen: state.reqSeen || {},
+    overrides: state.overrides || {},
+    sentenceMode: !!state.sentenceMode
+  }));
+}
+
+function restoreProgressState(snap){
+  if(!snap) return;
+  state.level = snap.level || 1;
+  state.streaks = JSON.parse(JSON.stringify(snap.streaks || {}));
+  state.penalty = JSON.parse(JSON.stringify(snap.penalty || {}));
+  state.reqSeen = JSON.parse(JSON.stringify(snap.reqSeen || {}));
+  state.overrides = JSON.parse(JSON.stringify(snap.overrides || {}));
+  state.sentenceMode = !!snap.sentenceMode;
+
+  Core.rebuildData();
+}
+
+function captureReviewSnapshot(x, opts={}){
+  const wordInp = $('#coreDe');
+  const sentInp = $('#coreDeSent');
+
+  state.lastReview = {
+    id: x.id,
+    sentenceMode: !!state.sentenceMode,
+    beforeState: opts.beforeState ? JSON.parse(JSON.stringify(opts.beforeState)) : null,
+    canTypo: !!opts.canTypo,
+
+    wordValue: wordInp ? wordInp.value : '',
+    sentValue: sentInp ? sentInp.value : '',
+    wordClass: wordInp ? (wordInp.className || '') : '',
+    sentClass: sentInp ? (sentInp.className || '') : '',
+    feedbackHTML: $('#coreFeedback') ? $('#coreFeedback').innerHTML : '',
+    deSentenceText: $('#coreDeSentence') ? $('#coreDeSentence').textContent : ''
+  };
+}
+
+function restoreLastReviewUI(){
+  const r = state.lastReview;
+  if(!r) return false;
+
+  const x = state.data.find(w => w.id === r.id);
+  if(!x) return false;
+
+  state.sentenceMode = !!r.sentenceMode;
+  Core.render(x);
+
+  const wordInp = $('#coreDe');
+  const sentInp = $('#coreDeSent');
+
+  if(wordInp){
+    wordInp.value = r.wordValue || '';
+    wordInp.className = r.wordClass || '';
+  }
+  if(sentInp){
+    sentInp.value = r.sentValue || '';
+    sentInp.className = r.sentClass || '';
+  }
+
+  setHTML('#coreFeedback', r.feedbackHTML || '');
+  setText('#coreDeSentence', r.deSentenceText || '');
+
+  state._enterStage = 1; // after Back, Enter should go Next
+  if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
+  return true;
+}
 /* ========= 5k core ========= */
 const Core = {
   async load(){
@@ -491,6 +572,9 @@ const Core = {
 	},
 
   baseRequiredFor(item){
+    const ov = state.overrides?.[item.id];
+    if(ov?.easy1) return 1;
+
     const CL = state.level;
     const WL = item.lvl || 1;
     const d = CL - WL;
@@ -649,6 +733,7 @@ pick(){
     if(sentenceMode){
       const inp = $('#coreDeSent');
       if(!inp) return;
+      const beforeState = cloneProgressState();
       const userRaw = inp.value || '';
       const expRaw  = x.deSent || '';
 
@@ -664,14 +749,20 @@ pick(){
         setHTML('#coreFeedback', `<span class="bad">Wrong.</span>`);
       }
       showCorrectSentence();
+      captureReviewSnapshot(x, {
+        beforeState,
+        canTypo: false
+      });
       saveState();
       this.updateDbg();
+      if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
       return;
     }
 
     const inp = $('#coreDe');
     if(!inp) return;
 
+    const beforeState = cloneProgressState();
     const guess  = normDe(inp.value);
     const target = normDe(x.german);
     const baseNeed = this.baseRequiredFor(x);
@@ -727,6 +818,11 @@ pick(){
     }
 
     showCorrectSentence();
+
+    captureReviewSnapshot(x, {
+      beforeState,
+      canTypo: !(guess && guess === target) && !sentenceMode
+    });
 
     saveState();
 
@@ -991,6 +1087,23 @@ async function boot(){
     if(hideBtn){
       hideBtn.textContent = ov?.deleted ? 'Hidden ✓' : 'Hide';
     }
+
+    const oneBtn = $('#coreOneStreak');
+    if(oneBtn){
+      const on = !!ov?.easy1;
+      oneBtn.classList.toggle('active', on);
+      oneBtn.textContent = on ? '1-Streak ✓' : '1-Streak';
+    }
+
+    const typoBtn = $('#coreTypo');
+    if(typoBtn){
+      const canTypo =
+        !!state.lastReview &&
+        state.lastReview.id === state.currentId &&
+        state.lastReview.canTypo === true;
+      typoBtn.classList.toggle('active', canTypo);
+      typoBtn.textContent = canTypo ? 'Typo ✓' : 'Typo';
+    }
   };
   
   // Prevent losing keyboard focus when tapping Sentence button
@@ -1008,6 +1121,64 @@ async function boot(){
       nextCard(); // re-render in the new mode
     });
   }
+  
+    // Typo: convert the current last wrong word-check into a correct answer
+  $('#coreTypo')?.addEventListener('click', ()=>{
+    const r = state.lastReview;
+    if(!r || r.id !== state.currentId || !r.canTypo){
+      alert('Typo works only right after a wrong word check on the current card.');
+      return;
+    }
+
+    const x = state.data.find(w => w.id === r.id);
+    if(!x) return;
+
+    // Restore progress state to BEFORE the wrong answer
+    restoreProgressState(r.beforeState);
+
+    const inp = $('#coreDe');
+    if(!inp) return;
+
+    const need = Core.requiredFor(x);
+    state.streaks[x.id] = (state.streaks[x.id] || 0) + 1;
+
+    const ov = state.overrides?.[x.id];
+    const nowMastered = (state.streaks[x.id] || 0) >= need;
+    if(ov?.super && nowMastered){
+      const every = ov.superEvery ?? 3;
+      ov.superNext = state.level + every;
+      state.overrides[x.id] = ov;
+    }
+
+    inp.value = x.german || '';
+    inp.classList.remove('bad-field');
+    inp.classList.add('good-field');
+
+    setHTML('#coreFeedback', `<span class="good">Counted as correct (Typo).</span> (${state.streaks[x.id]}/${need})`);
+    setText('#coreDeSentence', x.deSent || '');
+
+    // level-up check
+    const pool = Core.levelPool();
+    const allMastered = pool.length && pool.every(it => {
+      const req = Core.requiredFor(it);
+      return (state.streaks[it.id] || 0) >= req;
+    });
+
+    if(allMastered && state.level * APP.wordsPerLevel < state.data.length){
+      state.level++;
+      state.streaks = {};
+    }
+
+    captureReviewSnapshot(x, {
+      beforeState: cloneProgressState(),
+      canTypo: false
+    });
+
+    saveState();
+    Core.updateProgress();
+    Core.updateDbg();
+    if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
+  });
   
     // Edit current word (local override, does not touch CSV)
   $('#coreEdit')?.addEventListener('click', ()=>{
@@ -1058,6 +1229,26 @@ async function boot(){
 	nextCard();
   });
 
+  // 1-Streak toggle: make this word behave like a 1-streak word
+  $('#coreOneStreak')?.addEventListener('click', ()=>{
+    const id = state.currentId;
+    if(!id) return;
+
+    const ov = state.overrides[id] || {};
+    const on = !ov.easy1;
+
+    state.overrides[id] = {
+      ...ov,
+      easy1: on
+    };
+
+    Core.rebuildData();
+    saveState();
+    Core.updateProgress();
+    Core.updateDbg();
+    if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
+  });
+
   // Super-master toggle (review only every N levels)
   $('#coreSuper')?.addEventListener('click', ()=>{
     const id = state.currentId;
@@ -1092,6 +1283,13 @@ async function boot(){
 	Core.rebuildData();
 	saveState();
 	nextCard();
+  });
+  
+    $('#coreBack')?.addEventListener('click', ()=>{
+    const ok = restoreLastReviewUI();
+    if(!ok){
+      alert('No previous checked card to restore.');
+    }
   });
 
   $('#coreReset').addEventListener('click', ()=>{
