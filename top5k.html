@@ -39,9 +39,9 @@
 
 /* Slightly smaller pill buttons for the top row */
 .pillbtn-sm{
-  padding:6px 10px !important;
+  padding:5px 9px !important;
   font-size:12px;
-  line-height:1.1;
+  line-height:1;
 }
   /* pill-style buttons (for Edit/Hide/Super) */
 .pillbtn{
@@ -64,8 +64,9 @@
   .actions button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer}
   /* Sentence toggle button */
 .toggle.active{
-  outline:2px solid var(--accent);
-  background:#0f1420;
+  outline:1px solid rgba(34,197,94,.55);
+  background:rgba(34,197,94,.14);
+  color:#b8f5c8;
 }
   .actions button:hover{background:var(--btn2)}
     /* Make buttons consistent everywhere (header buttons too) */
@@ -1080,7 +1081,7 @@ async function boot(){
     if(superBtn){
       const on = !!ov?.super;
       superBtn.classList.toggle('active', on);
-      superBtn.textContent = on ? 'Super ✓' : 'Super';
+      superBtn.textContent = 'Super';
     }
 
     const hideBtn = $('#coreHide');
@@ -1092,7 +1093,7 @@ async function boot(){
     if(oneBtn){
       const on = !!ov?.easy1;
       oneBtn.classList.toggle('active', on);
-      oneBtn.textContent = on ? '1-Streak ✓' : '1-Streak';
+      oneBtn.textContent = '1-Streak';
     }
 
     const typoBtn = $('#coreTypo');
@@ -1241,6 +1242,13 @@ async function boot(){
       ...ov,
       easy1: on
     };
+
+    // When turning 1-Streak ON, clear current penalty once.
+    // It is NOT immune: future wrong answers can add penalty again normally.
+    if(on){
+      delete state.penalty[id];
+      delete state.reqSeen[id];
+    }
 
     Core.rebuildData();
     saveState();
