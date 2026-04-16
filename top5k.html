@@ -1110,8 +1110,6 @@ async function boot(){
   // Prevent losing keyboard focus when tapping Sentence button
   const sBtn = $('#coreSentenceBtn');
   if(sBtn){
-    sBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); }, {passive:false});
-    sBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); }, {passive:false});
     sBtn.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
 
     sBtn.addEventListener('click', ()=>{
