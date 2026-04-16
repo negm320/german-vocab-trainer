@@ -1107,21 +1107,15 @@ async function boot(){
     }
   };
   
-  // Prevent losing keyboard focus when tapping Sentence button
-  const sBtn = $('#coreSentenceBtn');
-  if(sBtn){
-    sBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); }, {passive:false});
-    sBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); }, {passive:false});
-    sBtn.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
+  // Sentence mode toggle — use bindNoFocusClick (same as Check/Next) for reliable mobile taps
+  bindNoFocusClick('#coreSentenceBtn', ()=>{
+    state.sentenceMode = !state.sentenceMode;
+    state._enterStage = 0;
+    saveState();
+    syncSentenceBtnUI();
+    nextCard();
+  });
 
-    sBtn.addEventListener('click', ()=>{
-      state.sentenceMode = !state.sentenceMode;
-      state._enterStage = 0;
-      saveState();
-      syncSentenceBtnUI();
-      nextCard(); // re-render in the new mode
-    });
-  }
   
     // Typo: convert the current last wrong word-check into a correct answer
   $('#coreTypo')?.addEventListener('click', ()=>{
