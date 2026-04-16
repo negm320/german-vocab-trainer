@@ -1107,14 +1107,33 @@ async function boot(){
     }
   };
   
-  // Sentence mode toggle — use bindNoFocusClick (same as Check/Next) for reliable mobile taps
-  bindNoFocusClick('#coreSentenceBtn', ()=>{
-    state.sentenceMode = !state.sentenceMode;
-    state._enterStage = 0;
-    saveState();
-    syncSentenceBtnUI();
-    nextCard();
-  });
+  // Sentence mode toggle — use pointerup (reliable on mobile even after preventDefault)
+  {
+    const sBtn = $('#coreSentenceBtn');
+    if(sBtn){
+      let sentGuard = false;
+      sBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); }, {passive:false});
+      sBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); }, {passive:false});
+      sBtn.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
+
+      function toggleSentence(){
+        if(sentGuard) return;
+        sentGuard = true;
+        setTimeout(()=>{ sentGuard = false; }, 300);
+
+        state.sentenceMode = !state.sentenceMode;
+        state._enterStage = 0;
+        saveState();
+        syncSentenceBtnUI();
+        nextCard();
+        refocusActiveInput();
+      }
+
+      sBtn.addEventListener('pointerup', toggleSentence);
+      sBtn.addEventListener('click', toggleSentence);
+    }
+  }
+
 
   
     // Typo: convert the current last wrong word-check into a correct answer
