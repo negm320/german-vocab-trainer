@@ -1107,19 +1107,29 @@ async function boot(){
     }
   };
   
-  // Prevent losing keyboard focus when tapping Sentence button
+  // Sentence button: keep keyboard open on iPhone while still firing on every tap.
+  // touchstart+preventDefault() stops iOS from consuming the tap as a keyboard-dismiss,
+  // but it also suppresses the synthetic click — so we fire the action on touchend instead.
+  // On desktop (mouse) touchstart never fires, so the plain click handler covers it.
   const sBtn = $('#coreSentenceBtn');
   if(sBtn){
-    sBtn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); }, {passive:false});
     sBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); }, {passive:false});
-    sBtn.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
+    sBtn.addEventListener('touchend', (e)=>{
+      e.preventDefault();
+      state.sentenceMode = !state.sentenceMode;
+      state._enterStage = 0;
+      saveState();
+      syncSentenceBtnUI();
+      nextCard();
+    });
 
+    sBtn.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
     sBtn.addEventListener('click', ()=>{
       state.sentenceMode = !state.sentenceMode;
       state._enterStage = 0;
       saveState();
       syncSentenceBtnUI();
-      nextCard(); // re-render in the new mode
+      nextCard();
     });
   }
   
