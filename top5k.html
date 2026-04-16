@@ -1134,7 +1134,16 @@ async function boot(){
 
   
     // Typo: convert the current last wrong word-check into a correct answer
-  $('#coreTypo')?.addEventListener('click', ()=>{
+  {
+    const typoBtn = $('#coreTypo');
+    if(typoBtn){
+      let typoLock = 0;
+      function doTypo(e){
+        e.preventDefault();
+        var now = Date.now();
+        if(now - typoLock < 400) return;
+        typoLock = now;
+
     const r = state.lastReview;
     if(!r || r.id !== state.currentId || !r.canTypo){
       alert('Typo works only right after a wrong word check on the current card.');
@@ -1189,7 +1198,12 @@ async function boot(){
     Core.updateProgress();
     Core.updateDbg();
     if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
-  });
+      }
+      typoBtn.addEventListener('pointerdown', doTypo, {passive:false});
+      typoBtn.addEventListener('mousedown', doTypo);
+    }
+  }
+
   
     // Edit current word (local override, does not touch CSV)
   $('#coreEdit')?.addEventListener('click', ()=>{
