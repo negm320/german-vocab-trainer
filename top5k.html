@@ -23,6 +23,9 @@
   .bar button{background:var(--btn);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer}
   .bar button:hover{background:var(--btn2)}
   .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:12px;color:var(--muted)}
+  .gender-m{border-color:#6aa6ff;color:#6aa6ff;background:rgba(106,166,255,.12)}
+  .gender-f{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.12)}
+  .gender-n{border-color:#22c55e;color:#22c55e;background:rgba(34,197,94,.12)}
   /* Top row: left tools + right level pill */
 .topRow{
   display:flex;
@@ -165,7 +168,8 @@
 		<strong id="coreEn" style="display:block;word-break:break-word;"></strong>
 	  </div>
 
-	  <div>
+	  <div style="display:flex;gap:6px;align-items:center;">
+		<span id="coreGender" class="pill hidden" style="font-weight:700;font-size:13px;min-width:28px;text-align:center;"></span>
 		<button id="coreTypo" class="muted pillbtn pillbtn-sm">Typo</button>
 	  </div>
 
@@ -518,7 +522,8 @@ const Core = {
         deSent:  r[3] || '',
         enSent:  r[4] || '',
         category:r[5] || '',
-        masri:   r[6] || ''
+        masri:   r[6] || '',
+        gender:  r[7] || ''
       };
 
       const ov = state.overrides?.[id];
@@ -534,6 +539,7 @@ const Core = {
           enSent:  (ov.enSent  ?? base.enSent),
           category:(ov.category?? base.category),
           masri:   (ov.masri   ?? base.masri),
+          gender:  (ov.gender  ?? base.gender),
           super: !!ov.super,
           superEvery: ov.superEvery ?? 3,
           superNext: ov.superNext ?? null
@@ -674,6 +680,13 @@ pick(){
 
     setText('#topLevelPill', `Level ${state.level}`);
     setText('#coreMasri', x.masri ? ('Masri: ' + x.masri) : '');
+
+    const genderEl = $('#coreGender');
+    if(genderEl){
+      const g = x.gender || '';
+      genderEl.className = 'pill' + (g ? ' gender-' + g : ' hidden');
+      genderEl.textContent = g === 'm' ? 'der' : g === 'f' ? 'die' : g === 'n' ? 'das' : '';
+    }
 
     setText('#coreDeSentence', '');
     setHTML('#coreFeedback', '');
