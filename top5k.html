@@ -4,142 +4,106 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <title>German 5K Trainer</title>
-<!-- App icon / PWA -->
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b0e12">
 <style>
-  :root{
-    --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041; --accent:#6aa6ff;
-    --good:#22c55e; --bad:#ef4444; --btn:#1a2230; --btn2:#1e2a3c; --hole:#0f141c;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial,sans-serif;}
-  .wrap{max-width:720px;margin:0 auto;padding:14px}
-  .bar{display:flex;gap:8px;align-items:center;margin:6px auto 10px;max-width:720px}
-  .bar button{background:var(--btn);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer}
-  .bar button:hover{background:var(--btn2)}
-  .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:12px;color:var(--muted)}
-  .gender-m{border-color:#6aa6ff;color:#6aa6ff;background:rgba(106,166,255,.12)}
-  .gender-f{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.12)}
-  .gender-n{border-color:#22c55e;color:#22c55e;background:rgba(34,197,94,.12)}
-  /* Top row: left tools + right level pill */
-.topRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
+:root{
+  --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041;
+  --accent:#6aa6ff; --good:#22c55e; --bad:#ef4444; --btn:#1a2230; --btn2:#1e2a3c; --hole:#0f141c;
 }
-.topLeft{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  flex-wrap:wrap;
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial,sans-serif;}
+.wrap{max-width:720px;margin:0 auto;padding:14px}
+
+/* top bar */
+.topBar{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px;}
+.pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:13px;color:var(--muted)}
+
+/* header bar */
+.bar{display:flex;gap:8px;align-items:center;margin:0 0 8px;}
+
+/* card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+
+/* hint row */
+.hintRow{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.hintWord{font-size:13px;font-weight:700;}
+.hintMasri{font-size:12px;color:var(--muted);}
+
+/* cloze prompt */
+.corePrompt{font-size:15px;line-height:1.6;margin:6px 0;word-break:break-word;}
+.cloze-blank{
+  display:inline-block;border-bottom:2px solid #6aa6ff;min-width:58px;height:14px;
+  margin:0 2px;vertical-align:bottom;background:rgba(106,166,255,0.08);border-radius:3px 3px 0 0;
 }
 
-/* Slightly smaller pill buttons for the top row */
-.pillbtn-sm{
-  padding:5px 9px !important;
-  font-size:12px;
-  line-height:1;
+/* divider */
+.divider{border:none;border-top:1px solid var(--border);margin:10px 0;}
+
+/* inputs */
+input,textarea{
+  width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;
+  background:var(--hole);color:var(--text);font-size:16px;
 }
-  /* pill-style buttons (for Edit/Hide/Super) */
-.pillbtn{
-  border-radius:999px !important;
-  padding:8px 12px !important;
-  font-size:13px;
-}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
-  .row{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin:8px 0}
-  input,textarea{
-    width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);
-    font-size:16px;
-  }
-  .muted{color:var(--muted)}
-  .small{font-size:12px}
-  .good{color:var(--good)} .bad{color:var(--bad)}
-  .good-field{border-color:var(--good)!important; box-shadow:0 0 0 1px rgba(34,197,94,.45);}
-  .bad-field{border-color:var(--bad)!important; box-shadow:0 0 0 1px rgba(239,68,68,.45);}
-  .actions{display:flex;gap:8px;margin-top:10px;align-items:center}
-  .actions button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer}
-  /* Sentence toggle button */
-.toggle.active{
-  outline:1px solid rgba(34,197,94,.55);
-  background:rgba(34,197,94,.14);
-  color:#b8f5c8;
-}
-  .actions button:hover{background:var(--btn2)}
-    /* Make buttons consistent everywhere (header buttons too) */
-  button{
-    background:var(--btn);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:10px 12px;
-    color:var(--text);
-    cursor:pointer;
-  }
-  button:hover{ background:var(--btn2); }
-  .hidden{display:none!important}
-  /* Backup reminder banner */
-.banner{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  justify-content:space-between;
-  background:rgba(106,166,255,.10);
-  border:1px solid rgba(106,166,255,.35);
-  border-radius:12px;
-  padding:10px 12px;
-  margin:10px 0 12px;
-}
+
+/* action rows */
+.actionRow{display:flex;gap:6px;margin-top:8px;}
+.actionRow button{flex:1;background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 8px;color:var(--text);cursor:pointer;font-size:14px;}
+.actionRow button:hover{background:var(--btn2)}
+.actionRow.secondary button{font-size:12px;padding:8px 4px;}
+
+/* generic button reset */
+button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer;}
+button:hover{background:var(--btn2)}
+
+/* states */
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.good{color:var(--good)} .bad{color:var(--bad)}
+.good-field{border-color:var(--good)!important;box-shadow:0 0 0 1px rgba(34,197,94,.45);}
+.bad-field{border-color:var(--bad)!important;box-shadow:0 0 0 1px rgba(239,68,68,.45);}
+
+/* toggle active */
+.toggle.active{outline:1px solid rgba(34,197,94,.55);background:rgba(34,197,94,.14);color:#b8f5c8;}
+
+/* backup banner */
+.banner{display:flex;gap:10px;align-items:center;justify-content:space-between;background:rgba(106,166,255,.10);border:1px solid rgba(106,166,255,.35);border-radius:12px;padding:10px 12px;margin:10px 0 12px;}
 .banner .left{display:flex;flex-direction:column;gap:2px}
 .banner .title{font-weight:700}
 .banner .meta{font-size:12px;color:var(--muted)}
 .banner .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .banner .btns button{padding:8px 10px;border-radius:999px}
-  /* Copy Modal (for long JSON on iOS) */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.55);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:16px;
-  z-index:9999;
-}
+
+/* ⋯ menu panel */
+.menuPanel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:10px;display:flex;flex-direction:column;gap:14px;}
+.menuSection{display:flex;flex-direction:column;gap:8px;}
+.menuLabel{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.modeRow{display:flex;gap:6px;}
+.modeBtn{flex:1;padding:9px 6px;font-size:13px;border-radius:10px;}
+.modeBtn.active{outline:1px solid rgba(34,197,94,.55);background:rgba(34,197,94,.14);color:#b8f5c8;}
+.menuRow{display:flex;gap:6px;flex-wrap:wrap;}
+.menuRow button{padding:9px 12px;font-size:13px;}
+.danger-btn{color:var(--bad);border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.08);width:100%;padding:10px;}
+.danger-btn:hover{background:rgba(239,68,68,.18);}
+
+/* copy modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;}
 .modal.hidden{display:none!important}
-.modalBox{
-  width:min(720px, 100%);
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:12px;
-  box-shadow:0 12px 40px rgba(0,0,0,.45);
-}
-#copyModalText{
-  width:100%;
-  height:45vh;
-  margin-top:10px;
-  background:var(--hole);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:10px;
-  color:var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size:12px;
-}
+.modalBox{width:min(720px,100%);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px;box-shadow:0 12px 40px rgba(0,0,0,.45);}
+#copyModalText{width:100%;height:45vh;margin-top:10px;background:var(--hole);border:1px solid var(--border);border-radius:12px;padding:10px;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;}
 </style>
 </head>
 <body>
 <div class="wrap">
-<div class="bar">
-  <strong>5k Trainer (isolated)</strong>
-</div>
-<!-- Backup reminder (Option 1) -->
+
+<div class="bar"><strong>5k Trainer</strong></div>
+
+<!-- Backup reminder banner -->
 <div id="backupBanner" class="banner hidden" aria-live="polite">
   <div class="left">
     <div class="title">Cloud backup overdue</div>
@@ -150,1330 +114,995 @@
     <button id="btnBackupDismiss" class="muted">Dismiss</button>
   </div>
 </div>
-<div class="topRow" style="margin:6px 2px 10px;">
-  <div class="topLeft">
-    <button id="coreEdit" class="muted pillbtn pillbtn-sm">Edit</button>
-    <button id="coreHide" class="muted pillbtn pillbtn-sm">Hide</button>
-    <button id="coreOneStreak" class="muted toggle pillbtn pillbtn-sm">1-Streak</button>
-    <button id="coreSuper" class="muted toggle pillbtn pillbtn-sm">Super</button>
+
+<!-- Top bar: level pill + menu button -->
+<div class="topBar">
+  <div id="topLevelPill" class="pill">Level 1</div>
+  <button id="btnMenu" style="padding:6px 14px;font-size:18px;letter-spacing:2px;border-radius:999px;">⋯</button>
+</div>
+
+<!-- Card -->
+<section class="card">
+
+  <!-- Hint row: English word (gender-colored) + Masri -->
+  <div class="hintRow">
+    <span id="coreEn" class="hintWord"></span>
+    <span id="coreMasri" class="hintMasri"></span>
+    <!-- Hidden for JS compat -->
+    <span id="coreEnLabel" class="hidden"></span>
   </div>
 
-  <div class="pill" id="topLevelPill">Level 1</div>
-</div>
-  <section class="card">
-	<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-	  
-	  <div style="flex:1;min-width:0;">
-		<div class="muted small" id="coreEnLabel">English word</div>
-		<strong id="coreEn" style="display:block;word-break:break-word;"></strong>
-	  </div>
+  <!-- Prompt: cloze sentence / english sentence context -->
+  <div id="corePrompt" class="corePrompt muted"></div>
+  <div id="corePrefixHint" class="muted small hidden" style="margin-top:2px;"></div>
+  <!-- Keep for JS compat -->
+  <div id="coreEnSentence" class="hidden"></div>
 
-	  <div style="display:flex;gap:6px;align-items:center;">
-		<span id="coreGender" class="pill hidden" style="font-weight:700;font-size:13px;min-width:28px;text-align:center;"></span>
-		<button id="coreTypo" class="muted pillbtn pillbtn-sm">Typo</button>
-	  </div>
+  <hr class="divider">
 
-	</div>
+  <!-- Input -->
+  <input id="coreDe" type="text" autocomplete="off" spellcheck="false" placeholder="Type German…">
+  <textarea id="coreDeSent" class="hidden" rows="3" style="margin-top:8px;resize:vertical" placeholder="Write the full German sentence..."></textarea>
 
-    <div id="coreEnSentence" class="muted small" style="margin-top:4px;"></div>
-    <div id="coreMasri" class="muted small" style="margin-top:4px;"></div>
+  <!-- Feedback -->
+  <div id="coreDiff" class="small" style="margin-top:6px;"></div>
+  <div id="coreDeSentence" class="muted small" style="margin-top:4px;"></div>
+  <div id="coreFeedback" class="small" style="margin-top:8px;"></div>
 
-    <div class="row" style="margin-top:10px;">
-      <div class="label">German</div>
-      <div>
-        <input id="coreDe" type="text" autocomplete="off">
-        <textarea id="coreDeSent" class="hidden" rows="3" style="margin-top:8px;resize:vertical" placeholder="Write the full German sentence..."></textarea>
-      </div>
-    </div>
-
-    <div id="coreDiff" class="small" style="margin-top:6px;"></div>
-    <div id="coreDeSentence" class="muted small" style="margin-top:4px;"></div>
-    <div id="coreFeedback" class="small" style="margin-top:8px;"></div>
-
-	<div class="actions">
-	  <button id="coreCheck">Check</button>
-	  <button id="coreNext">Next</button>
-	  <button id="coreSentenceBtn" class="muted toggle">Sentence</button>
-	  <button id="coreBack" class="muted">Back</button>
-	  <button id="coreReset" class="muted">Reset</button>
-	</div>
-
-    <div id="coreProgressWrap" style="margin-top:10px">
-      <div style="width:100%;height:6px;background:#1a2230;border-radius:4px;">
-        <div id="coreProgBar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width .3s;"></div>
-      </div>
-      <div id="coreProgText" class="small muted" style="margin-top:4px;text-align:right"></div>
-    </div>
-
-	<details id="toolsBox" style="margin-top:10px;">
-	  <summary class="muted small" style="cursor:pointer;user-select:none;">
-		Tools
-	  </summary>
-
-	  <div class="actions" style="margin-top:10px;justify-content:space-between;flex-wrap:wrap;">
-		<button id="btnDump">Dump state</button>
-		<button id="btnHardSave">Force save</button>
-	  </div>
-
-	  <div class="actions" style="margin-top:6px;flex-wrap:wrap;">
-		<button id="btnCheckV1">Check v1 Key</button>
-		<button id="btnCopyV1" class="muted">Copy v1 JSON</button>
-		<button id="btnRestoreV1" class="muted">Restore v1 → current</button>
-		<button id="btnRestoreBackup" class="muted">Restore latest backup</button>
-	  </div>
-	</details>
-	
-	<div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:center;">
-
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-    <label class="muted small" style="display:flex;gap:6px;align-items:center;">
-      Level
-      <select id="levelSelect" style="padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--hole);color:var(--text);">
-        <option value="1">1</option>
-      </select>
-    </label>
-
-    <button id="btnExport" class="muted">Export</button>
-    <button id="btnImport" class="muted">Import</button>
+  <!-- Primary: Check + Next -->
+  <div class="actionRow" style="margin-top:10px;">
+    <button id="coreCheck">Check</button>
+    <button id="coreNext">Next</button>
   </div>
 
-  <div id="dbg" class="muted small"></div>
+  <!-- Secondary: Back, Typo, Hide, Edit -->
+  <div class="actionRow secondary" style="margin-top:6px;">
+    <button id="coreBack" class="muted">Back</button>
+    <button id="coreTypo" class="muted">Typo</button>
+    <button id="coreHide" class="muted">Hide</button>
+    <button id="coreEdit" class="muted">Edit</button>
+  </div>
+
+  <!-- Progress bar -->
+  <div id="coreProgressWrap" style="margin-top:10px">
+    <div style="width:100%;height:6px;background:#1a2230;border-radius:4px;">
+      <div id="coreProgBar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width .3s;"></div>
+    </div>
+    <div id="coreProgText" class="small muted" style="margin-top:4px;text-align:right"></div>
+  </div>
+
+  <!-- Debug -->
+  <div id="dbg" class="muted small" style="margin-top:6px;"></div>
+
+  <!-- Debug tools -->
+  <details id="toolsBox" style="margin-top:10px;">
+    <summary class="muted small" style="cursor:pointer;user-select:none;">Tools</summary>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+      <button id="btnDump">Dump state</button>
+      <button id="btnHardSave">Force save</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+      <button id="btnCheckV1">Check v1 Key</button>
+      <button id="btnCopyV1" class="muted">Copy v1 JSON</button>
+      <button id="btnRestoreV1" class="muted">Restore v1 → current</button>
+      <button id="btnRestoreBackup" class="muted">Restore latest backup</button>
+    </div>
+  </details>
+
+</section>
+
+<!-- ⋯ Menu panel (shown below card) -->
+<div id="menuPanel" class="menuPanel hidden">
+
+  <!-- Mode -->
+  <div class="menuSection">
+    <div class="menuLabel">Mode</div>
+    <div class="modeRow">
+      <button id="btnModeWord" class="modeBtn">Word</button>
+      <button id="btnModeCloze" class="modeBtn">Cloze</button>
+      <button id="btnModeSentence" class="modeBtn">Sentence</button>
+    </div>
+  </div>
+
+  <!-- Word tools -->
+  <div class="menuSection">
+    <div class="menuLabel">Word tools</div>
+    <div class="menuRow">
+      <button id="coreSuper">Super</button>
+      <button id="coreOneStreak">1-Streak</button>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div class="menuSection">
+    <div class="menuLabel">App</div>
+    <div class="menuRow">
+      <button id="btnExport">Export</button>
+      <button id="btnImport">Import</button>
+    </div>
+    <div style="margin-top:4px;">
+      <label class="muted small" style="display:flex;gap:6px;align-items:center;">
+        Level
+        <select id="levelSelect" style="padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--hole);color:var(--text);">
+          <option value="1">1</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="menuSection">
+    <div class="menuLabel" style="color:var(--bad);">Danger zone</div>
+    <button id="coreReset" class="danger-btn">Reset all progress</button>
+  </div>
 
 </div>
-  </section>
-</div>
+
+</div><!-- /wrap -->
 
 <script>
-/* ========= helpers ========= */
+/* ====== helpers ====== */
 function $(sel){ return document.querySelector(sel); }
 function setText(sel,t){ const el=$(sel); if(el) el.textContent=t; }
 function setHTML(sel,h){ const el=$(sel); if(el) el.innerHTML=h; }
 function norm(s){ return (s||'').trim().toLowerCase(); }
 function normDe(s){ return (s||'').trim().toLowerCase()
   .replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
-function pick(arr){ return arr && arr.length ? arr[Math.floor(Math.random()*arr.length)] : null; }
+function pickRand(arr){ return arr&&arr.length ? arr[Math.floor(Math.random()*arr.length)] : null; }
+function escapeHTML(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-/* ========= CSV parser with auto delimiter ========= */
-function parseCSV(txt){
-  const head = (txt.split(/\r?\n/)[0] || '');
-  const commaCount = (head.match(/,/g) || []).length;
-  const semiCount  = (head.match(/;/g) || []).length;
-  const DELIM = semiCount > commaCount ? ';' : ',';
+/* ====== gender color ====== */
+function getGenderColor(x){
+  const g = x.gender || '';
+  if(g==='m') return '#6aa6ff';
+  if(g==='f') return '#f472b6';
+  if(g==='n') return '#4ade80';
+  // No CSV gender — detect from sentence for capitalised words (nouns)
+  const first = (x.german||'')[0] || '';
+  if(first && first === first.toUpperCase() && first !== first.toLowerCase()){
+    const sent = (x.deSent||'').toLowerCase();
+    if(/\bder\b|\bden\b|\bdem\b|\bdes\b/.test(sent)) return '#6aa6ff';
+    if(/\bdie\b|\beiner\b/.test(sent)) return '#f472b6';
+    if(/\bdas\b|\bein\b/.test(sent)) return '#4ade80';
+    return '#e9eef5';
+  }
+  return '#fb923c'; // verb / adjective / other
+}
 
-  const rows = [];
-  let row = [];
-  let cur = '';
-  let q = false;
+/* ====== cloze builder ====== */
+const SEP_PREFIXES = ['durch','nach','über','fest','aus','auf','ein','mit','vor','weg','los','her','hin','an','ab','zu','um'];
 
-  for(let i=0;i<txt.length;i++){
-    const c = txt[i];
-    if(c === '"'){
-      if(q && txt[i+1] === '"'){ cur += '"'; i++; }
-      else q = !q;
-    } else if(c === DELIM && !q){
-      row.push(cur); cur='';
-    } else if((c === '\n' || c === '\r') && !q){
-      if(cur !== '' || row.length){
-        row.push(cur); rows.push(row);
-        row=[]; cur='';
+function buildClozeResult(x){
+  const searchTerm = (x.conjugated||'').trim() || (x.german||'').trim();
+  const sentence   = (x.deSent||'').trim();
+  if(!sentence || !searchTerm) return null;
+
+  const idx = sentence.toLowerCase().indexOf(searchTerm.toLowerCase());
+  if(idx === -1) return null;
+
+  const before  = sentence.slice(0, idx);
+  const after   = sentence.slice(idx + searchTerm.length);
+
+  // Separable verb prefix detection
+  let afterHTML  = escapeHTML(after);
+  let prefixHint = null;
+  const gLow = (x.german||'').toLowerCase();
+
+  for(const p of SEP_PREFIXES){
+    if(gLow.startsWith(p)){
+      // Look for prefix at/near end of the "after" part
+      const re = new RegExp('(\\b)(' + p + ')([.!?,\\s]*)$', 'i');
+      const m  = after.match(re);
+      if(m){
+        const pi = after.lastIndexOf(m[2]); // start of prefix in after
+        afterHTML = escapeHTML(after.slice(0, pi))
+          + `<span style="color:var(--accent);font-weight:700">${escapeHTML(m[2])}</span>`
+          + escapeHTML(after.slice(pi + m[2].length));
+        prefixHint = '↑ prefix belongs to this verb';
+        break;
       }
-    } else {
-      cur += c;
     }
   }
-  if(cur !== '' || row.length){ row.push(cur); rows.push(row); }
+
+  return {
+    html: escapeHTML(before) + '<span class="cloze-blank"></span>' + afterHTML,
+    prefixHint,
+    correctAnswer: x.german
+  };
+}
+
+/* ====== CSV parser ====== */
+function parseCSV(txt){
+  const head = (txt.split(/\r?\n/)[0]||'');
+  const DELIM = (head.match(/;/g)||[]).length > (head.match(/,/g)||[]).length ? ';' : ',';
+  const rows=[]; let row=[],cur='',q=false;
+  for(let i=0;i<txt.length;i++){
+    const c=txt[i];
+    if(c==='"'){ if(q&&txt[i+1]==='"'){cur+='"';i++;} else q=!q; }
+    else if(c===DELIM&&!q){ row.push(cur);cur=''; }
+    else if((c==='\n'||c==='\r')&&!q){ if(cur!==''||row.length){row.push(cur);rows.push(row);row=[];cur='';} }
+    else cur+=c;
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row);}
   return rows;
 }
 
-/* ========= storage ========= */
-const LS_KEY = 'top5k_state_v2';
+/* ====== storage ====== */
+const LS_KEY  = 'top5k_state_v2';
 const LS_KEY_OLD = 'top5k_state_v1';
-// Backup reminder settings
-const LAST_CLOUD_BACKUP_KEY = 'top5k_last_cloud_backup_v1';
+const LAST_CLOUD_BACKUP_KEY  = 'top5k_last_cloud_backup_v1';
 const BACKUP_DISMISS_SESSION_KEY = 'top5k_backup_dismissed_v1';
-const BACKUP_INTERVAL_MS = 48 * 60 * 60 * 1000; // 48 hours
+const BACKUP_INTERVAL_MS = 48*60*60*1000;
 
-function fmtWhen(ts){
-  if(!ts) return 'never';
-  try{ return new Date(ts).toLocaleString(); }catch(e){ return 'never'; }
-}
-
-function setLastCloudBackupNow(){
-  localStorage.setItem(LAST_CLOUD_BACKUP_KEY, String(Date.now()));
-}
+function fmtWhen(ts){ if(!ts) return 'never'; try{return new Date(ts).toLocaleString();}catch(e){return 'never';} }
+function setLastCloudBackupNow(){ localStorage.setItem(LAST_CLOUD_BACKUP_KEY,String(Date.now())); }
 
 function updateBackupBanner(){
-  const banner = $('#backupBanner');
-  const meta = $('#backupMeta');
-  if(!banner || !meta) return;
-
-  // If user dismissed this session, don't nag until reload/new session
-  if(sessionStorage.getItem(BACKUP_DISMISS_SESSION_KEY) === '1'){
-    banner.classList.add('hidden');
-    return;
-  }
-
-  const raw = localStorage.getItem(LAST_CLOUD_BACKUP_KEY);
-  const last = raw ? parseInt(raw, 10) : 0;
-
-  const age = Date.now() - (Number.isFinite(last) ? last : 0);
-  const overdue = !last || age >= BACKUP_INTERVAL_MS;
-
-  if(!overdue){
-    banner.classList.add('hidden');
-    return;
-  }
-
-  meta.textContent = `Last backup: ${fmtWhen(last)} • Recommended every 48h`;
+  const banner=$('#backupBanner'), meta=$('#backupMeta');
+  if(!banner||!meta) return;
+  if(sessionStorage.getItem(BACKUP_DISMISS_SESSION_KEY)==='1'){banner.classList.add('hidden');return;}
+  const raw=localStorage.getItem(LAST_CLOUD_BACKUP_KEY);
+  const last=raw?parseInt(raw,10):0;
+  const age=Date.now()-(Number.isFinite(last)?last:0);
+  const overdue=!last||age>=BACKUP_INTERVAL_MS;
+  if(!overdue){banner.classList.add('hidden');return;}
+  meta.textContent=`Last backup: ${fmtWhen(last)} • Recommended every 48h`;
   banner.classList.remove('hidden');
 }
+
 function buildStatePayload(){
   return {
-    level: state.level,
-    streaks: state.streaks || {},
-    penalty: state.penalty || {},
-    reqSeen: state.reqSeen || {},
-    overrides: state.overrides || {},
-    sentenceMode: !!state.sentenceMode,
-    currentId: state.currentId || null
+    level:      state.level,
+    streaks:    state.streaks||{},
+    penalty:    state.penalty||{},
+    reqSeen:    state.reqSeen||{},
+    overrides:  state.overrides||{},
+    activeMode: state.activeMode||'word',
+    sentenceMode: state.activeMode==='sentence', // backward compat
+    currentId:  state.currentId||null
   };
 }
+
 function saveState(){
-  const payload = buildStatePayload();
-
+  const payload=buildStatePayload();
   try{
-    // rolling backups (keep last 15)
-    const BK = 'top5k_backups_v1';
-    const raw = localStorage.getItem(BK);
-    const arr = raw ? JSON.parse(raw) : [];
-    arr.unshift({ t: Date.now(), data: payload });
-    while(arr.length > 15) arr.pop();
-    localStorage.setItem(BK, JSON.stringify(arr));
-
-    localStorage.setItem(LS_KEY, JSON.stringify(payload));
+    const BK='top5k_backups_v1';
+    const arr=JSON.parse(localStorage.getItem(BK)||'[]');
+    arr.unshift({t:Date.now(),data:payload});
+    while(arr.length>15) arr.pop();
+    localStorage.setItem(BK,JSON.stringify(arr));
+    localStorage.setItem(LS_KEY,JSON.stringify(payload));
   }catch(e){
     alert('Save failed. Please tap Export NOW to back up your progress.');
-    console.error('Save failed:', e);
+    console.error('Save failed:',e);
   }
 }
+
 function loadState(){
+  const rawV2=localStorage.getItem(LS_KEY);
+  const rawV1=localStorage.getItem(LS_KEY_OLD);
+  let obj=null;
 
-  const rawV2 = localStorage.getItem(LS_KEY);
-  const rawV1 = localStorage.getItem(LS_KEY_OLD);
-
-  let obj = null;
-
-  // Prefer v2 if valid and not empty
-  if(rawV2){
-    try{
-      const parsed = JSON.parse(rawV2);
-      if(parsed && typeof parsed === 'object' && parsed.level && parsed.level > 1){
-        obj = parsed;
-      }
-    }catch(e){}
-  }
-
-  // If v2 is empty or invalid, but v1 exists, use v1
-  if(!obj && rawV1){
-    try{
-      const parsed = JSON.parse(rawV1);
-      if(parsed && typeof parsed === 'object'){
-        obj = parsed;
-        // Migrate v1 → v2 permanently
-        localStorage.setItem(LS_KEY, JSON.stringify(parsed));
-      }
-    }catch(e){}
-  }
-
+  if(rawV2){ try{ const p=JSON.parse(rawV2); if(p&&typeof p==='object'&&p.level&&p.level>1) obj=p; }catch(e){} }
+  if(!obj&&rawV1){ try{ const p=JSON.parse(rawV1); if(p&&typeof p==='object'){ obj=p; localStorage.setItem(LS_KEY,JSON.stringify(p)); } }catch(e){} }
   if(!obj) return;
 
-  state.level = obj.level || 1;
-  state.streaks = obj.streaks || {};
-  state.penalty = obj.penalty || {};
-  state.reqSeen = obj.reqSeen || {};
-  state.overrides = obj.overrides || {};
-  state.sentenceMode = !!obj.sentenceMode;
+  state.level    = obj.level||1;
+  state.streaks  = obj.streaks||{};
+  state.penalty  = obj.penalty||{};
+  state.reqSeen  = obj.reqSeen||{};
+  state.overrides= obj.overrides||{};
+  // Migrate sentenceMode → activeMode
+  if(obj.activeMode){ state.activeMode=obj.activeMode; }
+  else if(obj.sentenceMode){ state.activeMode='sentence'; }
+  else { state.activeMode='word'; }
 }
 
-/* ========= state ========= */
-const APP = { wordsPerLevel: 25 };
+/* ====== state ====== */
+const APP={wordsPerLevel:25};
 
-const state = {
-  // Raw CSV rows (kept so we can rebuild data instantly on Hide/Edit)
-  rawRows: [],
-
-  // The active working list (after overrides + deletions)
-  data: [],
-
-  level: 1,
-  streaks: {},
-  penalty: {},
-  reqSeen: {},
-
-  // Local per-word overrides (do NOT touch CSV)
-  overrides: {},
-
-  sentenceMode: false,
-  currentId: null,
-
-  // Last checked card snapshot (for Back / Typo)
-  lastReview: null
+const state={
+  rawRows:[], data:[],
+  level:1, streaks:{}, penalty:{}, reqSeen:{},
+  overrides:{},
+  activeMode:'word',
+  currentId:null,
+  lastReview:null,
+  _clozeCorrect:null,
+  _enterStage:0
 };
 
 function cloneProgressState(){
   return JSON.parse(JSON.stringify({
-    level: state.level,
-    streaks: state.streaks || {},
-    penalty: state.penalty || {},
-    reqSeen: state.reqSeen || {},
-    overrides: state.overrides || {},
-    sentenceMode: !!state.sentenceMode
+    level:state.level, streaks:state.streaks||{}, penalty:state.penalty||{},
+    reqSeen:state.reqSeen||{}, overrides:state.overrides||{}, activeMode:state.activeMode||'word'
   }));
 }
 
 function restoreProgressState(snap){
   if(!snap) return;
-  state.level = snap.level || 1;
-  state.streaks = JSON.parse(JSON.stringify(snap.streaks || {}));
-  state.penalty = JSON.parse(JSON.stringify(snap.penalty || {}));
-  state.reqSeen = JSON.parse(JSON.stringify(snap.reqSeen || {}));
-  state.overrides = JSON.parse(JSON.stringify(snap.overrides || {}));
-  state.sentenceMode = !!snap.sentenceMode;
-
+  state.level    = snap.level||1;
+  state.streaks  = JSON.parse(JSON.stringify(snap.streaks||{}));
+  state.penalty  = JSON.parse(JSON.stringify(snap.penalty||{}));
+  state.reqSeen  = JSON.parse(JSON.stringify(snap.reqSeen||{}));
+  state.overrides= JSON.parse(JSON.stringify(snap.overrides||{}));
+  state.activeMode= snap.activeMode||'word';
   Core.rebuildData();
 }
 
-function captureReviewSnapshot(x, opts={}){
-  const wordInp = $('#coreDe');
-  const sentInp = $('#coreDeSent');
-
-  state.lastReview = {
-    id: x.id,
-    sentenceMode: !!state.sentenceMode,
-    beforeState: opts.beforeState ? JSON.parse(JSON.stringify(opts.beforeState)) : null,
-    canTypo: !!opts.canTypo,
-
-    wordValue: wordInp ? wordInp.value : '',
-    sentValue: sentInp ? sentInp.value : '',
-    wordClass: wordInp ? (wordInp.className || '') : '',
-    sentClass: sentInp ? (sentInp.className || '') : '',
-    feedbackHTML: $('#coreFeedback') ? $('#coreFeedback').innerHTML : '',
-    deSentenceText: $('#coreDeSentence') ? $('#coreDeSentence').textContent : ''
+function captureReviewSnapshot(x,opts={}){
+  const wordInp=$('#coreDe'), sentInp=$('#coreDeSent');
+  state.lastReview={
+    id:x.id,
+    activeMode:state.activeMode||'word',
+    beforeState:opts.beforeState?JSON.parse(JSON.stringify(opts.beforeState)):null,
+    canTypo:!!opts.canTypo,
+    wordValue:wordInp?wordInp.value:'',
+    sentValue:sentInp?sentInp.value:'',
+    wordClass:wordInp?(wordInp.className||''):'',
+    sentClass:sentInp?(sentInp.className||''):'',
+    feedbackHTML:$('#coreFeedback')?$('#coreFeedback').innerHTML:'',
+    deSentenceText:$('#coreDeSentence')?$('#coreDeSentence').textContent:''
   };
 }
 
 function restoreLastReviewUI(){
-  const r = state.lastReview;
+  const r=state.lastReview;
   if(!r) return false;
-
-  const x = state.data.find(w => w.id === r.id);
+  const x=state.data.find(w=>w.id===r.id);
   if(!x) return false;
-
-  state.sentenceMode = !!r.sentenceMode;
+  state.activeMode=r.activeMode||'word';
   Core.render(x);
-
-  const wordInp = $('#coreDe');
-  const sentInp = $('#coreDeSent');
-
-  if(wordInp){
-    wordInp.value = r.wordValue || '';
-    wordInp.className = r.wordClass || '';
-  }
-  if(sentInp){
-    sentInp.value = r.sentValue || '';
-    sentInp.className = r.sentClass || '';
-  }
-
-  setHTML('#coreFeedback', r.feedbackHTML || '');
-  setText('#coreDeSentence', r.deSentenceText || '');
-
-  state._enterStage = 1; // after Back, Enter should go Next
-  if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
+  const wordInp=$('#coreDe'), sentInp=$('#coreDeSent');
+  if(wordInp){ wordInp.value=r.wordValue||''; wordInp.className=r.wordClass||''; }
+  if(sentInp){ sentInp.value=r.sentValue||''; sentInp.className=r.sentClass||''; }
+  setHTML('#coreFeedback',r.feedbackHTML||'');
+  setText('#coreDeSentence',r.deSentenceText||'');
+  state._enterStage=1;
+  if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
   return true;
 }
-/* ========= 5k core ========= */
-const Core = {
+
+/* ====== Core ====== */
+const Core={
   async load(){
-    const res = await fetch('5k.csv', { cache:'no-store' });
+    const res=await fetch('5k.csv',{cache:'no-store'});
     if(!res.ok) throw new Error('Could not fetch 5k.csv');
-    const txt = await res.text();
-
-    const rows = parseCSV(txt.trim());
-    rows.shift(); // header
-
-	state.rawRows = rows;       // keep raw CSV rows
-	this.rebuildData();         // build state.data from rawRows + overrides
-
+    const txt=await res.text();
+    const rows=parseCSV(txt.trim());
+    rows.shift(); // drop header
+    state.rawRows=rows;
+    this.rebuildData();
     UI.buildLevelSelector();
   },
-  
-    rebuildData(){
-    // Build working list from rawRows + overrides, then recompute lvl by position
-    const built = [];
 
-    for(let idx = 0; idx < state.rawRows.length; idx++){
-      const r = state.rawRows[idx];
-      const id = (r[0] || String(idx+1)).toString().trim();
-
-      const base = {
+  rebuildData(){
+    const built=[];
+    for(let idx=0;idx<state.rawRows.length;idx++){
+      const r=state.rawRows[idx];
+      const id=(r[0]||String(idx+1)).toString().trim();
+      const base={
         id,
-        german:  r[1] || '',
-        english: r[2] || '',
-        deSent:  r[3] || '',
-        enSent:  r[4] || '',
-        category:r[5] || '',
-        masri:   r[6] || '',
-        gender:  r[7] || ''
+        german:   r[1]||'',
+        english:  r[2]||'',
+        deSent:   r[3]||'',
+        enSent:   r[4]||'',
+        category: r[5]||'',
+        masri:    r[6]||'',
+        gender:   r[7]||'',
+        conjugated:(r[8]||'').trim()||null
       };
-
-      const ov = state.overrides?.[id];
-      if(ov && ov.deleted) continue; // instant delete
-
-      let item = base;
-      if(ov && typeof ov === 'object'){
-        item = {
+      const ov=state.overrides?.[id];
+      if(ov&&ov.deleted) continue;
+      let item=base;
+      if(ov&&typeof ov==='object'){
+        item={
           ...base,
-          german:  (ov.german  ?? base.german),
-          english: (ov.english ?? base.english),
-          deSent:  (ov.deSent  ?? base.deSent),
-          enSent:  (ov.enSent  ?? base.enSent),
-          category:(ov.category?? base.category),
-          masri:   (ov.masri   ?? base.masri),
-          gender:  (ov.gender  ?? base.gender),
-          super: !!ov.super,
-          superEvery: ov.superEvery ?? 3,
-          superNext: ov.superNext ?? null
+          german:   (ov.german   ??base.german),
+          english:  (ov.english  ??base.english),
+          deSent:   (ov.deSent   ??base.deSent),
+          enSent:   (ov.enSent   ??base.enSent),
+          category: (ov.category ??base.category),
+          masri:    (ov.masri    ??base.masri),
+          gender:   (ov.gender   ??base.gender),
+          conjugated:(ov.conjugated!==undefined?ov.conjugated:base.conjugated),
+          super:!!ov.super,
+          superEvery:ov.superEvery??3,
+          superNext:ov.superNext??null
         };
       }
-
       built.push(item);
     }
-
-    // IMPORTANT: simulate "deleting a CSV line":
-    // after deletions, recompute lvl by the *new* position so the pool stays full.
-    state.data = built.map((it, i)=> ({
-      ...it,
-      lvl: Math.floor(i / APP.wordsPerLevel) + 1
-    }));
-
-    // Make sure level isn't beyond the max possible after deletions
-    const maxLvl = Math.max(1, Math.ceil(state.data.length / APP.wordsPerLevel));
-    if(state.level > maxLvl) state.level = maxLvl;
-
+    state.data=built.map((it,i)=>({...it,lvl:Math.floor(i/APP.wordsPerLevel)+1}));
+    const maxLvl=Math.max(1,Math.ceil(state.data.length/APP.wordsPerLevel));
+    if(state.level>maxLvl) state.level=maxLvl;
     UI.buildLevelSelector();
   },
 
-	levelPool(){
-	  const target = state.level * APP.wordsPerLevel;
-
-	  // Super behaves like "temporarily deleted" from learning pool:
-	  // skip it, and keep filling so the pool stays full.
-	  const out = [];
-	  for(let i = 0; i < state.data.length && out.length < target; i++){
-		const it = state.data[i];
-		const ov = state.overrides?.[it.id];
-		if(ov?.super) continue; // temporarily removed from learning pool
-		out.push(it);
-	  }
-	  return out;
-	},
-
-  baseRequiredFor(item){
-    const ov = state.overrides?.[item.id];
-    if(ov?.easy1) return 1;
-
-    const CL = state.level;
-    const WL = item.lvl || 1;
-    const d = CL - WL;
-    if(d <= 1) return 3;   // current + previous
-    if(d === 2) return 2;  // two behind
-    return 1;              // 3+ behind
-  },
-
-  requiredFor(item){
-    const base = this.baseRequiredFor(item);
-    const pen = state.penalty?.[item.id];
-
-    const req = (pen && state.level <= pen.untilLevel)
-      ? Math.max(base, pen.target)
-      : base;
-
-    // --- IMPORTANT FIX ---
-    // If a word's required streak changes (e.g., 2 -> 1 when you level up),
-    // we must NOT let old streak instantly count as mastery.
-    // So: when req changes for this word, reset its streak.
-    const id = item.id;
-    const prev = state.reqSeen?.[id];
-
-    if(prev === undefined){
-      // First time we track this word: record req but DON'T wipe existing streak
-      // (so imports / existing progress isn't destroyed immediately).
-      state.reqSeen[id] = req;
-      return req;
+  levelPool(){
+    const target=state.level*APP.wordsPerLevel;
+    const out=[];
+    for(let i=0;i<state.data.length&&out.length<target;i++){
+      const it=state.data[i];
+      if(state.overrides?.[it.id]?.super) continue;
+      out.push(it);
     }
-
-    if(prev !== req){
-      state.streaks[id] = 0;
-      state.reqSeen[id] = req;
-    }
-
-    return req;
+    return out;
   },
 
   sentencePool(){
-    return this.levelPool().filter(w => (w.deSent||'').trim() && (w.enSent||'').trim());
+    return this.levelPool().filter(w=>(w.deSent||'').trim()&&(w.enSent||'').trim());
   },
 
-pick(){
-  if(state.sentenceMode){
-    return pick(this.sentencePool());
-  }
+  baseRequiredFor(item){
+    const ov=state.overrides?.[item.id];
+    if(ov?.easy1) return 1;
+    const d=state.level-(item.lvl||1);
+    if(d<=1) return 3;
+    if(d===2) return 2;
+    return 1;
+  },
 
-  // Learning pool (filled to level*25, excluding super)
-  const learnPool = this.levelPool();
-  if(!learnPool.length) return null;
+  requiredFor(item){
+    const base=this.baseRequiredFor(item);
+    const pen=state.penalty?.[item.id];
+    const req=(pen&&state.level<=pen.untilLevel)?Math.max(base,pen.target):base;
+    const id=item.id;
+    const prev=state.reqSeen?.[id];
+    if(prev===undefined){ state.reqSeen[id]=req; return req; }
+    if(prev!==req){ state.streaks[id]=0; state.reqSeen[id]=req; }
+    return req;
+  },
 
-  // Due Super visitors: any super word that is due can appear as an "extra review"
-  // This does NOT shrink or change learnPool size.
-  const dueSuper = [];
-  const maxUnlocked = state.level * APP.wordsPerLevel;
+  pick(){
+    const mode=state.activeMode||'word';
+    if(mode==='sentence') return pickRand(this.sentencePool());
 
-  // Due super should only consider "unlocked scope" like a visitor from anywhere up to unlocked boundary.
-  // We'll scan the first maxUnlocked items of the ORIGINAL ordered list (state.data).
-  for(let i=0; i<Math.min(state.data.length, maxUnlocked); i++){
-    const it = state.data[i];
-    const ov = state.overrides?.[it.id];
-    if(!ov?.super) continue;
+    const learnPool=this.levelPool();
+    if(!learnPool.length) return null;
 
-    const every = ov.superEvery ?? 3;
-    const nextDue = ov.superNext ?? (state.level + every);
-    if(state.level >= nextDue) dueSuper.push(it);
-  }
+    // Due super visitors
+    const dueSuper=[];
+    const maxUnlocked=state.level*APP.wordsPerLevel;
+    for(let i=0;i<Math.min(state.data.length,maxUnlocked);i++){
+      const it=state.data[i];
+      const ov=state.overrides?.[it.id];
+      if(!ov?.super) continue;
+      const every=ov.superEvery??3;
+      const nextDue=ov.superNext??(state.level+every);
+      if(state.level>=nextDue) dueSuper.push(it);
+    }
+    if(dueSuper.length) return pickRand(dueSuper);
 
-  // If any super reviews are due, show one first (visitor)
-  if(dueSuper.length){
-    return pick(dueSuper);
-  }
-
-  // Normal selection from learning pool (excluding super)
-  const unmastered = learnPool.filter(it => {
-    const need = this.requiredFor(it);
-    return (state.streaks[it.id] || 0) < need;
-  });
-
-  return pick(unmastered.length ? unmastered : learnPool);
-},
+    const unmastered=learnPool.filter(it=>(state.streaks[it.id]||0)<this.requiredFor(it));
+    return pickRand(unmastered.length?unmastered:learnPool);
+  },
 
   render(x){
-    state.currentId = x?.id || null;
+    state.currentId=x?.id||null;
+    const mode=state.activeMode||'word';
+    const isCloze   =mode==='cloze';
+    const isSentence=mode==='sentence';
 
-    const sentenceMode = !!state.sentenceMode;
-    setText('#coreEnLabel', sentenceMode ? 'English sentence' : 'English word');
+    // Gender color on English word
+    const enEl=$('#coreEn');
+    if(enEl){
+      enEl.textContent = isSentence ? (x.enSent||'') : (x.english||'');
+      enEl.style.color = getGenderColor(x);
+    }
 
-    if(sentenceMode){
-      setText('#coreEn', x.enSent || '');
-      setText('#coreEnSentence', x.english ? ('Word: ' + x.english) : '');
+    // Masri
+    setText('#coreMasri', x.masri ? '· '+x.masri : '');
+
+    // Prompt area
+    const promptEl=$('#corePrompt');
+    const prefixEl=$('#corePrefixHint');
+
+    if(isCloze){
+      const result=buildClozeResult(x);
+      if(result){
+        setHTML('#corePrompt', result.html);
+        state._clozeCorrect=result.correctAnswer;
+        if(promptEl) promptEl.className='corePrompt';
+        if(prefixEl){
+          prefixEl.textContent=result.prefixHint||'';
+          prefixEl.classList.toggle('hidden',!result.prefixHint);
+        }
+      } else {
+        // Fallback: show english sentence as context (no blank available)
+        if(promptEl){ promptEl.textContent=x.enSent||''; promptEl.className='corePrompt muted'; }
+        if(prefixEl) prefixEl.classList.add('hidden');
+        state._clozeCorrect=x.german;
+      }
+    } else if(isSentence){
+      if(promptEl){ promptEl.textContent=''; promptEl.className='corePrompt'; }
+      if(prefixEl) prefixEl.classList.add('hidden');
     } else {
-      setText('#coreEn', x.english || '');
-      setText('#coreEnSentence', x.enSent || '');
+      // Word mode: show English sentence as soft context
+      if(promptEl){ promptEl.textContent=x.enSent||''; promptEl.className='corePrompt muted'; }
+      if(prefixEl) prefixEl.classList.add('hidden');
     }
 
-    setText('#topLevelPill', `Level ${state.level}`);
-    setText('#coreMasri', x.masri ? ('Masri: ' + x.masri) : '');
+    setText('#coreDeSentence','');
+    setHTML('#coreFeedback','');
+    setHTML('#coreDiff','');
 
-    const genderEl = $('#coreGender');
-    if(genderEl){
-      const g = x.gender || '';
-      genderEl.className = 'pill' + (g ? ' gender-' + g : ' hidden');
-      genderEl.textContent = g === 'm' ? 'der' : g === 'f' ? 'die' : g === 'n' ? 'das' : '';
-    }
-
-    setText('#coreDeSentence', '');
-    setHTML('#coreFeedback', '');
-    setHTML('#coreDiff', '');
-
-    const wordInp = $('#coreDe');
-    const sentInp = $('#coreDeSent');
-
+    const wordInp=$('#coreDe'), sentInp=$('#coreDeSent');
     if(wordInp){
-      wordInp.value = '';
+      wordInp.value='';
       wordInp.classList.remove('good-field','bad-field');
-      wordInp.classList.toggle('hidden', sentenceMode);
+      wordInp.classList.toggle('hidden',isSentence);
     }
     if(sentInp){
-      sentInp.value = '';
+      sentInp.value='';
       sentInp.classList.remove('good-field','bad-field');
-      sentInp.classList.toggle('hidden', !sentenceMode);
+      sentInp.classList.toggle('hidden',!isSentence);
     }
 
-    $('#coreProgressWrap')?.classList.toggle('hidden', sentenceMode);
+    $('#coreProgressWrap')?.classList.toggle('hidden',isSentence);
 
-    setTimeout(()=>{ (sentenceMode?sentInp:wordInp)?.focus(); },0);
-	
-	    // --- Enter behavior: 1st Enter = Check, 2nd Enter = Next ---
-    state._enterStage = 0; // reset when a new card renders
-    const activeInput = (sentenceMode ? sentInp : wordInp);
+    setTimeout(()=>{ (isSentence?sentInp:wordInp)?.focus(); },0);
 
+    state._enterStage=0;
+    const activeInput=isSentence?sentInp:wordInp;
     if(activeInput){
-      activeInput.onkeydown = (e)=>{
-        if(e.key === 'Enter'){
+      activeInput.onkeydown=(e)=>{
+        if(e.key==='Enter'){
           e.preventDefault();
-          if(state._enterStage === 0){
-            // First Enter => Check
-            $('#coreCheck')?.click();
-            state._enterStage = 1;
-            // keep focus so keyboard stays up
-            setTimeout(()=> activeInput.focus(), 0);
-          } else {
-            // Second Enter => Next
-            $('#coreNext')?.click();
-            state._enterStage = 0;
-          }
+          if(state._enterStage===0){ $('#coreCheck')?.click(); state._enterStage=1; setTimeout(()=>activeInput.focus(),0); }
+          else { $('#coreNext')?.click(); state._enterStage=0; }
         }
       };
     }
 
     this.updateProgress();
     this.updateDbg();
-
-    // Always sync tool buttons (Super/Hide) when a new card renders
-    if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
+    if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
   },
 
   check(x){
-    const sentenceMode = !!state.sentenceMode;
-    const showCorrectSentence = () => setText('#coreDeSentence', x.deSent || '');
+    const mode=state.activeMode||'word';
+    const isSentence=mode==='sentence';
+    const showCorrectSentence=()=>setText('#coreDeSentence',x.deSent||'');
 
-    if(sentenceMode){
-      const inp = $('#coreDeSent');
+    if(isSentence){
+      const inp=$('#coreDeSent');
       if(!inp) return;
-      const beforeState = cloneProgressState();
-      const userRaw = inp.value || '';
-      const expRaw  = x.deSent || '';
-
-      const userN = normDe(userRaw.replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
-      const expN  = normDe(expRaw.replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
-
+      const beforeState=cloneProgressState();
+      const userN=normDe((inp.value||'').replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
+      const expN =normDe((x.deSent||'').replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
       inp.classList.remove('good-field','bad-field');
-      if(userN && userN === expN){
-        inp.classList.add('good-field');
-        setHTML('#coreFeedback', `<span class="good">Correct!</span>`);
-      } else {
-        inp.classList.add('bad-field');
-        setHTML('#coreFeedback', `<span class="bad">Wrong.</span>`);
-      }
+      if(userN&&userN===expN){ inp.classList.add('good-field'); setHTML('#coreFeedback','<span class="good">Correct!</span>'); }
+      else { inp.classList.add('bad-field'); setHTML('#coreFeedback','<span class="bad">Wrong.</span>'); }
       showCorrectSentence();
-      captureReviewSnapshot(x, {
-        beforeState,
-        canTypo: false
-      });
-      saveState();
-      this.updateDbg();
-      if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
+      captureReviewSnapshot(x,{beforeState,canTypo:false});
+      saveState(); this.updateDbg();
+      if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
       return;
     }
 
-    const inp = $('#coreDe');
+    // Word or Cloze: both use #coreDe, correct answer = x.german
+    const inp=$('#coreDe');
     if(!inp) return;
-
-    const beforeState = cloneProgressState();
-    const guess  = normDe(inp.value);
-    const target = normDe(x.german);
-    const baseNeed = this.baseRequiredFor(x);
-    const need = this.requiredFor(x);
+    const beforeState=cloneProgressState();
+    const guess =normDe(inp.value);
+    const target=normDe(x.german);
+    const baseNeed=this.baseRequiredFor(x);
+    const need   =this.requiredFor(x);
 
     inp.classList.remove('good-field','bad-field');
 
-	if(guess && guess === target){
-	  state.streaks[x.id] = (state.streaks[x.id] || 0) + 1;
-
-	  // If this is a Super word and it’s (already) mastered, treat it as review:
-	  const ov = state.overrides?.[x.id];
-	  const nowMastered = (state.streaks[x.id] || 0) >= need;
-
-	  if(ov?.super && nowMastered){
-		const every = ov.superEvery ?? 3;
-		ov.superNext = state.level + every;
-		state.overrides[x.id] = ov;
-	  }
-
-	  inp.classList.add('good-field');
-	  setHTML('#coreFeedback', `<span class="good">Correct!</span> (${state.streaks[x.id]}/${need})`);
-	} else {
-      state.streaks[x.id] = 0;
-	    // If a SUPER word is answered wrong, remove super status and return it to normal rotation
-  const ov = state.overrides?.[x.id];
-  if(ov?.super){
-    ov.super = false;
-    delete ov.superNext;     // no longer scheduled as super
-    // keep superEvery value stored, so you can re-enable later without losing the preference
-    state.overrides[x.id] = ov;
-  }
-
-      // penalty bump (based on baseNeed, not already-penalized need)
-      const CL = state.level;
-      const nextTarget =
-        baseNeed >= 3 ? 3 :
-        baseNeed === 2 ? 3 :
-        2;
-
-      const prev = state.penalty[x.id];
-      const finalTarget = Math.max(prev?.target || 0, nextTarget);
-
-      state.penalty[x.id] = { target: finalTarget, untilLevel: CL + 1 };
-
-      inp.value = x.german || '';
+    if(guess&&guess===target){
+      state.streaks[x.id]=(state.streaks[x.id]||0)+1;
+      const ov=state.overrides?.[x.id];
+      const nowMastered=(state.streaks[x.id]||0)>=need;
+      if(ov?.super&&nowMastered){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[x.id]=ov; }
+      inp.classList.add('good-field');
+      setHTML('#coreFeedback',`<span class="good">Correct!</span> (${state.streaks[x.id]}/${need})`);
+    } else {
+      state.streaks[x.id]=0;
+      const ov=state.overrides?.[x.id];
+      if(ov?.super){ ov.super=false; delete ov.superNext; state.overrides[x.id]=ov; }
+      const nextTarget=baseNeed>=2?3:2;
+      const prev=state.penalty[x.id];
+      const finalTarget=Math.max(prev?.target||0,nextTarget);
+      state.penalty[x.id]={target:finalTarget,untilLevel:state.level+1};
+      inp.value=x.german||'';
       inp.classList.add('bad-field');
-
-      setHTML(
-        '#coreFeedback',
-        `<span class="bad">Wrong.</span> Correct: <b>${x.german || ''}</b> <span class="muted small">• now ${finalTarget}-streak (until level ${CL+1})</span>`
-      );
+      setHTML('#coreFeedback',`<span class="bad">Wrong.</span> Correct: <b>${x.german||''}</b> <span class="muted small">• now ${finalTarget}-streak (until level ${state.level+1})</span>`);
     }
 
     showCorrectSentence();
-
-    captureReviewSnapshot(x, {
-      beforeState,
-      canTypo: !(guess && guess === target) && !sentenceMode
-    });
-
+    captureReviewSnapshot(x,{beforeState,canTypo:!(guess&&guess===target)});
     saveState();
 
-    // IMPORTANT: keep your existing behavior for now:
-    // level up only when ALL unlocked words meet requiredFor()
-    const pool = this.levelPool();
-    const allMastered = pool.length && pool.every(it => {
-      const req = this.requiredFor(it);
-      return (state.streaks[it.id] || 0) >= req;
-    });
-
-    if(allMastered && state.level * APP.wordsPerLevel < state.data.length){
-      state.level++;
-      // keep streaks or reset? you can decide later.
-      // For now we match your current app: reset streaks on level up.
-      state.streaks = {};
-      saveState();
+    const pool=this.levelPool();
+    const allMastered=pool.length&&pool.every(it=>(state.streaks[it.id]||0)>=this.requiredFor(it));
+    if(allMastered&&state.level*APP.wordsPerLevel<state.data.length){
+      state.level++; state.streaks={}; saveState();
     }
-
-	this.updateProgress();
-	this.updateDbg();
-	if(typeof syncWordToolsUI === 'function') syncWordToolsUI();
+    this.updateProgress(); this.updateDbg();
+    if(typeof syncWordToolsUI==='function') syncWordToolsUI();
   },
 
   updateProgress(){
-    const pool = this.levelPool();
+    const pool=this.levelPool();
     if(!pool.length) return;
-
-    const done = pool.filter(w => {
-      const need = this.requiredFor(w);
-      return (state.streaks[w.id] || 0) >= need;
-    }).length;
-
-    const pct = Math.round(100 * done / pool.length);
-    $('#coreProgBar').style.width = pct + '%';
-    setText('#coreProgText', `${done} / ${pool.length}`);
+    const done=pool.filter(w=>(state.streaks[w.id]||0)>=this.requiredFor(w)).length;
+    const pct=Math.round(100*done/pool.length);
+    const progBar=$('#coreProgBar');
+    if(progBar) progBar.style.width=pct+'%';
+    setText('#coreProgText',`${done} / ${pool.length}`);
+    setText('#topLevelPill',`Level ${state.level} · ${done}/${pool.length}`);
   },
 
   updateDbg(){
-    const pool = this.levelPool();
-    setText('#dbg', `unlocked=${pool.length} • lvl=${state.level} • current=${state.currentId||'-'}`);
+    const pool=this.levelPool();
+    setText('#dbg',`unlocked=${pool.length} • lvl=${state.level} • current=${state.currentId||'-'} • mode=${state.activeMode||'word'}`);
   }
 };
 
-/* ========= UI extras (Level selector + Import/Export) ========= */
-const UI = {
-  maxLevel(){
-    return Math.max(1, Math.ceil((state.data?.length || 0) / APP.wordsPerLevel));
-  },
+/* ====== UI ====== */
+const UI={
+  maxLevel(){ return Math.max(1,Math.ceil((state.data?.length||0)/APP.wordsPerLevel)); },
 
   buildLevelSelector(){
-    const sel = $('#levelSelect');
+    const sel=$('#levelSelect');
     if(!sel) return;
-
-    const maxL = this.maxLevel();
-    sel.innerHTML = '';
+    const maxL=this.maxLevel();
+    sel.innerHTML='';
     for(let i=1;i<=maxL;i++){
-      const opt = document.createElement('option');
-      opt.value = String(i);
-      opt.textContent = String(i);
+      const opt=document.createElement('option');
+      opt.value=String(i); opt.textContent=String(i);
       sel.appendChild(opt);
     }
-    sel.value = String(state.level || 1);
-
-    sel.onchange = ()=>{
-      const v = parseInt(sel.value, 10);
+    sel.value=String(state.level||1);
+    sel.onchange=()=>{
+      const v=parseInt(sel.value,10);
       if(!Number.isFinite(v)) return;
-      state.level = Math.max(1, Math.min(v, maxL));
-      // Optional: clear current card stage
-      state._enterStage = 0;
-      saveState();
-      nextCard();
+      state.level=Math.max(1,Math.min(v,maxL));
+      state._enterStage=0;
+      saveState(); nextCard();
     };
   },
 
   exportState(){
-    // Export ONLY progress (not the full CSV data)
-	const payload = {
-	  level: state.level,
-	  streaks: state.streaks || {},
-	  penalty: state.penalty || {},
-	  reqSeen: state.reqSeen || {},
-	  overrides: state.overrides || {},
-	  sentenceMode: !!state.sentenceMode
-	};
-	
-
-    const txt = JSON.stringify(payload);
-    // show in prompt for easy copy
-    openCopyModal(txt, 'Export (current state)');
-	setLastCloudBackupNow();
-	updateBackupBanner();
+    const payload=buildStatePayload();
+    openCopyModal(JSON.stringify(payload),'Export (current state)');
+    setLastCloudBackupNow(); updateBackupBanner();
   },
 
   backupToFile(){
-    const payload = buildStatePayload();
-    const ts = new Date();
-    const pad = (n)=> String(n).padStart(2,'0');
-    const name = `top5k-backup-L${payload.level}-${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}.json`;
-
-    downloadJSONFile(payload, name);
-
-    // Mark as backed up (best-effort; user still needs to save file)
-    setLastCloudBackupNow();
-    updateBackupBanner();
+    const payload=buildStatePayload();
+    const ts=new Date();
+    const pad=n=>String(n).padStart(2,'0');
+    const name=`top5k-backup-L${payload.level}-${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}.json`;
+    downloadJSONFile(payload,name);
+    setLastCloudBackupNow(); updateBackupBanner();
   },
 
   importState(){
-    const txt = window.prompt('Paste your progress JSON here:');
+    const txt=window.prompt('Paste your progress JSON here:');
     if(!txt) return;
     try{
-      const obj = JSON.parse(txt);
-
-      if(obj && typeof obj === 'object'){
-        if(typeof obj.level === 'number') state.level = obj.level;
-        if(obj.streaks && typeof obj.streaks === 'object') state.streaks = obj.streaks;
-        if(obj.penalty && typeof obj.penalty === 'object') state.penalty = obj.penalty;
-        if(typeof obj.sentenceMode === 'boolean') state.sentenceMode = obj.sentenceMode;
-		if(obj.reqSeen && typeof obj.reqSeen === 'object') state.reqSeen = obj.reqSeen;
-		if(obj.overrides && typeof obj.overrides === 'object') state.overrides = obj.overrides;
-
-        // clamp level to available
-        const maxL = this.maxLevel();
-        state.level = Math.max(1, Math.min(state.level || 1, maxL));
-
-		// sync sentence button UI
-		if(typeof window.syncSentenceBtnUI === 'function') window.syncSentenceBtnUI();
-		if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
-
-        saveState();
-        this.buildLevelSelector();
-        nextCard();
+      const obj=JSON.parse(txt);
+      if(obj&&typeof obj==='object'){
+        if(typeof obj.level==='number')          state.level=obj.level;
+        if(obj.streaks&&typeof obj.streaks==='object')   state.streaks=obj.streaks;
+        if(obj.penalty&&typeof obj.penalty==='object')   state.penalty=obj.penalty;
+        if(obj.reqSeen&&typeof obj.reqSeen==='object')   state.reqSeen=obj.reqSeen;
+        if(obj.overrides&&typeof obj.overrides==='object') state.overrides=obj.overrides;
+        // mode migration
+        if(obj.activeMode) state.activeMode=obj.activeMode;
+        else if(typeof obj.sentenceMode==='boolean') state.activeMode=obj.sentenceMode?'sentence':'word';
+        const maxL=this.maxLevel();
+        state.level=Math.max(1,Math.min(state.level||1,maxL));
+        if(typeof window.syncMenuUI==='function') window.syncMenuUI();
+        saveState(); this.buildLevelSelector(); nextCard();
         alert('Imported ✅');
       }
-    }catch(e){
-      alert('Import failed: invalid JSON');
-    }
+    }catch(e){ alert('Import failed: invalid JSON'); }
   }
 };
 
-function downloadJSONFile(obj, filename){
-  const blob = new Blob([JSON.stringify(obj)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=> URL.revokeObjectURL(url), 5000);
-}
-/* ========= copy modal (iOS-friendly) ========= */
-function openCopyModal(text, title='Copy JSON'){
-  const modal = $('#copyModal');
-  const ta = $('#copyModalText');
-  const ttl = $('#copyModalTitle');
-  const hint = $('#copyModalHint');
-  if(!modal || !ta || !ttl) return;
-
-  ttl.textContent = title;
-  ta.value = text || '';
-  if(hint) hint.textContent = 'Tip: If Copy fails, long-press inside → Select All → Copy.';
-  modal.classList.remove('hidden');
-  modal.setAttribute('aria-hidden', 'false');
-
-  setTimeout(()=>{
-    ta.focus();
-    ta.select();
-  }, 50);
+function downloadJSONFile(obj,filename){
+  const blob=new Blob([JSON.stringify(obj)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
 
+/* ====== copy modal ====== */
+function openCopyModal(text,title='Copy JSON'){
+  const modal=$('#copyModal'),ta=$('#copyModalText'),ttl=$('#copyModalTitle'),hint=$('#copyModalHint');
+  if(!modal||!ta||!ttl) return;
+  ttl.textContent=title; ta.value=text||'';
+  if(hint) hint.textContent='Tip: If Copy fails, long-press inside → Select All → Copy.';
+  modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false');
+  setTimeout(()=>{ ta.focus(); ta.select(); },50);
+}
 async function copyModalNow(){
-  const ta = $('#copyModalText');
-  const hint = $('#copyModalHint');
+  const ta=$('#copyModalText'),hint=$('#copyModalHint');
   if(!ta) return;
-  try{
-    await navigator.clipboard.writeText(ta.value);
-    if(hint) hint.textContent = 'Copied ✅';
-  }catch(e){
-    if(hint) hint.textContent = 'Copy failed. Long-press → Select All → Copy.';
-  }
+  try{ await navigator.clipboard.writeText(ta.value); if(hint) hint.textContent='Copied ✅'; }
+  catch(e){ if(hint) hint.textContent='Copy failed. Long-press → Select All → Copy.'; }
 }
-
 function closeCopyModal(){
-  const modal = $('#copyModal');
+  const modal=$('#copyModal');
   if(!modal) return;
-  modal.classList.add('hidden');
-  modal.setAttribute('aria-hidden', 'true');
+  modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true');
 }
-
-document.addEventListener('click', (e)=>{
-  const id = e.target?.id;
-  if(id === 'copyModalClose') closeCopyModal();
-  if(id === 'copyModalCopy') copyModalNow();
-  if(id === 'copyModal') closeCopyModal(); // click outside box
+document.addEventListener('click',(e)=>{
+  const id=e.target?.id;
+  if(id==='copyModalClose') closeCopyModal();
+  if(id==='copyModalCopy') copyModalNow();
+  if(id==='copyModal') closeCopyModal();
 });
 
-/* ========= wiring ========= */
+/* ====== boot ====== */
 async function boot(){
   loadState();
-    updateBackupBanner();
+  updateBackupBanner();
 
-  // apply UI toggle from state
-// sentence mode is controlled by the Sentence button now
-
-  // Keep keyboard open on mobile: prevent buttons from stealing focus
   function refocusActiveInput(){
-    const sentenceMode = !!state.sentenceMode;
-    const el = sentenceMode ? $('#coreDeSent') : $('#coreDe');
-    setTimeout(()=>{ el?.focus(); }, 0);
+    const isSentence=state.activeMode==='sentence';
+    const el=isSentence?$('#coreDeSent'):$('#coreDe');
+    setTimeout(()=>el?.focus(),0);
   }
 
-  function bindNoFocusClick(btnSel, onClick){
-    const btn = $(btnSel);
+  function bindBtn(btnSel,onClick){
+    const btn=$(btnSel);
     if(!btn) return;
-
-    // pointer/touch: prevent focus loss
-    btn.addEventListener('pointerdown', (e)=>{ e.preventDefault(); }, {passive:false});
-    btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); }, {passive:false});
-    btn.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
-
-    btn.addEventListener('click', ()=>{
-      onClick();
-      refocusActiveInput();
-    });
+    btn.addEventListener('pointerdown',(e)=>e.preventDefault(),{passive:false});
+    btn.addEventListener('touchstart',(e)=>e.preventDefault(),{passive:false});
+    btn.addEventListener('mousedown',(e)=>e.preventDefault());
+    btn.addEventListener('click',()=>{ onClick(); refocusActiveInput(); });
   }
 
-  bindNoFocusClick('#coreCheck', ()=>{
-    const x = state.data.find(w => w.id === state.currentId);
+  bindBtn('#coreCheck',()=>{
+    const x=state.data.find(w=>w.id===state.currentId);
     if(x) Core.check(x);
-    state._enterStage = 1; // after clicking Check, next Enter should go Next
+    state._enterStage=1;
   });
+  bindBtn('#coreNext',()=>{ nextCard(); state._enterStage=0; });
 
-  bindNoFocusClick('#coreNext', ()=>{
-    nextCard();
-    state._enterStage = 0;
-  });
-  
-  // Sentence mode toggle button (replaces checkbox) — make global so Core/UI can use it
-  window.syncSentenceBtnUI = function(){
-    const b = $('#coreSentenceBtn');
-    if(!b) return;
-    const on = !!state.sentenceMode;
-    b.classList.toggle('active', on);
-    b.textContent = on ? 'Sentence ✓' : 'Sentence';
-  };
-  window.syncSentenceBtnUI();
+  // ---- syncWordToolsUI (global) ----
+  window.syncWordToolsUI=function(){
+    const id=state.currentId;
+    const ov=id?(state.overrides?.[id]||null):null;
 
-  // Word tools UI (Super/Hide) — make global so Core/UI can use it
-  window.syncWordToolsUI = function(){
-    const id = state.currentId;
-    const ov = id ? (state.overrides?.[id] || null) : null;
+    const superBtn=$('#coreSuper');
+    if(superBtn){ const on=!!ov?.super; superBtn.classList.toggle('active',on); superBtn.textContent='Super'; }
 
-    const superBtn = $('#coreSuper');
-    if(superBtn){
-      const on = !!ov?.super;
-      superBtn.classList.toggle('active', on);
-      superBtn.textContent = 'Super';
-    }
+    const hideBtn=$('#coreHide');
+    if(hideBtn){ hideBtn.textContent=ov?.deleted?'Hidden ✓':'Hide'; }
 
-    const hideBtn = $('#coreHide');
-    if(hideBtn){
-      hideBtn.textContent = ov?.deleted ? 'Hidden ✓' : 'Hide';
-    }
+    const oneBtn=$('#coreOneStreak');
+    if(oneBtn){ const on=!!ov?.easy1; oneBtn.classList.toggle('active',on); oneBtn.textContent='1-Streak'; }
 
-    const oneBtn = $('#coreOneStreak');
-    if(oneBtn){
-      const on = !!ov?.easy1;
-      oneBtn.classList.toggle('active', on);
-      oneBtn.textContent = '1-Streak';
-    }
-
-    const typoBtn = $('#coreTypo');
+    const typoBtn=$('#coreTypo');
     if(typoBtn){
-      const canTypo =
-        !!state.lastReview &&
-        state.lastReview.id === state.currentId &&
-        state.lastReview.canTypo === true;
-      typoBtn.classList.toggle('active', canTypo);
-      typoBtn.textContent = canTypo ? 'Typo ✓' : 'Typo';
+      const canTypo=!!state.lastReview&&state.lastReview.id===state.currentId&&state.lastReview.canTypo===true;
+      typoBtn.classList.toggle('active',canTypo);
+      typoBtn.textContent=canTypo?'Typo ✓':'Typo';
     }
   };
-  
-  // Sentence mode toggle — fires on pointerdown (instant, no click-chain issues)
-  {
-    const sBtn = $('#coreSentenceBtn');
-    if(sBtn){
-      let sentLock = 0;
-      function doSentenceToggle(e){
-        e.preventDefault();
-        var now = Date.now();
-        if(now - sentLock < 400) return;
-        sentLock = now;
 
-        state.sentenceMode = !state.sentenceMode;
-        state._enterStage = 0;
-        saveState();
-        syncSentenceBtnUI();
-        nextCard();
-        refocusActiveInput();
-      }
-      sBtn.addEventListener('pointerdown', doSentenceToggle, {passive:false});
-      sBtn.addEventListener('mousedown', doSentenceToggle);
+  // ---- syncMenuUI (global) ----
+  window.syncMenuUI=function(){
+    const mode=state.activeMode||'word';
+    ['word','cloze','sentence'].forEach(m=>{
+      const b=$(`#btnMode${m.charAt(0).toUpperCase()+m.slice(1)}`);
+      if(b) b.classList.toggle('active',mode===m);
+    });
+    syncWordToolsUI();
+  };
+
+  // ---- ⋯ menu toggle ----
+  {
+    const menuBtn=$('#btnMenu'), menuPanel=$('#menuPanel');
+    if(menuBtn&&menuPanel){
+      let lock=0;
+      menuBtn.addEventListener('pointerdown',(e)=>{
+        e.preventDefault();
+        const now=Date.now(); if(now-lock<400) return; lock=now;
+        menuPanel.classList.toggle('hidden');
+        if(!menuPanel.classList.contains('hidden')) syncMenuUI();
+      },{passive:false});
+      menuBtn.addEventListener('mousedown',(e)=>{
+        e.preventDefault();
+      });
     }
   }
 
+  // ---- mode buttons ----
+  function setMode(m){
+    state.activeMode=m;
+    state._enterStage=0;
+    saveState();
+    syncMenuUI();
+    $('#menuPanel')?.classList.add('hidden');
+    nextCard();
+    refocusActiveInput();
+  }
 
+  ['Word','Cloze','Sentence'].forEach(mCap=>{
+    const btn=$(`#btnMode${mCap}`);
+    if(!btn) return;
+    let lock=0;
+    btn.addEventListener('pointerdown',(e)=>{
+      e.preventDefault();
+      const now=Date.now(); if(now-lock<400) return; lock=now;
+      setMode(mCap.toLowerCase());
+    },{passive:false});
+    btn.addEventListener('mousedown',(e)=>e.preventDefault());
+  });
 
-  
-    // Typo: convert the current last wrong word-check into a correct answer
+  // ---- Typo ----
   {
-    const typoBtn = $('#coreTypo');
+    const typoBtn=$('#coreTypo');
     if(typoBtn){
-      let typoLock = 0;
+      let lock=0;
       function doTypo(e){
         e.preventDefault();
-        var now = Date.now();
-        if(now - typoLock < 400) return;
-        typoLock = now;
-
-    const r = state.lastReview;
-    if(!r || r.id !== state.currentId || !r.canTypo){
-      alert('Typo works only right after a wrong word check on the current card.');
-      return;
-    }
-
-    const x = state.data.find(w => w.id === r.id);
-    if(!x) return;
-
-    // Restore progress state to BEFORE the wrong answer
-    restoreProgressState(r.beforeState);
-
-    const inp = $('#coreDe');
-    if(!inp) return;
-
-    const need = Core.requiredFor(x);
-    state.streaks[x.id] = (state.streaks[x.id] || 0) + 1;
-
-    const ov = state.overrides?.[x.id];
-    const nowMastered = (state.streaks[x.id] || 0) >= need;
-    if(ov?.super && nowMastered){
-      const every = ov.superEvery ?? 3;
-      ov.superNext = state.level + every;
-      state.overrides[x.id] = ov;
-    }
-
-    inp.value = x.german || '';
-    inp.classList.remove('bad-field');
-    inp.classList.add('good-field');
-
-    setHTML('#coreFeedback', `<span class="good">Counted as correct (Typo).</span> (${state.streaks[x.id]}/${need})`);
-    setText('#coreDeSentence', x.deSent || '');
-
-    // level-up check
-    const pool = Core.levelPool();
-    const allMastered = pool.length && pool.every(it => {
-      const req = Core.requiredFor(it);
-      return (state.streaks[it.id] || 0) >= req;
-    });
-
-    if(allMastered && state.level * APP.wordsPerLevel < state.data.length){
-      state.level++;
-      state.streaks = {};
-    }
-
-    captureReviewSnapshot(x, {
-      beforeState: cloneProgressState(),
-      canTypo: false
-    });
-
-    saveState();
-    Core.updateProgress();
-    Core.updateDbg();
-    if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
+        const now=Date.now(); if(now-lock<400) return; lock=now;
+        const r=state.lastReview;
+        if(!r||r.id!==state.currentId||!r.canTypo){ alert('Typo works only right after a wrong word check on the current card.'); return; }
+        const x=state.data.find(w=>w.id===r.id);
+        if(!x) return;
+        restoreProgressState(r.beforeState);
+        const inp=$('#coreDe');
+        if(!inp) return;
+        const need=Core.requiredFor(x);
+        state.streaks[x.id]=(state.streaks[x.id]||0)+1;
+        const ov=state.overrides?.[x.id];
+        if(ov?.super&&(state.streaks[x.id]||0)>=need){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[x.id]=ov; }
+        inp.value=x.german||''; inp.classList.remove('bad-field'); inp.classList.add('good-field');
+        setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span> (${state.streaks[x.id]}/${need})`);
+        setText('#coreDeSentence',x.deSent||'');
+        const pool=Core.levelPool();
+        const allMastered=pool.length&&pool.every(it=>(state.streaks[it.id]||0)>=Core.requiredFor(it));
+        if(allMastered&&state.level*APP.wordsPerLevel<state.data.length){ state.level++; state.streaks={}; }
+        captureReviewSnapshot(x,{beforeState:cloneProgressState(),canTypo:false});
+        saveState(); Core.updateProgress(); Core.updateDbg();
+        if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
       }
-      typoBtn.addEventListener('pointerdown', doTypo, {passive:false});
-      typoBtn.addEventListener('mousedown', doTypo);
+      typoBtn.addEventListener('pointerdown',doTypo,{passive:false});
+      typoBtn.addEventListener('mousedown',doTypo);
     }
   }
 
-  
-    // Edit current word (local override, does not touch CSV)
-  $('#coreEdit')?.addEventListener('click', ()=>{
-    const id = state.currentId;
-    if(!id) return;
-    const base = state.data.find(w => w.id === id);
-    if(!base) return;
+  // ---- Back ----
+  $('#coreBack')?.addEventListener('click',()=>{ if(!restoreLastReviewUI()) alert('No previous checked card to restore.'); });
 
-    const ov = state.overrides[id] || {};
-
-    const german  = window.prompt('German:',  ov.german  ?? base.german  ?? '');
-    if(german === null) return;
-    const english = window.prompt('English:', ov.english ?? base.english ?? '');
-    if(english === null) return;
-    const deSent  = window.prompt('German sentence:', ov.deSent ?? base.deSent ?? '');
-    if(deSent === null) return;
-    const enSent  = window.prompt('English sentence:', ov.enSent ?? base.enSent ?? '');
-    if(enSent === null) return;
-    const category= window.prompt('Category:', ov.category ?? base.category ?? '');
-    if(category === null) return;
-    const masri   = window.prompt('Masri:', ov.masri ?? base.masri ?? '');
-    if(masri === null) return;
-
-    state.overrides[id] = {
-      ...ov,
-      german, english, deSent, enSent, category, masri
-    };
-
-    saveState();
-    nextCard();
+  // ---- Edit ----
+  $('#coreEdit')?.addEventListener('click',()=>{
+    const id=state.currentId; if(!id) return;
+    const base=state.data.find(w=>w.id===id); if(!base) return;
+    const ov=state.overrides[id]||{};
+    const german =window.prompt('German:',  ov.german  ??base.german  ??''); if(german===null) return;
+    const english=window.prompt('English:', ov.english ??base.english ??''); if(english===null) return;
+    const deSent =window.prompt('German sentence:', ov.deSent ??base.deSent ??''); if(deSent===null) return;
+    const enSent =window.prompt('English sentence:', ov.enSent ??base.enSent ??''); if(enSent===null) return;
+    const category=window.prompt('Category:', ov.category??base.category??''); if(category===null) return;
+    const masri  =window.prompt('Masri:', ov.masri ??base.masri ??''); if(masri===null) return;
+    state.overrides[id]={...ov,german,english,deSent,enSent,category,masri};
+    saveState(); nextCard();
   });
 
-  // Hide current word (soft delete)
-  $('#coreHide')?.addEventListener('click', ()=>{
-    const id = state.currentId;
-    if(!id) return;
-    const ov = state.overrides[id] || {};
-    const next = !ov.deleted;
-
-    if(next && !confirm('Hide this word? (It will stop appearing, CSV unchanged)')) return;
-
-	state.overrides[id] = { ...ov, deleted: next };
-
-	// Apply instantly like deleting a CSV line
-	Core.rebuildData();
-
-	saveState();
-	nextCard();
+  // ---- Hide ----
+  $('#coreHide')?.addEventListener('click',()=>{
+    const id=state.currentId; if(!id) return;
+    const ov=state.overrides[id]||{};
+    const next=!ov.deleted;
+    if(next&&!confirm('Hide this word? (It will stop appearing, CSV unchanged)')) return;
+    state.overrides[id]={...ov,deleted:next};
+    Core.rebuildData(); saveState(); nextCard();
   });
 
-  // 1-Streak toggle: make this word behave like a 1-streak word
-  $('#coreOneStreak')?.addEventListener('click', ()=>{
-    const id = state.currentId;
-    if(!id) return;
+  // ---- 1-Streak ----
+  $('#coreOneStreak')?.addEventListener('click',()=>{
+    const id=state.currentId; if(!id) return;
+    const ov=state.overrides[id]||{};
+    const on=!ov.easy1;
+    state.overrides[id]={...ov,easy1:on};
+    if(on){ delete state.penalty[id]; delete state.reqSeen[id]; }
+    Core.rebuildData(); saveState(); Core.updateProgress(); Core.updateDbg();
+    if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
+  });
 
-    const ov = state.overrides[id] || {};
-    const on = !ov.easy1;
-
-    state.overrides[id] = {
-      ...ov,
-      easy1: on
-    };
-
-    // When turning 1-Streak ON, clear current penalty once.
-    // It is NOT immune: future wrong answers can add penalty again normally.
+  // ---- Super ----
+  $('#coreSuper')?.addEventListener('click',()=>{
+    const id=state.currentId; if(!id) return;
+    const ov=state.overrides[id]||{};
+    const on=!ov.super;
+    let every=ov.superEvery??3;
     if(on){
-      delete state.penalty[id];
-      delete state.reqSeen[id];
+      const v=window.prompt('Show this word every how many levels? (default 3)',String(every));
+      if(v===null) return;
+      const n=parseInt(v,10); if(Number.isFinite(n)&&n>=1) every=n;
     }
-
-    Core.rebuildData();
-    saveState();
-    Core.updateProgress();
-    Core.updateDbg();
-    if(typeof window.syncWordToolsUI === 'function') window.syncWordToolsUI();
+    const updated={...ov,super:on,superEvery:every};
+    if(on){ updated.superNext=state.level+every; } else { delete updated.superNext; }
+    state.overrides[id]=updated;
+    Core.rebuildData(); saveState(); nextCard();
   });
 
-  // Super-master toggle (review only every N levels)
-  $('#coreSuper')?.addEventListener('click', ()=>{
-    const id = state.currentId;
-    if(!id) return;
-    const ov = state.overrides[id] || {};
-    const on = !ov.super;
-
-    const everyDefault = ov.superEvery ?? 3;
-    let every = everyDefault;
-
-    if(on){
-      const v = window.prompt('Show this word every how many levels? (default 3)', String(everyDefault));
-      if(v === null) return;
-      const n = parseInt(v,10);
-      if(Number.isFinite(n) && n >= 1) every = n;
-    }
-
-    const updated = {
-      ...ov,
-      super: on,
-      superEvery: every
-    };
-
-    // schedule next due
-    if(on){
-      updated.superNext = state.level + every;
-    } else {
-      delete updated.superNext;
-    }
-
-    state.overrides[id] = updated;
-	Core.rebuildData();
-	saveState();
-	nextCard();
-  });
-  
-    $('#coreBack')?.addEventListener('click', ()=>{
-    const ok = restoreLastReviewUI();
-    if(!ok){
-      alert('No previous checked card to restore.');
-    }
-  });
-
-  $('#coreReset').addEventListener('click', ()=>{
+  // ---- Reset ----
+  $('#coreReset')?.addEventListener('click',()=>{
     if(!confirm('Reset 5k progress?')) return;
-    state.level = 1;
-    state.streaks = {};
-    state.penalty = {};
-    state.sentenceMode = false;
-    state.currentId = null;
-    saveState();
-    location.reload();
+    state.level=1; state.streaks={}; state.penalty={}; state.activeMode='word';
+    state.currentId=null; saveState(); location.reload();
   });
 
-  $('#btnDump').addEventListener('click', ()=>{
-    console.log('TOP5K STATE:', JSON.parse(JSON.stringify(state)));
-    alert('Dumped to console.');
+  // ---- Export / Import ----
+  $('#btnExport')?.addEventListener('click',()=>UI.exportState());
+  $('#btnImport')?.addEventListener('click',()=>UI.importState());
+
+  // ---- Backup banner ----
+  $('#btnBackupNow')?.addEventListener('click',()=>UI.backupToFile());
+  $('#btnBackupDismiss')?.addEventListener('click',()=>{ sessionStorage.setItem(BACKUP_DISMISS_SESSION_KEY,'1'); updateBackupBanner(); });
+
+  // ---- Debug tools ----
+  $('#btnDump')?.addEventListener('click',()=>{ console.log('TOP5K STATE:',JSON.parse(JSON.stringify(state))); alert('Dumped to console.'); });
+  $('#btnHardSave')?.addEventListener('click',()=>{ saveState(); alert('Saved.'); });
+  $('#btnRestoreBackup')?.addEventListener('click',()=>{
+    try{
+      const arr=JSON.parse(localStorage.getItem('top5k_backups_v1')||'[]');
+      if(!arr.length){ alert('No backups found.'); return; }
+      const newest=arr[0];
+      if(!confirm(`Restore latest backup?\n${new Date(newest.t).toLocaleString()}`)) return;
+      localStorage.setItem(LS_KEY,JSON.stringify(newest.data));
+      alert('Restored ✅ Reloading…'); location.reload();
+    }catch(e){ alert('Restore failed.'); console.error(e); }
   });
 
-  $('#btnHardSave').addEventListener('click', ()=>{
-    saveState();
-    alert('Saved.');
+  function getV1Raw(){ return localStorage.getItem('top5k_state_v1'); }
+  async function copyTextToClipboard(txt){
+    try{ if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(txt); alert('Copied ✅'); return true; } }catch(e){}
+    window.prompt('Copy this JSON:',txt); return false;
+  }
+
+  $('#btnCheckV1')?.addEventListener('click',()=>{
+    const raw=getV1Raw();
+    if(!raw){ alert('v1 key NOT found in this container.'); return; }
+    try{ const obj=JSON.parse(raw); alert('v1 found. Level = '+(obj.level??'unknown')); console.log('V1 STATE:',obj); }
+    catch(e){ alert('v1 exists but JSON invalid'); }
   });
-  
-  $('#btnRestoreBackup')?.addEventListener('click', ()=>{
-  try{
-    const BK = 'top5k_backups_v1';
-    const raw = localStorage.getItem(BK);
-    const arr = raw ? JSON.parse(raw) : [];
-    if(!arr.length){ alert('No backups found.'); return; }
-
-    const newest = arr[0];
-    const when = new Date(newest.t).toLocaleString();
-    if(!confirm(`Restore latest backup?\n${when}`)) return;
-
-    localStorage.setItem(LS_KEY, JSON.stringify(newest.data));
-    alert('Restored ✅ Reloading…');
-    location.reload();
-  }catch(e){
-    alert('Restore failed.');
-    console.error(e);
-  }
-});
-  // Debug: check if old v1 storage still exists
-// --- v1 tools (Home Screen recovery) ---
-function getV1Raw(){
-  return localStorage.getItem('top5k_state_v1');
-}
-
-// iOS-friendly copy helper
-async function copyTextToClipboard(txt){
-  try{
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      await navigator.clipboard.writeText(txt);
-      alert('Copied ✅');
-      return true;
-    }
-  }catch(e){}
-
-  // Fallback: prompt (user can long-press select/copy)
-  window.prompt('Copy this JSON:', txt);
-  return false;
-}
-
-$('#btnCheckV1')?.addEventListener('click', ()=>{
-  const raw = getV1Raw();
-  if(!raw){
-    alert('v1 key NOT found in this container.');
-    return;
-  }
-  try{
-    const obj = JSON.parse(raw);
-    alert('v1 found. Level = ' + (obj.level ?? 'unknown'));
-    console.log('V1 STATE:', obj);
-  }catch(e){
-    alert('v1 exists but JSON invalid');
-    console.log('RAW V1:', raw);
-  }
-});
-
-$('#btnCopyV1')?.addEventListener('click', ()=>{
-  const raw = localStorage.getItem('top5k_state_v1');
-  if(!raw){ alert('No v1 key found.'); return; }
-  openCopyModal(raw, 'Export (v1 key)');
-});
-
-// This is the REAL fix: force-migrate v1 -> v2 and reload
-$('#btnRestoreV1')?.addEventListener('click', ()=>{
-  const raw = getV1Raw();
-  if(!raw){ alert('No v1 key found.'); return; }
-
-  if(!confirm('Restore Level 36 progress from v1 and make it the current state?')) return;
-
-  // Copy v1 into v2
-  localStorage.setItem(LS_KEY, raw);
-
-  alert('Restored ✅ App will reload now.');
-  location.reload();
-});
-  
-    // Level selector + Import/Export
-  $('#btnExport')?.addEventListener('click', ()=> UI.exportState());
-  $('#btnImport')?.addEventListener('click', ()=> UI.importState());
-  // Backup reminder buttons
-$('#btnBackupNow')?.addEventListener('click', ()=>{
-  UI.backupToFile();
-});
-
-$('#btnBackupDismiss')?.addEventListener('click', ()=>{
-  sessionStorage.setItem(BACKUP_DISMISS_SESSION_KEY, '1');
-  updateBackupBanner();
-});
+  $('#btnCopyV1')?.addEventListener('click',()=>{ const raw=localStorage.getItem('top5k_state_v1'); if(!raw){alert('No v1 key found.');return;} openCopyModal(raw,'Export (v1 key)'); });
+  $('#btnRestoreV1')?.addEventListener('click',()=>{
+    const raw=getV1Raw();
+    if(!raw){ alert('No v1 key found.'); return; }
+    if(!confirm('Restore progress from v1 and make it the current state?')) return;
+    localStorage.setItem(LS_KEY,raw); alert('Restored ✅ App will reload now.'); location.reload();
+  });
 
   await Core.load();
+  syncMenuUI();
   nextCard();
 }
 
 function nextCard(){
-  const x = Core.pick();
-  if(!x){
-    setText('#coreEn', 'No data / nothing to pick');
-    return;
-  }
+  const x=Core.pick();
+  if(!x){ setText('#coreEn','No data / nothing to pick'); return; }
   Core.render(x);
   saveState();
 }
 
-document.addEventListener('DOMContentLoaded', boot);
+document.addEventListener('DOMContentLoaded',boot);
 </script>
-<!-- Copy Modal (for long JSON on iOS) -->
+
+<!-- Copy Modal -->
 <div id="copyModal" class="modal hidden" aria-hidden="true">
   <div class="modalBox">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
       <strong id="copyModalTitle">Copy</strong>
       <button id="copyModalClose" class="muted">Close</button>
     </div>
-
     <textarea id="copyModalText" spellcheck="false"></textarea>
-
-    <div class="actions" style="justify-content:flex-end;margin-top:10px;">
+    <div style="display:flex;justify-content:flex-end;margin-top:10px;">
       <button id="copyModalCopy">Copy</button>
     </div>
     <div id="copyModalHint" class="muted small" style="margin-top:6px;"></div>
