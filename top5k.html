@@ -9,6 +9,8 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b0e12">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
 :root{
   --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041;
@@ -16,7 +18,7 @@
 }
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial,sans-serif;}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Inter',system-ui,-apple-system,sans-serif;}
 .wrap{max-width:720px;margin:0 auto;padding:14px}
 
 /* top bar */
@@ -35,7 +37,8 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-ap
 .hintMasri{font-size:12px;color:var(--muted);}
 
 /* cloze prompt */
-.corePrompt{font-size:15px;line-height:1.6;margin:6px 0;word-break:break-word;}
+.corePrompt{font-size:18px;line-height:1.7;margin:6px 0;word-break:break-word;}
+#cardTop{display:flex;flex-direction:column;}
 .cloze-blank{
   display:inline-block;border-bottom:2px solid #6aa6ff;min-width:58px;height:14px;
   margin:0 2px;vertical-align:bottom;background:rgba(106,166,255,0.08);border-radius:3px 3px 0 0;
@@ -124,19 +127,19 @@ button:hover{background:var(--btn2)}
 <!-- Card -->
 <section class="card">
 
-  <!-- Hint row: English word (gender-colored) + Masri -->
-  <div class="hintRow">
-    <span id="coreEn" class="hintWord"></span>
-    <span id="coreMasri" class="hintMasri"></span>
-    <!-- Hidden for JS compat -->
-    <span id="coreEnLabel" class="hidden"></span>
-  </div>
+  <div id="cardTop">
+    <!-- Hint row: English word (gender-colored) + Masri -->
+    <div class="hintRow" id="hintRow">
+      <span id="coreEn" class="hintWord"></span>
+      <span id="coreMasri" class="hintMasri"></span>
+      <span id="coreEnLabel" class="hidden"></span>
+    </div>
 
-  <!-- Prompt: cloze sentence / english sentence context -->
-  <div id="corePrompt" class="corePrompt muted"></div>
-  <div id="corePrefixHint" class="muted small hidden" style="margin-top:2px;"></div>
-  <!-- Keep for JS compat -->
-  <div id="coreEnSentence" class="hidden"></div>
+    <!-- Prompt: cloze sentence / english sentence context -->
+    <div id="corePrompt" class="corePrompt muted"></div>
+    <div id="corePrefixHint" class="muted small hidden" style="margin-top:2px;"></div>
+    <div id="coreEnSentence" class="hidden"></div>
+  </div>
 
   <hr class="divider">
 
@@ -311,6 +314,18 @@ function buildClozeResult(x){
   };
 }
 
+function fillClozeBlank(word, isCorrect){
+  const promptEl=$('#corePrompt');
+  if(!promptEl) return;
+  const blank=promptEl.querySelector('.cloze-blank');
+  if(!blank) return;
+  const span=document.createElement('span');
+  span.style.fontWeight='700';
+  span.style.color=isCorrect?'var(--good)':'var(--bad)';
+  span.textContent=word;
+  blank.replaceWith(span);
+}
+
 /* ====== CSV parser ====== */
 function parseCSV(txt){
   const head = (txt.split(/\r?\n/)[0]||'');
@@ -442,7 +457,8 @@ function captureReviewSnapshot(x,opts={}){
     wordClass:wordInp?(wordInp.className||''):'',
     sentClass:sentInp?(sentInp.className||''):'',
     feedbackHTML:$('#coreFeedback')?$('#coreFeedback').innerHTML:'',
-    deSentenceText:$('#coreDeSentence')?$('#coreDeSentence').textContent:''
+    deSentenceText:$('#coreDeSentence')?$('#coreDeSentence').textContent:'',
+    promptHTML:$('#corePrompt')?$('#corePrompt').innerHTML:''
   };
 }
 
@@ -458,6 +474,7 @@ function restoreLastReviewUI(){
   if(sentInp){ sentInp.value=r.sentValue||''; sentInp.className=r.sentClass||''; }
   setHTML('#coreFeedback',r.feedbackHTML||'');
   setText('#coreDeSentence',r.deSentenceText||'');
+  if(r.activeMode==='cloze'&&r.promptHTML) setHTML('#corePrompt',r.promptHTML);
   state._enterStage=1;
   if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
   return true;
@@ -623,6 +640,12 @@ const Core={
       if(prefixEl) prefixEl.classList.add('hidden');
     }
 
+    // Swap order: in cloze mode, sentence goes above English hint
+    const hintRowEl=$('#hintRow');
+    if(hintRowEl) hintRowEl.style.order = isCloze ? '2' : '0';
+    if(promptEl)  promptEl.style.order  = isCloze ? '0' : '2';
+    if(prefixEl)  prefixEl.style.order  = isCloze ? '1' : '3';
+
     setText('#coreDeSentence','');
     setHTML('#coreFeedback','');
     setHTML('#coreDiff','');
@@ -692,7 +715,8 @@ const Core={
 
     inp.classList.remove('good-field','bad-field');
 
-    if(guess&&guess===target){
+    const isCorrect=!!(guess&&guess===target);
+    if(isCorrect){
       state.streaks[x.id]=(state.streaks[x.id]||0)+1;
       const ov=state.overrides?.[x.id];
       const nowMastered=(state.streaks[x.id]||0)>=need;
@@ -711,6 +735,9 @@ const Core={
       inp.classList.add('bad-field');
       setHTML('#coreFeedback',`<span class="bad">Wrong.</span> Correct: <b>${x.german||''}</b> <span class="muted small">• now ${finalTarget}-streak (until level ${state.level+1})</span>`);
     }
+
+    // In cloze mode: fill blank with typed word (green) or correct word (red)
+    if(mode==='cloze') fillClozeBlank(isCorrect?(inp.value||x.german):x.german, isCorrect);
 
     showCorrectSentence();
     captureReviewSnapshot(x,{beforeState,canTypo:!(guess&&guess===target)});
