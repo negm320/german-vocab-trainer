@@ -815,7 +815,8 @@ const Core={
       flashDotsRed(need);
       inp.value=x.german||'';
       inp.classList.add('bad-field');
-      setHTML('#coreFeedback',`<span class="bad">Wrong.</span> Correct: <b>${x.german||''}</b> <span class="muted small">• now ${finalTarget}-streak (until level ${state.level+1})</span>`);
+      const correctHint=isCloze?'':` Correct: <b>${x.german||''}</b>`;
+      setHTML('#coreFeedback',`<span class="bad">Wrong.</span>${correctHint} <span class="muted small">• now ${finalTarget}-streak (until level ${state.level+1})</span>`);
     }
 
     // In cloze mode: fill blank with typed word (green) or correct word (red)
