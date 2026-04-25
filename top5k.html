@@ -382,7 +382,7 @@ function buildClozeResult(x){
   return {
     html: escapeHTML(before) + '<span class="cloze-blank"></span>' + afterHTML,
     prefixHint,
-    correctAnswer: x.german
+    correctAnswer: searchTerm
   };
 }
 
@@ -762,6 +762,7 @@ const Core={
   check(x){
     const mode=state.activeMode||'word';
     const isSentence=mode==='sentence';
+    const isCloze=mode==='cloze';
     const showCorrectSentence=()=>setText('#coreDeSentence',x.deSent||'');
 
     if(isSentence){
@@ -785,7 +786,7 @@ const Core={
     if(!inp) return;
     const beforeState=cloneProgressState();
     const guess =normDe(inp.value);
-    const target=normDe(x.german);
+    const target=normDe(isCloze?(state._clozeCorrect||x.german):x.german);
     const baseNeed=this.baseRequiredFor(x);
     const need   =this.requiredFor(x);
 
