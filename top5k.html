@@ -37,6 +37,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 .hintRow{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
 .hintWord{font-size:13px;font-weight:700;}
 .hintMasri{font-size:12px;color:var(--muted);}
+#coreEnSentence{font-size:15px;color:var(--muted);margin-top:4px;line-height:1.5;}
 
 /* cloze prompt */
 .corePrompt{font-size:18px;line-height:1.7;margin:6px 0;word-break:break-word;}
@@ -714,9 +715,20 @@ const Core={
 
     // Swap order: in cloze mode, sentence goes above English hint
     const hintRowEl=$('#hintRow');
+    const enSentEl=$('#coreEnSentence');
     if(hintRowEl) hintRowEl.style.order = isCloze ? '2' : '0';
     if(promptEl)  promptEl.style.order  = isCloze ? '0' : '2';
     if(prefixEl)  prefixEl.style.order  = isCloze ? '1' : '3';
+    if(enSentEl){
+      if(isCloze&&(x.enSent||'').trim()){
+        enSentEl.textContent=x.enSent;
+        enSentEl.style.order='4';
+        enSentEl.classList.remove('hidden');
+      } else {
+        enSentEl.classList.add('hidden');
+        enSentEl.textContent='';
+      }
+    }
 
     setText('#coreDeSentence','');
     setHTML('#coreFeedback','');
@@ -763,7 +775,7 @@ const Core={
     const mode=state.activeMode||'word';
     const isSentence=mode==='sentence';
     const isCloze=mode==='cloze';
-    const showCorrectSentence=()=>setText('#coreDeSentence',x.deSent||'');
+    const showCorrectSentence=()=>{ if(!isCloze) setText('#coreDeSentence',x.deSent||''); };
 
     if(isSentence){
       const inp=$('#coreDeSent');
@@ -1171,7 +1183,7 @@ async function boot(){
         inp.value=typoWord; inp.classList.remove('bad-field'); inp.classList.add('good-field');
         if(state.activeMode==='cloze') fillClozeBlank(typoWord,true);
         setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span> (${state.streaks[x.id]}/${need})`);
-        setText('#coreDeSentence',x.deSent||'');
+        if(state.activeMode!=='cloze') setText('#coreDeSentence',x.deSent||'');
         const pool=Core.levelPool();
         const allMastered=pool.length&&pool.every(it=>(state.streaks[it.id]||0)>=Core.requiredFor(it));
         if(allMastered&&state.level*APP.wordsPerLevel<state.data.length){ state.level++; state.streaks={}; }
