@@ -820,8 +820,8 @@ const Core={
       setHTML('#coreFeedback',`<span class="bad">Wrong.</span>${correctHint} <span class="muted small">• now ${finalTarget}-streak (until level ${state.level+1})</span>`);
     }
 
-    // In cloze mode: fill blank with typed word (green) or correct word (red)
-    if(mode==='cloze') fillClozeBlank(isCorrect?(inp.value||x.german):x.german, isCorrect);
+    // In cloze mode: fill blank with typed word (green) or correct conjugated/base form (red)
+    if(mode==='cloze') fillClozeBlank(isCorrect?(inp.value||state._clozeCorrect||x.german):(state._clozeCorrect||x.german), isCorrect);
 
     showCorrectSentence();
     captureReviewSnapshot(x,{beforeState,canTypo:!(guess&&guess===target)});
@@ -1167,7 +1167,9 @@ async function boot(){
         state.streaks[x.id]=(state.streaks[x.id]||0)+1;
         const ov=state.overrides?.[x.id];
         if(ov?.super&&(state.streaks[x.id]||0)>=need){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[x.id]=ov; }
-        inp.value=x.german||''; inp.classList.remove('bad-field'); inp.classList.add('good-field');
+        const typoWord=state.activeMode==='cloze'?(state._clozeCorrect||x.german):x.german;
+        inp.value=typoWord; inp.classList.remove('bad-field'); inp.classList.add('good-field');
+        if(state.activeMode==='cloze') fillClozeBlank(typoWord,true);
         setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span> (${state.streaks[x.id]}/${need})`);
         setText('#coreDeSentence',x.deSent||'');
         const pool=Core.levelPool();
