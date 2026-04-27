@@ -185,7 +185,10 @@ button:hover{background:var(--btn2)}
 <!-- Top bar: level pill + menu button -->
 <div class="topBar">
   <div id="topLevelPill" class="pill">Level 1</div>
-  <button id="btnMenu" style="padding:6px 14px;font-size:18px;letter-spacing:2px;border-radius:999px;">⋯</button>
+  <div style="display:flex;gap:6px;align-items:center;">
+    <button id="btnHint" class="hidden" style="padding:5px 11px;font-size:14px;border-radius:999px;">💡︎</button>
+    <button id="btnMenu" style="padding:6px 14px;font-size:18px;letter-spacing:2px;border-radius:999px;">⋯</button>
+  </div>
 </div>
 
 <!-- Card -->
@@ -203,6 +206,9 @@ button:hover{background:var(--btn2)}
     <div id="corePrompt" class="corePrompt muted"></div>
     <div id="corePrefixHint" class="muted small hidden" style="margin-top:2px;"></div>
     <div id="coreEnSentence" class="hidden"></div>
+    <div id="hintPill" class="hidden" style="margin-bottom:8px;">
+      <span style="display:inline-block;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:4px 12px;font-size:14px;color:#e9eef5;font-family:sans-serif;font-weight:500;"></span>
+    </div>
   </div>
 
   <hr class="divider">
@@ -303,6 +309,14 @@ button:hover{background:var(--btn2)}
           <option value="1">1</option>
         </select>
       </label>
+    </div>
+  </div>
+
+  <!-- Cloze settings -->
+  <div class="menuSection" id="menuClozeSettings">
+    <div class="menuLabel">Cloze settings</div>
+    <div class="menuRow">
+      <button id="btnToggleHint">Show hint button</button>
     </div>
   </div>
 
@@ -456,6 +470,7 @@ function buildStatePayload(){
     overrides:  state.overrides||{},
     activeMode: state.activeMode||'word',
     sentenceMode: state.activeMode==='sentence', // backward compat
+    settings:   state.settings||{showHintBtn:true},
     currentId:  state.currentId||null
   };
 }
@@ -493,6 +508,7 @@ function loadState(){
   if(obj.activeMode){ state.activeMode=obj.activeMode; }
   else if(obj.sentenceMode){ state.activeMode='sentence'; }
   else { state.activeMode='word'; }
+  if(obj.settings&&typeof obj.settings==='object') state.settings={...state.settings,...obj.settings};
 }
 
 /* ====== state ====== */
@@ -503,6 +519,7 @@ const state={
   level:1, streaks:{}, penalty:{}, reqSeen:{},
   overrides:{},
   activeMode:'word',
+  settings:{ showHintBtn:true },
   currentId:null,
   lastReview:null,
   _clozeCorrect:null,
@@ -754,6 +771,11 @@ const Core={
     setText('#coreDeSentence','');
     setHTML('#coreFeedback','');
     setHTML('#coreDiff','');
+    // reset hint pill on every new card
+    const hintPillEl=$('#hintPill');
+    if(hintPillEl) hintPillEl.classList.add('hidden');
+    const hintBtnEl=$('#btnHint');
+    if(hintBtnEl){ hintBtnEl.style.background=''; hintBtnEl.style.borderColor=''; hintBtnEl.style.color=''; }
 
     const wordInp=$('#coreDe'), sentInp=$('#coreDeSent');
     if(wordInp){
@@ -1108,6 +1130,55 @@ async function boot(){
   });
   bindBtn('#coreNext',()=>{ nextCard(); state._enterStage=0; });
 
+  // ---- Hint button ----
+  {
+    const hintBtn=$('#btnHint');
+    if(hintBtn){
+      let lock=0;
+      function doHint(e){
+        e.preventDefault();
+        const now=Date.now(); if(now-lock<400) return; lock=now;
+        const x=state.data.find(w=>w.id===state.currentId);
+        if(!x) return;
+        const pill=$('#hintPill');
+        if(!pill) return;
+        const isVisible=!pill.classList.contains('hidden');
+        if(isVisible){
+          pill.classList.add('hidden');
+          hintBtn.style.background=''; hintBtn.style.borderColor=''; hintBtn.style.color='';
+        } else {
+          const span=pill.querySelector('span');
+          if(span) span.textContent=x.english||'';
+          pill.classList.remove('hidden');
+          hintBtn.style.background='rgba(255,255,255,0.08)';
+          hintBtn.style.borderColor='rgba(255,255,255,0.35)';
+          hintBtn.style.color='#e9eef5';
+        }
+      }
+      hintBtn.addEventListener('pointerdown',doHint,{passive:false});
+      hintBtn.addEventListener('mousedown',doHint);
+    }
+  }
+
+  // ---- Show hint button toggle (menu) ----
+  {
+    const btn=$('#btnToggleHint');
+    if(btn){
+      let lock=0;
+      btn.addEventListener('pointerdown',(e)=>{
+        e.preventDefault();
+        const now=Date.now(); if(now-lock<400) return; lock=now;
+        state.settings.showHintBtn=!state.settings.showHintBtn;
+        if(!state.settings.showHintBtn){
+          const pill=$('#hintPill'); if(pill) pill.classList.add('hidden');
+          const hb=$('#btnHint'); if(hb){ hb.classList.add('hidden'); hb.style.background=''; hb.style.borderColor=''; hb.style.color=''; }
+        }
+        syncMenuUI(); saveState();
+      },{passive:false});
+      btn.addEventListener('mousedown',(e)=>e.preventDefault());
+    }
+  }
+
   // ---- syncWordToolsUI (global) ----
   window.syncWordToolsUI=function(){
     const id=state.currentId;
@@ -1137,6 +1208,13 @@ async function boot(){
       const b=$(`#btnMode${m.charAt(0).toUpperCase()+m.slice(1)}`);
       if(b) b.classList.toggle('active',mode===m);
     });
+    // hint button visibility
+    const hintBtn=$('#btnHint');
+    const showHint=mode==='cloze'&&!!(state.settings?.showHintBtn);
+    if(hintBtn) hintBtn.classList.toggle('hidden',!showHint);
+    // toggle button state in menu
+    const toggleHintBtn=$('#btnToggleHint');
+    if(toggleHintBtn) toggleHintBtn.classList.toggle('active',!!(state.settings?.showHintBtn));
     syncWordToolsUI();
   };
 
@@ -1220,22 +1298,54 @@ async function boot(){
   // ---- Back ----
   $('#coreBack')?.addEventListener('click',()=>{ if(!restoreLastReviewUI()) alert('No previous checked card to restore.'); });
 
-  // ---- Edit ----
-  $('#coreEdit')?.addEventListener('click',()=>{
+  // ---- Edit modal ----
+  let _editId=null;
+  function openEditModal(){
     const id=state.currentId; if(!id) return;
     const base=state.data.find(w=>w.id===id); if(!base) return;
     const ov=state.overrides[id]||{};
-    const german =window.prompt('German:',  ov.german  ??base.german  ??''); if(german===null) return;
-    const english=window.prompt('English:', ov.english ??base.english ??''); if(english===null) return;
-    const deSent =window.prompt('German sentence:', ov.deSent ??base.deSent ??''); if(deSent===null) return;
-    const enSent =window.prompt('English sentence:', ov.enSent ??base.enSent ??''); if(enSent===null) return;
-    const category=window.prompt('Category:', ov.category??base.category??''); if(category===null) return;
-    const masri  =window.prompt('Masri:', ov.masri ??base.masri ??''); if(masri===null) return;
-    const conjugated=window.prompt('Conjugation (for cloze):', ov.conjugated??base.conjugated??''); if(conjugated===null) return;
-    const enInSent=window.prompt('English word in sentence (to highlight):', ov.enInSent??base.enInSent??''); if(enInSent===null) return;
-    state.overrides[id]={...ov,german,english,deSent,enSent,category,masri,conjugated:conjugated.trim()||null,enInSent:enInSent.trim()||null};
+    _editId=id;
+    $('#editGerman').value     = ov.german    ??base.german    ??'';
+    $('#editEnglish').value    = ov.english   ??base.english   ??'';
+    $('#editDeSent').value     = ov.deSent    ??base.deSent    ??'';
+    $('#editEnSent').value     = ov.enSent    ??base.enSent    ??'';
+    $('#editCategory').value   = ov.category  ??base.category  ??'';
+    $('#editMasri').value      = ov.masri     ??base.masri     ??'';
+    $('#editConjugated').value = ov.conjugated??base.conjugated??'';
+    $('#editEnInSent').value   = ov.enInSent  ??base.enInSent  ??'';
+    const modal=$('#editModal');
+    modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false');
+    setTimeout(()=>$('#editGerman')?.focus(),50);
+  }
+  function closeEditModal(){
+    const modal=$('#editModal');
+    modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true');
+    _editId=null;
+  }
+  function saveEditModal(){
+    if(!_editId) return;
+    const ov=state.overrides[_editId]||{};
+    state.overrides[_editId]={
+      ...ov,
+      german:    $('#editGerman').value,
+      english:   $('#editEnglish').value,
+      deSent:    $('#editDeSent').value,
+      enSent:    $('#editEnSent').value,
+      category:  $('#editCategory').value,
+      masri:     $('#editMasri').value,
+      conjugated:$('#editConjugated').value.trim()||null,
+      enInSent:  $('#editEnInSent').value.trim()||null
+    };
+    closeEditModal();
     saveState(); nextCard();
+  }
+  $('#coreEdit')?.addEventListener('click', openEditModal);
+  document.addEventListener('click',(e)=>{
+    const id=e.target?.id;
+    if(id==='editModalClose'||id==='editModalCancel'||id==='editModal') closeEditModal();
+    if(id==='editModalSave') saveEditModal();
   });
+  $('#editModal')?.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeEditModal(); });
 
   // ---- Hide ----
   $('#coreHide')?.addEventListener('click',()=>{
@@ -1337,6 +1447,46 @@ function nextCard(){
 
 document.addEventListener('DOMContentLoaded',boot);
 </script>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal hidden" aria-hidden="true">
+  <div class="modalBox" style="max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;">
+      <strong>Edit word</strong>
+      <button id="editModalClose" class="muted">Cancel</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);">German
+        <input id="editGerman" type="text" spellcheck="false">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);">English
+        <input id="editEnglish" type="text" spellcheck="false">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);">German sentence
+        <textarea id="editDeSent" rows="2" spellcheck="false" style="resize:vertical;"></textarea>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);">English sentence
+        <textarea id="editEnSent" rows="2" spellcheck="false" style="resize:vertical;"></textarea>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);">Category
+        <input id="editCategory" type="text" spellcheck="false">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);">Masri
+        <input id="editMasri" type="text" spellcheck="false">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);">Conjugation (for cloze)
+        <input id="editConjugated" type="text" spellcheck="false">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);">English word in sentence (to highlight)
+        <input id="editEnInSent" type="text" spellcheck="false">
+      </label>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button id="editModalCancel" class="muted">Cancel</button>
+      <button id="editModalSave">Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- Copy Modal -->
 <div id="copyModal" class="modal hidden" aria-hidden="true">
