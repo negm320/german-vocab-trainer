@@ -327,6 +327,15 @@ function normDe(s){ return (s||'').trim().toLowerCase()
 function pickRand(arr){ return arr&&arr.length ? arr[Math.floor(Math.random()*arr.length)] : null; }
 function escapeHTML(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+function highlightWordInSentence(sentence, word, color){
+  if(!sentence||!word) return escapeHTML(sentence||'');
+  const idx=sentence.toLowerCase().indexOf(word.toLowerCase());
+  if(idx===-1) return escapeHTML(sentence);
+  return escapeHTML(sentence.slice(0,idx))
+    +`<span style="color:${color};font-weight:700">${escapeHTML(sentence.slice(idx,idx+word.length))}</span>`
+    +escapeHTML(sentence.slice(idx+word.length));
+}
+
 /* ====== gender color ====== */
 function getGenderColor(x){
   const g = x.gender || '';
@@ -580,7 +589,8 @@ const Core={
         category: r[5]||'',
         masri:    r[6]||'',
         gender:   r[7]||'',
-        conjugated:(r[8]||'').trim()||null
+        conjugated:(r[8]||'').trim()||null,
+        enInSent: (r[9]||'').trim()||null
       };
       const ov=state.overrides?.[id];
       if(ov&&ov.deleted) continue;
@@ -596,6 +606,7 @@ const Core={
           masri:    (ov.masri    ??base.masri),
           gender:   (ov.gender   ??base.gender),
           conjugated:(ov.conjugated!==undefined?ov.conjugated:base.conjugated),
+          enInSent: (ov.enInSent!==undefined?ov.enInSent:base.enInSent),
           super:!!ov.super,
           superEvery:ov.superEvery??3,
           superNext:ov.superNext??null
@@ -713,21 +724,31 @@ const Core={
       if(prefixEl) prefixEl.classList.add('hidden');
     }
 
-    // Swap order: in cloze mode, sentence goes above English hint
+    // Layout ordering
     const hintRowEl=$('#hintRow');
     const enSentEl=$('#coreEnSentence');
-    if(hintRowEl) hintRowEl.style.order = isCloze ? '2' : '0';
-    if(promptEl)  promptEl.style.order  = isCloze ? '0' : '2';
-    if(prefixEl)  prefixEl.style.order  = isCloze ? '1' : '3';
-    if(enSentEl){
-      if(isCloze&&(x.enSent||'').trim()){
-        enSentEl.textContent=x.enSent;
-        enSentEl.style.order='4';
-        enSentEl.classList.remove('hidden');
-      } else {
-        enSentEl.classList.add('hidden');
-        enSentEl.textContent='';
+    if(isCloze){
+      // Order: German cloze (0) → English sentence highlighted (1) → prefix hint (2) → English word/Masri (3)
+      if(promptEl)  promptEl.style.order='0';
+      if(enSentEl){
+        if((x.enSent||'').trim()){
+          const gColor=getGenderColor(x);
+          setHTML('#coreEnSentence', x.enInSent ? highlightWordInSentence(x.enSent,x.enInSent,gColor) : escapeHTML(x.enSent));
+          enSentEl.style.order='2';
+          enSentEl.classList.remove('hidden');
+        } else {
+          enSentEl.classList.add('hidden');
+          enSentEl.innerHTML='';
+        }
       }
+      if(prefixEl)  prefixEl.style.order='1';
+      if(hintRowEl) hintRowEl.style.order='3';
+
+    } else {
+      if(hintRowEl) hintRowEl.style.order='0';
+      if(promptEl)  promptEl.style.order='2';
+      if(prefixEl)  prefixEl.style.order='3';
+      if(enSentEl){ enSentEl.classList.add('hidden'); enSentEl.innerHTML=''; }
     }
 
     setText('#coreDeSentence','');
@@ -1210,7 +1231,9 @@ async function boot(){
     const enSent =window.prompt('English sentence:', ov.enSent ??base.enSent ??''); if(enSent===null) return;
     const category=window.prompt('Category:', ov.category??base.category??''); if(category===null) return;
     const masri  =window.prompt('Masri:', ov.masri ??base.masri ??''); if(masri===null) return;
-    state.overrides[id]={...ov,german,english,deSent,enSent,category,masri};
+    const conjugated=window.prompt('Conjugation (for cloze):', ov.conjugated??base.conjugated??''); if(conjugated===null) return;
+    const enInSent=window.prompt('English word in sentence (to highlight):', ov.enInSent??base.enInSent??''); if(enInSent===null) return;
+    state.overrides[id]={...ov,german,english,deSent,enSent,category,masri,conjugated:conjugated.trim()||null,enInSent:enInSent.trim()||null};
     saveState(); nextCard();
   });
 
