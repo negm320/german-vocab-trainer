@@ -145,6 +145,7 @@ button:hover{background:var(--btn2)}
 .modeBtn.active{outline:1px solid rgba(34,197,94,.55);background:rgba(34,197,94,.14);color:#b8f5c8;}
 .menuRow{display:flex;gap:6px;flex-wrap:wrap;}
 .menuRow button{padding:9px 12px;font-size:13px;}
+.menuRow button.active{outline:1px solid rgba(34,197,94,.55);background:rgba(34,197,94,.14);color:#b8f5c8;}
 .danger-btn{color:var(--bad);border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.08);width:100%;padding:10px;}
 .danger-btn:hover{background:rgba(239,68,68,.18);}
 
@@ -1093,13 +1094,13 @@ async function boot(){
     const ov=id?(state.overrides?.[id]||null):null;
 
     const superBtn=$('#coreSuper');
-    if(superBtn){ const on=!!ov?.super; superBtn.classList.toggle('active',on); superBtn.textContent='Super'; }
+    if(superBtn){ const on=!!ov?.super; superBtn.classList.toggle('active',on); superBtn.textContent=on?'Super ✓':'Super'; }
 
     const hideBtn=$('#coreHide');
     if(hideBtn){ hideBtn.textContent=ov?.deleted?'Hidden ✓':'Hide'; }
 
     const oneBtn=$('#coreOneStreak');
-    if(oneBtn){ const on=!!ov?.easy1; oneBtn.classList.toggle('active',on); oneBtn.textContent='1-Streak'; }
+    if(oneBtn){ const on=!!ov?.easy1; oneBtn.classList.toggle('active',on); oneBtn.textContent=on?'1-Streak ✓':'1-Streak'; }
 
     const typoBtn=$('#coreTypo');
     if(typoBtn){
