@@ -341,12 +341,12 @@ function normDe(s){ return (s||'').trim().toLowerCase()
 function pickRand(arr){ return arr&&arr.length ? arr[Math.floor(Math.random()*arr.length)] : null; }
 function escapeHTML(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function highlightWordInSentence(sentence, word, color){
+function highlightWordInSentence(sentence, word){
   if(!sentence||!word) return escapeHTML(sentence||'');
   const idx=sentence.toLowerCase().indexOf(word.toLowerCase());
   if(idx===-1) return escapeHTML(sentence);
   return escapeHTML(sentence.slice(0,idx))
-    +`<span style="color:${color};font-weight:700">${escapeHTML(sentence.slice(idx,idx+word.length))}</span>`
+    +`<span style="font-weight:700;text-decoration:underline">${escapeHTML(sentence.slice(idx,idx+word.length))}</span>`
     +escapeHTML(sentence.slice(idx+word.length));
 }
 
@@ -749,8 +749,7 @@ const Core={
       if(promptEl)  promptEl.style.order='0';
       if(enSentEl){
         if((x.enSent||'').trim()){
-          const gColor=getGenderColor(x);
-          setHTML('#coreEnSentence', x.enInSent ? highlightWordInSentence(x.enSent,x.enInSent,gColor) : escapeHTML(x.enSent));
+          setHTML('#coreEnSentence', x.enInSent ? highlightWordInSentence(x.enSent,x.enInSent) : escapeHTML(x.enSent));
           enSentEl.style.order='2';
           enSentEl.classList.remove('hidden');
         } else {
@@ -759,10 +758,10 @@ const Core={
         }
       }
       if(prefixEl)  prefixEl.style.order='1';
-      if(hintRowEl) hintRowEl.style.order='3';
+      if(hintRowEl){ hintRowEl.style.order='3'; hintRowEl.style.marginTop='10px'; }
 
     } else {
-      if(hintRowEl) hintRowEl.style.order='0';
+      if(hintRowEl){ hintRowEl.style.order='0'; hintRowEl.style.marginTop=''; }
       if(promptEl)  promptEl.style.order='2';
       if(prefixEl)  prefixEl.style.order='3';
       if(enSentEl){ enSentEl.classList.add('hidden'); enSentEl.innerHTML=''; }
