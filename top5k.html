@@ -1357,15 +1357,28 @@ async function boot(){
   });
 
   // ---- 1-Streak ----
-  $('#coreOneStreak')?.addEventListener('click',()=>{
-    const id=state.currentId; if(!id) return;
-    const ov=state.overrides[id]||{};
-    const on=!ov.easy1;
-    state.overrides[id]={...ov,easy1:on};
-    if(on){ delete state.penalty[id]; delete state.reqSeen[id]; }
-    Core.rebuildData(); saveState(); Core.updateProgress(); Core.updateDbg();
-    if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
-  });
+  {
+    const oneStreakBtn=$('#coreOneStreak');
+    if(oneStreakBtn){
+      let lock=0;
+      function doOneStreak(e){
+        e.preventDefault();
+        const now=Date.now(); if(now-lock<400) return; lock=now;
+        const id=state.currentId; if(!id) return;
+        const ov=state.overrides[id]||{};
+        const on=!ov.easy1;
+        state.overrides[id]={...ov,easy1:on};
+        if(on){ delete state.penalty[id]; delete state.reqSeen[id]; }
+        Core.rebuildData(); saveState(); Core.updateProgress(); Core.updateDbg();
+        // Immediately re-render streak dots so the change is visible
+        const updatedX=state.data.find(w=>w.id===id);
+        if(updatedX) renderStreakDots(state.streaks[id]||0, Core.requiredFor(updatedX));
+        if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
+      }
+      oneStreakBtn.addEventListener('pointerdown',doOneStreak,{passive:false});
+      oneStreakBtn.addEventListener('mousedown',doOneStreak);
+    }
+  }
 
   // ---- Super ----
   $('#coreSuper')?.addEventListener('click',()=>{
