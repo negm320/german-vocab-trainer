@@ -980,7 +980,10 @@ const Core={
     if(allSettled&&state.level*APP.wordsPerLevel<state.data.length){
       state.level++;
       state.consecutiveCorrect={};
-      state.settledThisLevel={};
+      // Only clear settled for the 25 newly unlocked words; old words stay settled
+      // so they don't flood the eligible pool and the new words get prioritised
+      const newLvlWords=state.data.filter(it=>it.lvl===state.level);
+      for(const w of newLvlWords) delete state.settledThisLevel[w.id];
       triggerLevelUp(state.level);
       saveState();
     }
@@ -1005,8 +1008,8 @@ const Core={
     const pct=Math.round(100*progress/total);
     const progBar=$('#coreProgBar');
     if(progBar) progBar.style.width=pct+'%';
-    setText('#coreProgText',`${Math.floor(progress)} / ${total}`);
-    setText('#topLevelPill',`Level ${state.level} · ${Math.floor(progress)}/${total}`);
+    setText('#coreProgText',`${Math.round(progress)} / ${total}`);
+    setText('#topLevelPill',`Level ${state.level} · ${Math.round(progress)}/${total}`);
   },
 
   updateDbg(){
@@ -1408,7 +1411,11 @@ async function boot(){
         // Level advance check
         const newBatch=state.data.filter(it=>it.lvl===state.level);
         const allSettled=newBatch.length>0&&newBatch.every(it=>!!state.settledThisLevel[it.id]);
-        if(allSettled&&state.level*APP.wordsPerLevel<state.data.length){ state.level++; state.consecutiveCorrect={}; state.settledThisLevel={}; }
+        if(allSettled&&state.level*APP.wordsPerLevel<state.data.length){
+          state.level++; state.consecutiveCorrect={};
+          const newLvlWords=state.data.filter(it=>it.lvl===state.level);
+          for(const w of newLvlWords) delete state.settledThisLevel[w.id];
+        }
         captureReviewSnapshot(x,{beforeState:cloneProgressState(),canTypo:false});
         saveState(); Core.updateProgress(); Core.updateDbg();
         if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
