@@ -478,6 +478,8 @@ function buildStatePayload(){
     settings:   state.settings||{showHintBtn:true},
     scores:     state.scores||{},
     scoresMigrationVersion: state.scoresMigrationVersion||0,
+    consecutiveCorrect: state.consecutiveCorrect||{},
+    settledThisLevel:   state.settledThisLevel||{},
     currentId:  state.currentId||null
   };
 }
@@ -518,6 +520,8 @@ function loadState(){
   if(obj.settings&&typeof obj.settings==='object') state.settings={...state.settings,...obj.settings};
   if(obj.scores&&typeof obj.scores==='object') state.scores=obj.scores;
   if(obj.scoresMigrationVersion) state.scoresMigrationVersion=obj.scoresMigrationVersion;
+  if(obj.consecutiveCorrect&&typeof obj.consecutiveCorrect==='object') state.consecutiveCorrect=obj.consecutiveCorrect;
+  if(obj.settledThisLevel&&typeof obj.settledThisLevel==='object') state.settledThisLevel=obj.settledThisLevel;
 }
 
 /* ====== state ====== */
