@@ -230,6 +230,8 @@ button:hover{background:var(--btn2)}
     <button id="coreNext">Next</button>
   </div>
 
+  <div id="neuBadge" class="hidden" style="position:absolute;top:10px;right:12px;background:rgba(255,200,60,0.15);border:1px solid rgba(255,200,60,0.4);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;color:#f5c542;pointer-events:none;letter-spacing:0.5px;">Neu</div>
+
   <!-- Secondary: Back, Typo, Hide, Edit -->
   <div class="actionRow secondary" style="margin-top:6px;">
     <button id="coreEdit" class="muted">Edit</button>
@@ -294,6 +296,7 @@ button:hover{background:var(--btn2)}
     <div class="menuRow">
       <button id="coreSuper">Super</button>
       <button id="coreOneStreak">1-Streak</button>
+      <button id="coreSetScore">Set Score</button>
     </div>
   </div>
 
@@ -474,6 +477,7 @@ function buildStatePayload(){
     sentenceMode: state.activeMode==='sentence', // backward compat
     settings:   state.settings||{showHintBtn:true},
     scores:     state.scores||{},
+    scoresMigrationVersion: state.scoresMigrationVersion||0,
     currentId:  state.currentId||null
   };
 }
@@ -513,6 +517,7 @@ function loadState(){
   else { state.activeMode='word'; }
   if(obj.settings&&typeof obj.settings==='object') state.settings={...state.settings,...obj.settings};
   if(obj.scores&&typeof obj.scores==='object') state.scores=obj.scores;
+  if(obj.scoresMigrationVersion) state.scoresMigrationVersion=obj.scoresMigrationVersion;
 }
 
 /* ====== state ====== */
@@ -525,6 +530,7 @@ const state={
   activeMode:'word',
   settings:{ showHintBtn:true },
   scores:{},              // word_id → 0–5 (persisted)
+  scoresMigrationVersion:0,
   consecutiveCorrect:{},  // word_id → consecutive corrects this level (session only)
   settledThisLevel:{},    // word_id → true if settled this level (session only)
   currentId:null,
@@ -612,8 +618,9 @@ function weightedPick(pool){
   return pool[pool.length-1];
 }
 
+const SCORES_MIGRATION_VERSION=2;
 function migrateLegacyState(){
-  if(state.scores&&Object.keys(state.scores).length>0) return;
+  if(state.scoresMigrationVersion>=SCORES_MIGRATION_VERSION) return;
   // Pre-migration backup
   const existing=localStorage.getItem(LS_KEY);
   if(existing) localStorage.setItem('top5k_state_premigration_v2',existing);
@@ -628,13 +635,18 @@ function migrateLegacyState(){
     const hasActivePen=pen&&state.level<=pen.untilLevel;
     if(hasActivePen){ state.scores[id]=5; continue; }
     const streak=state.streaks?.[id]||0;
-    if(streak===0){ state.scores[id]=4; continue; }
     const d=state.level-(item.lvl||1);
+    if(streak===0){
+      // d>0 means old level — word was mastered and streak reset by level advance
+      state.scores[id] = d>0 ? 1.6 : 3;
+      continue;
+    }
     if(d<=0)      state.scores[id]=3;
     else if(d===1) state.scores[id]=2;
     else if(d<=4)  state.scores[id]=1;
     else           state.scores[id]=0;
   }
+  state.scoresMigrationVersion=SCORES_MIGRATION_VERSION;
   saveState();
 }
 
@@ -867,6 +879,9 @@ const Core={
     const cc=state.consecutiveCorrect[x?.id]||0;
     renderStreakDots(Math.min(cc,3),3);
     if(state.activeMode==='cloze') setTimeout(triggerBlankPulse,50);
+    // Neu badge: show for words in the current level batch only
+    const neuBadgeEl=$('#neuBadge');
+    if(neuBadgeEl) neuBadgeEl.classList.toggle('hidden', (x?.lvl||1)!==state.level);
     this.updateProgress();
     this.updateDbg();
     if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
@@ -1451,6 +1466,19 @@ async function boot(){
       oneStreakBtn.addEventListener('mousedown',doOneStreak);
     }
   }
+
+  // ---- Set Score ----
+  $('#coreSetScore')?.addEventListener('click',()=>{
+    const id=state.currentId; if(!id) return;
+    const cur=(state.scores[id]||0).toFixed(1);
+    const v=window.prompt(`Set score for this word (0–5, decimals OK):\nCurrent score: ${cur}`,cur);
+    if(v===null) return;
+    const n=parseFloat(v);
+    if(!Number.isFinite(n)){ alert('Invalid number.'); return; }
+    state.scores[id]=Math.max(0,Math.min(5,n));
+    saveState();
+    if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
+  });
 
   // ---- Super ----
   $('#coreSuper')?.addEventListener('click',()=>{
