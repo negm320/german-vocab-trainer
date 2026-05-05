@@ -619,6 +619,29 @@ function weightedPick(pool){
 }
 
 const SCORES_MIGRATION_VERSION=2;
+function settleThreshold(score){
+  if(score<=1) return 1;
+  if(score<=3) return 2;
+  return 3;
+}
+
+function levelProgressFraction(){
+  const newBatch=state.data.filter(it=>it.lvl===state.level);
+  let total=0, progress=0;
+  for(const w of newBatch){
+    const ov=state.overrides?.[w.id];
+    total+=1;
+    if(ov?.super){ progress+=1; continue; }
+    if(state.settledThisLevel?.[w.id]){ progress+=1; continue; }
+    const score=state.scores?.[w.id]??3;
+    const threshold=settleThreshold(score);
+    const cc=state.consecutiveCorrect?.[w.id]||0;
+    progress+=Math.min(1,cc/threshold);
+  }
+  if(!total) return 1;
+  return progress/total;
+}
+
 function migrateLegacyState(){
   if(state.scoresMigrationVersion>=SCORES_MIGRATION_VERSION) return;
   // Pre-migration backup
@@ -920,25 +943,26 @@ const Core={
     inp.classList.remove('good-field','bad-field');
 
     const isCorrect=!!(guess&&guess===target);
+    const prevScore=state.scores[id]??3;
     if(isCorrect){
-      state.scores[id]=Math.max(0,(state.scores[id]||0)-0.4);
+      state.scores[id]=Math.max(0,prevScore-0.4);
       state.consecutiveCorrect[id]=(state.consecutiveCorrect[id]||0)+1;
       const cc=state.consecutiveCorrect[id];
-      const isSettle=cc>=3&&!state.settledThisLevel[id];
-      if(cc>=3) state.settledThisLevel[id]=true;
+      const threshold=settleThreshold(prevScore);
+      const isSettle=cc>=threshold&&!state.settledThisLevel[id];
+      if(cc>=threshold) state.settledThisLevel[id]=true;
       const ov=state.overrides?.[id];
-      if(ov?.super&&cc>=3){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[id]=ov; }
+      if(ov?.super&&cc>=threshold){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[id]=ov; }
       triggerFlash('good');
-      renderStreakDots(Math.min(cc,3),3,cc-1,isSettle);
+      renderStreakDots(Math.min(cc,threshold),threshold,cc-1,isSettle);
       inp.classList.add('good-field');
-      setHTML('#coreFeedback',`<span class="good">Correct!</span> (${Math.min(cc,3)}/3 to settle)`);
+      setHTML('#coreFeedback',`<span class="good">Correct!</span> (${Math.min(cc,threshold)}/${threshold} to settle)`);
     } else {
-      const cur=state.scores[id]||0;
-      state.scores[id]=Math.min(5, cur<=1 ? cur+3 : cur+2);
+      state.scores[id]=Math.min(5, prevScore<=1 ? prevScore+3 : prevScore+2);
       state.consecutiveCorrect[id]=0;
       triggerFlash('bad');
       triggerInputShake();
-      flashDotsRed(3);
+      flashDotsRed(settleThreshold(prevScore));
       inp.value=x.german||'';
       inp.classList.add('bad-field');
       const correctHint=isCloze?'':` Correct: <b>${x.german||''}</b>`;
@@ -965,14 +989,24 @@ const Core={
   },
 
   updateProgress(){
-    const batch=state.data.filter(it=>it.lvl===state.level);
-    const total=batch.length||1;
-    const settled=batch.filter(it=>!!state.settledThisLevel[it.id]).length;
-    const pct=Math.round(100*settled/total);
+    const newBatch=state.data.filter(it=>it.lvl===state.level);
+    let total=0, progress=0;
+    for(const w of newBatch){
+      const ov=state.overrides?.[w.id];
+      total+=1;
+      if(ov?.super){ progress+=1; continue; }
+      if(state.settledThisLevel?.[w.id]){ progress+=1; continue; }
+      const score=state.scores?.[w.id]??3;
+      const threshold=settleThreshold(score);
+      const cc=state.consecutiveCorrect?.[w.id]||0;
+      progress+=Math.min(1,cc/threshold);
+    }
+    if(!total){ total=1; progress=1; }
+    const pct=Math.round(100*progress/total);
     const progBar=$('#coreProgBar');
     if(progBar) progBar.style.width=pct+'%';
-    setText('#coreProgText',`${settled} / ${total} settled`);
-    setText('#topLevelPill',`Level ${state.level} · ${settled}/${total}`);
+    setText('#coreProgText',`${Math.floor(progress)} / ${total}`);
+    setText('#topLevelPill',`Level ${state.level} · ${Math.floor(progress)}/${total}`);
   },
 
   updateDbg(){
@@ -1354,20 +1388,22 @@ async function boot(){
         restoreProgressState(r.beforeState); // restores pre-wrong score
         const id=x.id;
         // Apply correct: undo wrong spike, score -0.4, cc+1
-        state.scores[id]=Math.max(0,(state.scores[id]||0)-0.4);
+        const prevScore=state.scores[id]??3;
+        state.scores[id]=Math.max(0,prevScore-0.4);
         state.consecutiveCorrect[id]=(state.consecutiveCorrect[id]||0)+1;
         const cc=state.consecutiveCorrect[id];
-        const isSettle=cc>=3&&!state.settledThisLevel[id];
-        if(cc>=3) state.settledThisLevel[id]=true;
+        const threshold=settleThreshold(prevScore);
+        const isSettle=cc>=threshold&&!state.settledThisLevel[id];
+        if(cc>=threshold) state.settledThisLevel[id]=true;
         const ov=state.overrides?.[id];
-        if(ov?.super&&cc>=3){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[id]=ov; }
+        if(ov?.super&&cc>=threshold){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[id]=ov; }
         const inp=$('#coreDe');
         if(!inp) return;
         const typoWord=state.activeMode==='cloze'?(state._clozeCorrect||x.german):x.german;
         inp.value=typoWord; inp.classList.remove('bad-field'); inp.classList.add('good-field');
         if(state.activeMode==='cloze') fillClozeBlank(typoWord,true);
-        renderStreakDots(Math.min(cc,3),3,cc-1,isSettle);
-        setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span> (${Math.min(cc,3)}/3 to settle)`);
+        renderStreakDots(Math.min(cc,threshold),threshold,cc-1,isSettle);
+        setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span> (${Math.min(cc,threshold)}/${threshold} to settle)`);
         if(state.activeMode!=='cloze') setText('#coreDeSentence',x.deSent||'');
         // Level advance check
         const newBatch=state.data.filter(it=>it.lvl===state.level);
