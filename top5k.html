@@ -105,6 +105,8 @@ button:hover{background:var(--btn2)}
 .streak-dot.filled{background:var(--accent);border-color:var(--accent);}
 @keyframes dotPop{0%{transform:scale(1)}45%{transform:scale(1.5)}75%{transform:scale(.88)}100%{transform:scale(1)}}
 .streak-dot.pop{animation:dotPop .3s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes settlePop{0%{transform:scale(1)}25%{transform:scale(1.9)}55%{transform:scale(.82)}80%{transform:scale(1.12)}100%{transform:scale(1)}}
+.streak-dot.settle-pop{animation:settlePop .55s cubic-bezier(.34,1.56,.64,1) both;}
 
 /* ── MENU SLIDE ── */
 @keyframes menuSlideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
@@ -471,6 +473,7 @@ function buildStatePayload(){
     activeMode: state.activeMode||'word',
     sentenceMode: state.activeMode==='sentence', // backward compat
     settings:   state.settings||{showHintBtn:true},
+    scores:     state.scores||{},
     currentId:  state.currentId||null
   };
 }
@@ -509,6 +512,7 @@ function loadState(){
   else if(obj.sentenceMode){ state.activeMode='sentence'; }
   else { state.activeMode='word'; }
   if(obj.settings&&typeof obj.settings==='object') state.settings={...state.settings,...obj.settings};
+  if(obj.scores&&typeof obj.scores==='object') state.scores=obj.scores;
 }
 
 /* ====== state ====== */
@@ -520,6 +524,9 @@ const state={
   overrides:{},
   activeMode:'word',
   settings:{ showHintBtn:true },
+  scores:{},              // word_id → 0–5 (persisted)
+  consecutiveCorrect:{},  // word_id → consecutive corrects this level (session only)
+  settledThisLevel:{},    // word_id → true if settled this level (session only)
   currentId:null,
   lastReview:null,
   _clozeCorrect:null,
@@ -529,7 +536,8 @@ const state={
 function cloneProgressState(){
   return JSON.parse(JSON.stringify({
     level:state.level, streaks:state.streaks||{}, penalty:state.penalty||{},
-    reqSeen:state.reqSeen||{}, overrides:state.overrides||{}, activeMode:state.activeMode||'word'
+    reqSeen:state.reqSeen||{}, overrides:state.overrides||{}, activeMode:state.activeMode||'word',
+    scores:state.scores||{}, consecutiveCorrect:state.consecutiveCorrect||{}, settledThisLevel:state.settledThisLevel||{}
   }));
 }
 
@@ -541,6 +549,9 @@ function restoreProgressState(snap){
   state.reqSeen  = JSON.parse(JSON.stringify(snap.reqSeen||{}));
   state.overrides= JSON.parse(JSON.stringify(snap.overrides||{}));
   state.activeMode= snap.activeMode||'word';
+  state.scores             = JSON.parse(JSON.stringify(snap.scores||{}));
+  state.consecutiveCorrect = JSON.parse(JSON.stringify(snap.consecutiveCorrect||{}));
+  state.settledThisLevel   = JSON.parse(JSON.stringify(snap.settledThisLevel||{}));
   Core.rebuildData();
 }
 
@@ -577,6 +588,54 @@ function restoreLastReviewUI(){
   state._enterStage=1;
   if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
   return true;
+}
+
+/* ====== score helpers ====== */
+function scoreToTickets(score){
+  const T=[1,2,4,8,16,32];
+  score=Math.max(0,Math.min(5,score));
+  const lo=Math.floor(score), hi=Math.min(5,lo+1);
+  return lo===hi ? T[lo] : T[lo]+(score-lo)*(T[hi]-T[lo]);
+}
+
+function weightedPick(pool){
+  if(!pool.length) return null;
+  const tickets=pool.map(it=>{
+    const s=state.scores[it.id]||0;
+    const t=scoreToTickets(s);
+    return (s<1&&Math.random()<0.30) ? 0 : t;
+  });
+  const total=tickets.reduce((a,b)=>a+b,0);
+  if(!total) return pickRand(pool);
+  let r=Math.random()*total;
+  for(let i=0;i<pool.length;i++){ r-=tickets[i]; if(r<=0) return pool[i]; }
+  return pool[pool.length-1];
+}
+
+function migrateLegacyState(){
+  if(state.scores&&Object.keys(state.scores).length>0) return;
+  // Pre-migration backup
+  const existing=localStorage.getItem(LS_KEY);
+  if(existing) localStorage.setItem('top5k_state_premigration_v2',existing);
+
+  state.scores={};
+  for(const item of state.data){
+    const id=item.id;
+    const ov=state.overrides?.[id];
+    if(ov?.deleted||ov?.super) continue;
+    if(ov?.easy1){ state.scores[id]=0; continue; }
+    const pen=state.penalty?.[id];
+    const hasActivePen=pen&&state.level<=pen.untilLevel;
+    if(hasActivePen){ state.scores[id]=5; continue; }
+    const streak=state.streaks?.[id]||0;
+    if(streak===0){ state.scores[id]=4; continue; }
+    const d=state.level-(item.lvl||1);
+    if(d<=0)      state.scores[id]=3;
+    else if(d===1) state.scores[id]=2;
+    else if(d<=4)  state.scores[id]=1;
+    else           state.scores[id]=0;
+  }
+  saveState();
 }
 
 /* ====== Core ====== */
@@ -679,7 +738,7 @@ const Core={
     const learnPool=this.levelPool();
     if(!learnPool.length) return null;
 
-    // Due super visitors
+    // Due super visitors (unchanged)
     const dueSuper=[];
     const maxUnlocked=state.level*APP.wordsPerLevel;
     for(let i=0;i<Math.min(state.data.length,maxUnlocked);i++){
@@ -692,8 +751,9 @@ const Core={
     }
     if(dueSuper.length) return pickRand(dueSuper);
 
-    const unmastered=learnPool.filter(it=>(state.streaks[it.id]||0)<this.requiredFor(it));
-    return pickRand(unmastered.length?unmastered:learnPool);
+    // Weighted lottery — exclude settled-this-level words
+    const eligible=learnPool.filter(it=>!state.settledThisLevel[it.id]);
+    return weightedPick(eligible.length ? eligible : learnPool);
   },
 
   render(x){
@@ -804,9 +864,8 @@ const Core={
       };
     }
 
-    const currentStreak=state.streaks[x?.id]||0;
-    const needed=x?this.requiredFor(x):3;
-    renderStreakDots(currentStreak,needed);
+    const cc=state.consecutiveCorrect[x?.id]||0;
+    renderStreakDots(Math.min(cc,3),3);
     if(state.activeMode==='cloze') setTimeout(triggerBlankPulse,50);
     this.updateProgress();
     this.updateDbg();
@@ -835,56 +894,54 @@ const Core={
       return;
     }
 
-    // Word or Cloze: both use #coreDe, correct answer = x.german
+    // Word or Cloze
     const inp=$('#coreDe');
     if(!inp) return;
     const beforeState=cloneProgressState();
     const guess =normDe(inp.value);
     const target=normDe(isCloze?(state._clozeCorrect||x.german):x.german);
-    const baseNeed=this.baseRequiredFor(x);
-    const need   =this.requiredFor(x);
+    const id=x.id;
 
     inp.classList.remove('good-field','bad-field');
 
     const isCorrect=!!(guess&&guess===target);
     if(isCorrect){
-      state.streaks[x.id]=(state.streaks[x.id]||0)+1;
-      const ov=state.overrides?.[x.id];
-      const nowMastered=(state.streaks[x.id]||0)>=need;
-      if(ov?.super&&nowMastered){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[x.id]=ov; }
+      state.scores[id]=Math.max(0,(state.scores[id]||0)-0.4);
+      state.consecutiveCorrect[id]=(state.consecutiveCorrect[id]||0)+1;
+      const cc=state.consecutiveCorrect[id];
+      const isSettle=cc>=3&&!state.settledThisLevel[id];
+      if(cc>=3) state.settledThisLevel[id]=true;
+      const ov=state.overrides?.[id];
+      if(ov?.super&&cc>=3){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[id]=ov; }
       triggerFlash('good');
-      const prevStreak=(state.streaks[x.id]||0)-1;
-      renderStreakDots(state.streaks[x.id],need,prevStreak);
+      renderStreakDots(Math.min(cc,3),3,cc-1,isSettle);
       inp.classList.add('good-field');
-      setHTML('#coreFeedback',`<span class="good">Correct!</span> (${state.streaks[x.id]}/${need})`);
+      setHTML('#coreFeedback',`<span class="good">Correct!</span> (${Math.min(cc,3)}/3 to settle)`);
     } else {
-      state.streaks[x.id]=0;
-      const ov=state.overrides?.[x.id];
-      if(ov?.super){ ov.super=false; delete ov.superNext; state.overrides[x.id]=ov; }
-      const nextTarget=baseNeed>=2?3:2;
-      const prev=state.penalty[x.id];
-      const finalTarget=Math.max(prev?.target||0,nextTarget);
-      state.penalty[x.id]={target:finalTarget,untilLevel:state.level+1};
+      const cur=state.scores[id]||0;
+      state.scores[id]=Math.min(5, cur<=1 ? cur+3 : cur+2);
+      state.consecutiveCorrect[id]=0;
       triggerFlash('bad');
       triggerInputShake();
-      flashDotsRed(need);
+      flashDotsRed(3);
       inp.value=x.german||'';
       inp.classList.add('bad-field');
       const correctHint=isCloze?'':` Correct: <b>${x.german||''}</b>`;
-      setHTML('#coreFeedback',`<span class="bad">Wrong.</span>${correctHint} <span class="muted small">• now ${finalTarget}-streak (until level ${state.level+1})</span>`);
+      setHTML('#coreFeedback',`<span class="bad">Wrong.</span>${correctHint} <span class="muted small">• score: ${(state.scores[id]).toFixed(1)}</span>`);
     }
 
-    // In cloze mode: fill blank with typed word (green) or correct conjugated/base form (red)
     if(mode==='cloze') fillClozeBlank(isCorrect?(inp.value||state._clozeCorrect||x.german):(state._clozeCorrect||x.german), isCorrect);
-
     showCorrectSentence();
-    captureReviewSnapshot(x,{beforeState,canTypo:!(guess&&guess===target)});
+    captureReviewSnapshot(x,{beforeState,canTypo:!isCorrect});
     saveState();
 
-    const pool=this.levelPool();
-    const allMastered=pool.length&&pool.every(it=>(state.streaks[it.id]||0)>=this.requiredFor(it));
-    if(allMastered&&state.level*APP.wordsPerLevel<state.data.length){
-      state.level++; state.streaks={};
+    // Level advance: all words in current level batch settled
+    const newBatch=state.data.filter(it=>it.lvl===state.level);
+    const allSettled=newBatch.length>0&&newBatch.every(it=>!!state.settledThisLevel[it.id]);
+    if(allSettled&&state.level*APP.wordsPerLevel<state.data.length){
+      state.level++;
+      state.consecutiveCorrect={};
+      state.settledThisLevel={};
       triggerLevelUp(state.level);
       saveState();
     }
@@ -893,19 +950,22 @@ const Core={
   },
 
   updateProgress(){
-    const pool=this.levelPool();
-    if(!pool.length) return;
-    const done=pool.filter(w=>(state.streaks[w.id]||0)>=this.requiredFor(w)).length;
-    const pct=Math.round(100*done/pool.length);
+    const batch=state.data.filter(it=>it.lvl===state.level);
+    const total=batch.length||1;
+    const settled=batch.filter(it=>!!state.settledThisLevel[it.id]).length;
+    const pct=Math.round(100*settled/total);
     const progBar=$('#coreProgBar');
     if(progBar) progBar.style.width=pct+'%';
-    setText('#coreProgText',`${done} / ${pool.length}`);
-    setText('#topLevelPill',`Level ${state.level} · ${done}/${pool.length}`);
+    setText('#coreProgText',`${settled} / ${total} settled`);
+    setText('#topLevelPill',`Level ${state.level} · ${settled}/${total}`);
   },
 
   updateDbg(){
-    const pool=this.levelPool();
-    setText('#dbg',`unlocked=${pool.length} • lvl=${state.level} • current=${state.currentId||'-'} • mode=${state.activeMode||'word'}`);
+    const id=state.currentId||'-';
+    const score=id!=='-'?(state.scores[id]??'?'):'-';
+    const cc=id!=='-'?(state.consecutiveCorrect[id]||0):'-';
+    const settled=id!=='-'?(state.settledThisLevel[id]?'yes':'no'):'-';
+    setText('#dbg',`lvl=${state.level} • mode=${state.activeMode||'word'} • id=${id} • score=${typeof score==='number'?score.toFixed(2):score} • cc=${cc} • settled=${settled}`);
   }
 };
 
@@ -929,6 +989,7 @@ const UI={
       if(!Number.isFinite(v)) return;
       state.level=Math.max(1,Math.min(v,maxL));
       state._enterStage=0;
+      state.consecutiveCorrect={}; state.settledThisLevel={};
       saveState(); nextCard();
     };
   },
@@ -1049,7 +1110,7 @@ function triggerBlankPulse(){
   setTimeout(()=>blank.classList.remove('blank-pulse'),2600);
 }
 
-function renderStreakDots(current,required,animateIdx){
+function renderStreakDots(current,required,animateIdx,settled){
   const wrap=$('#coreStreakDots');
   if(!wrap) return;
   wrap.innerHTML='';
@@ -1058,7 +1119,12 @@ function renderStreakDots(current,required,animateIdx){
     d.className='streak-dot'+(i<current?' filled':'');
     wrap.appendChild(d);
   }
-  if(animateIdx!==undefined&&animateIdx>=0&&animateIdx<required){
+  if(settled){
+    // Settle flourish on all dots
+    wrap.querySelectorAll('.streak-dot').forEach(d=>{
+      d.classList.remove('settle-pop'); void d.offsetWidth; d.classList.add('settle-pop');
+    });
+  } else if(animateIdx!==undefined&&animateIdx>=0&&animateIdx<required){
     const dots=wrap.querySelectorAll('.streak-dot');
     if(dots[animateIdx]){
       dots[animateIdx].classList.remove('pop');
@@ -1270,21 +1336,28 @@ async function boot(){
         if(!r||r.id!==state.currentId||!r.canTypo){ alert('Typo works only right after a wrong word check on the current card.'); return; }
         const x=state.data.find(w=>w.id===r.id);
         if(!x) return;
-        restoreProgressState(r.beforeState);
+        restoreProgressState(r.beforeState); // restores pre-wrong score
+        const id=x.id;
+        // Apply correct: undo wrong spike, score -0.4, cc+1
+        state.scores[id]=Math.max(0,(state.scores[id]||0)-0.4);
+        state.consecutiveCorrect[id]=(state.consecutiveCorrect[id]||0)+1;
+        const cc=state.consecutiveCorrect[id];
+        const isSettle=cc>=3&&!state.settledThisLevel[id];
+        if(cc>=3) state.settledThisLevel[id]=true;
+        const ov=state.overrides?.[id];
+        if(ov?.super&&cc>=3){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[id]=ov; }
         const inp=$('#coreDe');
         if(!inp) return;
-        const need=Core.requiredFor(x);
-        state.streaks[x.id]=(state.streaks[x.id]||0)+1;
-        const ov=state.overrides?.[x.id];
-        if(ov?.super&&(state.streaks[x.id]||0)>=need){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[x.id]=ov; }
         const typoWord=state.activeMode==='cloze'?(state._clozeCorrect||x.german):x.german;
         inp.value=typoWord; inp.classList.remove('bad-field'); inp.classList.add('good-field');
         if(state.activeMode==='cloze') fillClozeBlank(typoWord,true);
-        setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span> (${state.streaks[x.id]}/${need})`);
+        renderStreakDots(Math.min(cc,3),3,cc-1,isSettle);
+        setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span> (${Math.min(cc,3)}/3 to settle)`);
         if(state.activeMode!=='cloze') setText('#coreDeSentence',x.deSent||'');
-        const pool=Core.levelPool();
-        const allMastered=pool.length&&pool.every(it=>(state.streaks[it.id]||0)>=Core.requiredFor(it));
-        if(allMastered&&state.level*APP.wordsPerLevel<state.data.length){ state.level++; state.streaks={}; }
+        // Level advance check
+        const newBatch=state.data.filter(it=>it.lvl===state.level);
+        const allSettled=newBatch.length>0&&newBatch.every(it=>!!state.settledThisLevel[it.id]);
+        if(allSettled&&state.level*APP.wordsPerLevel<state.data.length){ state.level++; state.consecutiveCorrect={}; state.settledThisLevel={}; }
         captureReviewSnapshot(x,{beforeState:cloneProgressState(),canTypo:false});
         saveState(); Core.updateProgress(); Core.updateDbg();
         if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
@@ -1371,8 +1444,7 @@ async function boot(){
         if(on){ delete state.penalty[id]; delete state.reqSeen[id]; }
         Core.rebuildData(); saveState(); Core.updateProgress(); Core.updateDbg();
         // Immediately re-render streak dots so the change is visible
-        const updatedX=state.data.find(w=>w.id===id);
-        if(updatedX) renderStreakDots(state.streaks[id]||0, Core.requiredFor(updatedX));
+        renderStreakDots(state.consecutiveCorrect[id]||0, 3);
         if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
       }
       oneStreakBtn.addEventListener('pointerdown',doOneStreak,{passive:false});
@@ -1401,6 +1473,7 @@ async function boot(){
   $('#coreReset')?.addEventListener('click',()=>{
     if(!confirm('Reset 5k progress?')) return;
     state.level=1; state.streaks={}; state.penalty={}; state.activeMode='word';
+    state.scores={}; state.consecutiveCorrect={}; state.settledThisLevel={};
     state.currentId=null; saveState(); location.reload();
   });
 
@@ -1447,6 +1520,7 @@ async function boot(){
   });
 
   await Core.load();
+  migrateLegacyState();
   syncMenuUI();
   nextCard();
 }
