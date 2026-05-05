@@ -1453,8 +1453,12 @@ async function boot(){
       conjugated:$('#editConjugated').value.trim()||null,
       enInSent:  $('#editEnInSent').value.trim()||null
     };
+    const savedId=_editId;
     closeEditModal();
-    saveState(); nextCard();
+    Core.rebuildData();
+    saveState();
+    const updated=state.data.find(w=>w.id===savedId);
+    if(updated) Core.render(updated);
   }
   $('#coreEdit')?.addEventListener('click', openEditModal);
   document.addEventListener('click',(e)=>{
