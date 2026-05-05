@@ -626,20 +626,19 @@ function settleThreshold(score){
 }
 
 function levelProgressFraction(){
-  const newBatch=state.data.filter(it=>it.lvl===state.level);
-  let total=0, progress=0;
-  for(const w of newBatch){
+  const pool=state.data.slice(0,state.level*25);
+  let Z=0, X=0;
+  for(const w of pool){
     const ov=state.overrides?.[w.id];
-    total+=1;
-    if(ov?.super){ progress+=1; continue; }
-    if(state.settledThisLevel?.[w.id]){ progress+=1; continue; }
+    if(ov?.deleted||ov?.super) continue;
     const score=state.scores?.[w.id]??3;
+    if(score===0) continue;
     const threshold=settleThreshold(score);
-    const cc=state.consecutiveCorrect?.[w.id]||0;
-    progress+=Math.min(1,cc/threshold);
+    const cc=Math.min(state.consecutiveCorrect?.[w.id]||0, threshold);
+    Z+=threshold;
+    X+=cc;
   }
-  if(!total) return 1;
-  return progress/total;
+  return {X, Z, frac: Z===0 ? 1 : X/Z};
 }
 
 function migrateLegacyState(){
@@ -992,24 +991,12 @@ const Core={
   },
 
   updateProgress(){
-    const newBatch=state.data.filter(it=>it.lvl===state.level);
-    let total=0, progress=0;
-    for(const w of newBatch){
-      const ov=state.overrides?.[w.id];
-      total+=1;
-      if(ov?.super){ progress+=1; continue; }
-      if(state.settledThisLevel?.[w.id]){ progress+=1; continue; }
-      const score=state.scores?.[w.id]??3;
-      const threshold=settleThreshold(score);
-      const cc=state.consecutiveCorrect?.[w.id]||0;
-      progress+=Math.min(1,cc/threshold);
-    }
-    if(!total){ total=1; progress=1; }
-    const pct=Math.round(100*progress/total);
+    const {X,Z,frac}=levelProgressFraction();
+    const pct=Math.round(frac*100);
     const progBar=$('#coreProgBar');
     if(progBar) progBar.style.width=pct+'%';
-    setText('#coreProgText',`${Math.round(progress)} / ${total}`);
-    setText('#topLevelPill',`Level ${state.level} · ${Math.round(progress)}/${total}`);
+    setText('#coreProgText',`${Math.round(X)} / ${Z} done`);
+    setText('#topLevelPill',`Level ${state.level} · ${Math.round(X)}/${Z}`);
   },
 
   updateDbg(){
