@@ -676,7 +676,7 @@ function isCurrentBatchDone(){
 
 function decayScore(id){
   const cur=state.scores[id]??3;
-  state.scores[id]=Math.max(0.2, cur>1 ? cur-0.4 : cur-0.1);
+  state.scores[id]=Math.max(0.2, cur>1 ? cur-0.4 : cur-0.2);
 }
 
 function initCurrentBatch(){
