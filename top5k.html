@@ -326,6 +326,11 @@ button:hover{background:var(--btn2)}
     </div>
   </div>
 
+  <!-- Boost -->
+  <div class="menuSection">
+    <button id="btnBoostPool" style="color:var(--muted);border-color:rgba(154,172,191,0.3);width:100%;padding:10px;">Boost pool</button>
+  </div>
+
   <!-- Danger zone -->
   <div class="menuSection">
     <div class="menuLabel" style="color:var(--bad);">Danger zone</div>
@@ -1228,6 +1233,10 @@ document.addEventListener('click',(e)=>{
     const txt=($('#importModalText')?.value||'').trim();
     if(txt) UI.applyImport(txt);
   }
+  if(id==='boostModal'){
+    $('#boostModal')?.classList.add('hidden');
+    $('#boostModal')?.setAttribute('aria-hidden','true');
+  }
 });
 
 /* ====== animations ====== */
@@ -1675,6 +1684,44 @@ async function boot(){
     state.currentId=null; saveState(); location.reload();
   });
 
+  // ---- Boost Pool ----
+  {
+    const boostModal=$('#boostModal');
+    let lockOpen=0;
+    $('#btnBoostPool')?.addEventListener('pointerdown',(e)=>{
+      e.preventDefault();
+      const now=Date.now(); if(now-lockOpen<400) return; lockOpen=now;
+      closeMenu();
+      boostModal?.classList.remove('hidden'); boostModal?.setAttribute('aria-hidden','false');
+    },{passive:false});
+    $('#btnBoostPool')?.addEventListener('mousedown',(e)=>e.preventDefault());
+
+    let lockConfirm=0;
+    $('#boostConfirm')?.addEventListener('pointerdown',(e)=>{
+      e.preventDefault();
+      const now=Date.now(); if(now-lockConfirm<400) return; lockConfirm=now;
+      const levelWords=state.data.filter(it=>it.lvl===state.level);
+      for(const w of levelWords){
+        const ov=state.overrides?.[w.id];
+        if(ov?.deleted||ov?.super) continue;
+        const score=state.scores[w.id]??3;
+        if(score<0.3) continue;
+        state.scores[w.id]=0.8;
+      }
+      saveState();
+      boostModal?.classList.add('hidden'); boostModal?.setAttribute('aria-hidden','true');
+    },{passive:false});
+    $('#boostConfirm')?.addEventListener('mousedown',(e)=>e.preventDefault());
+
+    let lockCancel=0;
+    $('#boostCancel')?.addEventListener('pointerdown',(e)=>{
+      e.preventDefault();
+      const now=Date.now(); if(now-lockCancel<400) return; lockCancel=now;
+      boostModal?.classList.add('hidden'); boostModal?.setAttribute('aria-hidden','true');
+    },{passive:false});
+    $('#boostCancel')?.addEventListener('mousedown',(e)=>e.preventDefault());
+  }
+
   // ---- Export / Import ----
   $('#btnExport')?.addEventListener('click',()=>UI.exportState());
   $('#btnImport')?.addEventListener('click',()=>UI.importState());
@@ -1799,6 +1846,17 @@ document.addEventListener('DOMContentLoaded',boot);
       <button id="copyModalCopy">Copy</button>
     </div>
     <div id="copyModalHint" class="muted small" style="margin-top:6px;"></div>
+  </div>
+</div>
+
+<!-- Boost Pool Modal -->
+<div id="boostModal" class="modal hidden" aria-hidden="true">
+  <div class="modalBox">
+    <p style="margin:0 0 16px;line-height:1.6;">Set all unmastered words in this level to 0.8? Words you've already mastered won't change.</p>
+    <div style="display:flex;gap:8px;">
+      <button id="boostConfirm" style="flex:1;">Confirm</button>
+      <button id="boostCancel" class="muted" style="flex:1;">Cancel</button>
+    </div>
   </div>
 </div>
 
