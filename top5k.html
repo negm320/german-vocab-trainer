@@ -151,6 +151,11 @@ button:hover{background:var(--btn2)}
 .danger-btn{color:var(--bad);border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.08);width:100%;padding:10px;}
 .danger-btn:hover{background:rgba(239,68,68,.18);}
 
+/* API key setup screen */
+#apiKeyScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10000;}
+#apiKeyScreen.hidden{display:none!important}
+.setupBox{width:min(480px,100%);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.45);}
+
 /* copy modal */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;}
 .modal.hidden{display:none!important}
@@ -159,6 +164,17 @@ button:hover{background:var(--btn2)}
 </style>
 </head>
 <body>
+<!-- API Key Setup Screen -->
+<div id="apiKeyScreen" class="hidden">
+  <div class="setupBox">
+    <h2 style="margin:0 0 8px;font-size:18px;">Gemini API Key</h2>
+    <p class="muted small" style="margin:0 0 16px;line-height:1.6;">A free Gemini API key is required to use AI features. Get one at <strong>aistudio.google.com</strong></p>
+    <input id="apiKeyInput" type="text" placeholder="AIza…" spellcheck="false" autocomplete="off" style="margin-bottom:12px;">
+    <button id="apiKeySave" style="width:100%;">Save &amp; continue</button>
+    <div id="apiKeyHint" class="muted small hidden" style="margin-top:8px;color:var(--bad);"></div>
+  </div>
+</div>
+
 <!-- Fullscreen level-up overlay -->
 <div class="lvlOverlay" id="lvlOverlay" aria-hidden="true">
   <div class="lvlBg"></div>
@@ -307,6 +323,7 @@ button:hover{background:var(--btn2)}
     <div class="menuRow">
       <button id="btnExport">Export</button>
       <button id="btnImport">Import</button>
+      <button id="btnResetApiKey">Reset API Key</button>
     </div>
     <div style="margin-top:4px;">
       <label class="muted small" style="display:flex;gap:6px;align-items:center;">
@@ -451,6 +468,7 @@ function parseCSV(txt){
 
 /* ====== storage ====== */
 const LS_KEY  = 'top5k_state_v2';
+const GEMINI_KEY_LS = 'top5k_gemini_key';
 const LS_KEY_OLD = 'top5k_state_v1';
 const LAST_CLOUD_BACKUP_KEY  = 'top5k_last_cloud_backup_v1';
 const BACKUP_DISMISS_SESSION_KEY = 'top5k_backup_dismissed_v1';
@@ -1344,6 +1362,10 @@ function closeMenu(){
 
 /* ====== boot ====== */
 async function boot(){
+  if(!localStorage.getItem(GEMINI_KEY_LS)){
+    $('#apiKeyScreen')?.classList.remove('hidden');
+    return;
+  }
   loadState();
   updateBackupBanner();
 
@@ -1775,6 +1797,36 @@ function nextCard(){
   const x=Core.pick();
   if(!x){ setText('#coreEn','No data / nothing to pick'); return; }
   triggerCardSlide(()=>{ Core.render(x); saveState(); });
+}
+
+/* ====== API key setup ====== */
+{
+  let lockSave=0;
+  document.getElementById('apiKeySave')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockSave<400) return; lockSave=now;
+    const val=(document.getElementById('apiKeyInput')?.value||'').trim();
+    const hint=document.getElementById('apiKeyHint');
+    if(!val){
+      if(hint){ hint.textContent='Please enter your API key.'; hint.classList.remove('hidden'); }
+      return;
+    }
+    localStorage.setItem(GEMINI_KEY_LS,val);
+    location.reload();
+  },{passive:false});
+  document.getElementById('apiKeySave')?.addEventListener('mousedown',(e)=>e.preventDefault());
+  document.getElementById('apiKeyInput')?.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter') document.getElementById('apiKeySave')?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+  });
+
+  let lockReset=0;
+  document.getElementById('btnResetApiKey')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockReset<400) return; lockReset=now;
+    localStorage.removeItem(GEMINI_KEY_LS);
+    location.reload();
+  },{passive:false});
+  document.getElementById('btnResetApiKey')?.addEventListener('mousedown',(e)=>e.preventDefault());
 }
 
 document.addEventListener('DOMContentLoaded',boot);
