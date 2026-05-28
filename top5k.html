@@ -97,9 +97,6 @@ button:hover{background:var(--btn2)}
 @keyframes blankPulse{0%,100%{background:rgba(106,166,255,.08)}50%{background:rgba(106,166,255,.25)}}
 .blank-pulse{animation:blankPulse 1.1s ease 2;}
 
-/* ── AI CHECKING PULSE ── */
-@keyframes aiCheckPulse{0%,100%{opacity:1}50%{opacity:0.35}}
-.cloze-blank.ai-checking{animation:aiCheckPulse .7s ease infinite;}
 
 /* ── STREAK DOTS ── */
 .streakWrap{display:flex;align-items:center;gap:6px;margin-top:10px;}
@@ -764,32 +761,18 @@ function migrateLegacyState(){
 }
 
 /* ====== Core ====== */
-/* ====== Gemini evaluation ====== */
-async function callGeminiEval(userInput, target){
-  const key=localStorage.getItem(GEMINI_KEY_LS);
-  if(!key) return null;
-  const checkBtn=$('#coreCheck');
-  const blank=document.querySelector('.cloze-blank');
-  if(checkBtn){ checkBtn.disabled=true; checkBtn.style.opacity='0.5'; }
-  if(blank) blank.classList.add('ai-checking');
-  try{
-    const prompt=`You are grading a German vocabulary fill-in-the-blank exercise.\nTarget word: "${target}"\nUser typed: "${userInput}"\nRespond with exactly one word — CORRECT, TYPO, or WRONG.\nCORRECT = right answer (exact or normalized equivalent)\nTYPO = clearly intended the right word but has a minor spelling mistake\nWRONG = wrong word`;
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:10,temperature:0}})
-    });
-    if(!res.ok) return null;
-    const data=await res.json();
-    const verdict=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim().toUpperCase();
-    if(verdict==='CORRECT'||verdict==='TYPO'||verdict==='WRONG') return verdict;
-    return null;
-  }catch(e){
-    return null;
-  }finally{
-    if(checkBtn){ checkBtn.disabled=false; checkBtn.style.opacity=''; }
-    if(blank) blank.classList.remove('ai-checking');
-  }
+/* ====== local cloze evaluation ====== */
+function normDeLocal(s){
+  return (s||'').trim().toLowerCase()
+    .replaceAll('ue','ü').replaceAll('oe','ö').replaceAll('ae','ä').replaceAll('ss','ß');
+}
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i?j?0:i:j));
+  for(let i=1;i<=m;i++)
+    for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
 }
 
 const Core={
@@ -1038,7 +1021,7 @@ const Core={
     if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
   },
 
-  async check(x){
+  check(x){
     const mode=state.activeMode||'word';
     const isSentence=mode==='sentence';
     const isCloze=mode==='cloze';
@@ -1073,11 +1056,10 @@ const Core={
     let isCorrect=!!(guess&&guess===target);
     let isTypo=false;
     if(isCloze&&guess){
-      const verdict=await callGeminiEval(guess,target);
-      if(verdict==='CORRECT'){ isCorrect=true; }
-      else if(verdict==='TYPO'){ isCorrect=true; isTypo=true; }
-      else if(verdict==='WRONG'){ isCorrect=false; }
-      // null = API failed, keep string-match result
+      const ng=normDeLocal(guess), nt=normDeLocal(target);
+      if(ng===nt){ isCorrect=true; }
+      else if(levenshtein(ng,nt)<=2){ isCorrect=true; isTypo=true; }
+      else{ isCorrect=false; }
     }
     const prevScore=Math.max(0.2,state.scores[id]??3);
 
