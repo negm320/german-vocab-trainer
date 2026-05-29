@@ -202,16 +202,21 @@ Rules:
         })
       }
     );
-    if(!res.ok) throw new Error('API '+res.status);
+    if(!res.ok){
+      const errBody=await res.text().catch(()=>'');
+      throw new Error(`API ${res.status}: ${errBody.slice(0,200)}`);
+    }
     const data=await res.json();
     const raw=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
     const jsonStr=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
     const drill=JSON.parse(jsonStr);
-    if(!drill.english||!Array.isArray(drill.pieces)||!drill.correct) throw new Error('bad shape');
+    if(!drill.english||!Array.isArray(drill.pieces)||!drill.correct) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
     currentDrill=drill;
     renderDrill(drill);
   }catch(e){
-    loadingText.textContent='Generation failed — tap ↺ New to retry.';
+    console.error('[grammar drill]',e);
+    loadingText.textContent=`Failed: ${e.message} — tap ↺ New to retry.`;
+    loadingText.style.wordBreak='break-word';
     card.classList.remove('loading');
   }
 }
