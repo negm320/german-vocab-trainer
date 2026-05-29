@@ -171,6 +171,8 @@ button:hover{background:var(--btn2)}
 </style>
 </head>
 <body>
+<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='grammar')location.replace('grammar.html');})();</script>
+
 <!-- API Key Setup Screen -->
 <div id="apiKeyScreen" class="hidden">
   <div class="setupBox">
@@ -1832,6 +1834,14 @@ function nextCard(){
   if(!x){ setText('#coreEn','No data / nothing to pick'); return; }
   triggerCardSlide(()=>{ Core.render(x); saveState(); });
 }
+
+/* ====== Tab persistence ====== */
+document.querySelectorAll('.tabItem').forEach(a=>{
+  a.addEventListener('click',()=>{
+    localStorage.setItem('top5k_active_tab',
+      a.getAttribute('href')==='grammar.html' ? 'grammar' : 'vocab');
+  });
+});
 
 /* ====== API key setup ====== */
 {

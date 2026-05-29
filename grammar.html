@@ -82,11 +82,15 @@ button:hover{background:var(--btn2);}
 .card.loading{animation:loadPulse 1s ease infinite;}
 #loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;}
 
-/* mic active */
-.mic-active{outline:1px solid rgba(239,68,68,.55) !important;background:rgba(239,68,68,.14) !important;color:#fca5a5 !important;}
+/* mic states */
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}60%{box-shadow:0 0 0 5px rgba(239,68,68,0.28)}}
+.mic-listening{outline:1px solid rgba(239,68,68,.55)!important;background:rgba(239,68,68,.14)!important;color:#fca5a5!important;animation:micPulse 1s ease infinite;}
+#micStatus{font-size:12px;color:var(--muted);margin-top:6px;min-height:1.2em;}
+.input-interim{color:var(--muted)!important;}
 </style>
 </head>
 <body>
+<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');})();</script>
 
 <!-- API Key Setup Screen -->
 <div id="apiKeyScreen" class="hidden">
@@ -130,6 +134,7 @@ button:hover{background:var(--btn2);}
       <button id="btnRefresh">↺ New</button>
     </div>
 
+    <div id="micStatus" class="hidden"></div>
     <div id="feedback" class="hidden" style="margin-top:12px;font-size:14px;line-height:1.6;"></div>
   </div>
 </div>
@@ -149,20 +154,73 @@ let micActive=false;
   if(SR){
     recognition=new SR();
     recognition.lang='de-DE';
-    recognition.interimResults=false;
+    recognition.continuous=false;
+    recognition.interimResults=true;
     recognition.maxAlternatives=1;
+
+    recognition.onstart=()=>setMicState('listening');
+
     recognition.onresult=(e)=>{
-      document.getElementById('answerInput').value=e.results[0][0].transcript;
-      stopMic();
+      let interim='', final='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+        else interim+=e.results[i][0].transcript;
+      }
+      if(final) setInputFinal(final);
+      else if(interim) setInputInterim(interim);
     };
-    recognition.onerror=()=>stopMic();
-    recognition.onend=()=>stopMic();
+
+    recognition.onerror=(e)=>{
+      setMicState('idle');
+      if(e.error!=='aborted') showMicMsg("Didn't catch that — try again");
+    };
+
+    recognition.onend=()=>{
+      const inp=document.getElementById('answerInput');
+      if(inp?.classList.contains('input-interim')){
+        inp.classList.remove('input-interim');
+      }
+      setMicState('idle');
+    };
+  }else{
+    document.getElementById('btnMic')?.classList.add('hidden');
   }
 }
 
-function stopMic(){
-  micActive=false;
-  document.getElementById('btnMic')?.classList.remove('mic-active');
+function setMicState(s){
+  micActive=(s==='listening');
+  const btn=document.getElementById('btnMic');
+  const status=document.getElementById('micStatus');
+  if(s==='listening'){
+    btn?.classList.add('mic-listening');
+    if(status){ status.textContent='Listening…'; status.classList.remove('hidden'); }
+  }else{
+    btn?.classList.remove('mic-listening');
+    if(status) status.classList.add('hidden');
+  }
+}
+
+function setInputInterim(text){
+  const inp=document.getElementById('answerInput');
+  if(!inp) return;
+  inp.value=text;
+  inp.classList.add('input-interim');
+}
+
+function setInputFinal(text){
+  const inp=document.getElementById('answerInput');
+  if(!inp) return;
+  inp.value=text;
+  inp.classList.remove('input-interim');
+  setMicState('idle');
+}
+
+function showMicMsg(msg){
+  const status=document.getElementById('micStatus');
+  if(!status) return;
+  status.textContent=msg;
+  status.classList.remove('hidden');
+  setTimeout(()=>status.classList.add('hidden'),3000);
 }
 
 /* ── Generate drill ── */
@@ -384,19 +442,18 @@ function boot(){
   document.getElementById('btnMic')?.addEventListener('pointerdown',(e)=>{
     e.preventDefault();
     const now=Date.now(); if(now-lockMic<400) return; lockMic=now;
-    if(!recognition){
-      alert('Speech recognition is not supported in this browser.');
-      return;
-    }
-    if(micActive){
-      recognition.stop();
-    }else{
-      micActive=true;
-      document.getElementById('btnMic').classList.add('mic-active');
-      try{ recognition.start(); }catch(err){ stopMic(); }
-    }
+    if(micActive){ recognition.stop(); }
+    else{ try{ recognition.start(); }catch(err){ setMicState('idle'); } }
   },{passive:false});
   document.getElementById('btnMic')?.addEventListener('mousedown',(e)=>e.preventDefault());
+
+  // Tab persistence: save on navigate
+  document.querySelectorAll('.tabItem').forEach(a=>{
+    a.addEventListener('click',()=>{
+      localStorage.setItem('top5k_active_tab',
+        a.getAttribute('href')==='grammar.html' ? 'grammar' : 'vocab');
+    });
+  });
 
   let lockSave=0;
   document.getElementById('apiKeySave')?.addEventListener('pointerdown',(e)=>{
