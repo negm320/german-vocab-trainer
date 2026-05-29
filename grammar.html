@@ -239,12 +239,12 @@ async function generateDrill(){
   feedback?.classList.add('hidden');
 
   const prompt=`Generate a German sentence for a B2 word-order drill. Return JSON only — no markdown, no code fences.
-Schema: {"english":"...","correct":"...","pieces":["w1","w2",...],"connectors":["connector1",...]}
-Steps:
-1. Write a correct German sentence (field: correct). Multi-clause, at least one subordinating connector (weil, dass, obwohl, wenn, als, damit, nachdem, bevor, während, ob, etc.). Everyday spoken German. Vary length randomly between 6 and 12 words.
-2. Derive pieces by splitting correct by spaces exactly, then shuffle. pieces must contain exactly the words of correct — no substitutions, no alternate forms, nothing added or removed.
-3. connectors: list every subordinating conjunction that appears in pieces (exact spelling, case-sensitive).
-4. english: natural English translation of correct.`;
+Schema: {"english":"...","correct":"..."}
+Rules:
+- Multi-clause sentence using at least one subordinating connector (weil, dass, obwohl, wenn, als, damit, nachdem, bevor, während, ob, etc.)
+- Use natural everyday spoken German as people actually speak it in Germany — avoid Futur I (werden + infinitive) unless it is the only natural option; prefer present tense for future intentions. Avoid overly formal or written constructions.
+- Vary sentence length randomly between 6 and 12 words.
+- english: natural English translation of correct.`;
 
   try{
     const res=await fetch(
@@ -266,7 +266,8 @@ Steps:
     const raw=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
     const jsonStr=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
     const drill=JSON.parse(jsonStr);
-    if(!drill.english||!Array.isArray(drill.pieces)||!drill.correct) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
+    if(!drill.english||!drill.correct) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
+    drill.pieces=drill.correct.split(' ').sort(()=>Math.random()-.5);
     currentDrill=drill;
     renderDrill(drill);
   }catch(e){
@@ -297,11 +298,10 @@ function renderDrill(drill){
   feedback.classList.add('hidden');
   feedback.innerHTML='';
 
-  const connectorSet=new Set((drill.connectors||[]).map(c=>c.toLowerCase()));
   piecesWrap.innerHTML='';
   drill.pieces.forEach(word=>{
     const btn=document.createElement('button');
-    btn.className='piece'+(connectorSet.has(word.toLowerCase())?' connector':'');
+    btn.className='piece';
     btn.textContent=word;
     let lock=0;
     btn.addEventListener('pointerdown',(e)=>{
