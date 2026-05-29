@@ -144,6 +144,14 @@ button:hover{background:var(--btn2);}
 <script>
 const GEMINI_KEY_LS='top5k_gemini_key';
 
+const CONNECTORS=new Set([
+  'weil','dass','obwohl','wenn','als','damit','nachdem','bevor','während',
+  'ob','bis','seit','seitdem','sobald','solange','sofern','falls','indem',
+  'sodass','wohingegen','wobei','weshalb','weswegen','wozu','wie','zumal',
+  'ehe','insofern','insoweit','soweit','obgleich','obschon','wiewohl',
+  'je','desto','umso','beziehungsweise'
+]);
+
 let currentDrill=null;
 let recognition=null;
 let micActive=false;
@@ -301,7 +309,8 @@ function renderDrill(drill){
   piecesWrap.innerHTML='';
   drill.pieces.forEach(word=>{
     const btn=document.createElement('button');
-    btn.className='piece';
+    const bare=word.toLowerCase().replace(/[.,!?;:]/g,'');
+    btn.className='piece'+(CONNECTORS.has(bare)?' connector':'');
     btn.textContent=word;
     let lock=0;
     btn.addEventListener('pointerdown',(e)=>{
