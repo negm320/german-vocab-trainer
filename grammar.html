@@ -275,29 +275,75 @@ function triggerFlash(type){
   setTimeout(()=>{ el.className='flash-overlay'; },700);
 }
 
+/* ── Local sentence evaluator ── */
+function stripPunct(s){
+  return (s||'').replace(/[.,!?;:"""''„"()[\]{}–—]/g,'').replace(/\s+/g,' ').trim();
+}
+function normWord(w){
+  return w.toLowerCase()
+    .replaceAll('ue','ü').replaceAll('oe','ö').replaceAll('ae','ä').replaceAll('ss','ß');
+}
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i?j?0:i:j));
+  for(let i=1;i<=m;i++)
+    for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+function evaluateAnswer(userRaw,correctRaw){
+  const user=stripPunct(userRaw).toLowerCase();
+  const correct=stripPunct(correctRaw).toLowerCase();
+  if(user===correct) return {verdict:'CORRECT',typoIndices:[]};
+  const uw=user.split(/\s+/).filter(Boolean);
+  const cw=correct.split(/\s+/).filter(Boolean);
+  if(uw.length!==cw.length) return {verdict:'WRONG',typoIndices:[]};
+  const typoIndices=[];
+  for(let i=0;i<cw.length;i++){
+    const un=normWord(uw[i]),cn=normWord(cw[i]);
+    if(un===cn) continue;
+    if(levenshtein(un,cn)<=2) typoIndices.push(i);
+    else return {verdict:'WRONG',typoIndices:[]};
+  }
+  return {verdict:'TYPO',typoIndices};
+}
+function buildCorrectHTML(correctRaw,typoIndices){
+  const typoSet=new Set(typoIndices);
+  return correctRaw.split(/\s+/).map((token,i)=>
+    typoSet.has(i)
+      ? `<u style="text-decoration-color:var(--accent);text-underline-offset:3px;">${escapeHTML(token)}</u>`
+      : escapeHTML(token)
+  ).join(' ');
+}
+
 /* ── Check answer ── */
 function checkAnswer(){
   if(!currentDrill) return;
   const inp=document.getElementById('answerInput');
   const feedback=document.getElementById('feedback');
-  const user=(inp.value||'').trim().toLowerCase();
-  const correct=(currentDrill.correct||'').trim().toLowerCase();
 
   inp.classList.remove('good-field','bad-field');
 
-  if(user===correct){
+  const {verdict,typoIndices}=evaluateAnswer(inp.value,currentDrill.correct);
+
+  if(verdict==='CORRECT'){
     inp.classList.add('good-field');
     triggerFlash('good');
     feedback.classList.add('hidden');
     setTimeout(()=>generateDrill(),800);
+  }else if(verdict==='TYPO'){
+    inp.classList.add('good-field');
+    triggerFlash('good');
+    feedback.innerHTML=`<span style="color:var(--muted);font-size:13px;">Typo — close enough:</span><br><strong>${buildCorrectHTML(currentDrill.correct,typoIndices)}</strong>`;
+    feedback.classList.remove('hidden');
+    setTimeout(()=>generateDrill(),2000);
   }else{
     inp.classList.add('bad-field');
     triggerFlash('bad');
-    const inp2=document.getElementById('answerInput');
-    inp2.classList.remove('input-shake');
-    void inp2.offsetWidth;
-    inp2.classList.add('input-shake');
-    setTimeout(()=>inp2.classList.remove('input-shake'),400);
+    inp.classList.remove('input-shake');
+    void inp.offsetWidth;
+    inp.classList.add('input-shake');
+    setTimeout(()=>inp.classList.remove('input-shake'),400);
     feedback.innerHTML=`<span class="muted">Correct: </span><strong>${escapeHTML(currentDrill.correct)}</strong>`;
     feedback.classList.remove('hidden');
   }
