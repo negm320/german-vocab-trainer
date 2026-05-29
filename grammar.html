@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>German Grammar Drill</title>
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="theme-color" content="#0b0e12">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041;
+  --accent:#6aa6ff; --good:#22c55e; --bad:#ef4444; --btn:#1a2230; --btn2:#1e2a3c; --hole:#0f141c;
+}
+*{box-sizing:border-box}
+button,input,textarea,select{font-family:inherit;}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgia,serif;}
+.wrap{max-width:720px;margin:0 auto;padding:14px}
+
+/* tabs */
+.tabBar{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;}
+.tabItem{padding:8px 20px;font-size:14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;}
+.tabItem.active{color:var(--text);border-bottom-color:var(--accent);}
+.tabItem:hover:not(.active){color:var(--text);}
+
+/* card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.25);position:relative;overflow:hidden;}
+
+/* divider */
+.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
+
+/* inputs */
+input{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);font-size:16px;}
+.good-field{border-color:var(--good)!important;box-shadow:0 0 0 1px rgba(34,197,94,.45);}
+.bad-field{border-color:var(--bad)!important;box-shadow:0 0 0 1px rgba(239,68,68,.45);}
+
+/* action row */
+.actionRow{display:flex;gap:6px;margin-top:10px;}
+.actionRow button{flex:1;background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 8px;color:var(--text);cursor:pointer;font-size:14px;}
+.actionRow button:hover{background:var(--btn2);}
+
+/* generic button */
+button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer;}
+button:hover{background:var(--btn2);}
+
+/* states */
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.good{color:var(--good)} .bad{color:var(--bad)}
+
+/* API key setup screen */
+#apiKeyScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10000;}
+#apiKeyScreen.hidden{display:none!important}
+.setupBox{width:min(480px,100%);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.45);}
+
+/* flash overlay */
+.flash-overlay{position:absolute;inset:0;border-radius:14px;pointer-events:none;opacity:0;}
+@keyframes flashAnim{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+.flash-good{background:rgba(34,197,94,.12);border:1.5px solid rgba(34,197,94,.5);border-radius:14px;animation:flashAnim .65s ease both;}
+.flash-bad{background:rgba(239,68,68,.10);border:1.5px solid rgba(239,68,68,.45);border-radius:14px;animation:flashAnim .65s ease both;}
+
+/* shake */
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.input-shake{animation:shake .35s ease both;}
+
+/* word pieces */
+.piecesWrap{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;}
+.piece{padding:7px 13px;border-radius:10px;background:var(--btn);border:1px solid var(--border);font-size:15px;cursor:pointer;user-select:none;}
+.piece:hover{background:var(--btn2);}
+.piece:active{transform:scale(.96);}
+.piece.connector{background:rgba(106,166,255,0.1);border-color:rgba(106,166,255,0.4);color:var(--accent);}
+.piece.connector:hover{background:rgba(106,166,255,0.2);}
+
+/* loading */
+@keyframes loadPulse{0%,100%{border-color:var(--border)}50%{border-color:rgba(106,166,255,0.5)}}
+.card.loading{animation:loadPulse 1s ease infinite;}
+#loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;}
+
+/* mic active */
+.mic-active{outline:1px solid rgba(239,68,68,.55) !important;background:rgba(239,68,68,.14) !important;color:#fca5a5 !important;}
+</style>
+</head>
+<body>
+
+<!-- API Key Setup Screen -->
+<div id="apiKeyScreen" class="hidden">
+  <div class="setupBox">
+    <h2 style="margin:0 0 8px;font-size:18px;">Gemini API Key</h2>
+    <p class="muted small" style="margin:0 0 16px;line-height:1.6;">A free Gemini API key is required to use AI features. Get one at <strong>aistudio.google.com</strong></p>
+    <input id="apiKeyInput" type="text" placeholder="AIza…" spellcheck="false" autocomplete="off" style="margin-bottom:12px;">
+    <button id="apiKeySave" style="width:100%;">Save &amp; continue</button>
+    <div id="apiKeyHint" class="muted small hidden" style="margin-top:8px;color:var(--bad);"></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- Tab bar -->
+<div class="tabBar">
+  <a class="tabItem" href="top5k.html">Vocab</a>
+  <a class="tabItem active" href="grammar.html">Grammar</a>
+</div>
+
+<!-- Drill card -->
+<div class="card" id="drillCard">
+  <div class="flash-overlay" id="flashOverlay"></div>
+
+  <div id="loadingText">Generating drill…</div>
+
+  <div id="drillContent" class="hidden">
+    <div id="englishText" style="font-size:15px;color:var(--muted);line-height:1.6;"></div>
+
+    <hr class="divider">
+
+    <div class="piecesWrap" id="piecesWrap"></div>
+
+    <hr class="divider">
+
+    <input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type or tap words above…">
+
+    <div class="actionRow">
+      <button id="btnCheck">Check</button>
+      <button id="btnMic" title="Dictate German">🎤</button>
+      <button id="btnRefresh">↺ New</button>
+    </div>
+
+    <div id="feedback" class="hidden" style="margin-top:12px;font-size:14px;line-height:1.6;"></div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+const GEMINI_KEY_LS='top5k_gemini_key';
+
+let currentDrill=null;
+let recognition=null;
+let micActive=false;
+
+/* ── Speech recognition ── */
+{
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(SR){
+    recognition=new SR();
+    recognition.lang='de-DE';
+    recognition.interimResults=false;
+    recognition.maxAlternatives=1;
+    recognition.onresult=(e)=>{
+      document.getElementById('answerInput').value=e.results[0][0].transcript;
+      stopMic();
+    };
+    recognition.onerror=()=>stopMic();
+    recognition.onend=()=>stopMic();
+  }
+}
+
+function stopMic(){
+  micActive=false;
+  document.getElementById('btnMic')?.classList.remove('mic-active');
+}
+
+/* ── Generate drill ── */
+async function generateDrill(){
+  const key=localStorage.getItem(GEMINI_KEY_LS);
+  if(!key) return;
+
+  const card=document.getElementById('drillCard');
+  const loadingText=document.getElementById('loadingText');
+  const drillContent=document.getElementById('drillContent');
+  const feedback=document.getElementById('feedback');
+
+  card.classList.add('loading');
+  loadingText.classList.remove('hidden');
+  drillContent.classList.add('hidden');
+  feedback?.classList.add('hidden');
+
+  const prompt=`Generate a German sentence for a B2 word-order drill. Return JSON only — no markdown, no code fences.
+Schema: {"english":"...","pieces":["w1","w2",...],"connectors":["connector1",...],"correct":"..."}
+Rules:
+- Multi-clause sentence using at least one subordinating connector (weil, dass, obwohl, wenn, als, damit, nachdem, bevor, während, ob, etc.)
+- Everyday spoken German, natural phrasing
+- Shuffle the pieces array randomly so words are out of order
+- connectors: list every subordinating conjunction/connector that appears in pieces (exact spelling, case-sensitive)
+- correct: the grammatically correct complete sentence
+- Vary sentence length randomly between 6 and 12 words`;
+
+  try{
+    const res=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
+      {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          contents:[{parts:[{text:prompt}]}],
+          generationConfig:{temperature:1.0,maxOutputTokens:512}
+        })
+      }
+    );
+    if(!res.ok) throw new Error('API '+res.status);
+    const data=await res.json();
+    const raw=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
+    const jsonStr=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+    const drill=JSON.parse(jsonStr);
+    if(!drill.english||!Array.isArray(drill.pieces)||!drill.correct) throw new Error('bad shape');
+    currentDrill=drill;
+    renderDrill(drill);
+  }catch(e){
+    loadingText.textContent='Generation failed — tap ↺ New to retry.';
+    card.classList.remove('loading');
+  }
+}
+
+/* ── Render drill ── */
+function renderDrill(drill){
+  const card=document.getElementById('drillCard');
+  const loadingText=document.getElementById('loadingText');
+  const drillContent=document.getElementById('drillContent');
+  const inp=document.getElementById('answerInput');
+  const feedback=document.getElementById('feedback');
+  const piecesWrap=document.getElementById('piecesWrap');
+  const englishText=document.getElementById('englishText');
+
+  card.classList.remove('loading');
+  loadingText.classList.add('hidden');
+  drillContent.classList.remove('hidden');
+
+  englishText.textContent=drill.english;
+  inp.value='';
+  inp.classList.remove('good-field','bad-field','input-shake');
+  feedback.classList.add('hidden');
+  feedback.innerHTML='';
+
+  const connectorSet=new Set((drill.connectors||[]).map(c=>c.toLowerCase()));
+  piecesWrap.innerHTML='';
+  drill.pieces.forEach(word=>{
+    const btn=document.createElement('button');
+    btn.className='piece'+(connectorSet.has(word.toLowerCase())?' connector':'');
+    btn.textContent=word;
+    let lock=0;
+    btn.addEventListener('pointerdown',(e)=>{
+      e.preventDefault();
+      const now=Date.now(); if(now-lock<400) return; lock=now;
+      const cur=inp.value;
+      inp.value=cur+(cur&&!cur.endsWith(' ')?' ':'')+word;
+    },{passive:false});
+    btn.addEventListener('mousedown',(e)=>e.preventDefault());
+    piecesWrap.appendChild(btn);
+  });
+
+  setTimeout(()=>inp.focus(),0);
+}
+
+/* ── Helpers ── */
+function escapeHTML(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function triggerFlash(type){
+  const el=document.getElementById('flashOverlay');
+  if(!el) return;
+  el.className='flash-overlay';
+  void el.offsetWidth;
+  el.className='flash-overlay flash-'+type;
+  setTimeout(()=>{ el.className='flash-overlay'; },700);
+}
+
+/* ── Check answer ── */
+function checkAnswer(){
+  if(!currentDrill) return;
+  const inp=document.getElementById('answerInput');
+  const feedback=document.getElementById('feedback');
+  const user=(inp.value||'').trim().toLowerCase();
+  const correct=(currentDrill.correct||'').trim().toLowerCase();
+
+  inp.classList.remove('good-field','bad-field');
+
+  if(user===correct){
+    inp.classList.add('good-field');
+    triggerFlash('good');
+    feedback.classList.add('hidden');
+    setTimeout(()=>generateDrill(),800);
+  }else{
+    inp.classList.add('bad-field');
+    triggerFlash('bad');
+    const inp2=document.getElementById('answerInput');
+    inp2.classList.remove('input-shake');
+    void inp2.offsetWidth;
+    inp2.classList.add('input-shake');
+    setTimeout(()=>inp2.classList.remove('input-shake'),400);
+    feedback.innerHTML=`<span class="muted">Correct: </span><strong>${escapeHTML(currentDrill.correct)}</strong>`;
+    feedback.classList.remove('hidden');
+  }
+}
+
+/* ── Boot ── */
+function boot(){
+  if(!localStorage.getItem(GEMINI_KEY_LS)){
+    document.getElementById('apiKeyScreen').classList.remove('hidden');
+    return;
+  }
+  generateDrill();
+}
+
+/* ── Wire buttons ── */
+{
+  let lockCheck=0;
+  document.getElementById('btnCheck')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockCheck<400) return; lockCheck=now;
+    checkAnswer();
+  },{passive:false});
+  document.getElementById('btnCheck')?.addEventListener('mousedown',(e)=>e.preventDefault());
+
+  document.getElementById('answerInput')?.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); checkAnswer(); }
+  });
+
+  let lockRefresh=0;
+  document.getElementById('btnRefresh')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockRefresh<400) return; lockRefresh=now;
+    generateDrill();
+  },{passive:false});
+  document.getElementById('btnRefresh')?.addEventListener('mousedown',(e)=>e.preventDefault());
+
+  let lockMic=0;
+  document.getElementById('btnMic')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockMic<400) return; lockMic=now;
+    if(!recognition){
+      alert('Speech recognition is not supported in this browser.');
+      return;
+    }
+    if(micActive){
+      recognition.stop();
+    }else{
+      micActive=true;
+      document.getElementById('btnMic').classList.add('mic-active');
+      try{ recognition.start(); }catch(err){ stopMic(); }
+    }
+  },{passive:false});
+  document.getElementById('btnMic')?.addEventListener('mousedown',(e)=>e.preventDefault());
+
+  let lockSave=0;
+  document.getElementById('apiKeySave')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockSave<400) return; lockSave=now;
+    const val=(document.getElementById('apiKeyInput')?.value||'').trim();
+    const hint=document.getElementById('apiKeyHint');
+    if(!val){
+      if(hint){ hint.textContent='Please enter your API key.'; hint.classList.remove('hidden'); }
+      return;
+    }
+    localStorage.setItem(GEMINI_KEY_LS,val);
+    location.reload();
+  },{passive:false});
+  document.getElementById('apiKeySave')?.addEventListener('mousedown',(e)=>e.preventDefault());
+  document.getElementById('apiKeyInput')?.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter') document.getElementById('apiKeySave')?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+  });
+}
+
+document.addEventListener('DOMContentLoaded',boot);
+</script>
+
+</body>
+</html>
