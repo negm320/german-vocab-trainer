@@ -309,15 +309,15 @@ function renderDrill(drill){
   piecesWrap.innerHTML='';
   drill.pieces.forEach(word=>{
     const btn=document.createElement('button');
-    const bare=word.toLowerCase().replace(/[.,!?;:]/g,'');
-    btn.className='piece'+(CONNECTORS.has(bare)?' connector':'');
-    btn.textContent=word;
+    const clean=word.replace(/[.,!?;:"""''„"–—]/g,'');
+    btn.className='piece'+(CONNECTORS.has(clean.toLowerCase())?' connector':'');
+    btn.textContent=clean;
     let lock=0;
     btn.addEventListener('pointerdown',(e)=>{
       e.preventDefault();
       const now=Date.now(); if(now-lock<400) return; lock=now;
       const cur=inp.value;
-      inp.value=cur+(cur&&!cur.endsWith(' ')?' ':'')+word;
+      inp.value=cur+(cur&&!cur.endsWith(' ')?' ':'')+clean;
     },{passive:false});
     btn.addEventListener('mousedown',(e)=>e.preventDefault());
     piecesWrap.appendChild(btn);
