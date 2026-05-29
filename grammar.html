@@ -239,14 +239,12 @@ async function generateDrill(){
   feedback?.classList.add('hidden');
 
   const prompt=`Generate a German sentence for a B2 word-order drill. Return JSON only — no markdown, no code fences.
-Schema: {"english":"...","pieces":["w1","w2",...],"connectors":["connector1",...],"correct":"..."}
-Rules:
-- Multi-clause sentence using at least one subordinating connector (weil, dass, obwohl, wenn, als, damit, nachdem, bevor, während, ob, etc.)
-- Everyday spoken German, natural phrasing
-- Shuffle the pieces array randomly so words are out of order
-- connectors: list every subordinating conjunction/connector that appears in pieces (exact spelling, case-sensitive)
-- correct: the grammatically correct complete sentence
-- Vary sentence length randomly between 6 and 12 words`;
+Schema: {"english":"...","correct":"...","pieces":["w1","w2",...],"connectors":["connector1",...]}
+Steps:
+1. Write a correct German sentence (field: correct). Multi-clause, at least one subordinating connector (weil, dass, obwohl, wenn, als, damit, nachdem, bevor, während, ob, etc.). Everyday spoken German. Vary length randomly between 6 and 12 words.
+2. Derive pieces by splitting correct by spaces exactly, then shuffle. pieces must contain exactly the words of correct — no substitutions, no alternate forms, nothing added or removed.
+3. connectors: list every subordinating conjunction that appears in pieces (exact spelling, case-sensitive).
+4. english: natural English translation of correct.`;
 
   try{
     const res=await fetch(
