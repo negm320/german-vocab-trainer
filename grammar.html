@@ -126,7 +126,7 @@ button:hover{background:var(--btn2);}
 
     <hr class="divider">
 
-    <input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type or tap words above…">
+    <textarea id="answerInput" rows="1" autocomplete="off" spellcheck="false" placeholder="Type or tap words above…" style="resize:none;overflow:hidden;line-height:1.5;"></textarea>
 
     <div class="actionRow">
       <button id="btnCheck">Check</button>
@@ -302,6 +302,7 @@ function renderDrill(drill){
 
   englishText.textContent=drill.english;
   inp.value='';
+  inp.style.height='auto';
   inp.classList.remove('good-field','bad-field','input-shake');
   feedback.classList.add('hidden');
   feedback.innerHTML='';
@@ -433,7 +434,13 @@ function boot(){
   },{passive:false});
   document.getElementById('btnCheck')?.addEventListener('mousedown',(e)=>e.preventDefault());
 
-  document.getElementById('answerInput')?.addEventListener('keydown',(e)=>{
+  const answerEl=document.getElementById('answerInput');
+  function autoResize(){
+    answerEl.style.height='auto';
+    answerEl.style.height=answerEl.scrollHeight+'px';
+  }
+  answerEl?.addEventListener('input',autoResize);
+  answerEl?.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'){ e.preventDefault(); checkAnswer(); }
   });
 
