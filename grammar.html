@@ -35,7 +35,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 .divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
 
 /* inputs */
-input{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);font-size:16px;}
+input,textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);font-size:16px;}
 .good-field{border-color:var(--good)!important;box-shadow:0 0 0 1px rgba(34,197,94,.45);}
 .bad-field{border-color:var(--bad)!important;box-shadow:0 0 0 1px rgba(239,68,68,.45);}
 
@@ -76,6 +76,7 @@ button:hover{background:var(--btn2);}
 .piece:active{transform:scale(.96);}
 .piece.connector{background:rgba(106,166,255,0.1);border-color:rgba(106,166,255,0.4);color:var(--accent);}
 .piece.connector:hover{background:rgba(106,166,255,0.2);}
+.piece.used{opacity:0.3;text-decoration:line-through;}
 
 /* loading */
 @keyframes loadPulse{0%,100%{border-color:var(--border)}50%{border-color:rgba(106,166,255,0.5)}}
@@ -319,6 +320,9 @@ function renderDrill(drill){
       const now=Date.now(); if(now-lock<400) return; lock=now;
       const cur=inp.value;
       inp.value=cur+(cur&&!cur.endsWith(' ')?' ':'')+clean;
+      inp.style.height='auto';
+      inp.style.height=inp.scrollHeight+'px';
+      updatePieceStates();
     },{passive:false});
     btn.addEventListener('mousedown',(e)=>e.preventDefault());
     piecesWrap.appendChild(btn);
@@ -382,6 +386,30 @@ function buildCorrectHTML(correctRaw,typoIndices){
   ).join(' ');
 }
 
+/* ── Sync piece used-state with textarea content ── */
+function updatePieceStates(){
+  const inp=document.getElementById('answerInput');
+  const piecesWrap=document.getElementById('piecesWrap');
+  if(!inp||!piecesWrap||!currentDrill) return;
+
+  const typedWords=inp.value.trim().split(/\s+/).filter(Boolean)
+    .map(w=>w.replace(/[.,!?;:"""''„"–—]/g,'').toLowerCase());
+  const remaining={};
+  typedWords.forEach(w=>{remaining[w]=(remaining[w]||0)+1;});
+
+  const consumed={};
+  piecesWrap.querySelectorAll('.piece').forEach(btn=>{
+    const word=btn.textContent.trim().toLowerCase();
+    consumed[word]=consumed[word]||0;
+    if(consumed[word]<(remaining[word]||0)){
+      btn.classList.add('used');
+      consumed[word]++;
+    }else{
+      btn.classList.remove('used');
+    }
+  });
+}
+
 /* ── Check answer ── */
 function checkAnswer(){
   if(!currentDrill) return;
@@ -438,6 +466,7 @@ function boot(){
   function autoResize(){
     answerEl.style.height='auto';
     answerEl.style.height=answerEl.scrollHeight+'px';
+    updatePieceStates();
   }
   answerEl?.addEventListener('input',autoResize);
   answerEl?.addEventListener('keydown',(e)=>{
