@@ -214,6 +214,9 @@ function setInputInterim(text){
   if(!inp) return;
   inp.value=text;
   inp.classList.add('input-interim');
+  inp.style.height='0px';
+  inp.style.height=inp.scrollHeight+'px';
+  updatePieceStates();
 }
 
 function setInputFinal(text){
@@ -221,6 +224,9 @@ function setInputFinal(text){
   if(!inp) return;
   inp.value=text;
   inp.classList.remove('input-interim');
+  inp.style.height='0px';
+  inp.style.height=inp.scrollHeight+'px';
+  updatePieceStates();
   setMicState('idle');
 }
 
@@ -303,7 +309,8 @@ function renderDrill(drill){
 
   englishText.textContent=drill.english;
   inp.value='';
-  inp.style.height='auto';
+  inp.style.height='0px';
+  inp.style.height=inp.scrollHeight+'px';
   inp.classList.remove('good-field','bad-field','input-shake');
   feedback.classList.add('hidden');
   feedback.innerHTML='';
@@ -320,7 +327,7 @@ function renderDrill(drill){
       const now=Date.now(); if(now-lock<400) return; lock=now;
       const cur=inp.value;
       inp.value=cur+(cur&&!cur.endsWith(' ')?' ':'')+clean;
-      inp.style.height='auto';
+      inp.style.height='0px';
       inp.style.height=inp.scrollHeight+'px';
       updatePieceStates();
     },{passive:false});
@@ -464,7 +471,7 @@ function boot(){
 
   const answerEl=document.getElementById('answerInput');
   function autoResize(){
-    answerEl.style.height='auto';
+    answerEl.style.height='0px';
     answerEl.style.height=answerEl.scrollHeight+'px';
     updatePieceStates();
   }
