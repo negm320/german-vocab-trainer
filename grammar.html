@@ -156,6 +156,7 @@ const CONNECTORS=new Set([
 let currentDrill=null;
 let recognition=null;
 let micActive=false;
+let micBase='';
 
 /* ── Speech recognition ── */
 {
@@ -167,7 +168,10 @@ let micActive=false;
     recognition.interimResults=true;
     recognition.maxAlternatives=1;
 
-    recognition.onstart=()=>setMicState('listening');
+    recognition.onstart=()=>{
+      micBase=document.getElementById('answerInput')?.value||'';
+      setMicState('listening');
+    };
 
     recognition.onresult=(e)=>{
       let interim='', final='';
@@ -212,7 +216,7 @@ function setMicState(s){
 function setInputInterim(text){
   const inp=document.getElementById('answerInput');
   if(!inp) return;
-  inp.value=text;
+  inp.value=micBase+(micBase&&!micBase.endsWith(' ')?' ':'')+text;
   inp.classList.add('input-interim');
   inp.style.height='0px';
   inp.style.height=inp.scrollHeight+'px';
@@ -222,7 +226,7 @@ function setInputInterim(text){
 function setInputFinal(text){
   const inp=document.getElementById('answerInput');
   if(!inp) return;
-  inp.value=text;
+  inp.value=micBase+(micBase&&!micBase.endsWith(' ')?' ':'')+text;
   inp.classList.remove('input-interim');
   inp.style.height='0px';
   inp.style.height=inp.scrollHeight+'px';
@@ -309,6 +313,7 @@ function renderDrill(drill){
 
   englishText.textContent=drill.english;
   inp.value='';
+  micBase='';
   inp.style.height='0px';
   inp.style.height=inp.scrollHeight+'px';
   inp.classList.remove('good-field','bad-field','input-shake');
