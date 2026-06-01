@@ -164,7 +164,7 @@ let micBase='';
   if(SR){
     recognition=new SR();
     recognition.lang='de-DE';
-    recognition.continuous=false;
+    recognition.continuous=true;
     recognition.interimResults=true;
     recognition.maxAlternatives=1;
 
@@ -227,11 +227,11 @@ function setInputFinal(text){
   const inp=document.getElementById('answerInput');
   if(!inp) return;
   inp.value=micBase+(micBase&&!micBase.endsWith(' ')?' ':'')+text;
+  micBase=inp.value;
   inp.classList.remove('input-interim');
   inp.style.height='0px';
   inp.style.height=inp.scrollHeight+'px';
   updatePieceStates();
-  setMicState('idle');
 }
 
 function showMicMsg(msg){
