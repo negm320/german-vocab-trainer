@@ -323,7 +323,7 @@ function renderDrill(drill){
   piecesWrap.innerHTML='';
   drill.pieces.forEach(word=>{
     const btn=document.createElement('button');
-    const clean=word.replace(/[.,!?;:"""''„"–—]/g,'');
+    const clean=word.replace(/[.,!?;:"""„"–—]/g,'');
     btn.className='piece'+(CONNECTORS.has(clean.toLowerCase())?' connector':'');
     btn.textContent=clean;
     let lock=0;
@@ -359,10 +359,11 @@ function triggerFlash(type){
 
 /* ── Local sentence evaluator ── */
 function stripPunct(s){
-  return (s||'').replace(/[.,!?;:"""''„"()[\]{}–—]/g,'').replace(/\s+/g,' ').trim();
+  return (s||'').replace(/[.,!?;:"""„"()[\]{}–—]/g,'').replace(/\s+/g,' ').trim();
 }
 function normWord(w){
   return w.toLowerCase()
+    .replace(/['']/g,"'")
     .replaceAll('ue','ü').replaceAll('oe','ö').replaceAll('ae','ä').replaceAll('ss','ß');
 }
 function levenshtein(a,b){
@@ -405,7 +406,7 @@ function updatePieceStates(){
   if(!inp||!piecesWrap||!currentDrill) return;
 
   const typedWords=inp.value.trim().split(/\s+/).filter(Boolean)
-    .map(w=>w.replace(/[.,!?;:"""''„"–—]/g,'').toLowerCase());
+    .map(w=>w.replace(/[.,!?;:"""„"–—]/g,'').toLowerCase());
   const remaining={};
   typedWords.forEach(w=>{remaining[w]=(remaining[w]||0)+1;});
 
