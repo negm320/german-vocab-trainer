@@ -370,13 +370,15 @@ function pause(ms) { return new Promise(r => setTimeout(r, ms)); }
 /* iOS requires speechSynthesis.speak() to be called inside a user-gesture
    handler. We unlock it on the first tap/enter with a silent utterance so
    later async calls (after the Gemini fetch) go through on iOS too. */
+document.addEventListener('pointerdown', () => unlockSynth(), { once: true });
+
 let synthUnlocked = false;
 function unlockSynth() {
   if (synthUnlocked || !window.speechSynthesis) return;
   synthUnlocked = true;
   // iOS requires a real (non-empty) utterance spoken inside a user gesture
   // to unlock speechSynthesis for later async calls.
-  const u = new SpeechSynthesisUtterance('.');
+  const u = new SpeechSynthesisUtterance('ja');
   u.volume = 0;
   u.rate = 10;
   window.speechSynthesis.speak(u);
