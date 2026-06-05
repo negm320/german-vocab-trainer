@@ -531,17 +531,29 @@ function buildStatePayload(){
 
 function saveState(){
   const payload=buildStatePayload();
+  const json=JSON.stringify(payload);
+
+  // Main state is the priority — alert only if this fails
+  try{
+    localStorage.setItem(LS_KEY,json);
+  }catch(e){
+    alert('Save failed. Please tap Export NOW to back up your progress.');
+    console.error('Save failed:',e);
+    return;
+  }
+
+  // Rolling backups are best-effort; trim aggressively if quota is tight
   try{
     const BK='top5k_backups_v1';
     const arr=JSON.parse(localStorage.getItem(BK)||'[]');
     arr.unshift({t:Date.now(),data:payload});
     while(arr.length>15) arr.pop();
-    localStorage.setItem(BK,JSON.stringify(arr));
-    localStorage.setItem(LS_KEY,JSON.stringify(payload));
-  }catch(e){
-    alert('Save failed. Please tap Export NOW to back up your progress.');
-    console.error('Save failed:',e);
-  }
+    let saved=false;
+    for(let limit=arr.length;limit>=1;limit--){
+      try{ localStorage.setItem(BK,JSON.stringify(arr.slice(0,limit))); saved=true; break; }catch(e2){}
+    }
+    if(!saved) localStorage.removeItem(BK);
+  }catch(e){}
 }
 
 function loadState(){
