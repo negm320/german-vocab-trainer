@@ -365,6 +365,18 @@ async function typeReply(text) {
 function pause(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 /* ── TTS ── */
+/* iOS requires speechSynthesis.speak() to be called inside a user-gesture
+   handler. We unlock it on the first tap/enter with a silent utterance so
+   later async calls (after the Gemini fetch) go through on iOS too. */
+let synthUnlocked = false;
+function unlockSynth() {
+  if (synthUnlocked || !window.speechSynthesis) return;
+  synthUnlocked = true;
+  const blank = new SpeechSynthesisUtterance('');
+  blank.volume = 0;
+  window.speechSynthesis.speak(blank);
+}
+
 function speakText(text) {
   const synth = window.speechSynthesis;
   if (!synth) return;
@@ -373,6 +385,7 @@ function speakText(text) {
   utt.lang = 'de-DE';
   utt.rate = 0.93;
   if (deVoice) utt.voice = deVoice;
+  synth.resume(); // Chrome sometimes pauses synthesis when page loses focus
   synth.speak(utt);
 }
 
@@ -446,6 +459,7 @@ function stopMic() {
   micBtn.addEventListener('pointerdown', e => {
     e.preventDefault();
     const now = Date.now(); if (now - lockMic < 400) return; lockMic = now;
+    unlockSynth();
     if (!recognition) return;
     if (micActive) {
       stopMic();
@@ -462,6 +476,7 @@ function stopMic() {
   chatInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      unlockSynth();
       const t = chatInput.value.trim();
       if (t) sendMessage(t);
     }
