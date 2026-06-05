@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>Chat – Lena</title>
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="theme-color" content="#0b0e12">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0e12;--card:#12161d;--text:#e9eef5;--muted:#9aacbf;--border:#243041;
+  --accent:#6aa6ff;--good:#22c55e;--bad:#ef4444;--btn:#1a2230;--btn2:#1e2a3c;--hole:#0f141c;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+button,input,textarea,select{font-family:inherit;}
+html{height:100%;}
+body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── Tabs ── */
+.tabBar{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.tabItem{padding:8px 20px;font-size:14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;}
+.tabItem.active{color:var(--text);border-bottom-color:var(--accent);}
+.tabItem:hover:not(.active){color:var(--text);}
+
+/* ── Chat header ── */
+.chatHeader{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
+.hAvatar{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#0b0e12;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;flex-shrink:0;}
+.hName{font-size:15px;font-weight:600;line-height:1.2;}
+.statusLine{display:flex;align-items:center;gap:5px;margin-top:2px;}
+.statusDot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .25s;}
+#statusText{font-size:12px;color:var(--muted);}
+
+/* ── Messages area ── */
+.messagesWrap{flex:1;overflow:hidden;position:relative;}
+.messages{height:100%;overflow-y:auto;padding:10px 12px 0;}
+.messagesInner{display:flex;flex-direction:column;gap:2px;padding-bottom:124px;}
+
+/* ── Timestamp ── */
+.ts{text-align:center;color:var(--muted);font-size:11px;margin:8px 0 4px;flex-shrink:0;}
+
+/* ── Bubble rows ── */
+.bRow{display:flex;align-items:flex-end;gap:7px;}
+.bRow.lena{justify-content:flex-start;}
+.bRow.user{justify-content:flex-end;}
+.bAvatar{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#0b0e12;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;}
+.bubble{max-width:74%;padding:9px 13px;font-size:15px;line-height:1.55;word-break:break-word;}
+.bRow.lena .bubble{background:var(--card);border:1px solid var(--border);border-radius:16px 16px 16px 3px;}
+.bRow.user .bubble{background:#1b2f4e;border:1px solid #2b4470;border-radius:16px 16px 3px 16px;}
+
+/* ── Input bar ── */
+.inputBar{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:56px 12px 14px;
+  background:linear-gradient(to bottom,transparent 0%,var(--bg) 42%);
+  pointer-events:none;
+}
+.inputRow{position:relative;display:flex;align-items:center;pointer-events:all;}
+
+#chatInput{
+  width:100%;height:46px;
+  padding:0 88px 0 16px;
+  border:1px solid var(--border);border-radius:23px;
+  background:var(--hole);color:var(--text);font-size:15px;
+  outline:none;
+}
+#chatInput::placeholder{color:var(--muted);}
+#chatInput.interim{color:rgba(154,172,191,.55);font-style:italic;}
+
+/* Mic — large circle that overlaps the right end of the field */
+#micBtn{
+  position:absolute;right:-6px;
+  width:76px;height:76px;border-radius:50%;
+  background:var(--btn);border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:2;
+  transition:background .2s,border-color .2s;
+}
+#micBtn svg{width:26px;height:26px;fill:var(--accent);flex-shrink:0;transition:fill .2s;}
+
+/* Listening state */
+#micBtn.listening{background:#2c0a0a;border-color:var(--bad);}
+#micBtn.listening svg{fill:var(--bad);}
+
+/* Ripple rings */
+.ripple{
+  position:absolute;inset:-12px;border-radius:50%;
+  border:2px solid var(--bad);opacity:0;pointer-events:none;
+}
+#micBtn.listening .ripple:nth-child(1){animation:rippleOut 1.6s ease-out infinite;}
+#micBtn.listening .ripple:nth-child(2){animation:rippleOut 1.6s ease-out .53s infinite;}
+#micBtn.listening .ripple:nth-child(3){animation:rippleOut 1.6s ease-out 1.06s infinite;}
+@keyframes rippleOut{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.65);opacity:0}}
+
+/* Keyboard open — mic shrinks into the field */
+body.kb-open #micBtn{right:5px;width:30px;height:30px;border-width:1px;background:transparent;border-color:transparent;}
+body.kb-open #micBtn svg{width:16px;height:16px;}
+body.kb-open #chatInput{padding-right:44px;}
+body.kb-open .ripple{display:none;}
+
+/* ── API key overlay ── */
+#apiKeyScreen{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000;}
+#apiKeyScreen.show{display:flex;}
+.setupBox{width:min(480px,100%);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.45);}
+.setupBox h2{margin:0 0 8px;font-size:18px;}
+.setupBox p{margin:0 0 16px;font-size:13px;color:var(--muted);line-height:1.6;}
+#apiKeyInput{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);font-size:16px;margin-bottom:12px;outline:none;}
+#apiKeySave{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--btn);color:var(--text);font-size:15px;cursor:pointer;}
+#apiKeySave:hover{background:var(--btn2);}
+#apiKeyHint{margin-top:8px;font-size:12px;color:var(--bad);}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='grammar')location.replace('grammar.html');})();</script>
+
+<!-- Tab bar -->
+<div class="tabBar">
+  <a class="tabItem" href="top5k.html" data-tab="vocab">Vocab</a>
+  <a class="tabItem" href="grammar.html" data-tab="grammar">Grammar</a>
+  <a class="tabItem active" href="chat.html" data-tab="chat">Chat</a>
+</div>
+
+<!-- Header -->
+<div class="chatHeader">
+  <div class="hAvatar">L</div>
+  <div>
+    <div class="hName">Lena</div>
+    <div class="statusLine">
+      <div class="statusDot" id="statusDot"></div>
+      <span id="statusText">online</span>
+    </div>
+  </div>
+</div>
+
+<!-- Messages + floating input -->
+<div class="messagesWrap">
+  <div class="messages" id="messagesArea">
+    <div class="messagesInner" id="messagesInner"></div>
+  </div>
+  <div class="inputBar">
+    <div class="inputRow">
+      <input id="chatInput" type="text" placeholder="Schreib etwas…" autocomplete="off" spellcheck="false" inputmode="text"/>
+      <button id="micBtn" aria-label="Mikrofon">
+        <div class="ripple"></div>
+        <div class="ripple"></div>
+        <div class="ripple"></div>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- API key overlay -->
+<div id="apiKeyScreen">
+  <div class="setupBox">
+    <h2>Gemini API Key</h2>
+    <p>Ein kostenloser Gemini API-Schlüssel wird benötigt.<br>Hol dir einen auf <strong>aistudio.google.com</strong></p>
+    <input id="apiKeyInput" type="text" placeholder="AIza…" spellcheck="false" autocomplete="off"/>
+    <button id="apiKeySave">Speichern &amp; weiter</button>
+    <div id="apiKeyHint" class="hidden"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const GEMINI_KEY_LS = 'top5k_gemini_key';
+const HISTORY_KEY   = 'lena_chat_history';
+const MAX_HIST      = 40;
+const CTX_MSGS      = 20;
+
+const SYSTEM_PROMPT = `You are Lena, 28, an urban planner living in Hamburg. You are chatting in German with someone who is learning the language. Write in natural casual German — the kind used between friends or in text messages. Keep it B1–B2 level: clear, natural sentences, not overly complex. No Konjunktiv I or II. No Futur I with werden. Never correct grammar explicitly — just reply naturally. Ask a short question back occasionally to keep the conversation going. Be warm, curious, and friendly. Keep replies to 1–3 short sentences. Write German only.`;
+
+/* ── state ── */
+let history   = [];
+let lenaLock  = false;
+let micActive = false;
+let micBase   = '';
+let recognition = null;
+
+/* ── DOM ── */
+const messagesArea  = document.getElementById('messagesArea');
+const messagesInner = document.getElementById('messagesInner');
+const chatInput     = document.getElementById('chatInput');
+const micBtn        = document.getElementById('micBtn');
+const statusDot     = document.getElementById('statusDot');
+const statusText    = document.getElementById('statusText');
+
+/* ── Status ── */
+const STATUS = {
+  online:   { bg:'var(--good)',   label:'online'      },
+  thinking: { bg:'#f97316',      label:'thinking…'   },
+  speaking: { bg:'var(--accent)', label:'speaking…'   },
+  listening:{ bg:'var(--bad)',    label:'listening…'  },
+};
+function setStatus(s) {
+  const st = STATUS[s] || STATUS.online;
+  statusDot.style.background = st.bg;
+  statusText.textContent = st.label;
+}
+
+/* ── History ── */
+function loadHistory() {
+  try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { history = []; }
+}
+function saveHistory() {
+  if (history.length > MAX_HIST) history.splice(0, history.length - MAX_HIST);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+/* ── Render saved history ── */
+function renderHistory() {
+  messagesInner.innerHTML = '';
+  let prevRole = null;
+  history.forEach(m => {
+    if (m.hidden) return;
+    if (prevRole !== m.role) appendTimestamp();
+    appendBubble(m.role, m.text, false);
+    prevRole = m.role;
+  });
+  scrollBottom();
+}
+
+/* ── Bubble helpers ── */
+function appendTimestamp() {
+  const el = document.createElement('div');
+  el.className = 'ts';
+  const n = new Date();
+  el.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+  messagesInner.appendChild(el);
+}
+
+function appendBubble(role, text, doScroll) {
+  const isLena = role === 'lena';
+  const row = document.createElement('div');
+  row.className = 'bRow ' + (isLena ? 'lena' : 'user');
+  if (isLena) {
+    const av = document.createElement('div');
+    av.className = 'bAvatar';
+    av.textContent = 'L';
+    row.appendChild(av);
+  }
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  bub.textContent = text;
+  row.appendChild(bub);
+  messagesInner.appendChild(row);
+  if (doScroll !== false) scrollBottom();
+  return bub;
+}
+
+function scrollBottom() {
+  messagesArea.scrollTop = messagesArea.scrollHeight;
+}
+
+/* ── Build contents array for Gemini (must start with user role) ── */
+function buildContents() {
+  const ctx = history.slice(-CTX_MSGS);
+  const contents = ctx.map(m => ({
+    role: m.role === 'user' ? 'user' : 'model',
+    parts: [{ text: m.text }]
+  }));
+  if (contents.length && contents[0].role === 'model') {
+    contents.unshift({ role:'user', parts:[{ text:'Hallo!' }] });
+  }
+  return contents;
+}
+
+/* ── Send user message ── */
+async function sendMessage(text) {
+  text = text.trim();
+  if (!text || lenaLock) return;
+  stopMic();
+  chatInput.value = '';
+  micBase = '';
+  appendTimestamp();
+  appendBubble('user', text);
+  history.push({ role:'user', text });
+  saveHistory();
+  await fetchLenaReply();
+}
+
+/* ── Fetch Lena's reply ── */
+async function fetchLenaReply() {
+  const key = localStorage.getItem(GEMINI_KEY_LS);
+  if (!key) return;
+  lenaLock = true;
+  setStatus('thinking');
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
+      {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          system_instruction:{ parts:[{ text:SYSTEM_PROMPT }] },
+          contents: buildContents(),
+          generationConfig:{ temperature:1.05, maxOutputTokens:200 }
+        })
+      }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+    if (!reply) throw new Error('empty reply');
+    history.push({ role:'lena', text:reply });
+    saveHistory();
+    await typeReply(reply);
+  } catch(e) {
+    console.error('[lena]', e);
+    lenaLock = false;
+    setStatus('online');
+    appendTimestamp();
+    appendBubble('lena', 'Ups, das hat leider nicht geklappt. Versuch es nochmal!');
+  }
+}
+
+/* ── Type Lena's reply word by word ── */
+async function typeReply(text) {
+  setStatus('speaking');
+  const words = text.split(' ');
+
+  appendTimestamp();
+  const row = document.createElement('div');
+  row.className = 'bRow lena';
+  const av = document.createElement('div');
+  av.className = 'bAvatar';
+  av.textContent = 'L';
+  row.appendChild(av);
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  row.appendChild(bub);
+  messagesInner.appendChild(row);
+
+  speakText(text);
+
+  for (let i = 0; i < words.length; i++) {
+    bub.textContent += (i > 0 ? ' ' : '') + words[i];
+    scrollBottom();
+    await pause(150);
+  }
+
+  lenaLock = false;
+  setStatus('online');
+}
+
+function pause(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ── TTS ── */
+function speakText(text) {
+  const synth = window.speechSynthesis;
+  if (!synth) return;
+  synth.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'de-DE';
+  utt.rate = 0.93;
+  const deVoice = synth.getVoices().find(v => v.lang.startsWith('de'));
+  if (deVoice) utt.voice = deVoice;
+  synth.speak(utt);
+}
+
+/* ── Speech recognition ── */
+{
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) {
+    recognition = new SR();
+    recognition.lang = 'de-DE';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      micBase = chatInput.value.trimEnd();
+      setStatus('listening');
+    };
+
+    recognition.onresult = e => {
+      let interim = '', final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      const sep = w => w && !w.endsWith(' ') ? ' ' : '';
+      if (final) {
+        micBase = (micBase + sep(micBase) + final).trimStart();
+        chatInput.value = micBase;
+        chatInput.classList.remove('interim');
+      } else if (interim) {
+        chatInput.value = micBase + sep(micBase) + interim;
+        chatInput.classList.add('interim');
+      }
+    };
+
+    recognition.onerror = e => { if (e.error !== 'aborted') console.warn('[mic]', e.error); };
+
+    recognition.onend = () => {
+      micBtn.classList.remove('listening');
+      micActive = false;
+      chatInput.classList.remove('interim');
+      if (!lenaLock) setStatus('online');
+    };
+  } else {
+    micBtn.classList.add('hidden');
+  }
+}
+
+function stopMic() {
+  if (!micActive || !recognition) return;
+  try { recognition.stop(); } catch {}
+  micBtn.classList.remove('listening');
+  micActive = false;
+  chatInput.classList.remove('interim');
+}
+
+/* ── Keyboard detection ── */
+{
+  const vv = window.visualViewport;
+  if (vv) {
+    const baseH = vv.height;
+    vv.addEventListener('resize', () => {
+      document.body.classList.toggle('kb-open', baseH - vv.height > 120);
+    });
+  }
+}
+
+/* ── Wire buttons ── */
+{
+  let lockMic = 0;
+  micBtn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const now = Date.now(); if (now - lockMic < 400) return; lockMic = now;
+    if (!recognition) return;
+    if (micActive) {
+      stopMic();
+      const t = chatInput.value.trim();
+      if (t) sendMessage(t);
+    } else {
+      micActive = true;
+      micBtn.classList.add('listening');
+      try { recognition.start(); } catch {}
+    }
+  }, { passive:false });
+  micBtn.addEventListener('mousedown', e => e.preventDefault());
+
+  chatInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const t = chatInput.value.trim();
+      if (t) sendMessage(t);
+    }
+  });
+}
+
+/* ── Tab persistence ── */
+document.querySelectorAll('.tabItem[data-tab]').forEach(a => {
+  a.addEventListener('click', () => localStorage.setItem('top5k_active_tab', a.dataset.tab));
+});
+
+/* ── API key screen ── */
+{
+  let lockSave = 0;
+  document.getElementById('apiKeySave').addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const now = Date.now(); if (now - lockSave < 400) return; lockSave = now;
+    const val = (document.getElementById('apiKeyInput').value || '').trim();
+    const hint = document.getElementById('apiKeyHint');
+    if (!val) { hint.textContent = 'Bitte API-Schlüssel eingeben.'; hint.classList.remove('hidden'); return; }
+    localStorage.setItem(GEMINI_KEY_LS, val);
+    location.reload();
+  }, { passive:false });
+  document.getElementById('apiKeySave').addEventListener('mousedown', e => e.preventDefault());
+  document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('apiKeySave').dispatchEvent(new PointerEvent('pointerdown', { bubbles:true }));
+  });
+}
+
+/* ── Boot ── */
+async function getLenaOpener() {
+  const key = localStorage.getItem(GEMINI_KEY_LS);
+  lenaLock = true;
+  setStatus('thinking');
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
+      {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          system_instruction:{ parts:[{ text:SYSTEM_PROMPT }] },
+          contents:[{ role:'user', parts:[{ text:'Hallo! Fang die Unterhaltung an.' }] }],
+          generationConfig:{ temperature:1.1, maxOutputTokens:150 }
+        })
+      }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+    if (!reply) throw new Error('empty');
+    history = [
+      { role:'user', text:'Hallo!', hidden:true },
+      { role:'lena', text:reply }
+    ];
+    saveHistory();
+    await typeReply(reply);
+  } catch(e) {
+    console.error('[lena opener]', e);
+    lenaLock = false;
+    setStatus('online');
+  }
+}
+
+function boot() {
+  if (!localStorage.getItem(GEMINI_KEY_LS)) {
+    document.getElementById('apiKeyScreen').classList.add('show');
+    return;
+  }
+  loadHistory();
+  if (history.length === 0) {
+    getLenaOpener();
+  } else {
+    renderHistory();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
