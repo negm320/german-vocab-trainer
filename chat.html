@@ -352,6 +352,7 @@ async function typeReply(text) {
   row.appendChild(bub);
   messagesInner.appendChild(row);
 
+  await new Promise(r => setTimeout(r, 300));
   speakText(text);
 
   for (let i = 0; i < words.length; i++) {
@@ -378,7 +379,7 @@ function unlockSynth() {
   synthUnlocked = true;
   // iOS requires a real (non-empty) utterance spoken inside a user gesture
   // to unlock speechSynthesis for later async calls.
-  const u = new SpeechSynthesisUtterance('ja');
+  const u = new SpeechSynthesisUtterance('okay');
   u.volume = 0;
   u.rate = 10;
   window.speechSynthesis.speak(u);
