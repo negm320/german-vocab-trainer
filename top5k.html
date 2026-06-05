@@ -171,7 +171,7 @@ button:hover{background:var(--btn2)}
 </style>
 </head>
 <body>
-<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='grammar')location.replace('grammar.html');})();</script>
+<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='grammar')location.replace('grammar.html');else if(t==='chat')location.replace('chat.html');})();</script>
 
 <!-- API Key Setup Screen -->
 <div id="apiKeyScreen" class="hidden">
@@ -1839,8 +1839,9 @@ function nextCard(){
 /* ====== Tab persistence ====== */
 document.querySelectorAll('.tabItem').forEach(a=>{
   a.addEventListener('click',()=>{
+    const href=a.getAttribute('href');
     localStorage.setItem('top5k_active_tab',
-      a.getAttribute('href')==='grammar.html' ? 'grammar' : 'vocab');
+      href==='grammar.html'?'grammar':href==='chat.html'?'chat':'vocab');
   });
 });
 

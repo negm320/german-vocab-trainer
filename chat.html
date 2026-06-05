@@ -183,6 +183,17 @@ let lenaLock  = false;
 let micActive = false;
 let micBase   = '';
 let recognition = null;
+let deVoice   = null;
+
+/* Pre-load German TTS voice (getVoices() is async on most browsers) */
+{
+  const loadVoices = () => {
+    const v = window.speechSynthesis?.getVoices().find(v => v.lang.startsWith('de'));
+    if (v) deVoice = v;
+  };
+  loadVoices();
+  window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
+}
 
 /* ── DOM ── */
 const messagesArea  = document.getElementById('messagesArea');
@@ -278,6 +289,7 @@ async function sendMessage(text) {
   if (!text || lenaLock) return;
   stopMic();
   chatInput.value = '';
+  chatInput.classList.remove('interim');
   micBase = '';
   appendTimestamp();
   appendBubble('user', text);
@@ -360,7 +372,6 @@ function speakText(text) {
   const utt = new SpeechSynthesisUtterance(text);
   utt.lang = 'de-DE';
   utt.rate = 0.93;
-  const deVoice = synth.getVoices().find(v => v.lang.startsWith('de'));
   if (deVoice) utt.voice = deVoice;
   synth.speak(utt);
 }
