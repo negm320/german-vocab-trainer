@@ -519,12 +519,9 @@ function buildStatePayload(){
     scoresMigrationVersion: state.scoresMigrationVersion||0,
     consecutiveCorrect: state.consecutiveCorrect||{},
     settledThisLevel:   state.settledThisLevel||{},
-    currentBatch:       state.currentBatch||[],
+    currentBatchIds:    state.currentBatch||[],
     nextWordCursor:     state.nextWordCursor||0,
-    scheduledThisLevel: state.scheduledThisLevel||{},
     completedThisRun:   state.completedThisRun||{},
-    fractionalRolled:   state.fractionalRolled||{},
-    scoreAtScheduling:  state.scoreAtScheduling||{},
     currentId:  state.currentId||null
   };
 }
@@ -542,17 +539,9 @@ function saveState(){
     return;
   }
 
-  // Rolling backups are best-effort; trim aggressively if quota is tight
   try{
-    const BK='top5k_backups_v1';
-    const arr=JSON.parse(localStorage.getItem(BK)||'[]');
-    arr.unshift({t:Date.now(),data:payload});
-    while(arr.length>15) arr.pop();
-    let saved=false;
-    for(let limit=arr.length;limit>=1;limit--){
-      try{ localStorage.setItem(BK,JSON.stringify(arr.slice(0,limit))); saved=true; break; }catch(e2){}
-    }
-    if(!saved) localStorage.removeItem(BK);
+    localStorage.setItem('top5k_backup_v2',json);
+    localStorage.removeItem('top5k_backups_v1');
   }catch(e){}
 }
 
@@ -579,12 +568,12 @@ function loadState(){
   if(obj.scoresMigrationVersion) state.scoresMigrationVersion=obj.scoresMigrationVersion;
   if(obj.consecutiveCorrect&&typeof obj.consecutiveCorrect==='object') state.consecutiveCorrect=obj.consecutiveCorrect;
   if(obj.settledThisLevel&&typeof obj.settledThisLevel==='object') state.settledThisLevel=obj.settledThisLevel;
-  if(obj.currentBatch&&Array.isArray(obj.currentBatch))          state.currentBatch=obj.currentBatch;
-  if(typeof obj.nextWordCursor==='number')                        state.nextWordCursor=obj.nextWordCursor;
-  if(obj.scheduledThisLevel&&typeof obj.scheduledThisLevel==='object') state.scheduledThisLevel=obj.scheduledThisLevel;
-  if(obj.completedThisRun&&typeof obj.completedThisRun==='object')     state.completedThisRun=obj.completedThisRun;
-  if(obj.fractionalRolled&&typeof obj.fractionalRolled==='object')     state.fractionalRolled=obj.fractionalRolled;
-  if(obj.scoreAtScheduling&&typeof obj.scoreAtScheduling==='object')   state.scoreAtScheduling=obj.scoreAtScheduling;
+  if(typeof obj.nextWordCursor==='number') state.nextWordCursor=obj.nextWordCursor;
+  if(obj.completedThisRun&&typeof obj.completedThisRun==='object') state.completedThisRun=obj.completedThisRun;
+  // Support new key (IDs only) and old key (may contain full objects from older saves)
+  const batchSrc=obj.currentBatchIds||obj.currentBatch;
+  if(batchSrc&&Array.isArray(batchSrc))
+    state.currentBatch=batchSrc.map(x=>(x&&typeof x==='object')?x.id:x).filter(Boolean);
 }
 
 /* ====== state ====== */
@@ -730,6 +719,10 @@ function decayScore(id){
 }
 
 function initCurrentBatch(){
+  if(state.currentBatch&&state.currentBatch.length>0){
+    const valid=new Set(state.data.map(w=>w.id));
+    state.currentBatch=state.currentBatch.filter(id=>valid.has(id));
+  }
   if(!state.currentBatch||state.currentBatch.length===0){
     state.currentBatch=state.data.filter(it=>it.lvl===state.level).map(it=>it.id);
     state.nextWordCursor=state.level*APP.wordsPerLevel;
@@ -1806,11 +1799,10 @@ async function boot(){
   $('#btnHardSave')?.addEventListener('click',()=>{ saveState(); alert('Saved.'); });
   $('#btnRestoreBackup')?.addEventListener('click',()=>{
     try{
-      const arr=JSON.parse(localStorage.getItem('top5k_backups_v1')||'[]');
-      if(!arr.length){ alert('No backups found.'); return; }
-      const newest=arr[0];
-      if(!confirm(`Restore latest backup?\n${new Date(newest.t).toLocaleString()}`)) return;
-      localStorage.setItem(LS_KEY,JSON.stringify(newest.data));
+      const raw=localStorage.getItem('top5k_backup_v2');
+      if(!raw){ alert('No backup found.'); return; }
+      if(!confirm('Restore from last backup?')) return;
+      localStorage.setItem(LS_KEY,raw);
       alert('Restored ✅ Reloading…'); location.reload();
     }catch(e){ alert('Restore failed.'); console.error(e); }
   });
