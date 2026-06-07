@@ -298,6 +298,7 @@ button:hover{background:var(--btn2)}
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
       <button id="btnDump">Dump state</button>
       <button id="btnHardSave">Force save</button>
+      <button id="btnRecalibrate">Recalibrate → 0.5</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
       <button id="btnCheckV1">Check v1 Key</button>
@@ -521,6 +522,7 @@ function buildStatePayload(){
     settledThisLevel:   state.settledThisLevel||{},
     currentBatchIds:    state.currentBatch||[],
     nextWordCursor:     state.nextWordCursor||0,
+    scheduledThisLevel: state.scheduledThisLevel||{},
     completedThisRun:   state.completedThisRun||{},
     currentId:  state.currentId||null
   };
@@ -569,6 +571,7 @@ function loadState(){
   if(obj.consecutiveCorrect&&typeof obj.consecutiveCorrect==='object') state.consecutiveCorrect=obj.consecutiveCorrect;
   if(obj.settledThisLevel&&typeof obj.settledThisLevel==='object') state.settledThisLevel=obj.settledThisLevel;
   if(typeof obj.nextWordCursor==='number') state.nextWordCursor=obj.nextWordCursor;
+  if(obj.scheduledThisLevel&&typeof obj.scheduledThisLevel==='object') state.scheduledThisLevel=obj.scheduledThisLevel;
   if(obj.completedThisRun&&typeof obj.completedThisRun==='object') state.completedThisRun=obj.completedThisRun;
   // Support new key (IDs only) and old key (may contain full objects from older saves)
   const batchSrc=obj.currentBatchIds||obj.currentBatch;
@@ -692,10 +695,12 @@ function scheduleAppearances(id){
   const ov=state.overrides?.[id];
   const score=Math.max(0.2, state.scores[id]??3.0);
   const guaranteed=ov?.easy1 ? 1 : Math.floor(score);
-  state.scheduledThisLevel[id]=guaranteed;
+  const frac=score-Math.floor(score);
+  const bonusRoll=frac>0&&Math.random()<frac;
+  state.scheduledThisLevel[id]=guaranteed+(bonusRoll?1:0);
   state.completedThisRun[id]=0;
   state.scoreAtScheduling[id]=score;
-  delete state.fractionalRolled[id];
+  state.fractionalRolled[id]=bonusRoll;
 }
 
 function isWordDone(id){
@@ -742,7 +747,7 @@ function levelProgressFraction(){
       Z+=scheduled;
       X+=Math.min(state.completedThisRun[w.id]||0, scheduled);
     } else {
-      Z+=Math.max(1,Math.floor(score));
+      Z+=score;
     }
   }
   return {X, Z, frac: Z===0?1:X/Z};
@@ -913,6 +918,7 @@ const Core={
     const item=weightedPick(eligible);
     if(item && state.scheduledThisLevel[item.id]===undefined){
       scheduleAppearances(item.id);
+      if(isWordDone(item.id)) return this.pick();
     }
     return item;
   },
@@ -1089,25 +1095,12 @@ const Core={
 
       decayScore(id);
 
-      // Fractional roll when guaranteed appearances are done
-      if(cr===scheduled && state.fractionalRolled[id]===undefined){
-        const origScore=state.scoreAtScheduling[id]??prevScore;
-        const fractional=origScore-Math.floor(origScore);
-        if(Math.random()<fractional){
-          state.scheduledThisLevel[id]+=1;
-          state.fractionalRolled[id]=true;
-        } else {
-          state.fractionalRolled[id]=false;
-        }
-      }
-
       const done=isWordDone(id);
       const newSch=state.scheduledThisLevel[id]??1;
       const ov=state.overrides?.[id];
       if(ov?.super&&done){ ov.superNext=state.level+(ov.superEvery??3); state.overrides[id]=ov; }
       triggerFlash('good');
-      const _showHalf=state.fractionalRolled[id]===undefined&&((state.scoreAtScheduling[id]??prevScore)%1>0.01);
-      renderStreakDots(Math.min(cr,newSch),newSch,cr-1,done,_showHalf);
+      renderStreakDots(Math.min(cr,newSch),newSch,cr-1,done,false);
       inp.classList.add('good-field');
       const feedLabel=isTypo?'Typo — close enough':'Correct!';
       setHTML('#coreFeedback',`<span class="good">${feedLabel}</span> (${Math.min(cr,newSch)}/${newSch} this level)`);
@@ -1576,21 +1569,9 @@ async function boot(){
         if(!x) return;
         restoreProgressState(r.beforeState);
         const id=x.id;
-        const prevScore=Math.max(0.2,state.scores[id]??3);
         state.completedThisRun[id]=(state.completedThisRun[id]||0)+1;
         const cr=state.completedThisRun[id];
-        const scheduled=state.scheduledThisLevel[id]??1;
         decayScore(id);
-        if(cr===scheduled && state.fractionalRolled[id]===undefined){
-          const origScore=state.scoreAtScheduling[id]??prevScore;
-          const fractional=origScore-Math.floor(origScore);
-          if(Math.random()<fractional){
-            state.scheduledThisLevel[id]+=1;
-            state.fractionalRolled[id]=true;
-          } else {
-            state.fractionalRolled[id]=false;
-          }
-        }
         const done=isWordDone(id);
         const newSch=state.scheduledThisLevel[id]??1;
         const inp=$('#coreDe');
@@ -1598,8 +1579,7 @@ async function boot(){
         const typoWord=state.activeMode==='cloze'?(state._clozeCorrect||x.german):x.german;
         inp.value=typoWord; inp.classList.remove('bad-field'); inp.classList.add('good-field');
         if(state.activeMode==='cloze') fillClozeBlank(typoWord,true);
-        const _showHalf=state.fractionalRolled[id]===undefined&&((state.scoreAtScheduling[id]??prevScore)%1>0.01);
-        renderStreakDots(Math.min(cr,newSch),newSch,cr-1,done,_showHalf);
+        renderStreakDots(Math.min(cr,newSch),newSch,cr-1,done,false);
         setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span> (${Math.min(cr,newSch)}/${newSch} this level)`);
         if(state.activeMode!=='cloze') setText('#coreDeSentence',x.deSent||'');
         if(isCurrentBatchDone()&&state.level*APP.wordsPerLevel<state.data.length){
@@ -1797,6 +1777,19 @@ async function boot(){
   // ---- Debug tools ----
   $('#btnDump')?.addEventListener('click',()=>{ console.log('TOP5K STATE:',JSON.parse(JSON.stringify(state))); alert('Dumped to console.'); });
   $('#btnHardSave')?.addEventListener('click',()=>{ saveState(); alert('Saved.'); });
+  $('#btnRecalibrate')?.addEventListener('click',()=>{
+    if(!confirm('Set all word scores to 0.5?\n\nEach word will have a 50% chance of appearing per level pass. Level and streaks unchanged.')) return;
+    for(const w of state.data) state.scores[w.id]=0.5;
+    state.scheduledThisLevel={};
+    state.completedThisRun={};
+    state.fractionalRolled={};
+    state.scoreAtScheduling={};
+    state.currentBatch=[];
+    initCurrentBatch();
+    saveState();
+    Core.updateProgress();
+    nextCard();
+  });
   $('#btnRestoreBackup')?.addEventListener('click',()=>{
     try{
       const raw=localStorage.getItem('top5k_backup_v2');
