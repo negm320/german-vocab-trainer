@@ -706,16 +706,20 @@ function scheduleAppearances(id){
 function isWordDone(id){
   const scheduled=state.scheduledThisLevel[id];
   if(scheduled===undefined) return false;
-  const cr=state.completedThisRun[id]||0;
-  return cr>=scheduled && state.fractionalRolled[id]!==undefined;
+  return (state.completedThisRun[id]||0)>=scheduled;
 }
 
-function isCurrentBatchDone(){
-  return state.currentBatch.length>0 && state.currentBatch.every(id=>{
-    const ov=state.overrides?.[id];
-    if(ov?.deleted) return true;
-    return isWordDone(id);
-  });
+function ensureLevelScheduled(){
+  for(const w of Core.levelPool()){
+    if(state.scheduledThisLevel[w.id]===undefined) scheduleAppearances(w.id);
+  }
+}
+
+function isLevelComplete(){
+  const pool=Core.levelPool();
+  if(!pool.length) return false;
+  const {X,Z}=levelProgressFraction();
+  return Z>0 && X>=Z;
 }
 
 function decayScore(id){
@@ -735,20 +739,11 @@ function initCurrentBatch(){
 }
 
 function levelProgressFraction(){
-  const pool=state.data.slice(0,state.level*25);
   let Z=0,X=0;
-  for(const w of pool){
-    const ov=state.overrides?.[w.id];
-    if(ov?.deleted||ov?.super) continue;
-    const score=state.scores?.[w.id]??3;
-    if(score<0.3) continue;
-    const scheduled=state.scheduledThisLevel[w.id];
-    if(scheduled!==undefined){
-      Z+=scheduled;
-      X+=Math.min(state.completedThisRun[w.id]||0, scheduled);
-    } else {
-      Z+=score;
-    }
+  for(const w of Core.levelPool()){
+    const scheduled=state.scheduledThisLevel[w.id]??0;
+    Z+=scheduled;
+    X+=Math.min(state.completedThisRun[w.id]||0, scheduled);
   }
   return {X, Z, frac: Z===0?1:X/Z};
 }
@@ -1103,7 +1098,8 @@ const Core={
       renderStreakDots(Math.min(cr,newSch),newSch,cr-1,done,false);
       inp.classList.add('good-field');
       const feedLabel=isTypo?'Typo — close enough':'Correct!';
-      setHTML('#coreFeedback',`<span class="good">${feedLabel}</span> (${Math.min(cr,newSch)}/${newSch} this level)`);
+      const countStr=newSch>0?` (${Math.min(cr,newSch)}/${newSch} this level)`:'';
+      setHTML('#coreFeedback',`<span class="good">${feedLabel}</span>${countStr}`);
     } else {
       const penalty=(5-prevScore)/2;
       state.scores[id]=Math.min(5, prevScore+penalty);
@@ -1123,15 +1119,15 @@ const Core={
     captureReviewSnapshot(x,{beforeState,canTypo:!isCorrect});
     saveState();
 
-    // Level advance: all currentBatch words done (or hidden)
-    if(isCurrentBatchDone()&&state.level*APP.wordsPerLevel<state.data.length){
+    // Level advance
+    if(isLevelComplete()&&state.level*APP.wordsPerLevel<state.data.length){
       state.level++;
-      state.currentBatch=state.data.filter(it=>it.lvl===state.level).map(it=>it.id);
       state.nextWordCursor=state.level*APP.wordsPerLevel;
       state.scheduledThisLevel={};
       state.completedThisRun={};
       state.fractionalRolled={};
       state.scoreAtScheduling={};
+      ensureLevelScheduled();
       triggerLevelUp(state.level);
       saveState();
     }
@@ -1181,7 +1177,7 @@ const UI={
       state.currentBatch=state.data.filter(it=>it.lvl===state.level).map(it=>it.id);
       state.nextWordCursor=state.level*APP.wordsPerLevel;
       state.scheduledThisLevel={}; state.completedThisRun={}; state.fractionalRolled={}; state.scoreAtScheduling={};
-      saveState(); nextCard();
+      ensureLevelScheduled(); saveState(); nextCard();
     };
   },
 
@@ -1235,7 +1231,7 @@ const UI={
       const maxL=this.maxLevel();
       state.level=Math.max(1,Math.min(state.level||1,maxL));
       if(typeof window.syncMenuUI==='function') window.syncMenuUI();
-      saveState(); this.buildLevelSelector();
+      Core.rebuildData(); ensureLevelScheduled(); saveState(); this.buildLevelSelector();
       $('#importModal')?.classList.add('hidden');
       nextCard();
     }catch(e){
@@ -1580,16 +1576,17 @@ async function boot(){
         inp.value=typoWord; inp.classList.remove('bad-field'); inp.classList.add('good-field');
         if(state.activeMode==='cloze') fillClozeBlank(typoWord,true);
         renderStreakDots(Math.min(cr,newSch),newSch,cr-1,done,false);
-        setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span> (${Math.min(cr,newSch)}/${newSch} this level)`);
+        const countStrTypo=newSch>0?` (${Math.min(cr,newSch)}/${newSch} this level)`:'';
+        setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span>${countStrTypo}`);
         if(state.activeMode!=='cloze') setText('#coreDeSentence',x.deSent||'');
-        if(isCurrentBatchDone()&&state.level*APP.wordsPerLevel<state.data.length){
+        if(isLevelComplete()&&state.level*APP.wordsPerLevel<state.data.length){
           state.level++;
-          state.currentBatch=state.data.filter(it=>it.lvl===state.level).map(it=>it.id);
           state.nextWordCursor=state.level*APP.wordsPerLevel;
           state.scheduledThisLevel={};
           state.completedThisRun={};
           state.fractionalRolled={};
           state.scoreAtScheduling={};
+          ensureLevelScheduled();
         }
         captureReviewSnapshot(x,{beforeState:cloneProgressState(),canTypo:false});
         saveState(); Core.updateProgress(); Core.updateDbg();
@@ -1663,7 +1660,7 @@ async function boot(){
     const next=!ov.deleted;
     if(next&&!confirm('Hide this word? (It will stop appearing, CSV unchanged)')) return;
     state.overrides[id]={...ov,deleted:next};
-    Core.rebuildData(); saveState(); nextCard();
+    Core.rebuildData(); ensureLevelScheduled(); saveState(); nextCard();
   });
 
   // ---- 1-Streak ----
@@ -1716,7 +1713,7 @@ async function boot(){
     const updated={...ov,super:on,superEvery:every};
     if(on){ updated.superNext=state.level+every; } else { delete updated.superNext; }
     state.overrides[id]=updated;
-    Core.rebuildData(); saveState(); nextCard();
+    Core.rebuildData(); ensureLevelScheduled(); saveState(); nextCard();
   });
 
   // ---- Reset ----
@@ -1778,14 +1775,17 @@ async function boot(){
   $('#btnDump')?.addEventListener('click',()=>{ console.log('TOP5K STATE:',JSON.parse(JSON.stringify(state))); alert('Dumped to console.'); });
   $('#btnHardSave')?.addEventListener('click',()=>{ saveState(); alert('Saved.'); });
   $('#btnRecalibrate')?.addEventListener('click',()=>{
-    if(!confirm('Set all word scores to 0.5?\n\nEach word will have a 50% chance of appearing per level pass. Level and streaks unchanged.')) return;
-    for(const w of state.data) state.scores[w.id]=0.5;
+    if(!confirm('Recalibrate scores?\n\nCurrent level words → 50% chance each. Future words → appear once each. Supers, level, and streaks unchanged.')) return;
+    const poolIds=new Set(Core.levelPool().map(w=>w.id));
+    for(const w of state.data){
+      if(state.overrides?.[w.id]?.super) continue;
+      state.scores[w.id]=poolIds.has(w.id)?0.5:1;
+    }
     state.scheduledThisLevel={};
     state.completedThisRun={};
     state.fractionalRolled={};
     state.scoreAtScheduling={};
-    state.currentBatch=[];
-    initCurrentBatch();
+    ensureLevelScheduled();
     saveState();
     Core.updateProgress();
     nextCard();
@@ -1823,6 +1823,7 @@ async function boot(){
   await Core.load();
   migrateLegacyState();
   initCurrentBatch();
+  ensureLevelScheduled();
   syncMenuUI();
   nextCard();
 }
