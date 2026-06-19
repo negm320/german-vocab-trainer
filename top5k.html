@@ -1097,8 +1097,10 @@ const Core={
       triggerFlash('good');
       renderStreakDots(Math.min(cr,newSch),newSch,cr-1,done,false);
       inp.classList.add('good-field');
-      const feedLabel=isTypo?'Typo — close enough':'Correct!';
       const countStr=newSch>0?` (${Math.min(cr,newSch)}/${newSch} this level)`:'';
+      const feedLabel=isTypo
+        ?`Typo — <b>${x.german||''}</b>`
+        :'Correct!';
       setHTML('#coreFeedback',`<span class="good">${feedLabel}</span>${countStr}`);
     } else {
       const penalty=(5-prevScore)/2;
