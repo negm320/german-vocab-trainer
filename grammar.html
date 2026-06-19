@@ -150,6 +150,8 @@ button:hover{background:var(--btn2);}
   </div>
 </div>
 
+<button id="btnUndo" class="hidden" style="width:100%;margin-top:8px;">← Undo word</button>
+
 </div><!-- /wrap -->
 
 <div class="bottomBar">
@@ -177,15 +179,15 @@ const VERBS=new Set(['bin','bist','ist','sind','seid','war','warst','waren','war
 const PERSONAL_PRONOUNS=new Set(['ich','du','er','sie','es','wir','ihr','man']);
 const ACC_DAT_PRONOUNS=new Set(['mich','dich','ihn','uns','euch','mir','dir','ihm','ihnen']);
 
-function getWordClass(word){
+function getWordClassWithRole(word,role){
   const w=word.toLowerCase();
   if(CONNECTORS.has(w)) return '';
   if(ACC_DAT_PRONOUNS.has(w)) return 'acc-dat';
   if(PERSONAL_PRONOUNS.has(w)) return 'personal-pronoun';
-  if(PREPOSITIONS.has(w)) return 'preposition';
-  if(TIME_WORDS.has(w)) return 'time-word';
-  if(VERBS.has(w)) return 'verb';
-  if(w.length>3&&w.endsWith('en')) return 'verb';
+  if(!role) return '';
+  if(role==='verb'||role==='sep-prefix') return 'verb';
+  if(role==='prep') return 'preposition';
+  if(role==='time') return 'time-word';
   return '';
 }
 
@@ -193,6 +195,133 @@ let currentDrill=null;
 let recognition=null;
 let micActive=false;
 let micBase='';
+
+const TOPICS=[
+  // daily life & chores
+  'a broken bike','a broken washing machine','a leaking faucet','a clogged drain',
+  'forgetting to take out the trash','a messy apartment','losing your keys',
+  'running out of coffee','burning dinner','assembling flat-pack furniture',
+  'a broken heater in winter','painting a room','decluttering the flat',
+  'changing a lightbulb','a broken dishwasher','running out of toilet paper',
+  'a stuck window that won\'t close','doing the laundry at a laundrette',
+  // transport
+  'a delayed train','missing the bus','a flat tire on the highway',
+  'stuck in a traffic jam','a canceled flight','missing a flight',
+  'forgetting your passport at home','a speeding ticket','renting a car abroad',
+  'road construction blocking your street','a taxi that never arrives',
+  'a stolen bicycle','a broken escalator in the metro','heavy snow on the tracks',
+  'a bus replacement service','losing your train ticket',
+  // food & drink
+  'cooking a recipe for the first time','a restaurant with a long wait',
+  'ordering the wrong dish by mistake','food delivery arriving cold',
+  'a sold-out item at the bakery','forgetting to book a table',
+  'a disappointing meal at a fancy restaurant','running out of milk',
+  'discovering an expired product','learning to bake bread',
+  'an allergic reaction to a dish','a hangover the morning after',
+  'a friend who only eats vegan','splitting the bill at a restaurant',
+  'a supermarket that closed early','trying a new exotic cuisine',
+  // health & body
+  'a dentist visit','a visit to the doctor','a bad cold that won\'t go away',
+  'insomnia for several nights','a sprained ankle from jogging',
+  'waiting at the pharmacy','recovering after a minor surgery',
+  'getting a vaccine','sore muscles after the gym','a skin rash',
+  'a persistent headache','going to the optician','a check-up that found something',
+  'taking the wrong medication','a heat stroke in summer',
+  // work & career
+  'a job interview','a boring three-hour meeting','working from home distractions',
+  'a difficult colleague','getting a promotion','quitting a job',
+  'starting a new job on Monday','unpaid overtime','a tight work deadline',
+  'salary negotiation','a conflict in the team','office gossip',
+  'a work presentation that went badly','a surprise restructuring at work',
+  'applying for a job you are underqualified for',
+  // school & learning
+  'failing an important exam','studying for a final test',
+  'a group project where nobody contributes','choosing which university to attend',
+  'writing a thesis at the last minute','a very strict teacher',
+  'forgetting a homework assignment','enrolling in an evening course',
+  'learning a new language from scratch','a scholarship application',
+  // technology
+  'a phone update that broke everything','a laptop that crashed before saving',
+  'forgetting a password and being locked out','trouble with Wi-Fi',
+  'a printer that refuses to work','losing all your photos','a virus on the computer',
+  'a video call that keeps freezing','spam emails flooding your inbox',
+  'a broken charger','setting up a new smartphone','a data breach notification',
+  'a streaming service that keeps buffering','buying a used laptop online',
+  'a robot vacuum getting stuck',
+  // money & finances
+  'running out of money before payday','an unexpected bill arriving',
+  'a bank error on your account','going over budget on holiday',
+  'applying for a loan','filing your tax return','saving up for something big',
+  'a subscription you forgot to cancel','splitting rent with flatmates',
+  'finding a cheaper alternative','an expensive car repair',
+  // social & relationships
+  'a first date that was awkward','a breakup via text message',
+  'a family dinner that turned into an argument','arguing with a sibling',
+  'a friend who is always late','a misunderstanding over a message',
+  'visiting elderly grandparents','planning a birthday party',
+  'a friend who is moving to another city','a baby shower invitation',
+  'a housewarming party','an awkward encounter with an ex',
+  'a wedding invitation','a surprise birthday',
+  // travel & holidays
+  'planning a weekend trip','getting lost in a foreign city',
+  'a hotel room that was nothing like the photos','packing too much luggage',
+  'sunburn on the first day of holiday','a language barrier abroad',
+  'a stolen suitcase at the airport','finding a cheap hostel last minute',
+  'a rainy week on holiday','jet lag after a long flight',
+  'a tour guide who spoke too fast','a cancelled bus tour',
+  'losing your travel money abroad',
+  // housing & neighbors
+  'moving flats','a rent increase out of nowhere','a difficult landlord',
+  'a neighbor\'s loud party on a weeknight','a noisy neighbor','apartment hunting',
+  'a broken elevator in the building','pest control visit',
+  'a roof that leaks when it rains','decorating for the holidays',
+  'an argument with a flatmate','finding a parking spot in the city',
+  // animals & pets
+  'a sick cat at the vet','walking the dog in a thunderstorm',
+  'a bird that flew into the house','a neighbor\'s barking dog all night',
+  'finding a stray cat','losing a pet','a spider in the bedroom',
+  'feeding ducks at the park','a mouse in the kitchen',
+  // hobbies & free time
+  'a canceled concert','a disappointing film at the cinema',
+  'a yoga class that was too hard','a hiking trip with wrong footwear',
+  'swimming at the lake in summer','a football match that ended badly',
+  'a painting class for beginners','gardening when it rains','playing chess online',
+  'a board game night with friends','going to a museum',
+  'attending a street festival','a book club meeting','a photography trip',
+  'a DIY project that went wrong','a karaoke night',
+  // shopping
+  'returning a faulty product','a big sale at the clothing store',
+  'a long queue at the checkout','buying second-hand clothes online',
+  'a loyalty card that expired','buying a last-minute gift',
+  'a shop that closed early','an online order that never arrived',
+  'a fitting room with no mirror','comparing prices at two supermarkets',
+  // weather & environment
+  'a sudden thunderstorm','a heat wave with no air conditioning',
+  'heavy snowfall blocking the road','flooding in the neighborhood',
+  'a power outage during a storm','a very foggy morning commute',
+  'recycling rules that are confusing','air pollution alert in the city',
+  'a drought affecting the garden',
+  // news & everyday society
+  'a traffic accident near your home','rising prices at the supermarket',
+  'a local election','a city road closure for a marathon',
+  'a data leak in the news','a strike by public transport workers',
+  'a new café opening on your street','a neighborhood clean-up event',
+  'a local sports team winning the championship',
+  // miscellaneous life moments
+  'a parking ticket','a power outage','forgetting an appointment',
+  'a lost wallet','bad weather plans','buying a new phone',
+  'a long queue at the supermarket','meeting an old friend',
+  'oversleeping and being late','a surprise visitor at the door',
+  'dropping your phone in water','getting a haircut you hate',
+  'waiting for a package that doesn\'t come','a fire drill at work',
+  'a birthday you almost forgot','winning something in a raffle',
+  'helping a stranger on the street','a misplaced passport',
+  'a sleepless night before an important day'
+];
+const B2_CONNECTORS=['weil','dass','obwohl','wenn','als','damit','nachdem',
+  'bevor','während','ob','bis','seit','sobald','falls','sodass'];
+const SUBJECTS=['er','sie','wir','du','ihr','man','Anna','Tom','Maria','Lukas'];
+let lastTopicIndex=-1;
 
 /* ── Speech recognition ── */
 {
@@ -289,48 +418,83 @@ async function generateDrill(){
   const feedback=document.getElementById('feedback');
 
   card.classList.add('loading');
+  loadingText.textContent='Generating drill…';
   loadingText.classList.remove('hidden');
   drillContent.classList.add('hidden');
   feedback?.classList.add('hidden');
 
-  const prompt=`Generate a German sentence for a B2 word-order drill. Return JSON only — no markdown, no code fences.
-Schema: {"english":"...","correct":"..."}
-Rules:
-- Multi-clause sentence using at least one subordinating connector (weil, dass, obwohl, wenn, als, damit, nachdem, bevor, während, ob, etc.)
-- Generate sentences that sound like natural casual spoken German between friends or colleagues — the kind of German used in everyday conversations, text messages, or casual talk. Avoid subjunctive mood (Konjunktiv I and II), avoid Futur I with werden, avoid formal or literary constructions. Use contractions and colloquial word order where natural. If a native German speaker would raise an eyebrow at the phrasing in a casual conversation, don't use it.
-- Vary sentence length randomly between 6 and 12 words.
-- english: natural English translation of correct.`;
+  let topicIdx;
+  do{ topicIdx=Math.floor(Math.random()*TOPICS.length); }while(topicIdx===lastTopicIndex&&TOPICS.length>1);
+  lastTopicIndex=topicIdx;
+  const topic=TOPICS[topicIdx];
+  const connector=B2_CONNECTORS[Math.floor(Math.random()*B2_CONNECTORS.length)];
+  const subject=SUBJECTS[Math.floor(Math.random()*SUBJECTS.length)];
+  const clauseOrder=Math.random()<0.5?'subordinate clause first':'main clause first';
 
-  try{
-    const res=await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
-      {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          contents:[{parts:[{text:prompt}]}],
-          generationConfig:{temperature:1.0,maxOutputTokens:512}
-        })
-      }
-    );
-    if(!res.ok){
-      const errBody=await res.text().catch(()=>'');
-      throw new Error(`API ${res.status}: ${errBody.slice(0,200)}`);
+  const prompt=`Generate a German sentence for a B2 word-order drill. Return JSON only — no markdown, no code fences.
+
+Schema: {"english":"...","correct":"...","roles":[...]}
+- english: natural English translation of correct.
+- correct: the German sentence.
+- roles: array of role strings aligned 1:1 with correct.split(' '). Tag each token as exactly one of: "verb" (finite verbs, infinitives, past participles), "prep" (prepositions), "time" (time adverbs), "sep-prefix" (separated verb prefix, e.g. "an" in "Ich rufe an"), or "other".
+
+Rules:
+- Topic: ${topic}.
+- Required subordinating connector: "${connector}" — it must appear in the sentence.
+- Main clause subject: ${subject}.
+- Clause order: ${clauseOrder}.
+- Sentence length: 7–13 words.
+- Register: natural casual spoken German (friends / colleagues / text messages). No Konjunktiv I or II, no Futur I with werden, no formal or literary constructions.
+- Full written forms only — no apostrophe elisions and no dropped 1sg -e. Write habe not hab', gehe not geh', geht es not geht's, eine not 'ne. Every word must be a complete standard written form.`;
+
+  const body=JSON.stringify({
+    contents:[{parts:[{text:prompt}]}],
+    generationConfig:{temperature:1.0,maxOutputTokens:512}
+  });
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`;
+
+  const retryDelays=[800,1600,3200];
+  let lastErr=new Error('unknown error');
+  for(let attempt=0;attempt<3;attempt++){
+    if(attempt>0){
+      loadingText.textContent='High demand — retrying…';
+      await new Promise(r=>setTimeout(r,retryDelays[attempt-1]));
     }
-    const data=await res.json();
-    const raw=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
-    const jsonStr=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
-    const drill=JSON.parse(jsonStr);
-    if(!drill.english||!drill.correct) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
-    drill.pieces=drill.correct.split(' ').sort(()=>Math.random()-.5);
-    currentDrill=drill;
-    renderDrill(drill);
-  }catch(e){
-    console.error('[grammar drill]',e);
-    loadingText.textContent=`Failed: ${e.message} — tap ↺ New to retry.`;
-    loadingText.style.wordBreak='break-word';
-    card.classList.remove('loading');
+    let shouldRetry=false;
+    try{
+      const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body});
+      if(res.status===429||res.status>=500){
+        lastErr=new Error(`API ${res.status}`);
+        shouldRetry=true;
+      }else if(!res.ok){
+        const errBody=await res.text().catch(()=>'');
+        throw new Error(`API ${res.status}: ${errBody.slice(0,200)}`);
+      }else{
+        const data=await res.json();
+        const raw=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
+        const jsonStr=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+        const drill=JSON.parse(jsonStr);
+        if(!drill.english||!drill.correct) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
+        drill.correct=drill.correct.split(' ').map(t=>t.endsWith("'")?t.slice(0,-1)+'e':t).join(' ');
+        const tokens=drill.correct.split(' ');
+        const hasValidRoles=Array.isArray(drill.roles)&&drill.roles.length===tokens.length;
+        const paired=tokens.map((word,i)=>({word,role:hasValidRoles?drill.roles[i]:null}));
+        for(let i=paired.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[paired[i],paired[j]]=[paired[j],paired[i]];}
+        drill.pieces=paired;
+        currentDrill=drill;
+        renderDrill(drill);
+        return;
+      }
+    }catch(e){
+      lastErr=e;
+      if(e instanceof TypeError) shouldRetry=true;
+    }
+    if(!shouldRetry) break;
   }
+  console.error('[grammar drill]',lastErr);
+  loadingText.textContent=`Failed: ${lastErr.message} — tap Next to retry.`;
+  loadingText.style.wordBreak='break-word';
+  card.classList.remove('loading');
 }
 
 /* ── Render drill ── */
@@ -356,11 +520,12 @@ function renderDrill(drill){
   feedback.classList.add('hidden');
   feedback.innerHTML='';
 
+  document.getElementById('btnUndo')?.classList.add('hidden');
   piecesWrap.innerHTML='';
-  drill.pieces.forEach(word=>{
+  drill.pieces.forEach(({word,role})=>{
     const btn=document.createElement('button');
     const clean=word.replace(/[.,!?;:"""„"–—]/g,'');
-    const wc=getWordClass(clean);
+    const wc=getWordClassWithRole(clean,role);
     btn.className='piece'+(CONNECTORS.has(clean.toLowerCase())?' connector':wc?' '+wc:'');
     btn.textContent=clean;
     let lock=0;
@@ -458,6 +623,8 @@ function updatePieceStates(){
       btn.classList.remove('used');
     }
   });
+  const btnUndo=document.getElementById('btnUndo');
+  if(btnUndo) btnUndo.classList.toggle('hidden',!inp.value.trim());
 }
 
 /* ── Check answer ── */
@@ -522,6 +689,18 @@ function boot(){
   answerEl?.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'){ e.preventDefault(); checkAnswer(); }
   });
+
+  let lockUndo=0;
+  document.getElementById('btnUndo')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockUndo<150) return; lockUndo=now;
+    if(!answerEl||!answerEl.value.trim()) return;
+    const trimmed=answerEl.value.trimEnd();
+    const lastSpace=trimmed.lastIndexOf(' ');
+    answerEl.value=lastSpace>=0?trimmed.slice(0,lastSpace+1):'';
+    autoResize();
+  },{passive:false});
+  document.getElementById('btnUndo')?.addEventListener('mousedown',(e)=>e.preventDefault());
 
   let lockNext=0;
   document.getElementById('btnNext')?.addEventListener('pointerdown',(e)=>{
