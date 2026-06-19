@@ -1099,7 +1099,7 @@ const Core={
       inp.classList.add('good-field');
       const countStr=newSch>0?` (${Math.min(cr,newSch)}/${newSch} this level)`:'';
       const feedLabel=isTypo
-        ?`Typo — <b>${x.german||''}</b>`
+        ?`Typo — <b>${x.conjugated||x.german||''}</b>`
         :'Correct!';
       setHTML('#coreFeedback',`<span class="good">${feedLabel}</span>${countStr}`);
     } else {
