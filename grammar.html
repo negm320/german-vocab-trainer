@@ -151,6 +151,7 @@ button:hover{background:var(--btn2);}
 </div>
 
 <button id="btnUndo" class="hidden" style="width:100%;margin-top:8px;">← Undo word</button>
+<pre id="debugPanel" style="display:none;font-family:monospace;font-size:12px;background:#0a0d10;border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:8px;max-height:320px;overflow-y:auto;overflow-x:hidden;white-space:pre-wrap;word-break:break-all;color:var(--muted);line-height:1.5;"></pre>
 
 </div><!-- /wrap -->
 
@@ -399,6 +400,33 @@ function setInputFinal(text){
   updatePieceStates();
 }
 
+/* ── Debug panel ── */
+let debugVisible=false;
+function appendDebugEntry(drill,tokens,hasValidRoles){
+  const rolesArr=Array.isArray(drill.roles)?drill.roles:[];
+  const flag=hasValidRoles?'✓':'✗';
+  const lines=[
+    `${flag} tokens=${tokens.length} roles=${rolesArr.length}  [${new Date().toLocaleTimeString()}]`,
+    `correct: ${drill.correct}`,
+    `roles:   ${JSON.stringify(rolesArr)}`,
+    `mapping:`
+  ];
+  tokens.forEach((word,i)=>{
+    const clean=word.replace(/[.,!?;:"""„"–—]/g,'');
+    const role=hasValidRoles?rolesArr[i]:null;
+    const cls=getWordClassWithRole(clean,role)||'(none)';
+    lines.push(`  ${String(i).padStart(2)}  ${clean.padEnd(18)}role=${String(role).padEnd(12)}→ ${cls}`);
+  });
+  const entry=lines.join('\n');
+  console.log('[grammar debug]\n'+entry);
+  const panel=document.getElementById('debugPanel');
+  if(!panel) return;
+  const entries=panel.textContent?panel.textContent.split('\n\n'):[];
+  entries.unshift(entry);
+  if(entries.length>10) entries.length=10;
+  panel.textContent=entries.join('\n\n');
+}
+
 function showMicMsg(msg){
   const status=document.getElementById('micStatus');
   if(!status) return;
@@ -478,6 +506,7 @@ Rules:
         drill.correct=drill.correct.split(' ').map(t=>t.endsWith("'")?t.slice(0,-1)+'e':t).join(' ');
         const tokens=drill.correct.split(' ');
         const hasValidRoles=Array.isArray(drill.roles)&&drill.roles.length===tokens.length;
+        appendDebugEntry(drill,tokens,hasValidRoles);
         const paired=tokens.map((word,i)=>({word,role:hasValidRoles?drill.roles[i]:null}));
         for(let i=paired.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[paired[i],paired[j]]=[paired[j],paired[i]];}
         drill.pieces=paired;
@@ -688,6 +717,20 @@ function boot(){
   answerEl?.addEventListener('input',autoResize);
   answerEl?.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'){ e.preventDefault(); checkAnswer(); }
+  });
+
+  let debugTapCount=0,debugTapTimer=null;
+  document.getElementById('englishText')?.addEventListener('pointerdown',()=>{
+    debugTapCount++;
+    clearTimeout(debugTapTimer);
+    debugTapTimer=setTimeout(()=>{ debugTapCount=0; },1500);
+    if(debugTapCount>=5){
+      debugTapCount=0;
+      clearTimeout(debugTapTimer);
+      debugVisible=!debugVisible;
+      const panel=document.getElementById('debugPanel');
+      if(panel) panel.style.display=debugVisible?'block':'none';
+    }
   });
 
   let lockUndo=0;
