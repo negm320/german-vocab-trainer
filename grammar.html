@@ -176,19 +176,19 @@ const CONNECTORS=new Set([
 
 const TIME_WORDS=new Set(['heute','jetzt','morgen','gestern','später','immer','nie','oft','manchmal','bald','noch','schon','dann','danach','vorher','früher','gerade','gleich','sofort','neulich','damals','einmal','zweimal','täglich','wöchentlich','monatlich','jährlich','stets','ständig','häufig','selten','meistens','normalerweise','gewöhnlich','übermorgen','vorgestern','zuletzt','zuerst','seitdem','inzwischen','mittlerweile','gleichzeitig','vorhin','nachher','bisher','demnächst','momentan','derzeit','zurzeit','früh','spät','abends','morgens','mittags','nachts','tagsüber','plötzlich','soeben','eben','bereits','erst','schließlich','letztendlich','zunächst','endlich','irgendwann','jemals','niemals','jederzeit','lange','kurz','montags','dienstags','mittwochs','donnerstags','freitags','samstags','sonntags','jahrelang','stundenlang','tagelang','wochenlang','monatelang','seither','heutzutage']);
 const PREPOSITIONS=new Set(['an','auf','aus','außer','bei','bis','durch','entlang','für','gegen','gegenüber','hinter','in','innerhalb','mit','nach','neben','ohne','seit','statt','anstatt','trotz','über','um','unter','vor','wegen','während','zu','zwischen','ab','außerhalb','dank','gemäß','laut','mithilfe','seitens','unweit','zufolge','zugunsten','kraft','mittels','infolge','aufgrund','anhand','angesichts','bezüglich','hinsichtlich','ungeachtet','entgegen','entsprechend','mitsamt','nebst','samt']);
-const VERBS=new Set(['bin','bist','ist','sind','seid','war','warst','waren','wart','habe','hast','hat','habt','hatte','hattest','hatten','hattet','werde','wirst','wird','werdet','wurde','wurdest','wurden','wurdet','kann','kannst','können','könnt','konnte','konnten','muss','musst','müssen','müsst','musste','mussten','will','willst','wollen','wollt','wollte','wollten','soll','sollst','sollen','sollt','sollte','sollten','darf','darfst','dürfen','dürft','durfte','durften','mag','magst','mögen','mögt','mochte','mochten','möchte','möchtest','möchten','möchtet','gehe','gehst','geht','gehen','ging','gingen','komme','kommst','kommt','kommen','kam','kamen','mache','machst','macht','machen','machte','machten','sage','sagst','sagt','sagen','sagte','sagten','sehe','siehst','sieht','sehen','sah','sahen','weiß','weißt','wissen','wisst','wusste','wussten','nehme','nimmst','nimmt','nehmen','nahm','nahmen','gebe','gibst','gibt','geben','gab','gaben','stehe','stehst','steht','stehen','stand','standen','lasse','lässt','lassen','ließ','ließen','fahre','fährst','fährt','fahren','fuhr','fuhren','esse','isst','essen','aß','aßen','trinke','trinkst','trinkt','trinken','trank','tranken','schlafe','schläfst','schläft','schlafen','schlief','schliefen','arbeite','arbeitest','arbeitet','arbeiten','arbeitete','arbeiteten','lerne','lernst','lernt','lernen','lernte','lernten','lebe','lebst','lebt','leben','lebte','lebten','wohne','wohnst','wohnt','wohnen','wohnte','wohnten','spreche','sprichst','spricht','sprechen','sprach','sprachen','denke','denkst','denkt','denken','dachte','dachten','glaube','glaubst','glaubt','glauben','glaubte','glaubten','finde','findest','findet','finden','fand','fanden','schreibe','schreibst','schreibt','schreiben','schrieb','schrieben','lese','liest','lesen','las','lasen','höre','hörst','hört','hören','hörte','hörten','brauche','brauchst','braucht','brauchen','brauchte','brauchten','helfe','hilfst','hilft','helfen','half','halfen','verstehe','verstehst','versteht','verstehen','verstand','verstanden','fühle','fühlst','fühlt','fühlen','fühlte','fühlten','kenne','kennst','kennt','kennen','kannte','kannten','treffe','triffst','trifft','treffen','traf','trafen','rufe','rufst','ruft','rufen','rief','riefen','spiele','spielst','spielt','spielen','spielte','spielten','kaufe','kaufst','kauft','kaufen','kaufte','kauften','zeige','zeigst','zeigt','zeigen','zeigte','zeigten','versuche','versuchst','versucht','versuchen','versuchte','versuchten','beginne','beginnst','beginnt','beginnen','begann','begannen','öffne','öffnest','öffnet','öffnen','öffnete','öffneten','schließe','schließt','schließen','schloss','schlossen','liebe','liebst','liebt','lieben','liebte','liebten','koche','kochst','kocht','kochen','kochte','kochten','laufe','läufst','läuft','laufen','lief','liefen','sitze','sitzt','sitzen','saß','saßen','lege','legst','legt','legen','legte','legten','stelle','stellst','stellt','stellen','stellte','stellten','hole','holst','holt','holen','holte','holten','zahle','zahlst','zahlt','zahlen','zahlte','zahlten','erkläre','erklärst','erklärt','erklären','erklärte','erklärten','warte','wartest','wartet','warten','wartete','warteten']);
+const NAMES=new Set(['anna','tom','maria','lukas','felix','emma','lena','max','sophie','paul','laura','jan','lisa','tim','julia','david','sarah','michael','nina','stefan','peter','claudia','markus','andrea','thomas','sabine','hans','monika','kevin','tobias']);
 const PERSONAL_PRONOUNS=new Set(['ich','du','er','sie','es','wir','ihr','man']);
 const ACC_DAT_PRONOUNS=new Set(['mich','dich','ihn','uns','euch','mir','dir','ihm','ihnen']);
 
-function getWordClassWithRole(word,role){
+function getWordClass(word,role){
   const w=word.toLowerCase();
-  if(CONNECTORS.has(w)) return '';
+  if(role==='verb'||role==='sep-prefix') return 'verb';
+  if(CONNECTORS.has(w)) return 'connector';
   if(ACC_DAT_PRONOUNS.has(w)) return 'acc-dat';
   if(PERSONAL_PRONOUNS.has(w)) return 'personal-pronoun';
-  if(!role) return '';
-  if(role==='verb'||role==='sep-prefix') return 'verb';
-  if(role==='prep') return 'preposition';
-  if(role==='time') return 'time-word';
+  if(NAMES.has(w)) return 'personal-pronoun';
+  if(PREPOSITIONS.has(w)) return 'preposition';
+  if(TIME_WORDS.has(w)) return 'time-word';
   return '';
 }
 
@@ -402,19 +402,16 @@ function setInputFinal(text){
 
 /* ── Debug panel ── */
 let debugVisible=false;
-function appendDebugEntry(drill,tokens,hasValidRoles){
-  const rolesArr=Array.isArray(drill.roles)?drill.roles:[];
-  const flag=hasValidRoles?'✓':'✗';
+function appendDebugEntry(drill,pairs,hasWords){
+  const flag=hasWords?'✓':'✗';
   const lines=[
-    `${flag} tokens=${tokens.length} roles=${rolesArr.length}  [${new Date().toLocaleTimeString()}]`,
+    `${flag} words=${pairs.length}  [${new Date().toLocaleTimeString()}]`,
     `correct: ${drill.correct}`,
-    `roles:   ${JSON.stringify(rolesArr)}`,
     `mapping:`
   ];
-  tokens.forEach((word,i)=>{
+  pairs.forEach(({word,role},i)=>{
     const clean=word.replace(/[.,!?;:"""„"–—]/g,'');
-    const role=hasValidRoles?rolesArr[i]:null;
-    const cls=getWordClassWithRole(clean,role)||'(none)';
+    const cls=getWordClass(clean,role)||'(none)';
     lines.push(`  ${String(i).padStart(2)}  ${clean.padEnd(18)}role=${String(role).padEnd(12)}→ ${cls}`);
   });
   const entry=lines.join('\n');
@@ -461,10 +458,9 @@ async function generateDrill(){
 
   const prompt=`Generate a German sentence for a B2 word-order drill. Return JSON only — no markdown, no code fences.
 
-Schema: {"english":"...","correct":"...","roles":[...]}
-- english: natural English translation of correct.
-- correct: the German sentence.
-- roles: array of role strings aligned 1:1 with correct.split(' '). Tag each token as exactly one of: "verb" (finite verbs, infinitives, past participles), "prep" (prepositions), "time" (time adverbs), "sep-prefix" (separated verb prefix, e.g. "an" in "Ich rufe an"), or "other".
+Schema: {"english":"...","words":[{"w":"...","r":"..."},...]}
+- english: natural English translation of the sentence.
+- words: array of {w,r} objects — one per word in sentence order. w is the surface form including any attached punctuation. r must be exactly "verb" (finite verbs, infinitives, participles), "sep-prefix" (separated verb prefix, e.g. "an" in "Ich rufe an"), or "other". Emit exactly one object per word, in order, never drop or merge a word.
 
 Rules:
 - Topic: ${topic}.
@@ -502,14 +498,22 @@ Rules:
         const raw=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
         const jsonStr=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
         const drill=JSON.parse(jsonStr);
-        if(!drill.english||!drill.correct) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
-        drill.correct=drill.correct.split(' ').map(t=>t.endsWith("'")?t.slice(0,-1)+'e':t).join(' ');
-        const tokens=drill.correct.split(' ');
-        const hasValidRoles=Array.isArray(drill.roles)&&drill.roles.length===tokens.length;
-        appendDebugEntry(drill,tokens,hasValidRoles);
-        const paired=tokens.map((word,i)=>({word,role:hasValidRoles?drill.roles[i]:null}));
-        for(let i=paired.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[paired[i],paired[j]]=[paired[j],paired[i]];}
-        drill.pieces=paired;
+        if(!drill.english) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
+        const hasWords=Array.isArray(drill.words)&&drill.words.length>0&&drill.words.every(x=>x&&typeof x.w==='string');
+        let pairs;
+        if(hasWords){
+          const cleaned=drill.words.map(({w,r})=>({w:w.endsWith("'")?w.slice(0,-1)+'e':w,r}));
+          drill.correct=cleaned.map(x=>x.w).join(' ');
+          pairs=cleaned.map(({w,r})=>({word:w,role:r}));
+        }else if(drill.correct){
+          drill.correct=drill.correct.split(' ').map(t=>t.endsWith("'")?t.slice(0,-1)+'e':t).join(' ');
+          pairs=drill.correct.split(' ').map(word=>({word,role:null}));
+        }else{
+          throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
+        }
+        appendDebugEntry(drill,pairs,hasWords);
+        for(let i=pairs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pairs[i],pairs[j]]=[pairs[j],pairs[i]];}
+        drill.pieces=pairs;
         currentDrill=drill;
         renderDrill(drill);
         return;
@@ -554,8 +558,8 @@ function renderDrill(drill){
   drill.pieces.forEach(({word,role})=>{
     const btn=document.createElement('button');
     const clean=word.replace(/[.,!?;:"""„"–—]/g,'');
-    const wc=getWordClassWithRole(clean,role);
-    btn.className='piece'+(CONNECTORS.has(clean.toLowerCase())?' connector':wc?' '+wc:'');
+    const wc=getWordClass(clean,role);
+    btn.className='piece'+(wc?' '+wc:'');
     btn.textContent=clean;
     let lock=0;
     btn.addEventListener('pointerdown',(e)=>{
