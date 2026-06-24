@@ -459,7 +459,7 @@ async function generateDrill(){
   const prompt=`Generate a German sentence for a B2 word-order drill. Return JSON only — no markdown, no code fences.
 
 Schema: {"english":"...","words":[{"w":"...","r":"..."},...]}
-- english: natural English translation of the sentence.
+- english: compose the German sentence first, then gloss it back into English. The English must mirror the German's structure exactly — same number of clauses, same clause order, same connectors and coordination/subordination. Only the wording inside each clause should be made natural English; do not restructure, merge, or reorder clauses. (Example of what NOT to do: German uses coordinate clauses "ein Vogel kam hereingeflogen und…" but English says "the bird that flew in" — that changes the structure and is wrong.)
 - words: array of {w,r} objects — one per word in sentence order. w is the surface form including any attached punctuation. r must be exactly "verb" (finite verbs, infinitives, participles), "sep-prefix" (separated verb prefix, e.g. "an" in "Ich rufe an"), or "other". Emit exactly one object per word, in order, never drop or merge a word.
 
 Rules:
@@ -469,11 +469,13 @@ Rules:
 - Clause order: ${clauseOrder}.
 - Sentence length: 7–13 words.
 - Register: natural casual spoken German (friends / colleagues / text messages). No Konjunktiv I or II, no Futur I with werden, no formal or literary constructions.
-- Full written forms only — no apostrophe elisions and no dropped 1sg -e. Write habe not hab', gehe not geh', geht es not geht's, eine not 'ne. Every word must be a complete standard written form.`;
+- Full written forms only — no apostrophe elisions and no dropped 1sg -e. Write habe not hab', gehe not geh', geht es not geht's, eine not 'ne. Every word must be a complete standard written form.
+- Naturalness: write the sentence a real person would actually say in casual conversation — texting a friend, talking over coffee. Avoid bookish idioms and clever constructions. A complete, natural sentence is always better than a terse or clever one; word count is never a goal, and never drop or compress words to save space.
+Before answering, check two things: would a real person say this exact sentence casually, and does the English mirror the German's clause order? Revise if not.`;
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
-    generationConfig:{temperature:1.0,maxOutputTokens:512}
+    generationConfig:{temperature:0.7,maxOutputTokens:512}
   });
   const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`;
 
