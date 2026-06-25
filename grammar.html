@@ -472,7 +472,8 @@ Before answering, check three things: would a real person say this exact sentenc
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
-    generationConfig:{temperature:0.7,maxOutputTokens:1024,thinkingConfig:{thinkingBudget:0}}
+    generationConfig:{temperature:0.7,maxOutputTokens:2048},
+    thinkingConfig:{thinkingBudget:0}
   });
   const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
 
@@ -492,8 +493,9 @@ Before answering, check three things: would a real person say this exact sentenc
       }else{
         const data=await res.json();
         const raw=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
-        const jsonStr=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
-        const drill=JSON.parse(jsonStr);
+        const s=raw.indexOf('{'), e=raw.lastIndexOf('}');
+        if(s===-1||e<=s) throw new Error(`no JSON object — raw: ${raw.slice(0,120)}`);
+        const drill=JSON.parse(raw.slice(s,e+1));
         if(!drill.english) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
         const hasWords=Array.isArray(drill.words)&&drill.words.length>0&&drill.words.every(x=>x&&typeof x.w==='string');
         let pairs;
