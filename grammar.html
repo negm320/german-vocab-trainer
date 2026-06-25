@@ -319,8 +319,10 @@ const TOPICS=[
   'helping a stranger on the street','a misplaced passport',
   'a sleepless night before an important day'
 ];
-const B2_CONNECTORS=['weil','dass','obwohl','wenn','als','damit','nachdem',
-  'bevor','während','ob','bis','seit','sobald','falls','sodass'];
+const ADVERBIAL_CONNECTORS=['weil','obwohl','wenn','als','damit','nachdem',
+  'bevor','während','bis','seit','sobald','falls','sodass'];
+const COMPLEMENT_CONNECTORS=['dass','ob'];
+const B2_CONNECTORS=[...ADVERBIAL_CONNECTORS,...COMPLEMENT_CONNECTORS];
 const SUBJECTS=['er','sie','wir','du','ihr','man','Anna','Tom','Maria','Lukas'];
 let lastTopicIndex=-1;
 
@@ -406,6 +408,7 @@ function appendDebugEntry(drill,pairs,hasWords){
   const flag=hasWords?'✓':'✗';
   const lines=[
     `${flag} words=${pairs.length}  [${new Date().toLocaleTimeString()}]`,
+    `english: ${drill.english}`,
     `correct: ${drill.correct}`,
     `mapping:`
   ];
@@ -432,21 +435,14 @@ function showMicMsg(msg){
   setTimeout(()=>status.classList.add('hidden'),3000);
 }
 
-/* ── Generate drill ── */
-async function generateDrill(){
+/* ── Prefetch queue ── */
+const QUEUE_DEPTH=2;
+let drillQueue=[];
+let fetchesInFlight=0;
+
+async function fetchDrill(){
   const key=localStorage.getItem(GEMINI_KEY_LS);
-  if(!key) return;
-
-  const card=document.getElementById('drillCard');
-  const loadingText=document.getElementById('loadingText');
-  const drillContent=document.getElementById('drillContent');
-  const feedback=document.getElementById('feedback');
-
-  card.classList.add('loading');
-  loadingText.textContent='Generating drill…';
-  loadingText.classList.remove('hidden');
-  drillContent.classList.add('hidden');
-  feedback?.classList.add('hidden');
+  if(!key) throw new Error('no key');
 
   let topicIdx;
   do{ topicIdx=Math.floor(Math.random()*TOPICS.length); }while(topicIdx===lastTopicIndex&&TOPICS.length>1);
@@ -454,12 +450,13 @@ async function generateDrill(){
   const topic=TOPICS[topicIdx];
   const connector=B2_CONNECTORS[Math.floor(Math.random()*B2_CONNECTORS.length)];
   const subject=SUBJECTS[Math.floor(Math.random()*SUBJECTS.length)];
-  const clauseOrder=Math.random()<0.5?'subordinate clause first':'main clause first';
+  const isAdverbial=ADVERBIAL_CONNECTORS.includes(connector);
+  const clauseOrder=isAdverbial&&Math.random()<0.5?'subordinate clause first':'main clause first';
 
   const prompt=`Generate a German sentence for a B2 word-order drill. Return JSON only — no markdown, no code fences.
 
 Schema: {"english":"...","words":[{"w":"...","r":"..."},...]}
-- english: compose the German sentence first, then gloss it back into English. The English must mirror the German's structure exactly — same number of clauses, same clause order, same connectors and coordination/subordination. Only the wording inside each clause should be made natural English; do not restructure, merge, or reorder clauses. (Example of what NOT to do: German uses coordinate clauses "ein Vogel kam hereingeflogen und…" but English says "the bird that flew in" — that changes the structure and is wrong.)
+- english: compose the German sentence first, then gloss it back into English. The English must mirror the German's structure exactly — same number of clauses, same clause order, same connectors and coordination/subordination — and match the meaning exactly: same polarity/negation, quantifiers, and modality; nothing added, dropped, or weakened. Only the wording inside each clause should be made natural English; do not restructure, merge, or reorder clauses. (Example of what NOT to do: German uses coordinate clauses "ein Vogel kam hereingeflogen und…" but English says "the bird that flew in" — that changes the structure and is wrong.)
 - words: array of {w,r} objects — one per word in sentence order. w is the surface form including any attached punctuation. r must be exactly "verb" (finite verbs, infinitives, participles), "sep-prefix" (separated verb prefix, e.g. "an" in "Ich rufe an"), or "other". Emit exactly one object per word, in order, never drop or merge a word.
 
 Rules:
@@ -471,21 +468,18 @@ Rules:
 - Register: natural casual spoken German (friends / colleagues / text messages). No Konjunktiv I or II, no Futur I with werden, no formal or literary constructions.
 - Full written forms only — no apostrophe elisions and no dropped 1sg -e. Write habe not hab', gehe not geh', geht es not geht's, eine not 'ne. Every word must be a complete standard written form.
 - Naturalness: write the sentence a real person would actually say in casual conversation — texting a friend, talking over coffee. Avoid bookish idioms and clever constructions. A complete, natural sentence is always better than a terse or clever one; word count is never a goal, and never drop or compress words to save space.
-Before answering, check two things: would a real person say this exact sentence casually, and does the English mirror the German's clause order? Revise if not.`;
+Before answering, check three things: would a real person say this exact sentence casually; does the English mirror the German's clause order and structure; and does the English match the German's meaning exactly — same polarity, negation, quantifiers, and modality, nothing added, dropped, or weakened? Revise if not.`;
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
     generationConfig:{temperature:0.7,maxOutputTokens:512}
   });
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`;
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
 
   const retryDelays=[800,1600,3200];
   let lastErr=new Error('unknown error');
   for(let attempt=0;attempt<3;attempt++){
-    if(attempt>0){
-      loadingText.textContent='High demand — retrying…';
-      await new Promise(r=>setTimeout(r,retryDelays[attempt-1]));
-    }
+    if(attempt>0) await new Promise(r=>setTimeout(r,retryDelays[attempt-1]));
     let shouldRetry=false;
     try{
       const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body});
@@ -504,7 +498,9 @@ Before answering, check two things: would a real person say this exact sentence 
         const hasWords=Array.isArray(drill.words)&&drill.words.length>0&&drill.words.every(x=>x&&typeof x.w==='string');
         let pairs;
         if(hasWords){
-          const cleaned=drill.words.map(({w,r})=>({w:w.endsWith("'")?w.slice(0,-1)+'e':w,r}));
+          const cleaned=drill.words
+            .map(({w,r})=>{const t=(w||'').trim();return{w:t.endsWith("'")?t.slice(0,-1)+'e':t,r};})
+            .filter(x=>x.w);
           drill.correct=cleaned.map(x=>x.w).join(' ');
           pairs=cleaned.map(({w,r})=>({word:w,role:r}));
         }else if(drill.correct){
@@ -513,12 +509,10 @@ Before answering, check two things: would a real person say this exact sentence 
         }else{
           throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
         }
-        appendDebugEntry(drill,pairs,hasWords);
         for(let i=pairs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pairs[i],pairs[j]]=[pairs[j],pairs[i]];}
         drill.pieces=pairs;
-        currentDrill=drill;
-        renderDrill(drill);
-        return;
+        drill._hasWords=hasWords;
+        return drill;
       }
     }catch(e){
       lastErr=e;
@@ -526,10 +520,55 @@ Before answering, check two things: would a real person say this exact sentence 
     }
     if(!shouldRetry) break;
   }
-  console.error('[grammar drill]',lastErr);
-  loadingText.textContent=`Failed: ${lastErr.message} — tap Next to retry.`;
-  loadingText.style.wordBreak='break-word';
-  card.classList.remove('loading');
+  throw lastErr;
+}
+
+function refillQueue(){
+  while(drillQueue.length+fetchesInFlight<QUEUE_DEPTH){
+    fetchesInFlight++;
+    fetchDrill()
+      .then(drill=>{drillQueue.push(drill);fetchesInFlight--;})
+      .catch(err=>{console.error('[grammar prefetch]',err);fetchesInFlight--;});
+  }
+}
+
+function presentDrill(drill){
+  currentDrill=drill;
+  appendDebugEntry(drill,drill.pieces,drill._hasWords);
+  renderDrill(drill);
+  refillQueue();
+}
+
+/* ── Generate drill (public) ── */
+async function generateDrill(){
+  const key=localStorage.getItem(GEMINI_KEY_LS);
+  if(!key) return;
+
+  if(drillQueue.length>0){
+    presentDrill(drillQueue.shift());
+    return;
+  }
+
+  const card=document.getElementById('drillCard');
+  const loadingText=document.getElementById('loadingText');
+  const drillContent=document.getElementById('drillContent');
+  const feedback=document.getElementById('feedback');
+
+  card.classList.add('loading');
+  loadingText.textContent='Generating drill…';
+  loadingText.classList.remove('hidden');
+  drillContent.classList.add('hidden');
+  feedback?.classList.add('hidden');
+
+  try{
+    const drill=await fetchDrill();
+    presentDrill(drill);
+  }catch(e){
+    console.error('[grammar drill]',e);
+    loadingText.textContent=`Failed: ${e.message} — tap Next to retry.`;
+    loadingText.style.wordBreak='break-word';
+    card.classList.remove('loading');
+  }
 }
 
 /* ── Render drill ── */
