@@ -472,7 +472,7 @@ Before answering, check three things: would a real person say this exact sentenc
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
-    generationConfig:{temperature:0.7,maxOutputTokens:512}
+    generationConfig:{temperature:0.7,maxOutputTokens:1024,thinkingConfig:{thinkingBudget:0}}
   });
   const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
 
