@@ -795,6 +795,7 @@ function boot(){
   document.getElementById('btnNext')?.addEventListener('pointerdown',(e)=>{
     e.preventDefault();
     const now=Date.now(); if(now-lockNext<400) return; lockNext=now;
+    if(micActive) recognition.stop();
     generateDrill();
   },{passive:false});
   document.getElementById('btnNext')?.addEventListener('mousedown',(e)=>e.preventDefault());
