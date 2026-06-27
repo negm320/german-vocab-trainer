@@ -256,10 +256,9 @@ button:hover{background:var(--btn2)}
   <div id="coreDeSentence" class="muted small" style="margin-top:4px;"></div>
   <div id="coreFeedback" class="small" style="margin-top:8px;"></div>
 
-  <!-- Primary: Check + Next -->
+  <!-- Primary: Check / Next (combined) -->
   <div class="actionRow" style="margin-top:10px;">
-    <button id="coreCheck">Check</button>
-    <button id="coreNext">Next</button>
+    <button id="coreCheckNext" style="font-size:17px;">Check</button>
   </div>
 
   <div id="neuBadge" class="hidden" style="position:absolute;top:10px;right:12px;background:rgba(255,200,60,0.15);border:1px solid rgba(255,200,60,0.4);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;color:#f5c542;pointer-events:none;letter-spacing:0.5px;">Neu</div>
@@ -663,6 +662,7 @@ function restoreLastReviewUI(){
   setText('#coreDeSentence',r.deSentenceText||'');
   if(r.activeMode==='cloze'&&r.promptHTML) setHTML('#corePrompt',r.promptHTML);
   state._enterStage=1;
+  const _btn=$('#coreCheckNext'); if(_btn) _btn.textContent='Next →';
   if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
   return true;
 }
@@ -1015,14 +1015,11 @@ const Core={
     setTimeout(()=>{ (isSentence?sentInp:wordInp)?.focus(); },0);
 
     state._enterStage=0;
+    const checkNextBtn=$('#coreCheckNext'); if(checkNextBtn) checkNextBtn.textContent='Check';
     const activeInput=isSentence?sentInp:wordInp;
     if(activeInput){
       activeInput.onkeydown=(e)=>{
-        if(e.key==='Enter'){
-          e.preventDefault();
-          if(state._enterStage===0){ $('#coreCheck')?.click(); state._enterStage=1; setTimeout(()=>activeInput.focus(),0); }
-          else { $('#coreNext')?.click(); state._enterStage=0; }
-        }
+        if(e.key==='Enter'){ e.preventDefault(); $('#coreCheckNext')?.click(); setTimeout(()=>activeInput.focus(),0); }
       };
     }
 
@@ -1417,12 +1414,16 @@ async function boot(){
     btn.addEventListener('click',()=>{ onClick(); refocusActiveInput(); });
   }
 
-  bindBtn('#coreCheck',()=>{
-    const x=state.data.find(w=>w.id===state.currentId);
-    if(x) Core.check(x);
-    state._enterStage=1;
+  bindBtn('#coreCheckNext',()=>{
+    if(state._enterStage===0){
+      const x=state.data.find(w=>w.id===state.currentId);
+      if(x) Core.check(x);
+      state._enterStage=1;
+      const btn=$('#coreCheckNext'); if(btn) btn.textContent='Next →';
+    } else {
+      nextCard(); state._enterStage=0;
+    }
   });
-  bindBtn('#coreNext',()=>{ nextCard(); state._enterStage=0; });
 
   // ---- Hint button ----
   {
