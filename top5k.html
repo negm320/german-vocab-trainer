@@ -693,7 +693,7 @@ const SCORES_MIGRATION_VERSION=2;
 
 function scheduleAppearances(id){
   const ov=state.overrides?.[id];
-  const score=Math.max(0.2, state.scores[id]??3.0);
+  const score=Math.max(0.1, state.scores[id]??3.0);
   const guaranteed=ov?.easy1 ? 1 : Math.floor(score);
   const frac=score-Math.floor(score);
   const bonusRoll=frac>0&&Math.random()<frac;
@@ -724,7 +724,7 @@ function isLevelComplete(){
 
 function decayScore(id){
   const cur=state.scores[id]??3;
-  state.scores[id]=Math.max(0.2, cur>1 ? cur-0.4 : cur-0.2);
+  state.scores[id]=Math.max(0.1, cur>1 ? cur-0.4 : cur-0.2);
 }
 
 function initCurrentBatch(){
@@ -1026,7 +1026,7 @@ const Core={
     const _id=x?.id;
     const _cr=state.completedThisRun[_id]||0;
     const _sch=state.scheduledThisLevel[_id]??Math.max(1,Math.floor(Math.max(0.2,state.scores[_id]??3)));
-    const _origScore=state.scoreAtScheduling[_id]??Math.max(0.2,state.scores[_id]??3);
+    const _origScore=state.scoreAtScheduling[_id]??Math.max(0.1,state.scores[_id]??3);
     const _showHalf=state.fractionalRolled[_id]===undefined&&(_origScore%1>0.01);
     renderStreakDots(Math.min(_cr,_sch),_sch,undefined,false,_showHalf);
     if(state.activeMode==='cloze') setTimeout(triggerBlankPulse,50);
@@ -1078,7 +1078,7 @@ const Core={
       else if(levenshtein(ng,nt)<=2){ isCorrect=true; isTypo=true; }
       else{ isCorrect=false; }
     }
-    const prevScore=Math.max(0.2,state.scores[id]??3);
+    const prevScore=Math.max(0.1,state.scores[id]??3);
 
     if(isCorrect){
       state.completedThisRun[id]=(state.completedThisRun[id]||0)+1;
