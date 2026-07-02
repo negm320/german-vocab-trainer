@@ -1,0 +1,11 @@
+# Python scripts (local only)
+generate_sentences.py
+validate_sentences.py
+add_gender.py
+nouns_list.txt
+__pycache__/
+*.pyc
+
+# Claude Code internals
+.claude/
+CLAUDE.md
