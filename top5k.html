@@ -407,6 +407,16 @@ function highlightWordInSentence(sentence, word){
 }
 
 function getSentenceData(x){
+  // User override always wins — no rotation for edited words
+  const ov=state.overrides?.[x.id];
+  if(ov&&(ov.deSent!==undefined||ov.enSent!==undefined)){
+    return {
+      deSent:    ov.deSent    !==undefined?ov.deSent    :x.deSent,
+      enSent:    ov.enSent    !==undefined?ov.enSent    :x.enSent,
+      conjugated:ov.conjugated!==undefined?ov.conjugated:x.conjugated,
+      enInSent:  ov.enInSent  !==undefined?ov.enInSent  :x.enInSent
+    };
+  }
   const sents=state.sentencesData?.[x.id];
   if(sents&&sents.length){
     const idx=(state.sentenceIndex[x.id]||0)%sents.length;
@@ -1696,12 +1706,13 @@ async function boot(){
     _editId=id;
     $('#editGerman').value     = ov.german    ??base.german    ??'';
     $('#editEnglish').value    = ov.english   ??base.english   ??'';
-    $('#editDeSent').value     = ov.deSent    ??base.deSent    ??'';
-    $('#editEnSent').value     = ov.enSent    ??base.enSent    ??'';
+    const sd=state._currentSentData||{};
+    $('#editDeSent').value     = sd.deSent    ??'';
+    $('#editEnSent').value     = sd.enSent    ??'';
     $('#editCategory').value   = ov.category  ??base.category  ??'';
     $('#editMasri').value      = ov.masri     ??base.masri     ??'';
-    $('#editConjugated').value = ov.conjugated??base.conjugated??'';
-    $('#editEnInSent').value   = ov.enInSent  ??base.enInSent  ??'';
+    $('#editConjugated').value = sd.conjugated??'';
+    $('#editEnInSent').value   = sd.enInSent  ??'';
     const modal=$('#editModal');
     modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false');
     setTimeout(()=>$('#editGerman')?.focus(),50);
