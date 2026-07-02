@@ -36,7 +36,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 /* hint row */
 .hintRow{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
 .hintWord{font-size:13px;font-weight:700;}
-.hintMasri{font-size:12px;color:var(--muted);}
+.hintMasri{font-size:13px;color:var(--muted);}
 #coreEnSentence{font-size:15px;color:var(--muted);margin-top:4px;line-height:1.5;}
 
 /* cloze prompt */
@@ -386,11 +386,34 @@ function escapeHTML(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 
 function highlightWordInSentence(sentence, word){
   if(!sentence||!word) return escapeHTML(sentence||'');
+  if(word.includes('...')){
+    const parts=word.split('...').map(p=>p.trim()).filter(Boolean);
+    const sl=sentence.toLowerCase();
+    let result='',pos=0,lastEnd=0;
+    for(const part of parts){
+      const idx=sl.indexOf(part.toLowerCase(),pos);
+      if(idx===-1) return escapeHTML(sentence);
+      result+=escapeHTML(sentence.slice(lastEnd,idx));
+      result+=`<span style="font-weight:700;text-decoration:underline">${escapeHTML(sentence.slice(idx,idx+part.length))}</span>`;
+      lastEnd=idx+part.length; pos=lastEnd;
+    }
+    return result+escapeHTML(sentence.slice(lastEnd));
+  }
   const idx=sentence.toLowerCase().indexOf(word.toLowerCase());
   if(idx===-1) return escapeHTML(sentence);
   return escapeHTML(sentence.slice(0,idx))
     +`<span style="font-weight:700;text-decoration:underline">${escapeHTML(sentence.slice(idx,idx+word.length))}</span>`
     +escapeHTML(sentence.slice(idx+word.length));
+}
+
+function getSentenceData(x){
+  const sents=state.sentencesData?.[x.id];
+  if(sents&&sents.length){
+    const idx=(state.sentenceIndex[x.id]||0)%sents.length;
+    state.sentenceIndex[x.id]=(idx+1)%sents.length;
+    return sents[idx];
+  }
+  return {deSent:x.deSent,enSent:x.enSent,conjugated:x.conjugated,enInSent:x.enInSent};
 }
 
 /* ====== gender color ====== */
@@ -414,10 +437,34 @@ function getGenderColor(x){
 /* ====== cloze builder ====== */
 const SEP_PREFIXES = ['durch','nach','über','fest','aus','auf','ein','mit','vor','weg','los','her','hin','an','ab','zu','um'];
 
-function buildClozeResult(x){
-  const searchTerm = (x.conjugated||'').trim() || (x.german||'').trim();
-  const sentence   = (x.deSent||'').trim();
+function buildClozeResult(x, sentData){
+  const sd=sentData||{deSent:x.deSent,enSent:x.enSent,conjugated:x.conjugated,enInSent:x.enInSent};
+  const searchTerm = (sd.conjugated||'').trim() || (x.german||'').trim();
+  const sentence   = (sd.deSent||'').trim();
   if(!sentence || !searchTerm) return null;
+
+  // Split separable verb: "zieht... aus" → two blanks
+  if(searchTerm.includes('...')){
+    const parts=searchTerm.split('...').map(p=>p.trim()).filter(Boolean);
+    const sl=sentence.toLowerCase();
+    let pos=0;
+    const positions=[];
+    for(const part of parts){
+      const idx=sl.indexOf(part.toLowerCase(),pos);
+      if(idx===-1) return null;
+      positions.push({idx,len:part.length,text:sentence.slice(idx,idx+part.length)});
+      pos=idx+part.length;
+    }
+    let html='',lastEnd=0;
+    for(const {idx,len} of positions){
+      html+=escapeHTML(sentence.slice(lastEnd,idx));
+      html+='<span class="cloze-blank"></span>';
+      lastEnd=idx+len;
+    }
+    html+=escapeHTML(sentence.slice(lastEnd));
+    state._clozeParts=positions.map(p=>p.text);
+    return {html,prefixHint:null,correctAnswer:parts.join(' '),isSplit:true};
+  }
 
   const idx = sentence.toLowerCase().indexOf(searchTerm.toLowerCase());
   if(idx === -1) return null;
@@ -425,18 +472,16 @@ function buildClozeResult(x){
   const before  = sentence.slice(0, idx);
   const after   = sentence.slice(idx + searchTerm.length);
 
-  // Separable verb prefix detection
   let afterHTML  = escapeHTML(after);
   let prefixHint = null;
   const gLow = (x.german||'').toLowerCase();
 
   for(const p of SEP_PREFIXES){
     if(gLow.startsWith(p)){
-      // Look for prefix at/near end of the "after" part
       const re = new RegExp('(\\b)(' + p + ')([.!?,\\s]*)$', 'i');
       const m  = after.match(re);
       if(m){
-        const pi = after.lastIndexOf(m[2]); // start of prefix in after
+        const pi = after.lastIndexOf(m[2]);
         afterHTML = escapeHTML(after.slice(0, pi))
           + `<span style="color:var(--accent);font-weight:700">${escapeHTML(m[2])}</span>`
           + escapeHTML(after.slice(pi + m[2].length));
@@ -446,23 +491,29 @@ function buildClozeResult(x){
     }
   }
 
-  return {
-    html: escapeHTML(before) + '<span class="cloze-blank"></span>' + afterHTML,
-    prefixHint,
-    correctAnswer: searchTerm
-  };
+  state._clozeParts=null;
+  return {html:escapeHTML(before)+'<span class="cloze-blank"></span>'+afterHTML,prefixHint,correctAnswer:searchTerm,isSplit:false};
 }
 
 function fillClozeBlank(word, isCorrect){
   const promptEl=$('#corePrompt');
   if(!promptEl) return;
-  const blank=promptEl.querySelector('.cloze-blank');
-  if(!blank) return;
-  const span=document.createElement('span');
-  span.style.fontWeight='700';
-  span.style.color=isCorrect?'var(--good)':'var(--bad)';
-  span.textContent=word;
-  blank.replaceWith(span);
+  const blanks=promptEl.querySelectorAll('.cloze-blank');
+  if(!blanks.length) return;
+  const color=isCorrect?'var(--good)':'var(--bad)';
+  if(blanks.length>1&&state._clozeParts){
+    blanks.forEach((blank,i)=>{
+      const span=document.createElement('span');
+      span.style.fontWeight='700'; span.style.color=color;
+      span.textContent=state._clozeParts[i]||'';
+      blank.replaceWith(span);
+    });
+  } else {
+    const span=document.createElement('span');
+    span.style.fontWeight='700'; span.style.color=color;
+    span.textContent=word;
+    blanks[0].replaceWith(span);
+  }
 }
 
 /* ====== CSV parser ====== */
@@ -523,7 +574,8 @@ function buildStatePayload(){
     nextWordCursor:     state.nextWordCursor||0,
     scheduledThisLevel: state.scheduledThisLevel||{},
     completedThisRun:   state.completedThisRun||{},
-    currentId:  state.currentId||null
+    currentId:  state.currentId||null,
+    sentenceIndex: state.sentenceIndex||{}
   };
 }
 
@@ -569,6 +621,7 @@ function loadState(){
   if(obj.scoresMigrationVersion) state.scoresMigrationVersion=obj.scoresMigrationVersion;
   if(obj.consecutiveCorrect&&typeof obj.consecutiveCorrect==='object') state.consecutiveCorrect=obj.consecutiveCorrect;
   if(obj.settledThisLevel&&typeof obj.settledThisLevel==='object') state.settledThisLevel=obj.settledThisLevel;
+  if(obj.sentenceIndex&&typeof obj.sentenceIndex==='object') state.sentenceIndex=obj.sentenceIndex;
   if(typeof obj.nextWordCursor==='number') state.nextWordCursor=obj.nextWordCursor;
   if(obj.scheduledThisLevel&&typeof obj.scheduledThisLevel==='object') state.scheduledThisLevel=obj.scheduledThisLevel;
   if(obj.completedThisRun&&typeof obj.completedThisRun==='object') state.completedThisRun=obj.completedThisRun;
@@ -600,7 +653,11 @@ const state={
   currentId:null,
   lastReview:null,
   _clozeCorrect:null,
-  _enterStage:0
+  _enterStage:0,
+  sentencesData:{},
+  sentenceIndex:{},
+  _currentSentData:null,
+  _clozeParts:null
 };
 
 function cloneProgressState(){
@@ -796,12 +853,16 @@ function levenshtein(a,b){
 
 const Core={
   async load(){
-    const res=await fetch('5k.csv',{cache:'no-store'});
-    if(!res.ok) throw new Error('Could not fetch 5k.csv');
-    const txt=await res.text();
+    const [csvRes,sentRes]=await Promise.all([
+      fetch('5k.csv',{cache:'no-store'}),
+      fetch('sentences.json',{cache:'no-store'}).catch(()=>null)
+    ]);
+    if(!csvRes.ok) throw new Error('Could not fetch 5k.csv');
+    const txt=await csvRes.text();
     const rows=parseCSV(txt.trim());
     rows.shift(); // drop header
     state.rawRows=rows;
+    if(sentRes&&sentRes.ok){ try{ state.sentencesData=await sentRes.json(); }catch(e){} }
     this.rebuildData();
     UI.buildLevelSelector();
   },
@@ -863,7 +924,11 @@ const Core={
   },
 
   sentencePool(){
-    return this.levelPool().filter(w=>(w.deSent||'').trim()&&(w.enSent||'').trim());
+    return this.levelPool().filter(w=>{
+      if((w.deSent||'').trim()&&(w.enSent||'').trim()) return true;
+      const sents=state.sentencesData?.[w.id];
+      return !!(sents&&sents.length);
+    });
   },
 
   baseRequiredFor(item){
@@ -920,6 +985,8 @@ const Core={
 
   render(x){
     state.currentId=x?.id||null;
+    const sentData=getSentenceData(x);
+    state._currentSentData=sentData;
     const mode=state.activeMode||'word';
     const isCloze   =mode==='cloze';
     const isSentence=mode==='sentence';
@@ -927,19 +994,23 @@ const Core={
     // Gender color on English word
     const enEl=$('#coreEn');
     if(enEl){
-      enEl.textContent = isSentence ? (x.enSent||'') : (x.english||'');
-      enEl.style.color = getGenderColor(x);
+      enEl.textContent = isSentence ? (sentData.enSent||'') : (x.english||'');
+      enEl.style.color = '';
     }
 
     // Masri
-    setText('#coreMasri', x.masri ? '· '+x.masri : '');
+    const masriEl=$('#coreMasri');
+    if(masriEl){
+      masriEl.textContent = x.masri ? '· '+x.masri : '';
+      masriEl.style.color = getGenderColor(x);
+    }
 
     // Prompt area
     const promptEl=$('#corePrompt');
     const prefixEl=$('#corePrefixHint');
 
     if(isCloze){
-      const result=buildClozeResult(x);
+      const result=buildClozeResult(x,sentData);
       if(result){
         setHTML('#corePrompt', result.html);
         state._clozeCorrect=result.correctAnswer;
@@ -950,7 +1021,7 @@ const Core={
         }
       } else {
         // Fallback: show english sentence as context (no blank available)
-        if(promptEl){ promptEl.textContent=x.enSent||''; promptEl.className='corePrompt muted'; }
+        if(promptEl){ promptEl.textContent=sentData.enSent||''; promptEl.className='corePrompt muted'; }
         if(prefixEl) prefixEl.classList.add('hidden');
         state._clozeCorrect=x.german;
       }
@@ -959,7 +1030,7 @@ const Core={
       if(prefixEl) prefixEl.classList.add('hidden');
     } else {
       // Word mode: show English sentence as soft context
-      if(promptEl){ promptEl.textContent=x.enSent||''; promptEl.className='corePrompt muted'; }
+      if(promptEl){ promptEl.textContent=sentData.enSent||''; promptEl.className='corePrompt muted'; }
       if(prefixEl) prefixEl.classList.add('hidden');
     }
 
@@ -971,7 +1042,7 @@ const Core={
       if(promptEl)  promptEl.style.order='0';
       if(enSentEl){
         if((x.enSent||'').trim()){
-          setHTML('#coreEnSentence', x.enInSent ? highlightWordInSentence(x.enSent,x.enInSent) : escapeHTML(x.enSent));
+          setHTML('#coreEnSentence', sentData.enInSent ? highlightWordInSentence(sentData.enSent,sentData.enInSent) : escapeHTML(sentData.enSent));
           enSentEl.style.order='2';
           enSentEl.classList.remove('hidden');
         } else {
@@ -1042,14 +1113,14 @@ const Core={
     const mode=state.activeMode||'word';
     const isSentence=mode==='sentence';
     const isCloze=mode==='cloze';
-    const showCorrectSentence=()=>{ if(!isCloze) setText('#coreDeSentence',x.deSent||''); };
+    const showCorrectSentence=()=>{ if(!isCloze) setText('#coreDeSentence',(state._currentSentData?.deSent||x.deSent)||''); };
 
     if(isSentence){
       const inp=$('#coreDeSent');
       if(!inp) return;
       const beforeState=cloneProgressState();
       const userN=normDe((inp.value||'').replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
-      const expN =normDe((x.deSent||'').replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
+      const expN =normDe(((state._currentSentData?.deSent||x.deSent)||'').replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
       inp.classList.remove('good-field','bad-field');
       if(userN&&userN===expN){ inp.classList.add('good-field'); setHTML('#coreFeedback','<span class="good">Correct!</span>'); }
       else { inp.classList.add('bad-field'); setHTML('#coreFeedback','<span class="bad">Wrong.</span>'); }
@@ -1096,7 +1167,7 @@ const Core={
       inp.classList.add('good-field');
       const countStr=newSch>0?` (${Math.min(cr,newSch)}/${newSch} this level)`:'';
       const feedLabel=isTypo
-        ?`Typo — <b>${x.conjugated||x.german||''}</b>`
+        ?`Typo — <b>${state._clozeCorrect||x.german||''}</b>`
         :'Correct!';
       setHTML('#coreFeedback',`<span class="good">${feedLabel}</span>${countStr}`);
     } else {
