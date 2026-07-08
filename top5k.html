@@ -310,6 +310,10 @@ button:hover{background:var(--btn2)}
       <button id="btnCleanLegacy" class="muted">Clean legacy keys</button>
     </div>
     <pre id="storageUsageOut" class="small muted hidden" style="margin-top:8px;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-all;"></pre>
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;align-items:center;">
+      <button id="btnPushNow" class="muted">Push now</button>
+      <span id="syncStatusLine" class="small muted"></span>
+    </div>
   </details>
 
 </section>
@@ -353,6 +357,17 @@ button:hover{background:var(--btn2)}
         </select>
       </label>
     </div>
+  </div>
+
+  <!-- Cloud sync -->
+  <div class="menuSection" id="menuCloudSync">
+    <div class="menuLabel">Cloud sync (Supabase)</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <input id="supabaseUrlInput" type="text" placeholder="Supabase URL" spellcheck="false" autocomplete="off">
+      <input id="supabaseKeyInput" type="text" placeholder="Supabase publishable key" spellcheck="false" autocomplete="off">
+      <button id="btnSaveSupabase">Save cloud sync</button>
+    </div>
+    <p class="muted small" style="margin:6px 0 0;line-height:1.5;">Optional mirror for disaster recovery. Leave blank to stay fully offline.</p>
   </div>
 
   <!-- Cloze settings -->
@@ -557,12 +572,127 @@ const DAILY_LOG_MAX_DAYS = 400;
 const LAST_CLOUD_BACKUP_KEY  = 'top5k_last_cloud_backup_v1';
 const BACKUP_DISMISS_SESSION_KEY = 'top5k_backup_dismissed_v1';
 const BACKUP_INTERVAL_MS = 48*60*60*1000;
+const SUPABASE_URL_KEY = 'top5k_supabase_url';
+const SUPABASE_KEY_KEY = 'top5k_supabase_key';
 
 let lastBackupLevel=null;
 let saveFailAlerted=false;
 
 function fmtWhen(ts){ if(!ts) return 'never'; try{return new Date(ts).toLocaleString();}catch(e){return 'never';} }
 function setLastCloudBackupNow(){ localStorage.setItem(LAST_CLOUD_BACKUP_KEY,String(Date.now())); }
+
+/* ====== cloud sync (Supabase) — mirror only, app works fully offline without it ====== */
+function supabaseConf(){
+  const url=(localStorage.getItem(SUPABASE_URL_KEY)||'').trim().replace(/\/+$/,'');
+  const key=(localStorage.getItem(SUPABASE_KEY_KEY)||'').trim();
+  if(!url||!key) return null;
+  return {url,key};
+}
+
+async function supabaseUpsert(key,value){
+  const conf=supabaseConf();
+  if(!conf) return;
+  // sb_publishable_... keys are opaque tokens, not JWTs — apikey header only, never Authorization.
+  const res=await fetch(`${conf.url}/rest/v1/kv_state`,{
+    method:'POST',
+    headers:{
+      'apikey':conf.key,
+      'Content-Type':'application/json',
+      'Prefer':'resolution=merge-duplicates'
+    },
+    body:JSON.stringify([{key,value,updated_at:new Date().toISOString()}])
+  });
+  if(!res.ok) throw new Error(`Supabase upsert ${key} failed: HTTP ${res.status}`);
+  return res;
+}
+
+async function supabaseGetRow(key){
+  const conf=supabaseConf();
+  if(!conf) return null;
+  const res=await fetch(`${conf.url}/rest/v1/kv_state?key=eq.${encodeURIComponent(key)}&select=value,updated_at`,{
+    headers:{ 'apikey':conf.key }
+  });
+  if(!res.ok) throw new Error(`Supabase get ${key} failed: HTTP ${res.status}`);
+  const rows=await res.json();
+  return (rows&&rows[0])||null;
+}
+
+let cloudPushTimer=null;
+let cloudPushInFlight=false;
+let cloudPushQueued=false;
+let cloudIdleTimer=null;
+let lastCloudPush={time:null,ok:null,error:null};
+
+function updateSyncStatusUI(){
+  const el=$('#syncStatusLine');
+  if(!el) return;
+  if(!supabaseConf()){ el.textContent='Cloud sync: not configured'; return; }
+  if(!lastCloudPush.time){ el.textContent='Cloud sync: configured, no push yet'; return; }
+  el.textContent=lastCloudPush.ok
+    ? `Cloud sync: last push ${fmtWhen(lastCloudPush.time)} — ok`
+    : `Cloud sync: last push ${fmtWhen(lastCloudPush.time)} — error: ${lastCloudPush.error}`;
+}
+
+function runCloudPush(){
+  if(!supabaseConf()) return;
+  if(cloudPushInFlight){ cloudPushQueued=true; return; }
+  cloudPushInFlight=true;
+  const payload=buildStatePayload();
+  const logRaw=localStorage.getItem(DAILY_LOG_KEY);
+  let logVal=null;
+  try{ logVal=logRaw?JSON.parse(logRaw):null; }catch(e){}
+  const pushes=[supabaseUpsert(LS_KEY,payload)];
+  if(logVal!==null) pushes.push(supabaseUpsert(DAILY_LOG_KEY,logVal));
+  Promise.all(pushes)
+    .then(()=>{ lastCloudPush={time:Date.now(),ok:true,error:null}; })
+    .catch(e=>{
+      console.error('Cloud push failed:',e);
+      lastCloudPush={time:Date.now(),ok:false,error:(e&&e.message)||String(e)};
+    })
+    .finally(()=>{
+      cloudPushInFlight=false;
+      updateSyncStatusUI();
+      if(cloudPushQueued){ cloudPushQueued=false; runCloudPush(); }
+    });
+}
+
+// Debounced trigger — coalesces near-simultaneous callers (idle timer, level-up) into one request.
+function scheduleCloudPush(){
+  if(!supabaseConf()) return;
+  clearTimeout(cloudPushTimer);
+  cloudPushTimer=setTimeout(runCloudPush,300);
+}
+
+// Immediate trigger for time-critical moments (tab hidden, manual button).
+function pushCloudNow(){
+  if(!supabaseConf()) return;
+  clearTimeout(cloudPushTimer);
+  runCloudPush();
+}
+
+// Resets on every Core.check() call — fires a push after 2 minutes of no further checks.
+function resetCloudIdleTimer(){
+  if(!supabaseConf()) return;
+  clearTimeout(cloudIdleTimer);
+  cloudIdleTimer=setTimeout(scheduleCloudPush,2*60*1000);
+}
+
+async function tryCloudPullOnLoad(){
+  if(!supabaseConf()) return;
+  try{
+    const row=await supabaseGetRow(LS_KEY);
+    if(!row||!row.value) return;
+    const remoteUpdatedAt=new Date(row.updated_at).getTime();
+    const localSavedAt=state.savedAt||0;
+    const localEmpty=(state.level||1)<=1&&Object.keys(state.seen||{}).length===0&&Object.keys(state.streaks||{}).length===0;
+    if(!(remoteUpdatedAt>localSavedAt||localEmpty)) return;
+    if(confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`)){
+      UI.applyImport(JSON.stringify(row.value));
+    }
+  }catch(e){
+    console.error('Cloud pull failed:',e);
+  }
+}
 
 function updateBackupBanner(){
   const banner=$('#backupBanner'), meta=$('#backupMeta');
@@ -597,7 +727,8 @@ function buildStatePayload(){
     completedThisRun:   state.completedThisRun||{},
     currentId:  state.currentId||null,
     sentenceIndex: state.sentenceIndex||{},
-    seen: state.seen||{}
+    seen: state.seen||{},
+    savedAt: Date.now()
   };
 }
 
@@ -620,9 +751,11 @@ function saveState(forceBackup){
   // Backup write is redundant when the level hasn't moved since the last one —
   // only re-write it on level change or an explicit Export (forceBackup).
   if(forceBackup||lastBackupLevel===null||state.level!==lastBackupLevel){
+    // Clear the legacy key first so it frees quota before the (larger) backup write below,
+    // rather than never running because that write threw a quota error first.
+    try{ localStorage.removeItem('top5k_backups_v1'); }catch(e){}
     try{
       localStorage.setItem('top5k_backup_v2',json);
-      localStorage.removeItem('top5k_backups_v1');
       lastBackupLevel=state.level;
     }catch(e){}
   }
@@ -702,11 +835,12 @@ function loadState(){
   const rawV1=localStorage.getItem(LS_KEY_OLD);
   let obj=null;
 
-  if(rawV2){ try{ const p=JSON.parse(rawV2); if(p&&typeof p==='object'&&p.level&&p.level>1) obj=p; }catch(e){} }
+  if(rawV2){ try{ const p=JSON.parse(rawV2); if(p&&typeof p==='object'&&typeof p.level==='number'&&p.level>=1) obj=p; }catch(e){} }
   if(!obj&&rawV1){ try{ const p=JSON.parse(rawV1); if(p&&typeof p==='object'){ obj=p; localStorage.setItem(LS_KEY,JSON.stringify(p)); } }catch(e){} }
   if(!obj) return;
 
   state.level    = obj.level||1;
+  state.savedAt  = typeof obj.savedAt==='number' ? obj.savedAt : 0;
   state.streaks  = obj.streaks||{};
   state.penalty  = obj.penalty||{};
   state.reqSeen  = obj.reqSeen||{};
@@ -1320,6 +1454,7 @@ const Core={
     }
     this.updateProgress(); this.updateDbg();
     if(typeof syncWordToolsUI==='function') syncWordToolsUI();
+    resetCloudIdleTimer();
   },
 
   updateProgress(){
@@ -1557,6 +1692,7 @@ function flashDotsRed(required){
 }
 
 function triggerLevelUp(newLevel){
+  scheduleCloudPush();
   const overlay=$('#lvlOverlay'),numEl=$('#lvlOverlayNum');
   if(!overlay) return;
   if(numEl) numEl.textContent=String(newLevel);
@@ -2010,7 +2146,8 @@ async function boot(){
 
   const KNOWN_LS_KEYS=new Set([
     'top5k_state_v2','top5k_backup_v2','top5k_profile_v1','top5k_log_v1',
-    'top5k_gemini_key','top5k_active_tab','top5k_last_cloud_backup_v1','lena_chat_history'
+    'top5k_gemini_key','top5k_active_tab','top5k_last_cloud_backup_v1','lena_chat_history',
+    'top5k_supabase_url','top5k_supabase_key','top5k_chat_saved_at_v1'
   ]);
 
   function getStorageReport(){
@@ -2075,12 +2212,30 @@ async function boot(){
     localStorage.setItem(LS_KEY,raw); alert('Restored ✅ App will reload now.'); location.reload();
   });
 
+  // ---- Cloud sync settings ----
+  {
+    const urlInput=$('#supabaseUrlInput'), keyInput=$('#supabaseKeyInput');
+    if(urlInput) urlInput.value=localStorage.getItem(SUPABASE_URL_KEY)||'';
+    if(keyInput) keyInput.value=localStorage.getItem(SUPABASE_KEY_KEY)||'';
+    $('#btnSaveSupabase')?.addEventListener('click',()=>{
+      const u=(urlInput?.value||'').trim();
+      const k=(keyInput?.value||'').trim();
+      if(u) localStorage.setItem(SUPABASE_URL_KEY,u); else localStorage.removeItem(SUPABASE_URL_KEY);
+      if(k) localStorage.setItem(SUPABASE_KEY_KEY,k); else localStorage.removeItem(SUPABASE_KEY_KEY);
+      updateSyncStatusUI();
+    });
+    $('#btnPushNow')?.addEventListener('click',()=>{ pushCloudNow(); });
+    document.addEventListener('visibilitychange',()=>{ if(document.hidden) pushCloudNow(); });
+    updateSyncStatusUI();
+  }
+
   await Core.load();
   migrateLegacyState();
   initCurrentBatch();
   ensureLevelScheduled();
   syncMenuUI();
   nextCard();
+  tryCloudPullOnLoad();
 }
 
 function nextCard(){

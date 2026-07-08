@@ -9,3 +9,6 @@ __pycache__/
 # Claude Code internals
 .claude/
 CLAUDE.md
+
+# Local secrets (not for the repo)
+supbase password.txt
