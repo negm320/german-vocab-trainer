@@ -305,6 +305,11 @@ button:hover{background:var(--btn2)}
       <button id="btnRestoreV1" class="muted">Restore v1 → current</button>
       <button id="btnRestoreBackup" class="muted">Restore latest backup</button>
     </div>
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+      <button id="btnStorageUsage" class="muted">Storage usage</button>
+      <button id="btnCleanLegacy" class="muted">Clean legacy keys</button>
+    </div>
+    <pre id="storageUsageOut" class="small muted hidden" style="margin-top:8px;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-all;"></pre>
   </details>
 
 </section>
@@ -553,6 +558,9 @@ const LAST_CLOUD_BACKUP_KEY  = 'top5k_last_cloud_backup_v1';
 const BACKUP_DISMISS_SESSION_KEY = 'top5k_backup_dismissed_v1';
 const BACKUP_INTERVAL_MS = 48*60*60*1000;
 
+let lastBackupLevel=null;
+let saveFailAlerted=false;
+
 function fmtWhen(ts){ if(!ts) return 'never'; try{return new Date(ts).toLocaleString();}catch(e){return 'never';} }
 function setLastCloudBackupNow(){ localStorage.setItem(LAST_CLOUD_BACKUP_KEY,String(Date.now())); }
 
@@ -593,7 +601,7 @@ function buildStatePayload(){
   };
 }
 
-function saveState(){
+function saveState(forceBackup){
   const payload=buildStatePayload();
   const json=JSON.stringify(payload);
 
@@ -601,15 +609,23 @@ function saveState(){
   try{
     localStorage.setItem(LS_KEY,json);
   }catch(e){
-    alert('Save failed. Please tap Export NOW to back up your progress.');
     console.error('Save failed:',e);
+    if(!saveFailAlerted){
+      saveFailAlerted=true;
+      alert('Save failed. Please tap Export NOW to back up your progress.');
+    }
     return;
   }
 
-  try{
-    localStorage.setItem('top5k_backup_v2',json);
-    localStorage.removeItem('top5k_backups_v1');
-  }catch(e){}
+  // Backup write is redundant when the level hasn't moved since the last one —
+  // only re-write it on level change or an explicit Export (forceBackup).
+  if(forceBackup||lastBackupLevel===null||state.level!==lastBackupLevel){
+    try{
+      localStorage.setItem('top5k_backup_v2',json);
+      localStorage.removeItem('top5k_backups_v1');
+      lastBackupLevel=state.level;
+    }catch(e){}
+  }
 
   try{
     localStorage.setItem(PROFILE_KEY,JSON.stringify(buildLearnerProfile()));
@@ -1353,12 +1369,14 @@ const UI={
   },
 
   exportState(){
+    saveState(true);
     const payload=buildStatePayload();
     openCopyModal(JSON.stringify(payload),'Export (current state)');
     setLastCloudBackupNow(); updateBackupBanner();
   },
 
   backupToFile(){
+    saveState(true);
     const payload=buildStatePayload();
     const ts=new Date();
     const pad=n=>String(n).padStart(2,'0');
@@ -1988,6 +2006,53 @@ async function boot(){
       localStorage.setItem(LS_KEY,raw);
       alert('Restored ✅ Reloading…'); location.reload();
     }catch(e){ alert('Restore failed.'); console.error(e); }
+  });
+
+  const KNOWN_LS_KEYS=new Set([
+    'top5k_state_v2','top5k_backup_v2','top5k_profile_v1','top5k_log_v1',
+    'top5k_gemini_key','top5k_active_tab','top5k_last_cloud_backup_v1','lena_chat_history'
+  ]);
+
+  function getStorageReport(){
+    const rows=[];
+    let total=0;
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      const val=localStorage.getItem(key)||'';
+      const bytes=(key.length+val.length)*2;
+      total+=bytes;
+      rows.push({key,bytes});
+    }
+    rows.sort((a,b)=>b.bytes-a.bytes);
+    return {rows,total};
+  }
+
+  function fmtKB(bytes){ return (bytes/1024).toFixed(1)+' KB'; }
+
+  $('#btnStorageUsage')?.addEventListener('click',()=>{
+    const out=$('#storageUsageOut');
+    if(!out) return;
+    const {rows,total}=getStorageReport();
+    const lines=rows.map(r=>`${r.key} — ${fmtKB(r.bytes)}`);
+    lines.push('',`Total — ${fmtKB(total)}`);
+    out.textContent=lines.join('\n');
+    out.classList.remove('hidden');
+  });
+
+  $('#btnCleanLegacy')?.addEventListener('click',()=>{
+    const {rows}=getStorageReport();
+    const toDelete=rows.map(r=>r.key).filter(k=>!KNOWN_LS_KEYS.has(k));
+    if(!toDelete.length){ alert('No legacy keys found.'); return; }
+    if(!confirm(`Delete these ${toDelete.length} key(s)?\n\n${toDelete.join('\n')}`)) return;
+    for(const k of toDelete) localStorage.removeItem(k);
+    alert('Deleted ✅');
+    const out=$('#storageUsageOut');
+    if(out&&!out.classList.contains('hidden')){
+      const {rows:rows2,total}=getStorageReport();
+      const lines=rows2.map(r=>`${r.key} — ${fmtKB(r.bytes)}`);
+      lines.push('',`Total — ${fmtKB(total)}`);
+      out.textContent=lines.join('\n');
+    }
   });
 
   function getV1Raw(){ return localStorage.getItem('top5k_state_v1'); }
