@@ -546,6 +546,9 @@ function parseCSV(txt){
 const LS_KEY  = 'top5k_state_v2';
 const GEMINI_KEY_LS = 'top5k_gemini_key';
 const LS_KEY_OLD = 'top5k_state_v1';
+const PROFILE_KEY = 'top5k_profile_v1';
+const DAILY_LOG_KEY = 'top5k_log_v1';
+const DAILY_LOG_MAX_DAYS = 400;
 const LAST_CLOUD_BACKUP_KEY  = 'top5k_last_cloud_backup_v1';
 const BACKUP_DISMISS_SESSION_KEY = 'top5k_backup_dismissed_v1';
 const BACKUP_INTERVAL_MS = 48*60*60*1000;
@@ -585,7 +588,8 @@ function buildStatePayload(){
     scheduledThisLevel: state.scheduledThisLevel||{},
     completedThisRun:   state.completedThisRun||{},
     currentId:  state.currentId||null,
-    sentenceIndex: state.sentenceIndex||{}
+    sentenceIndex: state.sentenceIndex||{},
+    seen: state.seen||{}
   };
 }
 
@@ -605,6 +609,75 @@ function saveState(){
   try{
     localStorage.setItem('top5k_backup_v2',json);
     localStorage.removeItem('top5k_backups_v1');
+  }catch(e){}
+
+  try{
+    localStorage.setItem(PROFILE_KEY,JSON.stringify(buildLearnerProfile()));
+  }catch(e){}
+}
+
+function buildLearnerProfile(){
+  const dataById=new Map(state.data.map(w=>[w.id,w]));
+  const seenIds=Object.keys(state.seen||{}).filter(id=>state.seen[id]&&dataById.has(id));
+
+  const trainingIds=(state.currentBatch||[]).filter(id=>dataById.has(id));
+  const trainingSet=new Set(trainingIds);
+
+  const weakIds=seenIds
+    .filter(id=>!trainingSet.has(id))
+    .sort((a,b)=>(state.scores[b]||0)-(state.scores[a]||0))
+    .slice(0,25);
+  const weakSet=new Set(weakIds);
+
+  const randomPool=seenIds.filter(id=>{
+    if(trainingSet.has(id)||weakSet.has(id)) return false;
+    const w=dataById.get(id);
+    return (w.lvl||1)<state.level;
+  });
+  const randomIds=[];
+  while(randomIds.length<10&&randomPool.length){
+    const idx=Math.floor(Math.random()*randomPool.length);
+    randomIds.push(randomPool.splice(idx,1)[0]);
+  }
+
+  const toEntry=(id,bucket)=>{
+    const w=dataById.get(id);
+    return {id, german:w.german, english:w.english, gender:w.gender, score:state.scores[id]??0, bucket};
+  };
+
+  const words=[
+    ...trainingIds.map(id=>toEntry(id,'training')),
+    ...weakIds.map(id=>toEntry(id,'weak')),
+    ...randomIds.map(id=>toEntry(id,'random'))
+  ];
+
+  return {v:1, level:state.level, updatedAt:Date.now(), words};
+}
+
+function logDailyActivity(mode,isCorrect){
+  try{
+    const raw=localStorage.getItem(DAILY_LOG_KEY);
+    let log=null;
+    if(raw){ try{ log=JSON.parse(raw); }catch(e){ log=null; } }
+    if(!log||typeof log!=='object') log={};
+
+    const now=new Date();
+    const dateKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    if(!log[dateKey]||typeof log[dateKey]!=='object') log[dateKey]={answers:0,correct:0,byMode:{word:0,cloze:0,sentence:0}};
+    const entry=log[dateKey];
+    if(!entry.byMode||typeof entry.byMode!=='object') entry.byMode={word:0,cloze:0,sentence:0};
+
+    entry.answers=(entry.answers||0)+1;
+    if(isCorrect) entry.correct=(entry.correct||0)+1;
+    entry.byMode[mode]=(entry.byMode[mode]||0)+1;
+
+    const dateKeys=Object.keys(log);
+    if(dateKeys.length>DAILY_LOG_MAX_DAYS){
+      dateKeys.sort();
+      for(const k of dateKeys.slice(0,dateKeys.length-DAILY_LOG_MAX_DAYS)) delete log[k];
+    }
+
+    localStorage.setItem(DAILY_LOG_KEY,JSON.stringify(log));
   }catch(e){}
 }
 
@@ -635,10 +708,20 @@ function loadState(){
   if(typeof obj.nextWordCursor==='number') state.nextWordCursor=obj.nextWordCursor;
   if(obj.scheduledThisLevel&&typeof obj.scheduledThisLevel==='object') state.scheduledThisLevel=obj.scheduledThisLevel;
   if(obj.completedThisRun&&typeof obj.completedThisRun==='object') state.completedThisRun=obj.completedThisRun;
+  if(obj.seen&&typeof obj.seen==='object') state.seen=obj.seen;
   // Support new key (IDs only) and old key (may contain full objects from older saves)
   const batchSrc=obj.currentBatchIds||obj.currentBatch;
   if(batchSrc&&Array.isArray(batchSrc))
     state.currentBatch=batchSrc.map(x=>(x&&typeof x==='object')?x.id:x).filter(Boolean);
+
+  // One-time migration: backfill seen from prior progress signals
+  if(Object.keys(state.seen||{}).length===0){
+    const backfill={};
+    for(const k of Object.keys(state.streaks||{})) backfill[k]=true;
+    for(const k of Object.keys(state.consecutiveCorrect||{})) backfill[k]=true;
+    for(const k of Object.keys(state.completedThisRun||{})) backfill[k]=true;
+    if(Object.keys(backfill).length) state.seen=backfill;
+  }
 }
 
 /* ====== state ====== */
@@ -660,6 +743,7 @@ const state={
   scoreAtScheduling:{},
   consecutiveCorrect:{},
   settledThisLevel:{},
+  seen:{},
   currentId:null,
   lastReview:null,
   _clozeCorrect:null,
@@ -675,7 +759,7 @@ function cloneProgressState(){
     level:state.level, streaks:state.streaks||{}, penalty:state.penalty||{},
     reqSeen:state.reqSeen||{}, overrides:state.overrides||{}, activeMode:state.activeMode||'word',
     scores:state.scores||{}, consecutiveCorrect:state.consecutiveCorrect||{}, settledThisLevel:state.settledThisLevel||{},
-    scheduledThisLevel:state.scheduledThisLevel||{}, completedThisRun:state.completedThisRun||{}, fractionalRolled:state.fractionalRolled||{}, scoreAtScheduling:state.scoreAtScheduling||{}, currentBatch:state.currentBatch||[]
+    scheduledThisLevel:state.scheduledThisLevel||{}, completedThisRun:state.completedThisRun||{}, fractionalRolled:state.fractionalRolled||{}, scoreAtScheduling:state.scoreAtScheduling||{}, currentBatch:state.currentBatch||[], seen:state.seen||{}
   }));
 }
 
@@ -695,6 +779,7 @@ function restoreProgressState(snap){
   state.fractionalRolled   = JSON.parse(JSON.stringify(snap.fractionalRolled||{}));
   state.scoreAtScheduling  = JSON.parse(JSON.stringify(snap.scoreAtScheduling||{}));
   state.currentBatch       = JSON.parse(JSON.stringify(snap.currentBatch||[]));
+  state.seen               = JSON.parse(JSON.stringify(snap.seen||{}));
   Core.rebuildData();
 }
 
@@ -1111,15 +1196,18 @@ const Core={
     const _showHalf=state.fractionalRolled[_id]===undefined&&(_origScore%1>0.01);
     renderStreakDots(Math.min(_cr,_sch),_sch,undefined,false,_showHalf);
     if(state.activeMode==='cloze') setTimeout(triggerBlankPulse,50);
-    // Neu badge: show for words in the current level batch only
+    // Neu badge: shown only for words never answered before
     const neuBadgeEl=$('#neuBadge');
-    if(neuBadgeEl) neuBadgeEl.classList.toggle('hidden', (x?.lvl||1)!==state.level);
+    if(neuBadgeEl) neuBadgeEl.classList.toggle('hidden', !!(state.seen||{})[x?.id]);
     this.updateProgress();
     this.updateDbg();
     if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
   },
 
   check(x){
+    if(!state.seen) state.seen={};
+    state.seen[x.id]=true;
+
     const mode=state.activeMode||'word';
     const isSentence=mode==='sentence';
     const isCloze=mode==='cloze';
@@ -1131,9 +1219,11 @@ const Core={
       const beforeState=cloneProgressState();
       const userN=normDe((inp.value||'').replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
       const expN =normDe(((state._currentSentData?.deSent||x.deSent)||'').replace(/[^\p{L}\p{N}\s]/gu,' ')).replace(/\s+/g,' ').trim();
+      const isCorrectSentence=!!(userN&&userN===expN);
       inp.classList.remove('good-field','bad-field');
-      if(userN&&userN===expN){ inp.classList.add('good-field'); setHTML('#coreFeedback','<span class="good">Correct!</span>'); }
+      if(isCorrectSentence){ inp.classList.add('good-field'); setHTML('#coreFeedback','<span class="good">Correct!</span>'); }
       else { inp.classList.add('bad-field'); setHTML('#coreFeedback','<span class="bad">Wrong.</span>'); }
+      logDailyActivity('sentence',isCorrectSentence);
       showCorrectSentence();
       captureReviewSnapshot(x,{beforeState,canTypo:false});
       saveState(); this.updateDbg();
@@ -1195,6 +1285,7 @@ const Core={
     }
 
     if(mode==='cloze') fillClozeBlank(isCorrect?(inp.value||state._clozeCorrect||x.german):(state._clozeCorrect||x.german), isCorrect);
+    logDailyActivity(isCloze?'cloze':'word',isCorrect);
     showCorrectSentence();
     captureReviewSnapshot(x,{beforeState,canTypo:!isCorrect});
     saveState();
@@ -1305,6 +1396,7 @@ const UI={
       if(obj.completedThisRun&&typeof obj.completedThisRun==='object')     state.completedThisRun=obj.completedThisRun;
       if(obj.fractionalRolled&&typeof obj.fractionalRolled==='object')     state.fractionalRolled=obj.fractionalRolled;
       if(obj.scoreAtScheduling&&typeof obj.scoreAtScheduling==='object')   state.scoreAtScheduling=obj.scoreAtScheduling;
+      if(obj.seen&&typeof obj.seen==='object')                           state.seen=obj.seen;
       if(obj.settings&&typeof obj.settings==='object')                   state.settings={...state.settings,...obj.settings};
       if(obj.activeMode) state.activeMode=obj.activeMode;
       else if(typeof obj.sentenceMode==='boolean') state.activeMode=obj.sentenceMode?'sentence':'word';
