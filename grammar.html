@@ -322,8 +322,21 @@ const TOPICS=[
 const FRONTABLE_CONNECTORS=['weil','obwohl','wenn','als','nachdem',
   'bevor','während','falls','sobald'];
 const B2_CONNECTORS=[...FRONTABLE_CONNECTORS,'damit','sodass','dass','ob'];
-const SUBJECTS=['er','sie','wir','du','ihr','man','Anna','Tom','Maria','Lukas'];
+const SUBJECTS=['er','sie','wir','du','ihr','man','ich','Anna','Tom','Maria','Lukas'];
 let lastTopicIndex=-1;
+let lastInjectedIds=[];
+
+/* ── Vocabulary injection (top5k profile) ── */
+function pickInjectionWord(profile,excludeIds){
+  const r=Math.random();
+  const primary=r<0.50?'weak':(r<0.85?'training':'random');
+  const order=[primary,...['weak','training','random'].filter(b=>b!==primary)];
+  for(const bucket of order){
+    const pool=profile.words.filter(w=>w&&w.id!=null&&w.bucket===bucket&&!excludeIds.has(w.id));
+    if(pool.length) return pool[Math.floor(Math.random()*pool.length)];
+  }
+  return null;
+}
 
 /* ── Speech recognition ── */
 {
@@ -409,6 +422,7 @@ function appendDebugEntry(drill,pairs,hasWords){
     `${flag} words=${pairs.length}  [${new Date().toLocaleTimeString()}]`,
     `english: ${drill.english}`,
     `correct: ${drill.correct}`,
+    drill._injectLine||'inject: none',
     `mapping:`
   ];
   pairs.forEach(({word,role},i)=>{
@@ -443,6 +457,47 @@ async function fetchDrill(){
   const key=localStorage.getItem(GEMINI_KEY_LS);
   if(!key) throw new Error('no key');
 
+  let profile=null;
+  try{
+    const raw=localStorage.getItem('top5k_profile_v1');
+    if(raw){
+      const p=JSON.parse(raw);
+      if(p&&p.v===1&&Array.isArray(p.words)&&p.words.length>0) profile=p;
+    }
+  }catch(e){}
+
+  let word1=null, word2=null;
+  if(profile){
+    const roll=Math.random();
+    const injectCount=roll<0.70?1:(roll<0.85?2:0);
+    if(injectCount>=1){
+      word1=pickInjectionWord(profile,new Set(lastInjectedIds));
+    }
+    if(injectCount===2&&word1){
+      const excl2=new Set(lastInjectedIds); excl2.add(word1.id);
+      word2=pickInjectionWord(profile,excl2);
+    }
+  }
+  lastInjectedIds=[word1?.id,word2?.id].filter(Boolean);
+
+  let vocabLines='';
+  if(word1){
+    vocabLines+=`\n- Vocabulary word: "${word1.german}" (English: "${word1.english}"). Include it in the sentence, inflected or conjugated however the sentence requires — any tense, case, or plural form; the dictionary form is not required. First try to fit it naturally within the topic above. If the combination would feel forced or artificial, DROP THE TOPIC ENTIRELY and build the sentence around the word instead, in any everyday scenario where the word is genuinely common. Naturalness always wins; when topic and word conflict, the word stays and the topic goes.`;
+  }
+  if(word2){
+    vocabLines+=`\n- Second vocabulary word: "${word2.german}" (English: "${word2.english}"). Same rules; it may live in the other clause. Include it ONLY if both words can share one scenario a real person would plausibly describe. If they can't, silently drop this second word — a natural sentence with one vocabulary word always beats a forced sentence with two.`;
+  }
+
+  const selfCheckBase=`(1) would a real person say this exact German sentence casually? (2) is every ordinary past-tense verb in Perfekt, with Präteritum only on sein/haben/modals? (3) does each English clause read as natural English, not word-for-word German? (4) if a subordinate clause comes first, does the main clause start with its finite verb?`;
+  const selfCheckText=word1
+    ? `${selfCheckBase} (5) does the vocabulary word appear, correctly inflected and used the way a native speaker actually uses it? Revise until all five hold.`
+    : `${selfCheckBase} Revise until all four hold.`;
+
+  let injectLine;
+  if(word1&&word2) injectLine=`inject: ${word1.german} + ${word2.german}`;
+  else if(word1) injectLine=`inject: ${word1.german} (${word1.bucket})`;
+  else injectLine='inject: none';
+
   let topicIdx;
   do{ topicIdx=Math.floor(Math.random()*TOPICS.length); }while(topicIdx===lastTopicIndex&&TOPICS.length>1);
   lastTopicIndex=topicIdx;
@@ -462,9 +517,9 @@ english — Write the German sentence first, then translate it into fluent, natu
 words — An array of {w,r} objects, one per word of the German sentence, in order. "w" is the exact surface form, with any trailing punctuation attached to the word it follows (e.g. "glaube,"). "r" is exactly one of: "verb" (any finite verb, infinitive, or participle), "sep-prefix" (a separated verb prefix, e.g. "an" in "Ich rufe an"), or "other". Everything that is not a verb or separated prefix is "other". Emit exactly one object per word; never drop, merge, or invent a word.
 
 Rules:
-- Topic: ${topic}.
+- Topic: ${topic}.${vocabLines}
 - Required subordinating connector: "${connector}" — it must appear, used with its correct meaning.
-- Main-clause subject: ${subject}.
+- Main-clause subject: ${subject} — but if this subject genuinely clashes with the vocabulary word, silently choose another everyday subject instead.
 - Clause order: ${clauseOrder}. If "subordinate clause first", the main clause MUST then begin with its finite verb (the inversion): "Weil es regnet, BLEIBE ich zu Hause" — never "Weil es regnet, ich bleibe zu Hause".
 - Length: 7–25 words, more than one clause, the way a real person would actually say it.
 - Tense: present and past are both fine — mix them naturally, do not force either. BUT when you use the past, use the Perfekt (haben/sein + participle) for ordinary verbs: "hat geschwitzt", "hat gekauft", "ist gekommen" — never the written Präteritum "schwitzte", "kaufte", "kam". Präteritum is allowed ONLY for sein ("war"), haben ("hatte"), and modal verbs ("konnte", "wollte", "musste", "sollte", "durfte", "mochte").
@@ -477,11 +532,11 @@ Examples of the exact quality and format wanted — note the natural English and
 {"english":"Because it rained heavily, we stayed home.","words":[{"w":"Weil","r":"other"},{"w":"es","r":"other"},{"w":"stark","r":"other"},{"w":"geregnet","r":"verb"},{"w":"hat,","r":"verb"},{"w":"sind","r":"verb"},{"w":"wir","r":"other"},{"w":"zu","r":"other"},{"w":"Hause","r":"other"},{"w":"geblieben.","r":"verb"}]}
 {"english":"I'll call you as soon as I've arrived.","words":[{"w":"Ich","r":"other"},{"w":"rufe","r":"verb"},{"w":"dich","r":"other"},{"w":"an,","r":"sep-prefix"},{"w":"sobald","r":"other"},{"w":"ich","r":"other"},{"w":"angekommen","r":"verb"},{"w":"bin.","r":"verb"}]}
 
-Before returning, check: (1) would a real person say this exact German sentence casually? (2) is every ordinary past-tense verb in Perfekt, with Präteritum only on sein/haben/modals? (3) does each English clause read as natural English, not word-for-word German? (4) if a subordinate clause comes first, does the main clause start with its finite verb? Revise until all four hold.`;
+Before returning, check: ${selfCheckText}`;
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
-    generationConfig:{temperature:0.7,maxOutputTokens:2048}
+    generationConfig:{temperature:0.7,maxOutputTokens:4096,responseMimeType:"application/json"}
   });
   const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
 
@@ -522,6 +577,7 @@ Before returning, check: (1) would a real person say this exact German sentence 
         for(let i=pairs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pairs[i],pairs[j]]=[pairs[j],pairs[i]];}
         drill.pieces=pairs;
         drill._hasWords=hasWords;
+        drill._injectLine=injectLine;
         return drill;
       }
     }catch(e){
