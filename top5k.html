@@ -77,6 +77,9 @@ button:hover{background:var(--btn2)}
 /* toggle active */
 .toggle.active{outline:1px solid rgba(34,197,94,.55);background:rgba(34,197,94,.14);color:#b8f5c8;}
 
+/* flag confirm flash */
+#btnFlag.flag-confirm{background:rgba(239,68,68,.28);border-color:rgba(239,68,68,.6);color:#fda4af;}
+
 /* ── CARD SLIDE (Next) ── */
 @keyframes slideInRight{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes slideOutLeft{from{transform:translateX(0);opacity:1}to{transform:translateX(-40px);opacity:0}}
@@ -221,6 +224,7 @@ button:hover{background:var(--btn2)}
   <div id="topLevelPill" class="pill">Level 1</div>
   <div style="display:flex;gap:6px;align-items:center;">
     <button id="btnHint" class="hidden" style="padding:5px 11px;font-size:14px;border-radius:999px;">💡︎</button>
+    <button id="btnFlag" class="hidden" title="Flag bad sentence" style="padding:5px 11px;font-size:14px;border-radius:999px;">🚩</button>
     <button id="btnMenu" style="padding:6px 14px;font-size:18px;letter-spacing:2px;border-radius:999px;">⋯</button>
   </div>
 </div>
@@ -298,6 +302,7 @@ button:hover{background:var(--btn2)}
       <button id="btnDump">Dump state</button>
       <button id="btnHardSave">Force save</button>
       <button id="btnRecalibrate">Recalibrate → 0.5</button>
+      <button id="btnExportFlagged" class="muted">Export flagged</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
       <button id="btnCheckV1">Check v1 Key</button>
@@ -427,9 +432,10 @@ function highlightWordInSentence(sentence, word){
 }
 
 function getSentenceData(x){
-  // User override always wins — no rotation for edited words
+  // User override always wins — no rotation for edited words. Not flaggable.
   const ov=state.overrides?.[x.id];
   if(ov&&(ov.deSent!==undefined||ov.enSent!==undefined)){
+    state._currentSentSlot=null;
     return {
       deSent:    ov.deSent    !==undefined?ov.deSent    :x.deSent,
       enSent:    ov.enSent    !==undefined?ov.enSent    :x.enSent,
@@ -439,10 +445,18 @@ function getSentenceData(x){
   }
   const sents=state.sentencesData?.[x.id];
   if(sents&&sents.length){
-    const idx=(state.sentenceIndex[x.id]||0)%sents.length;
-    state.sentenceIndex[x.id]=(idx+1)%sents.length;
-    return sents[idx];
+    const flagged=flaggedSentences[x.id]||[];
+    if(flagged.length<sents.length){
+      let idx=(state.sentenceIndex[x.id]||0)%sents.length;
+      let guard=0;
+      while(flagged.includes(idx)&&guard<sents.length){ idx=(idx+1)%sents.length; guard++; }
+      state.sentenceIndex[x.id]=(idx+1)%sents.length;
+      state._currentSentSlot=idx;
+      return sents[idx];
+    }
+    // All JSON slots flagged — fall back to the (never-flaggable) CSV sentence
   }
+  state._currentSentSlot=null;
   return {deSent:x.deSent,enSent:x.enSent,conjugated:x.conjugated,enInSent:x.enInSent};
 }
 
@@ -574,9 +588,24 @@ const BACKUP_DISMISS_SESSION_KEY = 'top5k_backup_dismissed_v1';
 const BACKUP_INTERVAL_MS = 48*60*60*1000;
 const SUPABASE_URL_KEY = 'top5k_supabase_url';
 const SUPABASE_KEY_KEY = 'top5k_supabase_key';
+const FLAGGED_KEY = 'top5k_flagged_v1';
 
 let lastBackupLevel=null;
 let saveFailAlerted=false;
+
+/* ====== flagged sentences ====== */
+function loadFlagged(){
+  try{
+    const obj=JSON.parse(localStorage.getItem(FLAGGED_KEY)||'{}');
+    return (obj&&typeof obj==='object')?obj:{};
+  }catch(e){ return {}; }
+}
+let flaggedSentences=loadFlagged();
+function flagSentenceSlot(id,idx){
+  if(!Array.isArray(flaggedSentences[id])) flaggedSentences[id]=[];
+  if(!flaggedSentences[id].includes(idx)) flaggedSentences[id].push(idx);
+  try{ localStorage.setItem(FLAGGED_KEY,JSON.stringify(flaggedSentences)); }catch(e){}
+}
 
 function fmtWhen(ts){ if(!ts) return 'never'; try{return new Date(ts).toLocaleString();}catch(e){return 'never';} }
 function setLastCloudBackupNow(){ localStorage.setItem(LAST_CLOUD_BACKUP_KEY,String(Date.now())); }
@@ -901,6 +930,7 @@ const state={
   sentencesData:{},
   sentenceIndex:{},
   _currentSentData:null,
+  _currentSentSlot:null,
   _clozeParts:null
 };
 
@@ -1351,6 +1381,7 @@ const Core={
     if(neuBadgeEl) neuBadgeEl.classList.toggle('hidden', !!(state.seen||{})[x?.id]);
     this.updateProgress();
     this.updateDbg();
+    updateFlagButtonUI();
     if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
   },
 
@@ -1623,6 +1654,13 @@ function triggerFlash(type){
   setTimeout(()=>{ el.className='flash-overlay'; },700);
 }
 
+function updateFlagButtonUI(){
+  const btn=$('#btnFlag');
+  if(!btn) return;
+  const flaggable=state.activeMode==='cloze'&&state._currentSentSlot!=null;
+  btn.classList.toggle('hidden',!flaggable);
+}
+
 function triggerInputShake(){
   const inp=$('#coreDe');
   if(!inp) return;
@@ -1792,6 +1830,28 @@ async function boot(){
       }
       hintBtn.addEventListener('pointerdown',doHint,{passive:false});
       hintBtn.addEventListener('mousedown',doHint);
+    }
+  }
+
+  // ---- Flag bad sentence ----
+  {
+    const flagBtn=$('#btnFlag');
+    if(flagBtn){
+      let lock=0;
+      function doFlag(e){
+        e.preventDefault();
+        const now=Date.now(); if(now-lock<400) return; lock=now;
+        const x=state.data.find(w=>w.id===state.currentId);
+        if(!x) return;
+        const slotIdx=state._currentSentSlot;
+        if(slotIdx==null) return; // CSV fallback / override sentence — never flaggable
+        flagSentenceSlot(x.id,slotIdx);
+        flagBtn.classList.add('flag-confirm');
+        setTimeout(()=>flagBtn.classList.remove('flag-confirm'),600);
+        Core.render(x); // same word, next (non-flagged) sentence — doesn't count as an appearance
+      }
+      flagBtn.addEventListener('pointerdown',doFlag,{passive:false});
+      flagBtn.addEventListener('mousedown',doFlag);
     }
   }
 
@@ -2117,6 +2177,7 @@ async function boot(){
 
   // ---- Debug tools ----
   $('#btnDump')?.addEventListener('click',()=>{ console.log('TOP5K STATE:',JSON.parse(JSON.stringify(state))); alert('Dumped to console.'); });
+  $('#btnExportFlagged')?.addEventListener('click',()=>{ openCopyModal(JSON.stringify(flaggedSentences,null,2),'Export flagged sentences'); });
   $('#btnHardSave')?.addEventListener('click',()=>{ saveState(); alert('Saved.'); });
   $('#btnRecalibrate')?.addEventListener('click',()=>{
     if(!confirm('Recalibrate scores?\n\nCurrent level words → 50% chance each. Future words → appear once each. Supers, level, and streaks unchanged.')) return;
@@ -2147,7 +2208,7 @@ async function boot(){
   const KNOWN_LS_KEYS=new Set([
     'top5k_state_v2','top5k_backup_v2','top5k_profile_v1','top5k_log_v1',
     'top5k_gemini_key','top5k_active_tab','top5k_last_cloud_backup_v1','lena_chat_history',
-    'top5k_supabase_url','top5k_supabase_key','top5k_chat_saved_at_v1'
+    'top5k_supabase_url','top5k_supabase_key','top5k_chat_saved_at_v1','top5k_flagged_v1'
   ]);
 
   function getStorageReport(){
