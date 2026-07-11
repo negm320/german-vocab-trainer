@@ -83,8 +83,15 @@ button:hover{background:var(--btn2);}
 .card.loading{animation:loadPulse 1s ease infinite;}
 #loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;}
 
-/* mic states */
-.mic-listening{background:#ef4444!important;border-color:#ef4444!important;}
+/* mic states (chat.html mic, verbatim) */
+#micBtn svg{width:26px;height:26px;fill:var(--accent);flex-shrink:0;transition:fill .2s;}
+#micBtn.listening{background:#2c0a0a;border-color:var(--bad);}
+#micBtn.listening svg{fill:var(--bad);}
+.ripple{position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--bad);opacity:0;pointer-events:none;}
+#micBtn.listening .ripple:nth-child(1){animation:rippleOut 1.6s ease-out infinite;}
+#micBtn.listening .ripple:nth-child(2){animation:rippleOut 1.6s ease-out .53s infinite;}
+#micBtn.listening .ripple:nth-child(3){animation:rippleOut 1.6s ease-out 1.06s infinite;}
+@keyframes rippleOut{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.65);opacity:0}}
 #micStatus{font-size:12px;color:var(--muted);margin-top:6px;min-height:1.2em;}
 .input-interim{color:var(--muted)!important;}
 
@@ -95,7 +102,7 @@ button:hover{background:var(--btn2);}
 .pillHalf:first-child{border-radius:27px 0 0 27px;}
 .pillHalf:last-child{border-radius:0 27px 27px 0;}
 .pillHalf:hover{background:rgba(255,255,255,.06);}
-.micCircle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:80px;height:80px;border-radius:50%;background:var(--btn);border:1px solid var(--border);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:background .15s,border-color .15s;}
+.micCircle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:80px;height:80px;border-radius:50%;background:var(--btn);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:background .15s,border-color .15s;}
 
 /* word class borders */
 .piece.acc-dat{border-color:#b8860b;}
@@ -159,7 +166,14 @@ button:hover{background:var(--btn2);}
   <div class="pill">
     <button id="btnCheck" class="pillHalf">Check</button>
     <button id="btnNext" class="pillHalf">Next</button>
-    <button id="btnMic" class="micCircle" title="Dictate German">🎤</button>
+    <button id="micBtn" class="micCircle" title="Dictate German" aria-label="Mikrofon">
+      <div class="ripple"></div>
+      <div class="ripple"></div>
+      <div class="ripple"></div>
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+      </svg>
+    </button>
   </div>
 </div>
 
@@ -196,6 +210,7 @@ let currentDrill=null;
 let recognition=null;
 let micActive=false;
 let micBase='';
+let snapFlags=[];
 
 const TOPICS=[
   // daily life & chores
@@ -338,7 +353,91 @@ function pickInjectionWord(profile,excludeIds){
   return null;
 }
 
+/* ── German phonetic matching (Kölner Phonetik) ── */
+function kolnerPhonetik(word){
+  let w=(word||'').toUpperCase();
+  w=w.replace(/Ä/g,'A').replace(/Ö/g,'O').replace(/Ü/g,'U').replace(/[^A-Z]/g,'');
+  const codes=[];
+  for(let i=0;i<w.length;i++){
+    const c=w[i], prev=w[i-1], next=w[i+1];
+    let code=null;
+    if('AEIOUJY'.includes(c)) code='0';
+    else if(c==='H') code=null;
+    else if(c==='B') code='1';
+    else if(c==='P') code=(next==='H')?'3':'1';
+    else if(c==='D'||c==='T') code=(next==='C'||next==='S'||next==='Z')?'8':'2';
+    else if(c==='F'||c==='V'||c==='W') code='3';
+    else if(c==='G'||c==='K'||c==='Q') code='4';
+    else if(c==='X'){
+      if(prev==='C'||prev==='K'||prev==='Q') code='8';
+      else{ codes.push('4'); code='8'; }
+    }
+    else if(c==='L') code='5';
+    else if(c==='M'||c==='N') code='6';
+    else if(c==='R') code='7';
+    else if(c==='S'||c==='Z') code='8';
+    else if(c==='C'){
+      if(i===0) code=(next&&'AHKLOQRUX'.includes(next))?'4':'8';
+      else if(prev==='S'||prev==='Z') code='8';
+      else code=(next&&'AHKOQUX'.includes(next))?'4':'8';
+    }
+    if(code!=null) codes.push(code);
+  }
+  const collapsed=[];
+  for(const c of codes){ if(collapsed.length===0||collapsed[collapsed.length-1]!==c) collapsed.push(c); }
+  return collapsed.filter((c,i)=>i===0||c!=='0').join('');
+}
+
+/* ── Snap-to-target: map recognized tokens onto the closed drill word set ── */
+function nearestWord(token,candidates){
+  const raw=token.replace(/[.,!?;:"""„"–—]/g,'');
+  if(!raw||!candidates.length) return {word:token,snapped:false};
+  const lower=raw.toLowerCase();
+  for(const c of candidates) if(c.toLowerCase()===lower) return {word:c,snapped:false};
+  const normTok=normWord(raw);
+  for(const c of candidates) if(normWord(c)===normTok) return {word:c,snapped:true};
+  const phonTok=kolnerPhonetik(raw);
+  if(phonTok){
+    for(const c of candidates) if(kolnerPhonetik(c)===phonTok) return {word:c,snapped:true};
+  }
+  let best=null,bestDist=Infinity;
+  for(const c of candidates){
+    const d=levenshtein(normTok,normWord(c));
+    if(d<bestDist){ bestDist=d; best=c; }
+  }
+  if(best!==null&&bestDist<=3) return {word:best,snapped:true};
+  return {word:token,snapped:false};
+}
+
+function snapTokens(text,candidates){
+  const tokens=text.trim().split(/\s+/).filter(Boolean);
+  const snapped=[];
+  const words=tokens.map((tok,i)=>{
+    const r=nearestWord(tok,candidates);
+    if(r.snapped) snapped.push(i);
+    return r.word;
+  });
+  return {text:words.join(' '),snapped};
+}
+
 /* ── Speech recognition ── */
+function pickBestAlternative(result,candidates){
+  const n=Math.min(result.length,4);
+  let best=result[0].transcript,bestScore=-1;
+  for(let k=0;k<n;k++){
+    const transcript=result[k].transcript;
+    const tokens=transcript.trim().split(/\s+/).filter(Boolean);
+    let score=0;
+    for(const tok of tokens){
+      const clean=tok.replace(/[.,!?;:"""„"–—]/g,'').toLowerCase();
+      if(candidates.some(c=>c.toLowerCase()===clean)) score+=2;
+      else if(candidates.some(c=>normWord(c)===normWord(clean))) score+=1;
+    }
+    if(score>bestScore){ bestScore=score; best=transcript; }
+  }
+  return best;
+}
+
 {
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(SR){
@@ -346,18 +445,21 @@ function pickInjectionWord(profile,excludeIds){
     recognition.lang='de-DE';
     recognition.continuous=true;
     recognition.interimResults=true;
-    recognition.maxAlternatives=1;
+    recognition.maxAlternatives=4;
 
     recognition.onstart=()=>{
       micBase=document.getElementById('answerInput')?.value||'';
+      snapFlags=[];
       setMicState('listening');
     };
 
     recognition.onresult=(e)=>{
+      const candidates=currentDrill?._candidates||[];
       let interim='', final='';
       for(let i=e.resultIndex;i<e.results.length;i++){
-        if(e.results[i].isFinal) final+=e.results[i][0].transcript;
-        else interim+=e.results[i][0].transcript;
+        const transcript=pickBestAlternative(e.results[i],candidates);
+        if(e.results[i].isFinal) final+=transcript;
+        else interim+=transcript;
       }
       if(final) setInputFinal(final);
       else if(interim) setInputInterim(interim);
@@ -376,27 +478,44 @@ function pickInjectionWord(profile,excludeIds){
       setMicState('idle');
     };
   }else{
-    document.getElementById('btnMic')?.classList.add('hidden');
+    document.getElementById('micBtn')?.classList.add('hidden');
   }
 }
 
 function setMicState(s){
   micActive=(s==='listening');
-  const btn=document.getElementById('btnMic');
+  const btn=document.getElementById('micBtn');
   const status=document.getElementById('micStatus');
   if(s==='listening'){
-    btn?.classList.add('mic-listening');
+    btn?.classList.add('listening');
     if(status){ status.textContent='Listening…'; status.classList.remove('hidden'); }
   }else{
-    btn?.classList.remove('mic-listening');
+    btn?.classList.remove('listening');
     if(status) status.classList.add('hidden');
   }
+}
+
+function updateSnapPreview(){
+  const status=document.getElementById('micStatus');
+  const inp=document.getElementById('answerInput');
+  if(!status||!inp||!micActive) return;
+  if(!snapFlags.length){ status.textContent='Listening…'; return; }
+  const tokens=inp.value.trim().split(/\s+/).filter(Boolean);
+  const set=new Set(snapFlags);
+  const html=tokens.map((t,i)=>
+    set.has(i)
+      ? `<u style="text-decoration-color:var(--accent);text-underline-offset:3px;">${escapeHTML(t)}</u>`
+      : escapeHTML(t)
+  ).join(' ');
+  status.innerHTML=`<span class="muted" style="font-size:11px;">corrected: </span>${html}`;
+  status.classList.remove('hidden');
 }
 
 function setInputInterim(text){
   const inp=document.getElementById('answerInput');
   if(!inp) return;
-  inp.value=micBase+(micBase&&!micBase.endsWith(' ')?' ':'')+text;
+  const {text:snappedText}=snapTokens(text,currentDrill?._candidates||[]);
+  inp.value=micBase+(micBase&&!micBase.endsWith(' ')?' ':'')+snappedText;
   inp.classList.add('input-interim');
   inp.style.height='0px';
   inp.style.height=inp.scrollHeight+'px';
@@ -406,12 +525,16 @@ function setInputInterim(text){
 function setInputFinal(text){
   const inp=document.getElementById('answerInput');
   if(!inp) return;
-  inp.value=micBase+(micBase&&!micBase.endsWith(' ')?' ':'')+text;
+  const baseWordCount=micBase.trim()?micBase.trim().split(/\s+/).filter(Boolean).length:0;
+  const {text:snappedText,snapped}=snapTokens(text,currentDrill?._candidates||[]);
+  inp.value=micBase+(micBase&&!micBase.endsWith(' ')?' ':'')+snappedText;
   micBase=inp.value;
+  snapFlags.push(...snapped.map(i=>baseWordCount+i));
   inp.classList.remove('input-interim');
   inp.style.height='0px';
   inp.style.height=inp.scrollHeight+'px';
   updatePieceStates();
+  updateSnapPreview();
 }
 
 /* ── Debug panel ── */
@@ -600,6 +723,7 @@ function refillQueue(){
 
 function presentDrill(drill){
   if(micActive&&recognition) recognition.stop();
+  drill._candidates=drill.pieces.map(p=>p.word.replace(/[.,!?;:"""„"–—]/g,'')).filter(Boolean);
   currentDrill=drill;
   appendDebugEntry(drill,drill.pieces,drill._hasWords);
   renderDrill(drill);
@@ -717,21 +841,60 @@ function levenshtein(a,b){
       dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
   return dp[m][n];
 }
+function wordsMatch(u,c){
+  const un=normWord(u),cn=normWord(c);
+  if(un===cn) return {match:true,typo:false};
+  const pu=kolnerPhonetik(un),pc=kolnerPhonetik(cn);
+  if(pu&&pu===pc) return {match:true,typo:true};
+  if(levenshtein(un,cn)<=2) return {match:true,typo:true};
+  return {match:false,typo:false};
+}
+/* Order-preserving alignment (edit-distance DP) between user words (uw) and
+   correct words (cw): finds the best-scoring set of matched pairs while
+   allowing correct words to be dropped and user words to be extra. */
+function alignWords(uw,cw){
+  const m=uw.length,n=cw.length;
+  const score=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const diag=score[i-1][j-1]+(wordsMatch(uw[i-1],cw[j-1]).match?1:0);
+      score[i][j]=Math.max(diag,score[i-1][j],score[i][j-1]);
+    }
+  }
+  let i=m,j=n,extraCount=0;
+  const cwMatched=new Array(n).fill(false);
+  const cwTypo=new Array(n).fill(false);
+  while(i>0&&j>0){
+    const wm=wordsMatch(uw[i-1],cw[j-1]);
+    if(wm.match&&score[i][j]===score[i-1][j-1]+1){
+      cwMatched[j-1]=true; cwTypo[j-1]=wm.typo;
+      i--; j--;
+    }else if(score[i][j]===score[i-1][j]){
+      extraCount++; i--;
+    }else{
+      j--;
+    }
+  }
+  extraCount+=i;
+  const droppedIdx=[],typoIdx=[];
+  for(let k=0;k<n;k++){
+    if(!cwMatched[k]) droppedIdx.push(k);
+    else if(cwTypo[k]) typoIdx.push(k);
+  }
+  return {droppedIdx,typoIdx,extraCount};
+}
 function evaluateAnswer(userRaw,correctRaw){
   const user=stripPunct(userRaw).toLowerCase();
   const correct=stripPunct(correctRaw).toLowerCase();
   if(user===correct) return {verdict:'CORRECT',typoIndices:[]};
   const uw=user.split(/\s+/).filter(Boolean);
   const cw=correct.split(/\s+/).filter(Boolean);
-  if(uw.length!==cw.length) return {verdict:'WRONG',typoIndices:[]};
-  const typoIndices=[];
-  for(let i=0;i<cw.length;i++){
-    const un=normWord(uw[i]),cn=normWord(cw[i]);
-    if(un===cn) continue;
-    if(levenshtein(un,cn)<=2) typoIndices.push(i);
-    else return {verdict:'WRONG',typoIndices:[]};
-  }
-  return {verdict:'TYPO',typoIndices};
+  const {droppedIdx,typoIdx,extraCount}=alignWords(uw,cw);
+  if(extraCount>0) return {verdict:'WRONG',typoIndices:[]};
+  if(!droppedIdx.length&&!typoIdx.length) return {verdict:'CORRECT',typoIndices:[]};
+  const droppedOk=droppedIdx.length<=1&&droppedIdx.every(idx=>cw[idx].length<=3);
+  if(droppedOk) return {verdict:'TYPO',typoIndices:[...typoIdx,...droppedIdx]};
+  return {verdict:'WRONG',typoIndices:[]};
 }
 function buildCorrectHTML(correctRaw,typoIndices){
   const typoSet=new Set(typoIndices);
@@ -866,13 +1029,13 @@ function boot(){
   document.getElementById('btnNext')?.addEventListener('mousedown',(e)=>e.preventDefault());
 
   let lockMic=0;
-  document.getElementById('btnMic')?.addEventListener('pointerdown',(e)=>{
+  document.getElementById('micBtn')?.addEventListener('pointerdown',(e)=>{
     e.preventDefault();
     const now=Date.now(); if(now-lockMic<400) return; lockMic=now;
     if(micActive){ recognition.stop(); }
     else{ try{ recognition.start(); }catch(err){ setMicState('idle'); } }
   },{passive:false});
-  document.getElementById('btnMic')?.addEventListener('mousedown',(e)=>e.preventDefault());
+  document.getElementById('micBtn')?.addEventListener('mousedown',(e)=>e.preventDefault());
 
   // Tab persistence: save on navigate
   document.querySelectorAll('.tabItem').forEach(a=>{
