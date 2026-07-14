@@ -23,8 +23,9 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 .wrap{max-width:720px;margin:0 auto;padding:14px 14px 110px}
 
 /* tabs */
-.tabBar{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;}
-.tabItem{padding:8px 20px;font-size:14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;}
+.tabBar{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.tabBar::-webkit-scrollbar{display:none;}
+.tabItem{padding:8px 20px;font-size:14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap;flex-shrink:0;}
 .tabItem.active{color:var(--text);border-bottom-color:var(--accent);}
 .tabItem:hover:not(.active){color:var(--text);}
 
@@ -132,8 +133,8 @@ button:hover{background:var(--btn2);}
 <div class="tabBar">
   <a class="tabItem" href="top5k.html" data-tab="vocab">Vocab</a>
   <a class="tabItem active" href="grammar.html" data-tab="grammar">Grammar</a>
-  <a class="tabItem" href="chat.html" data-tab="chat">Chat</a>
   <a class="tabItem" href="preps.html" data-tab="preps">Präpositionen</a>
+  <a class="tabItem" href="chat.html" data-tab="chat">Chat</a>
 </div>
 
 <!-- Drill card -->
