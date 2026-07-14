@@ -64,7 +64,12 @@ button:hover{background:var(--btn2);}
 
 /* drill content */
 #sentenceText{font-size:19px;line-height:1.7;}
-#sentenceText .blank{color:var(--accent);font-weight:600;}
+#sentenceText .blank{
+  display:inline-block;border-bottom:2px solid var(--accent);min-width:58px;height:14px;
+  margin:0 2px;vertical-align:bottom;background:rgba(106,166,255,0.08);border-radius:3px 3px 0 0;
+  color:transparent;font-size:0;
+}
+#sentenceText .govHighlight{color:var(--accent);font-weight:600;}
 #glossText{margin-top:8px;font-size:14px;color:var(--muted);line-height:1.6;}
 
 /* options grid */
@@ -75,10 +80,12 @@ button:hover{background:var(--btn2);}
 .prepOption.correct{background:rgba(34,197,94,.18);border-color:var(--good);color:var(--good);}
 .prepOption.wrong{background:rgba(239,68,68,.16);border-color:var(--bad);color:var(--bad);}
 
-/* flag button */
-#btnFlag{display:block;margin:16px auto 0;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:13px;padding:6px 14px;border-radius:999px;}
-#btnFlag:hover{color:var(--text);border-color:var(--muted);}
+/* footer controls */
+.footerRow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}
+.ghostBtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:13px;padding:6px 14px;border-radius:999px;}
+.ghostBtn:hover{color:var(--text);border-color:var(--muted);}
 #btnFlag.flag-confirm{background:rgba(239,68,68,.28);border-color:rgba(239,68,68,.6);color:#fda4af;}
+#btnHighlightToggle.on{color:var(--accent);border-color:var(--accent);}
 </style>
 </head>
 <body>
@@ -119,7 +126,10 @@ button:hover{background:var(--btn2);}
 
     <div class="prepGrid" id="optionsGrid"></div>
 
-    <button id="btnFlag" title="Flag: sentence has no single correct preposition">🚩 Flag sentence</button>
+    <div class="footerRow">
+      <button id="btnHighlightToggle" class="ghostBtn" title="Toggle highlighting of the governing word">👁 Highlight</button>
+      <button id="btnFlag" class="ghostBtn" title="Flag: sentence has no single correct preposition">🚩 Flag sentence</button>
+    </div>
   </div>
 </div>
 
@@ -199,18 +209,19 @@ function supabaseConf(){
 
 async function supabaseUpsert(key,value){
   const conf=supabaseConf();
-  if(!conf) return;
+  if(!conf) return null;
   const res=await fetch(`${conf.url}/rest/v1/kv_state`,{
     method:'POST',
     headers:{
       'apikey':conf.key,
       'Content-Type':'application/json',
-      'Prefer':'resolution=merge-duplicates'
+      'Prefer':'resolution=merge-duplicates,return=representation'
     },
     body:JSON.stringify([{key,value,updated_at:new Date().toISOString()}])
   });
   if(!res.ok) throw new Error(`Supabase upsert ${key} failed: HTTP ${res.status}`);
-  return res;
+  const rows=await res.json().catch(()=>null);
+  return (rows&&rows[0])||null;
 }
 
 async function supabaseGetRow(key){
@@ -232,6 +243,13 @@ function runPrepsPush(){
   if(prepsPushInFlight){ prepsPushQueued=true; return; }
   prepsPushInFlight=true;
   supabaseUpsert(STATS_KEY,stats)
+    .then(row=>{
+      // Pin our local "saved at" to the row's own timestamp, not Date.now(),
+      // so a same-device reload never sees remoteUpdatedAt > localSavedAt
+      // from clock/rounding drift and fires a spurious "cloud is newer" prompt.
+      const ts=row&&row.updated_at?new Date(row.updated_at).getTime():null;
+      if(ts) try{ localStorage.setItem(STATS_SAVED_AT_KEY,String(ts)); }catch(e){}
+    })
     .catch(e=>console.error('Cloud push failed:',e))
     .finally(()=>{
       prepsPushInFlight=false;
@@ -302,6 +320,7 @@ async function fetchDrill(){
   const prompt=`Generate one German preposition drill. Output JSON only, no markdown:
 {"sentence": German sentence with the target preposition replaced by ___,
  "gov": the governing word (verb, adjective, or noun) in its base form,
+ "govInSent": the exact surface form of the governing word as it appears in the sentence (conjugated, inflected, or separated exactly as written),
  "prep": the correct preposition,
  "gloss": concise English translation of the full intended sentence,
  "options": array of 4 prepositions including the correct one, shuffled, all plausible}
@@ -314,7 +333,7 @@ Rotate the governing word across these types, don't always pick a verb:
 
 Vary the topic across work, travel, health, bureaucracy, emotions, money, technology, daily life. Prefer less common but still natural collocations over the most obvious ones.
 Do NOT use any of these recently-used pairs: ${formatRecentPairs()}
-The English gloss must make exactly ONE preposition correct. Casual natural German, one clause, past events in Perfekt.`;
+The English gloss must make exactly ONE preposition correct. Casual natural German, one clause. Past events use Perfekt, EXCEPT sein/haben/modals which take Präteritum (war, hatte, konnte — never ist gewesen, hat gehabt).`;
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
@@ -346,6 +365,7 @@ The English gloss must make exactly ONE preposition correct. Casual natural Germ
         }
         drill.sentence=(drill.sentence||'').trim();
         drill.gov=(drill.gov||'').trim();
+        drill.govInSent=(drill.govInSent||'').trim();
         drill.prep=(drill.prep||'').trim();
         drill.gloss=(drill.gloss||'').trim();
         drill.options=drill.options.map(o=>(o||'').trim()).filter(Boolean);
@@ -413,9 +433,34 @@ async function generateDrill(){
   }
 }
 
+/* ── Governing-word highlight toggle ── */
+const HIGHLIGHT_GOV_KEY='preps_highlight_gov_v1';
+function loadHighlightGov(){
+  const raw=localStorage.getItem(HIGHLIGHT_GOV_KEY);
+  return raw===null?true:raw==='1';
+}
+let highlightGovEnabled=loadHighlightGov();
+
+function syncHighlightToggleUI(){
+  const btn=document.getElementById('btnHighlightToggle');
+  if(!btn) return;
+  btn.classList.toggle('on',highlightGovEnabled);
+  btn.textContent=highlightGovEnabled?'👁 Highlight: On':'👁 Highlight: Off';
+}
+
 /* ── Render drill ── */
 function escapeHTML(s){
   return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderSentenceHTML(drill){
+  let html=escapeHTML(drill.sentence);
+  if(highlightGovEnabled&&drill.govInSent){
+    const escGov=escapeHTML(drill.govInSent);
+    const idx=html.indexOf(escGov);
+    if(idx!==-1) html=html.slice(0,idx)+'<span class="govHighlight">'+escGov+'</span>'+html.slice(idx+escGov.length);
+  }
+  return html.replace(/_{2,}/g,'<span class="blank">___</span>');
 }
 
 function renderDrill(drill){
@@ -430,7 +475,7 @@ function renderDrill(drill){
   loadingText.classList.add('hidden');
   drillContent.classList.remove('hidden');
 
-  sentenceText.innerHTML=escapeHTML(drill.sentence).replace(/_{2,}/g,'<span class="blank">___</span>');
+  sentenceText.innerHTML=renderSentenceHTML(drill);
   glossText.textContent=drill.gloss;
 
   optionsGrid.innerHTML='';
@@ -485,6 +530,7 @@ function handleFlag(){
 
 /* ── Boot ── */
 function boot(){
+  syncHighlightToggleUI();
   if(!localStorage.getItem(GEMINI_KEY_LS)){
     document.getElementById('apiKeyScreen').classList.remove('hidden');
     return;
@@ -502,6 +548,17 @@ function boot(){
     handleFlag();
   },{passive:false});
   document.getElementById('btnFlag')?.addEventListener('mousedown',(e)=>e.preventDefault());
+
+  let lockHighlight=0;
+  document.getElementById('btnHighlightToggle')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockHighlight<400) return; lockHighlight=now;
+    highlightGovEnabled=!highlightGovEnabled;
+    try{ localStorage.setItem(HIGHLIGHT_GOV_KEY,highlightGovEnabled?'1':'0'); }catch(err){}
+    syncHighlightToggleUI();
+    if(currentDrill) document.getElementById('sentenceText').innerHTML=renderSentenceHTML(currentDrill);
+  },{passive:false});
+  document.getElementById('btnHighlightToggle')?.addEventListener('mousedown',(e)=>e.preventDefault());
 
   // Tab persistence: save on navigate
   document.querySelectorAll('.tabItem').forEach(a=>{
