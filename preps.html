@@ -134,12 +134,25 @@ const STATS_SAVED_AT_KEY='preps_saved_at_v1';
 const LOG_CAP=5000;
 
 /* ── Stats storage ── */
+// Old records used a "verb" field on log entries; fold it into "gov" so
+// pre-rotation history isn't orphaned when the field was renamed.
+function migrateStats(s){
+  if(!s||!Array.isArray(s.log)) return s;
+  s.log.forEach(e=>{
+    if(e&&Object.prototype.hasOwnProperty.call(e,'verb')&&!('gov' in e)){
+      e.gov=e.verb;
+      delete e.verb;
+    }
+  });
+  return s;
+}
+
 function loadStats(){
   try{
     const raw=localStorage.getItem(STATS_KEY);
     if(raw){
       const s=JSON.parse(raw);
-      if(s&&s.v===1&&s.aggregate&&typeof s.aggregate==='object'&&Array.isArray(s.log)) return s;
+      if(s&&s.v===1&&s.aggregate&&typeof s.aggregate==='object'&&Array.isArray(s.log)) return migrateStats(s);
     }
   }catch(e){}
   return {v:1,aggregate:{},log:[]};
@@ -159,19 +172,19 @@ function pushLog(entry){
 }
 
 function recordAnswer(drill,picked,correct){
-  const key=`${(drill.verb||'').toLowerCase()}|${(drill.prep||'').toLowerCase()}`;
+  const key=`${(drill.gov||'').toLowerCase()}|${(drill.prep||'').toLowerCase()}`;
   const agg=stats.aggregate[key]||{attempts:0,misses:0,lastSeen:0};
   agg.attempts++;
   if(!correct) agg.misses++;
   agg.lastSeen=Date.now();
   stats.aggregate[key]=agg;
-  pushLog({ts:Date.now(),verb:drill.verb,prep:drill.prep,correct,picked});
+  pushLog({ts:Date.now(),gov:drill.gov,prep:drill.prep,correct,picked});
   saveStats();
   pushPrepsNow();
 }
 
 function recordFlag(drill){
-  pushLog({ts:Date.now(),verb:drill.verb,prep:drill.prep,correct:false,picked:'FLAG'});
+  pushLog({ts:Date.now(),gov:drill.gov,prep:drill.prep,correct:false,picked:'FLAG'});
   saveStats();
   pushPrepsNow();
 }
@@ -244,7 +257,7 @@ async function tryCloudPullOnLoad(){
     const localEmpty=Object.keys(stats.aggregate).length===0&&stats.log.length===0;
     if(!(remoteUpdatedAt>localSavedAt||localEmpty)) return false;
     if(confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`)){
-      stats=row.value;
+      stats=migrateStats(row.value);
       saveStats();
       return true;
     }
@@ -262,17 +275,46 @@ let fetchesInFlight=0;
 let currentDrill=null;
 let answering=false;
 
+// Rolling no-repeat list: last ~25 gov|prep pairs generated, fed back into
+// each prompt so the model doesn't keep landing on the same handful of
+// collocations (warten auf, denken an, ...).
+const RECENT_PAIRS_CAP=25;
+let recentPairs=[];
+
+function pushRecentPair(gov,prep){
+  const key=`${(gov||'').toLowerCase()}|${(prep||'').toLowerCase()}`;
+  recentPairs.push(key);
+  if(recentPairs.length>RECENT_PAIRS_CAP) recentPairs.shift();
+}
+
+function formatRecentPairs(){
+  if(!recentPairs.length) return 'none yet';
+  return recentPairs.map(p=>{
+    const [g,pr]=p.split('|');
+    return `${g} + ${pr}`;
+  }).join(', ');
+}
+
 async function fetchDrill(){
   const key=localStorage.getItem(GEMINI_KEY_LS);
   if(!key) throw new Error('no key');
 
-  const prompt=`Generate one German preposition drill for a B1–B2 learner. Pick a natural everyday situation. Output JSON only, no markdown:
+  const prompt=`Generate one German preposition drill. Output JSON only, no markdown:
 {"sentence": German sentence with the target preposition replaced by ___,
- "verb": governing verb (infinitive) or context word,
+ "gov": the governing word (verb, adjective, or noun) in its base form,
  "prep": the correct preposition,
  "gloss": concise English translation of the full intended sentence,
  "options": array of 4 prepositions including the correct one, shuffled, all plausible}
-The English gloss must make exactly ONE preposition correct — avoid sentences where two prepositions both fit. Casual natural German. Past events use Perfekt. One clause only.`;
+
+Rotate the governing word across these types, don't always pick a verb:
+- verb + preposition (e.g. sich verlassen auf, sich beschweren über)
+- adjective + preposition (e.g. stolz auf, zufrieden mit, gespannt auf)
+- noun + preposition (e.g. die Angst vor, der Grund für)
+- fixed prepositional phrase (e.g. aus Versehen, unter Umständen)
+
+Vary the topic across work, travel, health, bureaucracy, emotions, money, technology, daily life. Prefer less common but still natural collocations over the most obvious ones.
+Do NOT use any of these recently-used pairs: ${formatRecentPairs()}
+The English gloss must make exactly ONE preposition correct. Casual natural German, one clause, past events in Perfekt.`;
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
@@ -303,13 +345,14 @@ The English gloss must make exactly ONE preposition correct — avoid sentences 
           throw new Error(`bad shape — raw: ${raw.slice(0,120)}`);
         }
         drill.sentence=(drill.sentence||'').trim();
-        drill.verb=(drill.verb||'').trim();
+        drill.gov=(drill.gov||'').trim();
         drill.prep=(drill.prep||'').trim();
         drill.gloss=(drill.gloss||'').trim();
         drill.options=drill.options.map(o=>(o||'').trim()).filter(Boolean);
         if(!drill.options.some(o=>o.toLowerCase()===drill.prep.toLowerCase())){
           throw new Error(`correct prep missing from options — raw: ${raw.slice(0,120)}`);
         }
+        pushRecentPair(drill.gov,drill.prep);
         return drill;
       }
     }catch(e){
