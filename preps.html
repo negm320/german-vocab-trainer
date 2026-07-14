@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<title>German Preposition Drill</title>
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="theme-color" content="#0b0e12">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041;
+  --accent:#6aa6ff; --good:#22c55e; --bad:#ef4444; --btn:#1a2230; --btn2:#1e2a3c; --hole:#0f141c;
+}
+*{box-sizing:border-box}
+button,input,textarea,select{font-family:inherit;}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgia,serif;}
+.wrap{max-width:720px;margin:0 auto;padding:14px 14px 60px}
+
+/* tabs */
+.tabBar{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap;}
+.tabItem{padding:8px 20px;font-size:14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;}
+.tabItem.active{color:var(--text);border-bottom-color:var(--accent);}
+.tabItem:hover:not(.active){color:var(--text);}
+
+/* card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 16px;box-shadow:0 6px 20px rgba(0,0,0,.25);position:relative;overflow:hidden;}
+
+/* divider */
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+
+/* states */
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.good{color:var(--good)} .bad{color:var(--bad)}
+
+/* generic button */
+button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer;font-size:15px;}
+button:hover{background:var(--btn2);}
+
+/* API key setup screen */
+#apiKeyScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10000;}
+#apiKeyScreen.hidden{display:none!important}
+.setupBox{width:min(480px,100%);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.45);}
+.setupBox input{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);font-size:16px;}
+
+/* flash overlay */
+.flash-overlay{position:absolute;inset:0;border-radius:14px;pointer-events:none;opacity:0;}
+@keyframes flashAnim{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+.flash-good{background:rgba(34,197,94,.12);border:1.5px solid rgba(34,197,94,.5);border-radius:14px;animation:flashAnim .65s ease both;}
+.flash-bad{background:rgba(239,68,68,.10);border:1.5px solid rgba(239,68,68,.45);border-radius:14px;animation:flashAnim .65s ease both;}
+
+/* loading */
+@keyframes loadPulse{0%,100%{border-color:var(--border)}50%{border-color:rgba(106,166,255,0.5)}}
+.card.loading{animation:loadPulse 1s ease infinite;}
+#loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;}
+
+/* drill content */
+#sentenceText{font-size:19px;line-height:1.7;}
+#sentenceText .blank{color:var(--accent);font-weight:600;}
+#glossText{margin-top:8px;font-size:14px;color:var(--muted);line-height:1.6;}
+
+/* options grid */
+.prepGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+.prepOption{padding:15px 10px;font-size:16px;border-radius:12px;background:var(--btn);border:1px solid var(--border);color:var(--text);cursor:pointer;transition:background .15s,border-color .15s,color .15s;}
+.prepOption:hover:not(:disabled){background:var(--btn2);}
+.prepOption:disabled{cursor:default;opacity:.85;}
+.prepOption.correct{background:rgba(34,197,94,.18);border-color:var(--good);color:var(--good);}
+.prepOption.wrong{background:rgba(239,68,68,.16);border-color:var(--bad);color:var(--bad);}
+
+/* flag button */
+#btnFlag{display:block;margin:16px auto 0;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:13px;padding:6px 14px;border-radius:999px;}
+#btnFlag:hover{color:var(--text);border-color:var(--muted);}
+#btnFlag.flag-confirm{background:rgba(239,68,68,.28);border-color:rgba(239,68,68,.6);color:#fda4af;}
+</style>
+</head>
+<body>
+<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='grammar')location.replace('grammar.html');else if(t==='chat')location.replace('chat.html');})();</script>
+
+<!-- API Key Setup Screen -->
+<div id="apiKeyScreen" class="hidden">
+  <div class="setupBox">
+    <h2 style="margin:0 0 8px;font-size:18px;">Gemini API Key</h2>
+    <p class="muted small" style="margin:0 0 16px;line-height:1.6;">A free Gemini API key is required to use AI features. Get one at <strong>aistudio.google.com</strong></p>
+    <input id="apiKeyInput" type="text" placeholder="AIza…" spellcheck="false" autocomplete="off" style="margin-bottom:12px;">
+    <button id="apiKeySave" style="width:100%;">Save &amp; continue</button>
+    <div id="apiKeyHint" class="muted small hidden" style="margin-top:8px;color:var(--bad);"></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- Tab bar -->
+<div class="tabBar">
+  <a class="tabItem" href="top5k.html" data-tab="vocab">Vocab</a>
+  <a class="tabItem" href="grammar.html" data-tab="grammar">Grammar</a>
+  <a class="tabItem" href="chat.html" data-tab="chat">Chat</a>
+  <a class="tabItem active" href="preps.html" data-tab="preps">Präpositionen</a>
+</div>
+
+<!-- Drill card -->
+<div class="card" id="drillCard">
+  <div class="flash-overlay" id="flashOverlay"></div>
+
+  <div id="loadingText">Generating drill…</div>
+
+  <div id="drillContent" class="hidden">
+    <div id="sentenceText"></div>
+    <div id="glossText"></div>
+
+    <hr class="divider">
+
+    <div class="prepGrid" id="optionsGrid"></div>
+
+    <button id="btnFlag" title="Flag: sentence has no single correct preposition">🚩 Flag sentence</button>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+const GEMINI_KEY_LS='top5k_gemini_key';
+const SUPABASE_URL_KEY='top5k_supabase_url';
+const SUPABASE_KEY_KEY='top5k_supabase_key';
+const STATS_KEY='preps_stats_v1';
+const STATS_SAVED_AT_KEY='preps_saved_at_v1';
+const LOG_CAP=5000;
+
+/* ── Stats storage ── */
+function loadStats(){
+  try{
+    const raw=localStorage.getItem(STATS_KEY);
+    if(raw){
+      const s=JSON.parse(raw);
+      if(s&&s.v===1&&s.aggregate&&typeof s.aggregate==='object'&&Array.isArray(s.log)) return s;
+    }
+  }catch(e){}
+  return {v:1,aggregate:{},log:[]};
+}
+let stats=loadStats();
+
+function saveStats(){
+  try{
+    localStorage.setItem(STATS_KEY,JSON.stringify(stats));
+    localStorage.setItem(STATS_SAVED_AT_KEY,String(Date.now()));
+  }catch(e){}
+}
+
+function pushLog(entry){
+  stats.log.push(entry);
+  if(stats.log.length>LOG_CAP) stats.log.splice(0,stats.log.length-LOG_CAP);
+}
+
+function recordAnswer(drill,picked,correct){
+  const key=`${(drill.verb||'').toLowerCase()}|${(drill.prep||'').toLowerCase()}`;
+  const agg=stats.aggregate[key]||{attempts:0,misses:0,lastSeen:0};
+  agg.attempts++;
+  if(!correct) agg.misses++;
+  agg.lastSeen=Date.now();
+  stats.aggregate[key]=agg;
+  pushLog({ts:Date.now(),verb:drill.verb,prep:drill.prep,correct,picked});
+  saveStats();
+  pushPrepsNow();
+}
+
+function recordFlag(drill){
+  pushLog({ts:Date.now(),verb:drill.verb,prep:drill.prep,correct:false,picked:'FLAG'});
+  saveStats();
+  pushPrepsNow();
+}
+
+/* ── Cloud sync (Supabase) — mirror only, app works fully offline without it ── */
+function supabaseConf(){
+  const url=(localStorage.getItem(SUPABASE_URL_KEY)||'').trim().replace(/\/+$/,'');
+  const key=(localStorage.getItem(SUPABASE_KEY_KEY)||'').trim();
+  if(!url||!key) return null;
+  return {url,key};
+}
+
+async function supabaseUpsert(key,value){
+  const conf=supabaseConf();
+  if(!conf) return;
+  const res=await fetch(`${conf.url}/rest/v1/kv_state`,{
+    method:'POST',
+    headers:{
+      'apikey':conf.key,
+      'Content-Type':'application/json',
+      'Prefer':'resolution=merge-duplicates'
+    },
+    body:JSON.stringify([{key,value,updated_at:new Date().toISOString()}])
+  });
+  if(!res.ok) throw new Error(`Supabase upsert ${key} failed: HTTP ${res.status}`);
+  return res;
+}
+
+async function supabaseGetRow(key){
+  const conf=supabaseConf();
+  if(!conf) return null;
+  const res=await fetch(`${conf.url}/rest/v1/kv_state?key=eq.${encodeURIComponent(key)}&select=value,updated_at`,{
+    headers:{'apikey':conf.key}
+  });
+  if(!res.ok) throw new Error(`Supabase get ${key} failed: HTTP ${res.status}`);
+  const rows=await res.json();
+  return (rows&&rows[0])||null;
+}
+
+let prepsPushInFlight=false;
+let prepsPushQueued=false;
+
+function runPrepsPush(){
+  if(!supabaseConf()) return;
+  if(prepsPushInFlight){ prepsPushQueued=true; return; }
+  prepsPushInFlight=true;
+  supabaseUpsert(STATS_KEY,stats)
+    .catch(e=>console.error('Cloud push failed:',e))
+    .finally(()=>{
+      prepsPushInFlight=false;
+      if(prepsPushQueued){ prepsPushQueued=false; runPrepsPush(); }
+    });
+}
+function pushPrepsNow(){
+  if(!supabaseConf()) return;
+  runPrepsPush();
+}
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) pushPrepsNow(); });
+
+function fmtWhen(ts){ if(!ts) return 'never'; try{ return new Date(ts).toLocaleString(); }catch{ return 'never'; } }
+
+// Returns true if the cloud copy was applied.
+async function tryCloudPullOnLoad(){
+  if(!supabaseConf()) return false;
+  try{
+    const row=await supabaseGetRow(STATS_KEY);
+    if(!row||!row.value||typeof row.value!=='object'||!Array.isArray(row.value.log)) return false;
+    const remoteUpdatedAt=new Date(row.updated_at).getTime();
+    const localSavedAt=parseInt(localStorage.getItem(STATS_SAVED_AT_KEY)||'0',10);
+    const localEmpty=Object.keys(stats.aggregate).length===0&&stats.log.length===0;
+    if(!(remoteUpdatedAt>localSavedAt||localEmpty)) return false;
+    if(confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`)){
+      stats=row.value;
+      saveStats();
+      return true;
+    }
+    return false;
+  }catch(e){
+    console.error('Cloud pull failed:',e);
+    return false;
+  }
+}
+
+/* ── Prefetch queue ── */
+const QUEUE_DEPTH=2;
+let drillQueue=[];
+let fetchesInFlight=0;
+let currentDrill=null;
+let answering=false;
+
+async function fetchDrill(){
+  const key=localStorage.getItem(GEMINI_KEY_LS);
+  if(!key) throw new Error('no key');
+
+  const prompt=`Generate one German preposition drill for a B1–B2 learner. Pick a natural everyday situation. Output JSON only, no markdown:
+{"sentence": German sentence with the target preposition replaced by ___,
+ "verb": governing verb (infinitive) or context word,
+ "prep": the correct preposition,
+ "gloss": concise English translation of the full intended sentence,
+ "options": array of 4 prepositions including the correct one, shuffled, all plausible}
+The English gloss must make exactly ONE preposition correct — avoid sentences where two prepositions both fit. Casual natural German. Past events use Perfekt. One clause only.`;
+
+  const body=JSON.stringify({
+    contents:[{parts:[{text:prompt}]}],
+    generationConfig:{temperature:0.8,maxOutputTokens:1024,responseMimeType:"application/json"}
+  });
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+
+  const retryDelays=[800,1600,3200];
+  let lastErr=new Error('unknown error');
+  for(let attempt=0;attempt<3;attempt++){
+    if(attempt>0) await new Promise(r=>setTimeout(r,retryDelays[attempt-1]));
+    let shouldRetry=false;
+    try{
+      const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body});
+      if(res.status===429||res.status>=500){
+        lastErr=new Error(`API ${res.status}`);
+        shouldRetry=true;
+      }else if(!res.ok){
+        const errBody=await res.text().catch(()=>'');
+        throw new Error(`API ${res.status}: ${errBody.slice(0,200)}`);
+      }else{
+        const data=await res.json();
+        const raw=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
+        const s=raw.indexOf('{'), e=raw.lastIndexOf('}');
+        if(s===-1||e<=s) throw new Error(`no JSON object — raw: ${raw.slice(0,120)}`);
+        const drill=JSON.parse(raw.slice(s,e+1));
+        if(!drill.sentence||!drill.prep||!Array.isArray(drill.options)||drill.options.length<2){
+          throw new Error(`bad shape — raw: ${raw.slice(0,120)}`);
+        }
+        drill.sentence=(drill.sentence||'').trim();
+        drill.verb=(drill.verb||'').trim();
+        drill.prep=(drill.prep||'').trim();
+        drill.gloss=(drill.gloss||'').trim();
+        drill.options=drill.options.map(o=>(o||'').trim()).filter(Boolean);
+        if(!drill.options.some(o=>o.toLowerCase()===drill.prep.toLowerCase())){
+          throw new Error(`correct prep missing from options — raw: ${raw.slice(0,120)}`);
+        }
+        return drill;
+      }
+    }catch(e){
+      lastErr=e;
+      if(e instanceof TypeError) shouldRetry=true;
+    }
+    if(!shouldRetry) break;
+  }
+  throw lastErr;
+}
+
+function refillQueue(){
+  while(drillQueue.length+fetchesInFlight<QUEUE_DEPTH){
+    fetchesInFlight++;
+    fetchDrill()
+      .then(drill=>{drillQueue.push(drill);fetchesInFlight--;})
+      .catch(err=>{console.error('[preps prefetch]',err);fetchesInFlight--;});
+  }
+}
+
+function presentDrill(drill){
+  currentDrill=drill;
+  answering=false;
+  renderDrill(drill);
+  refillQueue();
+}
+
+async function generateDrill(){
+  const key=localStorage.getItem(GEMINI_KEY_LS);
+  if(!key) return;
+
+  if(drillQueue.length>0){
+    presentDrill(drillQueue.shift());
+    return;
+  }
+
+  const card=document.getElementById('drillCard');
+  const loadingText=document.getElementById('loadingText');
+  const drillContent=document.getElementById('drillContent');
+
+  card.classList.add('loading');
+  loadingText.textContent='Generating drill…';
+  loadingText.style.cursor='';
+  loadingText.onclick=null;
+  loadingText.classList.remove('hidden');
+  drillContent.classList.add('hidden');
+
+  try{
+    const drill=await fetchDrill();
+    presentDrill(drill);
+  }catch(e){
+    console.error('[preps drill]',e);
+    loadingText.textContent=`Failed: ${e.message} — tap to retry.`;
+    loadingText.style.wordBreak='break-word';
+    loadingText.style.cursor='pointer';
+    loadingText.onclick=()=>{ loadingText.onclick=null; generateDrill(); };
+    card.classList.remove('loading');
+  }
+}
+
+/* ── Render drill ── */
+function escapeHTML(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderDrill(drill){
+  const card=document.getElementById('drillCard');
+  const loadingText=document.getElementById('loadingText');
+  const drillContent=document.getElementById('drillContent');
+  const sentenceText=document.getElementById('sentenceText');
+  const glossText=document.getElementById('glossText');
+  const optionsGrid=document.getElementById('optionsGrid');
+
+  card.classList.remove('loading');
+  loadingText.classList.add('hidden');
+  drillContent.classList.remove('hidden');
+
+  sentenceText.innerHTML=escapeHTML(drill.sentence).replace(/_{2,}/g,'<span class="blank">___</span>');
+  glossText.textContent=drill.gloss;
+
+  optionsGrid.innerHTML='';
+  drill.options.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='prepOption';
+    btn.textContent=opt;
+    let lock=0;
+    btn.addEventListener('pointerdown',(e)=>{
+      e.preventDefault();
+      const now=Date.now(); if(now-lock<400) return; lock=now;
+      selectOption(opt,btn);
+    },{passive:false});
+    btn.addEventListener('mousedown',(e)=>e.preventDefault());
+    optionsGrid.appendChild(btn);
+  });
+}
+
+function triggerFlash(type){
+  const el=document.getElementById('flashOverlay');
+  if(!el) return;
+  el.className='flash-overlay';
+  void el.offsetWidth;
+  el.className='flash-overlay flash-'+type;
+  setTimeout(()=>{ el.className='flash-overlay'; },700);
+}
+
+function selectOption(picked,btnEl){
+  if(!currentDrill||answering) return;
+  answering=true;
+  const correct=picked.toLowerCase()===currentDrill.prep.toLowerCase();
+  document.querySelectorAll('.prepOption').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent.toLowerCase()===currentDrill.prep.toLowerCase()) b.classList.add('correct');
+    else if(b===btnEl) b.classList.add('wrong');
+  });
+  triggerFlash(correct?'good':'bad');
+  recordAnswer(currentDrill,picked,correct);
+  setTimeout(()=>generateDrill(),correct?1100:1900);
+}
+
+function handleFlag(){
+  if(!currentDrill||answering) return;
+  answering=true;
+  document.querySelectorAll('.prepOption').forEach(b=>b.disabled=true);
+  const flagBtn=document.getElementById('btnFlag');
+  flagBtn.classList.add('flag-confirm');
+  setTimeout(()=>flagBtn.classList.remove('flag-confirm'),600);
+  recordFlag(currentDrill);
+  setTimeout(()=>generateDrill(),450);
+}
+
+/* ── Boot ── */
+function boot(){
+  if(!localStorage.getItem(GEMINI_KEY_LS)){
+    document.getElementById('apiKeyScreen').classList.remove('hidden');
+    return;
+  }
+  tryCloudPullOnLoad();
+  generateDrill();
+}
+
+/* ── Wire buttons ── */
+{
+  let lockFlag=0;
+  document.getElementById('btnFlag')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockFlag<400) return; lockFlag=now;
+    handleFlag();
+  },{passive:false});
+  document.getElementById('btnFlag')?.addEventListener('mousedown',(e)=>e.preventDefault());
+
+  // Tab persistence: save on navigate
+  document.querySelectorAll('.tabItem').forEach(a=>{
+    a.addEventListener('click',()=>{
+      const href=a.getAttribute('href');
+      localStorage.setItem('top5k_active_tab',
+        href==='grammar.html'?'grammar':href==='chat.html'?'chat':href==='preps.html'?'preps':'vocab');
+    });
+  });
+
+  let lockSave=0;
+  document.getElementById('apiKeySave')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockSave<400) return; lockSave=now;
+    const val=(document.getElementById('apiKeyInput')?.value||'').trim();
+    const hint=document.getElementById('apiKeyHint');
+    if(!val){
+      if(hint){ hint.textContent='Please enter your API key.'; hint.classList.remove('hidden'); }
+      return;
+    }
+    localStorage.setItem(GEMINI_KEY_LS,val);
+    location.reload();
+  },{passive:false});
+  document.getElementById('apiKeySave')?.addEventListener('mousedown',(e)=>e.preventDefault());
+  document.getElementById('apiKeyInput')?.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter') document.getElementById('apiKeySave')?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+  });
+}
+
+document.addEventListener('DOMContentLoaded',boot);
+</script>
+
+</body>
+</html>
