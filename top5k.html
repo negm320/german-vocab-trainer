@@ -175,7 +175,7 @@ button:hover{background:var(--btn2)}
 </style>
 </head>
 <body>
-<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='grammar')location.replace('grammar.html');else if(t==='chat')location.replace('chat.html');else if(t==='preps')location.replace('preps.html');})();</script>
+<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='grammar')location.replace('grammar.html');else if(t==='chat')location.replace('chat.html');else if(t==='preps')location.replace('preps.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
 
 <!-- API Key Setup Screen -->
 <div id="apiKeyScreen" class="hidden">
@@ -205,6 +205,7 @@ button:hover{background:var(--btn2)}
   <a class="tabItem" href="grammar.html">Grammar</a>
   <a class="tabItem" href="preps.html">Präpositionen</a>
   <a class="tabItem" href="chat.html">Chat</a>
+  <a class="tabItem" href="ausdruck.html">Ausdruck</a>
 </div>
 
 <div class="bar"><strong>5k Trainer</strong></div>
@@ -2211,7 +2212,8 @@ async function boot(){
     'top5k_state_v2','top5k_backup_v2','top5k_profile_v1','top5k_log_v1',
     'top5k_gemini_key','top5k_active_tab','top5k_last_cloud_backup_v1','lena_chat_history',
     'top5k_supabase_url','top5k_supabase_key','top5k_chat_saved_at_v1','top5k_flagged_v1',
-    'preps_stats_v1','preps_saved_at_v1'
+    'preps_stats_v1','preps_saved_at_v1',
+    'ausdruck_entries_v1','ausdruck_saved_at_v1'
   ]);
 
   function getStorageReport(){
@@ -2313,7 +2315,7 @@ document.querySelectorAll('.tabItem').forEach(a=>{
   a.addEventListener('click',()=>{
     const href=a.getAttribute('href');
     localStorage.setItem('top5k_active_tab',
-      href==='grammar.html'?'grammar':href==='chat.html'?'chat':href==='preps.html'?'preps':'vocab');
+      href==='grammar.html'?'grammar':href==='chat.html'?'chat':href==='preps.html'?'preps':href==='ausdruck.html'?'ausdruck':'vocab');
   });
 });
 

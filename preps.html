@@ -89,7 +89,7 @@ button:hover{background:var(--btn2);}
 </style>
 </head>
 <body>
-<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='grammar')location.replace('grammar.html');else if(t==='chat')location.replace('chat.html');})();</script>
+<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='grammar')location.replace('grammar.html');else if(t==='chat')location.replace('chat.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
 
 <!-- API Key Setup Screen -->
 <div id="apiKeyScreen" class="hidden">
@@ -110,6 +110,7 @@ button:hover{background:var(--btn2);}
   <a class="tabItem" href="grammar.html" data-tab="grammar">Grammar</a>
   <a class="tabItem active" href="preps.html" data-tab="preps">Präpositionen</a>
   <a class="tabItem" href="chat.html" data-tab="chat">Chat</a>
+  <a class="tabItem" href="ausdruck.html" data-tab="ausdruck">Ausdruck</a>
 </div>
 
 <!-- Drill card -->
@@ -565,7 +566,7 @@ function boot(){
     a.addEventListener('click',()=>{
       const href=a.getAttribute('href');
       localStorage.setItem('top5k_active_tab',
-        href==='grammar.html'?'grammar':href==='chat.html'?'chat':href==='preps.html'?'preps':'vocab');
+        href==='grammar.html'?'grammar':href==='chat.html'?'chat':href==='preps.html'?'preps':href==='ausdruck.html'?'ausdruck':'vocab');
     });
   });
 
