@@ -9,9 +9,6 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#000000">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="ios-theme.css">
 <script src="ios-sheet.js" defer></script>
 <style>
@@ -23,7 +20,8 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 
 /* top bar */
 .topBar{display:flex;align-items:center;justify-content:space-between;margin:2px 0 14px;}
-.pill{display:inline-block;border-radius:999px;padding:4px 11px;font-size:12px;}
+.pill{display:inline-block;border-radius:999px;padding:4px 11px;font-size:12px;transition:box-shadow .3s,border-color .3s;}
+.pill.pill-new{border-color:rgba(255,159,10,0.6);box-shadow:0 0 0 1px rgba(255,159,10,0.35),0 0 12px rgba(255,159,10,0.45);}
 
 /* header bar (large title) */
 .bar{font-family:var(--font-chrome);font-size:28px;font-weight:700;color:var(--text);margin:2px 0 16px;}
@@ -61,7 +59,9 @@ input,textarea{
 .toolsBox summary::-webkit-details-marker{display:none;}
 .toolsChevron{display:inline-block;transition:transform .15s;}
 .toolsBox[open] .toolsChevron{transform:rotate(180deg);}
-.toolsBox button{font-size:11px;padding:8px 6px;border-radius:8px;font-family:var(--font-chrome);flex:1;min-width:90px;}
+.toolsGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;}
+.toolsBox button{font-size:11px;padding:9px 6px;border-radius:8px;font-family:var(--font-chrome);color:var(--muted);background:var(--input);}
+#btnPushNow{font-size:11px;padding:9px 10px;border-radius:8px;font-family:var(--font-chrome);color:var(--muted);background:var(--input);}
 
 /* action rows */
 .actionRow{display:flex;gap:6px;margin-top:8px;}
@@ -268,8 +268,6 @@ button:hover{background:var(--btn2)}
     <button id="coreCheckNext">Check</button>
   </div>
 
-  <div id="neuBadge" class="hidden" style="position:absolute;top:14px;right:14px;background:rgba(255,159,10,0.15);border:1px solid rgba(255,159,10,0.4);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--warn);pointer-events:none;letter-spacing:0.5px;font-family:var(--font-chrome);">Neu</div>
-
   <!-- Secondary: Back, Typo, Hide, Edit -->
   <div class="actionRow secondary" style="margin-top:6px;">
     <button id="coreEdit" class="muted">Edit</button>
@@ -296,36 +294,31 @@ button:hover{background:var(--btn2)}
     <div id="coreProgText" class="small muted" style="margin-top:4px;text-align:right;font-family:var(--font-chrome);"></div>
   </div>
 
-  <!-- Debug -->
-  <div id="dbg" class="muted small" style="margin-top:8px;font-family:var(--font-chrome);"></div>
-
   <!-- Debug tools -->
   <details id="toolsBox" class="toolsBox">
     <summary class="muted small">
       <span>Tools</span>
       <span class="toolsChevron">⌄</span>
     </summary>
-    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+    <div class="toolsGrid">
       <button id="btnDump">Dump state</button>
       <button id="btnHardSave">Force save</button>
       <button id="btnRecalibrate">Recalibrate → 0.5</button>
-      <button id="btnExportFlagged" class="muted">Export flagged</button>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+      <button id="btnExportFlagged">Export flagged</button>
       <button id="btnCheckV1">Check v1 Key</button>
-      <button id="btnCopyV1" class="muted">Copy v1 JSON</button>
-      <button id="btnRestoreV1" class="muted">Restore v1 → current</button>
-      <button id="btnRestoreBackup" class="muted">Restore latest backup</button>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
-      <button id="btnStorageUsage" class="muted">Storage usage</button>
-      <button id="btnCleanLegacy" class="muted">Clean legacy keys</button>
+      <button id="btnCopyV1">Copy v1 JSON</button>
+      <button id="btnRestoreV1">Restore v1 → current</button>
+      <button id="btnRestoreBackup">Restore latest backup</button>
+      <button id="btnStorageUsage">Storage usage</button>
+      <button id="btnCleanLegacy">Clean legacy keys</button>
     </div>
     <pre id="storageUsageOut" class="small muted hidden" style="margin-top:8px;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-all;"></pre>
-    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;align-items:center;">
-      <button id="btnPushNow" class="muted">Push now</button>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">
+      <button id="btnPushNow">Push now</button>
       <span id="syncStatusLine" class="small muted"></span>
     </div>
+    <!-- Debug -->
+    <div id="dbg" class="muted small" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--divider);font-family:var(--font-chrome);"></div>
   </details>
 
 </section>
@@ -1411,9 +1404,9 @@ const Core={
     const _showHalf=state.fractionalRolled[_id]===undefined&&(_origScore%1>0.01);
     renderStreakDots(Math.min(_cr,_sch),_sch,undefined,false,_showHalf);
     if(state.activeMode==='cloze') setTimeout(triggerBlankPulse,50);
-    // Neu badge: shown only for words never answered before
-    const neuBadgeEl=$('#neuBadge');
-    if(neuBadgeEl) neuBadgeEl.classList.toggle('hidden', !!(state.seen||{})[x?.id]);
+    // New-word glow on the level pill: shown only for words never answered before
+    const levelPillEl=$('#topLevelPill');
+    if(levelPillEl) levelPillEl.classList.toggle('pill-new', !(state.seen||{})[x?.id]);
     this.updateProgress();
     this.updateDbg();
     updateFlagButtonUI();

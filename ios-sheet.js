@@ -7,6 +7,9 @@
      IOSSheet.open(id)
      IOSSheet.close(id)
      IOSSheet.confirm(message, { title, confirmLabel, cancelLabel, danger, onConfirm })
+
+   Sheets can also be dragged down from their grab handle
+   (.iosSheet-handle) to dismiss, like a native iOS sheet.
    ============================================================ */
 (function(){
   function scrimEl(){
@@ -22,6 +25,14 @@
 
   let openId = null;
   let escHandler = null;
+
+  function finishClose(el){
+    el.classList.remove('show');
+    el.classList.add('hidden');
+    el.style.transition = '';
+    el.style.transform = '';
+    if(el.dataset.iosSheetTemp === '1') el.remove();
+  }
 
   function open(id){
     const el = document.getElementById(id);
@@ -47,10 +58,7 @@
     el.classList.remove('show');
     const scrim = scrimEl();
     scrim.classList.remove('show');
-    setTimeout(function(){
-      el.classList.add('hidden');
-      if(el.dataset.iosSheetTemp === '1') el.remove();
-    }, 280);
+    setTimeout(function(){ finishClose(el); }, 280);
     if(escHandler){ document.removeEventListener('keydown', escHandler); escHandler = null; }
     openId = null;
   }
@@ -81,6 +89,56 @@
 
     open(id);
   }
+
+  /* ---- drag-to-dismiss (from the grab handle) ---- */
+  let drag = null;
+
+  function onPointerDown(e){
+    const handle = e.target.closest && e.target.closest('.iosSheet-handle');
+    if(!handle) return;
+    const sheet = handle.closest('.iosSheet');
+    if(!sheet || !sheet.classList.contains('show')) return;
+    drag = { sheet: sheet, startY: e.clientY, lastY: e.clientY, lastT: Date.now(), dy: 0, velocity: 0 };
+    sheet.style.transition = 'none';
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  }
+
+  function onPointerMove(e){
+    if(!drag) return;
+    const dy = Math.max(0, e.clientY - drag.startY);
+    const now = Date.now();
+    const dt = now - drag.lastT;
+    if(dt > 0) drag.velocity = (e.clientY - drag.lastY) / dt;
+    drag.lastY = e.clientY;
+    drag.lastT = now;
+    drag.dy = dy;
+    drag.sheet.style.transform = 'translateY(' + dy + 'px)';
+  }
+
+  function onPointerUp(){
+    if(!drag) return;
+    const sheet = drag.sheet, dy = drag.dy, velocity = drag.velocity;
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+
+    const shouldDismiss = dy > sheet.offsetHeight * 0.3 || dy > 120 || velocity > 0.6;
+    if(shouldDismiss){
+      sheet.style.transition = 'transform .22s ease-out';
+      sheet.style.transform = 'translateY(100%)';
+      scrimEl().classList.remove('show');
+      setTimeout(function(){ finishClose(sheet); }, 220);
+      if(escHandler){ document.removeEventListener('keydown', escHandler); escHandler = null; }
+      openId = null;
+    } else {
+      sheet.style.transition = 'transform .25s cubic-bezier(.25,.46,.45,.94)';
+      sheet.style.transform = '';
+      setTimeout(function(){ sheet.style.transition = ''; }, 260);
+    }
+    drag = null;
+  }
+
+  document.addEventListener('pointerdown', onPointerDown);
 
   window.IOSSheet = { open: open, close: close, confirm: confirm };
 })();
