@@ -7,33 +7,35 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<meta name="theme-color" content="#0b0e12">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="ios-theme.css">
+<script src="ios-sheet.js" defer></script>
 <style>
-:root{
-  --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041;
-  --accent:#6aa6ff; --good:#22c55e; --bad:#ef4444; --btn:#1a2230; --btn2:#1e2a3c; --hole:#0f141c;
-}
 *{box-sizing:border-box}
 button,input,textarea,select{font-family:inherit;}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgia,serif;}
-.wrap{max-width:720px;margin:0 auto;padding:14px 14px 60px}
+.wrap{max-width:720px;margin:0 auto;padding:14px 14px calc(96px + env(safe-area-inset-bottom,0px));}
 
-/* tabs */
-.tabBar{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-.tabBar::-webkit-scrollbar{display:none;}
-.tabItem{padding:8px 20px;font-size:14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap;flex-shrink:0;}
-.tabItem.active{color:var(--text);border-bottom-color:var(--accent);}
-.tabItem:hover:not(.active){color:var(--text);}
+/* header (large title) */
+.bar{font-family:var(--font-chrome);font-size:28px;font-weight:700;color:var(--text);margin:2px 0 16px;}
 
 /* card */
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 16px;box-shadow:0 6px 20px rgba(0,0,0,.25);position:relative;overflow:hidden;}
+.card{padding:20px 16px;position:relative;border-radius:var(--r-card);}
+
+/* ── drill entrance (new card) ── */
+@keyframes drillSlideIn{from{transform:translateX(18px);opacity:0}to{transform:translateX(0);opacity:1}}
+.card.drill-enter #drillContent{animation:drillSlideIn .25s cubic-bezier(.25,.46,.45,.94) both;}
+@keyframes optIn{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+.card.drill-enter .prepOption{animation:optIn .3s ease both;}
+.card.drill-enter .prepOption:nth-child(1){animation-delay:.04s}
+.card.drill-enter .prepOption:nth-child(2){animation-delay:.08s}
+.card.drill-enter .prepOption:nth-child(3){animation-delay:.12s}
+.card.drill-enter .prepOption:nth-child(4){animation-delay:.16s}
 
 /* divider */
-.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.divider{border:none;border-top:1px solid var(--divider);margin:14px 0;}
 
 /* states */
 .hidden{display:none!important}
@@ -41,87 +43,79 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 .small{font-size:12px}
 .good{color:var(--good)} .bad{color:var(--bad)}
 
-/* generic button */
-button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer;font-size:15px;}
-button:hover{background:var(--btn2);}
-
-/* API key setup screen */
-#apiKeyScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10000;}
-#apiKeyScreen.hidden{display:none!important}
-.setupBox{width:min(480px,100%);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.45);}
-.setupBox input{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);font-size:16px;}
-
 /* flash overlay */
-.flash-overlay{position:absolute;inset:0;border-radius:14px;pointer-events:none;opacity:0;}
+.flash-overlay{position:absolute;inset:0;border-radius:var(--r-card);pointer-events:none;opacity:0;}
 @keyframes flashAnim{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
-.flash-good{background:rgba(34,197,94,.12);border:1.5px solid rgba(34,197,94,.5);border-radius:14px;animation:flashAnim .65s ease both;}
-.flash-bad{background:rgba(239,68,68,.10);border:1.5px solid rgba(239,68,68,.45);border-radius:14px;animation:flashAnim .65s ease both;}
+.flash-good{background:var(--good-bg);border:1.5px solid rgba(50,215,75,.5);border-radius:var(--r-card);animation:flashAnim .65s ease both;}
+.flash-bad{background:var(--bad-bg);border:1.5px solid rgba(255,69,58,.45);border-radius:var(--r-card);animation:flashAnim .65s ease both;}
 
 /* loading */
-@keyframes loadPulse{0%,100%{border-color:var(--border)}50%{border-color:rgba(106,166,255,0.5)}}
+@keyframes loadPulse{0%,100%{border-color:var(--border)}50%{border-color:rgba(10,132,255,0.5)}}
 .card.loading{animation:loadPulse 1s ease infinite;}
-#loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;}
+#loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;font-family:var(--font-chrome);}
 
 /* drill content */
 #sentenceText{font-size:19px;line-height:1.7;}
-@keyframes blankPulse{0%{background:rgba(106,166,255,0.08)}50%{background:rgba(106,166,255,0.24)}100%{background:rgba(106,166,255,0.08)}}
+@keyframes blankPulse{0%{background:rgba(10,132,255,0.08)}50%{background:rgba(10,132,255,0.26)}100%{background:rgba(10,132,255,0.08)}}
 #sentenceText .blank{
   display:inline-block;border-bottom:2px solid var(--accent);min-width:58px;height:14px;
-  margin:0 2px;vertical-align:bottom;background:rgba(106,166,255,0.08);border-radius:3px 3px 0 0;
+  margin:0 2px;vertical-align:bottom;background:rgba(10,132,255,0.08);border-radius:3px 3px 0 0;
   color:transparent;font-size:0;animation:blankPulse 1.6s ease-in-out 1;
 }
 #sentenceText .govHighlight{color:var(--accent);font-weight:600;}
-#glossText{margin-top:10px;padding-left:12px;border-left:2px solid var(--border);font-size:14px;color:var(--muted);line-height:1.6;font-style:italic;}
+#glossText{margin-top:10px;padding-left:12px;border-left:2px solid var(--border-soft);font-size:14px;color:var(--muted);line-height:1.6;font-style:italic;}
 
 /* options grid */
 .prepGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
-.prepOption{padding:15px 10px;font-size:16px;border-radius:12px;background:var(--btn);border:1px solid var(--border);color:var(--text);cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .12s,box-shadow .15s;}
-.prepOption:hover:not(:disabled){background:var(--btn2);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.25);}
-.prepOption:active:not(:disabled){transform:translateY(0);box-shadow:none;}
+.prepOption{padding:15px 10px;font-size:16px;font-family:var(--font-body);border-radius:12px;background:var(--btn);border:1px solid var(--border);color:var(--text);cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .12s,box-shadow .15s;}
+.prepOption:active:not(:disabled){transform:translateY(0);box-shadow:none;background:var(--btn2);}
 .prepOption:disabled{cursor:default;opacity:.85;}
-.prepOption.correct{background:rgba(34,197,94,.18);border-color:var(--good);color:var(--good);}
+.prepOption.correct{background:var(--good-bg);border-color:var(--good);color:var(--good);}
 .prepOption.correct::before{content:'✓  ';}
-.prepOption.wrong{background:rgba(239,68,68,.16);border-color:var(--bad);color:var(--bad);}
+.prepOption.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad);}
 .prepOption.wrong::before{content:'✗  ';}
+@media (hover:hover){
+  .prepOption:hover:not(:disabled){background:var(--btn2);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.25);}
+}
 
 @media (prefers-reduced-motion: reduce){
   #sentenceText .blank{animation:none;}
   .prepOption{transition:background .15s,border-color .15s,color .15s;}
   .prepOption:hover:not(:disabled){transform:none;box-shadow:none;}
+  .card.drill-enter #drillContent,.card.drill-enter .prepOption{animation:none;}
 }
 
 /* footer controls */
 .footerRow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}
-.ghostBtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:13px;padding:6px 14px;border-radius:999px;}
-.ghostBtn:hover{color:var(--text);border-color:var(--muted);}
-#btnFlag.flag-confirm{background:rgba(239,68,68,.28);border-color:rgba(239,68,68,.6);color:#fda4af;}
-#btnHighlightToggle.on{color:var(--accent);border-color:var(--accent);}
+.ghostBtn{background:transparent;border:1px solid var(--border-soft);color:var(--muted);font-size:13px;padding:7px 14px;border-radius:999px;font-family:var(--font-chrome);transition:background .15s,color .15s,border-color .15s;}
+.ghostBtn:active{background:rgba(255,255,255,.06);}
+#btnFlag.flag-confirm{background:var(--bad-bg);border-color:rgba(255,69,58,.6);color:var(--bad);}
+#btnHighlightToggle.on{color:var(--accent);border-color:rgba(10,132,255,.4);background:var(--accent-bg);}
+@media (hover:hover){
+  .ghostBtn:hover{color:var(--text);border-color:var(--muted);}
+}
 </style>
 </head>
 <body>
 <script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='grammar')location.replace('grammar.html');else if(t==='chat')location.replace('chat.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
 
 <!-- API Key Setup Screen -->
-<div id="apiKeyScreen" class="hidden">
-  <div class="setupBox">
-    <h2 style="margin:0 0 8px;font-size:18px;">Gemini API Key</h2>
-    <p class="muted small" style="margin:0 0 16px;line-height:1.6;">A free Gemini API key is required to use AI features. Get one at <strong>aistudio.google.com</strong></p>
-    <input id="apiKeyInput" type="text" placeholder="AIza…" spellcheck="false" autocomplete="off" style="margin-bottom:12px;">
-    <button id="apiKeySave" style="width:100%;">Save &amp; continue</button>
-    <div id="apiKeyHint" class="muted small hidden" style="margin-top:8px;color:var(--bad);"></div>
+<div id="apiKeyScreen" class="iosSetupScreen hidden">
+  <div class="iosSetupCard">
+    <div class="iosSetupIcon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"></circle><path d="M10.5 12.5L20 3l2 2-2 2 2 2-3 3-2-2-3.5 3.5"></path></svg>
+    </div>
+    <h2>Gemini API Key</h2>
+    <p>A free Gemini API key is required to use AI features. Get one at <strong>aistudio.google.com</strong></p>
+    <input id="apiKeyInput" type="text" placeholder="AIza…" spellcheck="false" autocomplete="off">
+    <button id="apiKeySave">Save &amp; continue</button>
+    <div id="apiKeyHint" class="muted small hidden" style="margin-top:10px;color:var(--bad);text-align:center;font-family:var(--font-chrome);"></div>
   </div>
 </div>
 
 <div class="wrap">
 
-<!-- Tab bar -->
-<div class="tabBar">
-  <a class="tabItem" href="top5k.html" data-tab="vocab">Vocab</a>
-  <a class="tabItem" href="grammar.html" data-tab="grammar">Grammar</a>
-  <a class="tabItem active" href="preps.html" data-tab="preps">Präpositionen</a>
-  <a class="tabItem" href="ausdruck.html" data-tab="ausdruck">Ausdruck</a>
-  <a class="tabItem" href="chat.html" data-tab="chat">Chat</a>
-</div>
+<div class="bar">Präpositionen</div>
 
 <!-- Drill card -->
 <div class="card" id="drillCard">
@@ -145,6 +139,29 @@ button:hover{background:var(--btn2);}
 </div>
 
 </div><!-- /wrap -->
+
+<!-- Floating iOS dock -->
+<nav class="iosDock" aria-label="Screens">
+  <div class="iosDock-glass"></div>
+  <div class="iosDock-highlight"></div>
+  <div class="iosDock-row">
+    <a class="iosDock-item tabItem" href="top5k.html" data-tab="vocab" aria-label="Vocab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c2.2-1 5.4-1 8 .2v13.6c-2.6-1.2-5.8-1.2-8-.2V5z"></path><path d="M20 5c-2.2-1-5.4-1-8 .2v13.6c2.6-1.2 5.8-1.2 8-.2V5z"></path></svg>
+    </a>
+    <a class="iosDock-item tabItem" href="grammar.html" data-tab="grammar" aria-label="Grammar">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h11M4 17h7"></path></svg>
+    </a>
+    <a class="iosDock-item active tabItem" href="preps.html" data-tab="preps" aria-label="Präpositionen">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H7a3 3 0 000 6h1"></path><path d="M9 4L6 7l3 3"></path><path d="M4 17h13a3 3 0 000-6h-1"></path><path d="M15 20l3-3-3-3"></path></svg>
+    </a>
+    <a class="iosDock-item tabItem" href="ausdruck.html" data-tab="ausdruck" aria-label="Ausdruck">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4.5L16 4.5a1.5 1.5 0 012 2L7 17.5 4 20z"></path><path d="M13.5 6L16.5 9"></path></svg>
+    </a>
+    <a class="iosDock-item tabItem" href="chat.html" data-tab="chat" aria-label="Chat">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-4 4V5z"></path></svg>
+    </a>
+  </div>
+</nav>
 
 <script>
 const GEMINI_KEY_LS='top5k_gemini_key';
@@ -285,11 +302,12 @@ async function tryCloudPullOnLoad(){
     const localSavedAt=parseInt(localStorage.getItem(STATS_SAVED_AT_KEY)||'0',10);
     const localEmpty=Object.keys(stats.aggregate).length===0&&stats.log.length===0;
     if(!(remoteUpdatedAt>localSavedAt||localEmpty)) return false;
-    if(confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`)){
-      stats=migrateStats(row.value);
-      saveStats();
-      return true;
-    }
+    window.IOSSheet?.confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`,{
+      title:'Cloud Sync',
+      confirmLabel:'Restore',
+      cancelLabel:'Keep this device',
+      onConfirm:()=>{ stats=migrateStats(row.value); saveStats(); }
+    });
     return false;
   }catch(e){
     console.error('Cloud pull failed:',e);
@@ -488,6 +506,12 @@ function renderDrill(drill){
 
   sentenceText.innerHTML=renderSentenceHTML(drill);
   glossText.textContent=drill.gloss;
+
+  card.classList.remove('drill-enter');
+  void card.offsetWidth;
+  card.classList.add('drill-enter');
+  clearTimeout(renderDrill._enterTimer);
+  renderDrill._enterTimer=setTimeout(()=>card.classList.remove('drill-enter'),700);
 
   optionsGrid.innerHTML='';
   drill.options.forEach(opt=>{
