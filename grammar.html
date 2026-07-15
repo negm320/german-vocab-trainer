@@ -7,47 +7,34 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<meta name="theme-color" content="#0b0e12">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="ios-theme.css">
+<script src="ios-sheet.js" defer></script>
 <style>
-:root{
-  --bg:#0b0e12; --card:#12161d; --text:#e9eef5; --muted:#9aacbf; --border:#243041;
-  --accent:#6aa6ff; --good:#22c55e; --bad:#ef4444; --btn:#1a2230; --btn2:#1e2a3c; --hole:#0f141c;
-}
 *{box-sizing:border-box}
 button,input,textarea,select{font-family:inherit;}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgia,serif;}
-.wrap{max-width:720px;margin:0 auto;padding:14px 14px 110px}
+.wrap{max-width:720px;margin:0 auto;padding:14px 14px calc(96px + env(safe-area-inset-bottom,0px));}
 
-/* tabs */
-.tabBar{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-.tabBar::-webkit-scrollbar{display:none;}
-.tabItem{padding:8px 20px;font-size:14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap;flex-shrink:0;}
-.tabItem.active{color:var(--text);border-bottom-color:var(--accent);}
-.tabItem:hover:not(.active){color:var(--text);}
+/* header (large title) */
+.bar{font-family:var(--font-chrome);font-size:28px;font-weight:700;color:var(--text);margin:2px 0 16px;}
 
 /* card */
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.25);position:relative;overflow:hidden;}
+.card{padding:16px;position:relative;overflow:hidden;border-radius:var(--r-card);}
 
 /* divider */
-.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
+.divider{border:none;border-top:1px solid var(--divider);margin:14px 0;}
 
 /* inputs */
-input,textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);font-size:16px;}
-.good-field{border-color:var(--good)!important;box-shadow:0 0 0 1px rgba(34,197,94,.45);}
-.bad-field{border-color:var(--bad)!important;box-shadow:0 0 0 1px rgba(239,68,68,.45);}
+input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:var(--text);}
+.good-field{border-color:var(--good)!important;box-shadow:0 0 0 1px rgba(50,215,75,.45);}
+.bad-field{border-color:var(--bad)!important;box-shadow:0 0 0 1px rgba(255,69,58,.45);}
 
 /* action row */
 .actionRow{display:flex;gap:6px;margin-top:10px;}
-.actionRow button{flex:1;background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 8px;color:var(--text);cursor:pointer;font-size:14px;}
-.actionRow button:hover{background:var(--btn2);}
-
-/* generic button */
-button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer;}
-button:hover{background:var(--btn2);}
+.actionRow button{flex:1;padding:10px 8px;font-size:14px;font-family:var(--font-chrome);}
 
 /* states */
 .hidden{display:none!important}
@@ -55,16 +42,11 @@ button:hover{background:var(--btn2);}
 .small{font-size:12px}
 .good{color:var(--good)} .bad{color:var(--bad)}
 
-/* API key setup screen */
-#apiKeyScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10000;}
-#apiKeyScreen.hidden{display:none!important}
-.setupBox{width:min(480px,100%);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.45);}
-
 /* flash overlay */
-.flash-overlay{position:absolute;inset:0;border-radius:14px;pointer-events:none;opacity:0;}
+.flash-overlay{position:absolute;inset:0;border-radius:var(--r-card);pointer-events:none;opacity:0;}
 @keyframes flashAnim{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
-.flash-good{background:rgba(34,197,94,.12);border:1.5px solid rgba(34,197,94,.5);border-radius:14px;animation:flashAnim .65s ease both;}
-.flash-bad{background:rgba(239,68,68,.10);border:1.5px solid rgba(239,68,68,.45);border-radius:14px;animation:flashAnim .65s ease both;}
+.flash-good{background:var(--good-bg);border:1.5px solid rgba(50,215,75,.5);border-radius:var(--r-card);animation:flashAnim .65s ease both;}
+.flash-bad{background:var(--bad-bg);border:1.5px solid rgba(255,69,58,.45);border-radius:var(--r-card);animation:flashAnim .65s ease both;}
 
 /* shake */
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
@@ -72,17 +54,17 @@ button:hover{background:var(--btn2);}
 
 /* word pieces */
 .piecesWrap{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;}
-.piece{padding:7px 13px;border-radius:10px;background:var(--btn);border:1px solid var(--border);font-size:15px;cursor:pointer;user-select:none;}
+.piece{padding:7px 13px;border-radius:10px;background:var(--btn);border:1.5px solid var(--border);font-size:15px;font-family:'Lora',Georgia,serif;color:var(--text);cursor:pointer;user-select:none;}
 .piece:hover{background:var(--btn2);}
 .piece:active{transform:scale(.96);}
-.piece.connector{background:rgba(106,166,255,0.1);border-color:rgba(106,166,255,0.4);color:var(--accent);}
-.piece.connector:hover{background:rgba(106,166,255,0.2);}
+.piece.connector{background:rgba(10,132,255,0.12);border-color:rgba(10,132,255,0.4);color:var(--accent);}
+.piece.connector:hover{background:rgba(10,132,255,0.2);}
 .piece.used{opacity:0.3;text-decoration:line-through;}
 
 /* loading */
-@keyframes loadPulse{0%,100%{border-color:var(--border)}50%{border-color:rgba(106,166,255,0.5)}}
+@keyframes loadPulse{0%,100%{border-color:var(--border)}50%{border-color:rgba(10,132,255,0.5)}}
 .card.loading{animation:loadPulse 1s ease infinite;}
-#loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;}
+#loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;font-family:var(--font-chrome);}
 
 /* mic states (chat.html mic, verbatim) */
 #micBtn svg{width:26px;height:26px;fill:var(--accent);flex-shrink:0;transition:fill .2s;}
@@ -93,50 +75,48 @@ button:hover{background:var(--btn2);}
 #micBtn.listening .ripple:nth-child(2){animation:rippleOut 1.6s ease-out .53s infinite;}
 #micBtn.listening .ripple:nth-child(3){animation:rippleOut 1.6s ease-out 1.06s infinite;}
 @keyframes rippleOut{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.65);opacity:0}}
-#micStatus{font-size:12px;color:var(--muted);margin-top:6px;min-height:1.2em;}
+#micStatus{font-size:12px;color:var(--muted);margin-top:6px;min-height:1.2em;font-family:var(--font-chrome);}
 .input-interim{color:var(--muted)!important;}
 
-/* bottom bar */
-.bottomBar{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;padding:0 16px calc(20px + env(safe-area-inset-bottom));}
-.pill{position:relative;display:flex;align-items:center;width:min(440px,100%);height:54px;background:var(--btn);border:1px solid var(--border);border-radius:27px;}
-.pillHalf{flex:1;background:transparent;border:none;color:var(--text);font-size:15px;cursor:pointer;height:100%;transition:background .15s;}
-.pillHalf:first-child{border-radius:27px 0 0 27px;}
-.pillHalf:last-child{border-radius:0 27px 27px 0;}
-.pillHalf:hover{background:rgba(255,255,255,.06);}
+/* Check/Next/mic control bar — flows below the card, NOT fixed (the floating
+   dock is the only fixed bottom element now); renamed from .pill/.pillHalf
+   to avoid colliding with ios-theme.css's badge-pill component. */
+.bottomBar{display:flex;justify-content:center;margin-top:18px;}
+.checkPill{position:relative;display:flex;align-items:center;width:100%;max-width:370px;height:54px;background:var(--card);border:1px solid var(--border);border-radius:27px;}
+.checkPillHalf{flex:1;background:transparent;border:none;color:var(--text);font-size:15px;font-family:var(--font-chrome);cursor:pointer;height:100%;transition:background .15s;}
+.checkPillHalf:first-child{border-radius:27px 0 0 27px;}
+.checkPillHalf:last-child{border-radius:0 27px 27px 0;}
+.checkPillHalf:hover{background:rgba(255,255,255,.06);}
 .micCircle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:80px;height:80px;border-radius:50%;background:var(--btn);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:background .15s,border-color .15s;}
 
-/* word class borders */
+/* word class borders (literal hues, not tied to theme tokens) */
 .piece.acc-dat{border-color:#b8860b;}
 .piece.personal-pronoun{border-color:#facc15;}
 .piece.preposition{border-color:#c026d3;}
 .piece.time-word{border-color:#22c55e;}
-.piece.verb{border-color:#ef4444;}
+.piece.verb{background:var(--btn);border-color:var(--bad);color:#fff;}
 </style>
 </head>
 <body>
 <script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='chat')location.replace('chat.html');else if(t==='preps')location.replace('preps.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
 
 <!-- API Key Setup Screen -->
-<div id="apiKeyScreen" class="hidden">
-  <div class="setupBox">
-    <h2 style="margin:0 0 8px;font-size:18px;">Gemini API Key</h2>
-    <p class="muted small" style="margin:0 0 16px;line-height:1.6;">A free Gemini API key is required to use AI features. Get one at <strong>aistudio.google.com</strong></p>
-    <input id="apiKeyInput" type="text" placeholder="AIza…" spellcheck="false" autocomplete="off" style="margin-bottom:12px;">
-    <button id="apiKeySave" style="width:100%;">Save &amp; continue</button>
-    <div id="apiKeyHint" class="muted small hidden" style="margin-top:8px;color:var(--bad);"></div>
+<div id="apiKeyScreen" class="iosSetupScreen hidden">
+  <div class="iosSetupCard">
+    <div class="iosSetupIcon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"></circle><path d="M10.5 12.5L20 3l2 2-2 2 2 2-3 3-2-2-3.5 3.5"></path></svg>
+    </div>
+    <h2>Gemini API Key</h2>
+    <p>A free Gemini API key is required to use AI features. Get one at <strong>aistudio.google.com</strong></p>
+    <input id="apiKeyInput" type="text" placeholder="AIza…" spellcheck="false" autocomplete="off">
+    <button id="apiKeySave">Save &amp; continue</button>
+    <div id="apiKeyHint" class="muted small hidden" style="margin-top:10px;color:var(--bad);text-align:center;font-family:var(--font-chrome);"></div>
   </div>
 </div>
 
 <div class="wrap">
 
-<!-- Tab bar -->
-<div class="tabBar">
-  <a class="tabItem" href="top5k.html" data-tab="vocab">Vocab</a>
-  <a class="tabItem active" href="grammar.html" data-tab="grammar">Grammar</a>
-  <a class="tabItem" href="preps.html" data-tab="preps">Präpositionen</a>
-  <a class="tabItem" href="ausdruck.html" data-tab="ausdruck">Ausdruck</a>
-  <a class="tabItem" href="chat.html" data-tab="chat">Chat</a>
-</div>
+<div class="bar">Grammar</div>
 
 <!-- Drill card -->
 <div class="card" id="drillCard">
@@ -161,14 +141,11 @@ button:hover{background:var(--btn2);}
 </div>
 
 <button id="btnUndo" class="hidden" style="width:100%;margin-top:8px;">← Undo word</button>
-<pre id="debugPanel" style="display:none;font-family:monospace;font-size:12px;background:#0a0d10;border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:8px;max-height:320px;overflow-y:auto;overflow-x:hidden;white-space:pre-wrap;word-break:break-all;color:var(--muted);line-height:1.5;"></pre>
-
-</div><!-- /wrap -->
 
 <div class="bottomBar">
-  <div class="pill">
-    <button id="btnCheck" class="pillHalf">Check</button>
-    <button id="btnNext" class="pillHalf">Next</button>
+  <div class="checkPill">
+    <button id="btnCheck" class="checkPillHalf">Check</button>
+    <button id="btnNext" class="checkPillHalf">Next</button>
     <button id="micBtn" class="micCircle" title="Dictate German" aria-label="Mikrofon">
       <div class="ripple"></div>
       <div class="ripple"></div>
@@ -179,6 +156,33 @@ button:hover{background:var(--btn2);}
     </button>
   </div>
 </div>
+
+<pre id="debugPanel" style="display:none;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;font-size:12px;background:var(--input);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:14px;max-height:320px;overflow-y:auto;overflow-x:hidden;white-space:pre-wrap;word-break:break-all;color:var(--muted);line-height:1.5;"></pre>
+
+</div><!-- /wrap -->
+
+<!-- Floating iOS dock -->
+<nav class="iosDock" aria-label="Screens">
+  <div class="iosDock-glass"></div>
+  <div class="iosDock-highlight"></div>
+  <div class="iosDock-row">
+    <a class="iosDock-item tabItem" href="top5k.html" data-tab="vocab" aria-label="Vocab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c2.2-1 5.4-1 8 .2v13.6c-2.6-1.2-5.8-1.2-8-.2V5z"></path><path d="M20 5c-2.2-1-5.4-1-8 .2v13.6c2.6-1.2 5.8-1.2 8-.2V5z"></path></svg>
+    </a>
+    <a class="iosDock-item active tabItem" href="grammar.html" data-tab="grammar" aria-label="Grammar">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h11M4 17h7"></path></svg>
+    </a>
+    <a class="iosDock-item tabItem" href="preps.html" data-tab="preps" aria-label="Präpositionen">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H7a3 3 0 000 6h1"></path><path d="M9 4L6 7l3 3"></path><path d="M4 17h13a3 3 0 000-6h-1"></path><path d="M15 20l3-3-3-3"></path></svg>
+    </a>
+    <a class="iosDock-item tabItem" href="ausdruck.html" data-tab="ausdruck" aria-label="Ausdruck">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4.5L16 4.5a1.5 1.5 0 012 2L7 17.5 4 20z"></path><path d="M13.5 6L16.5 9"></path></svg>
+    </a>
+    <a class="iosDock-item tabItem" href="chat.html" data-tab="chat" aria-label="Chat">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-4 4V5z"></path></svg>
+    </a>
+  </div>
+</nav>
 
 <script>
 const GEMINI_KEY_LS='top5k_gemini_key';
