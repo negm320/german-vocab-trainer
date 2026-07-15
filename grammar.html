@@ -94,10 +94,10 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 /* undo-word: slides open under the textarea when there's something to undo */
 .undoWrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease;}
 .undoWrap.show{grid-template-rows:1fr;}
-.undoWrap>div{overflow:hidden;}
+.undoWrap>div{overflow:hidden;display:flex;justify-content:flex-end;}
 .undoWrap button{
   margin-top:8px;background:transparent;border:1px solid var(--border-soft);
-  color:var(--muted);font-size:13px;padding:7px 14px;border-radius:999px;
+  color:var(--muted);font-size:13px;padding:10px 16px;border-radius:999px;
   font-family:var(--font-chrome);
 }
 .undoWrap button:active{background:rgba(255,255,255,.06);}
