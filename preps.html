@@ -49,10 +49,8 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 .flash-good{background:var(--good-bg);border:1.5px solid rgba(50,215,75,.5);border-radius:var(--r-card);animation:flashAnim .65s ease both;}
 .flash-bad{background:var(--bad-bg);border:1.5px solid rgba(255,69,58,.45);border-radius:var(--r-card);animation:flashAnim .65s ease both;}
 
-/* loading */
-@keyframes loadPulse{0%,100%{border-color:var(--border)}50%{border-color:rgba(10,132,255,0.5)}}
-.card.loading{animation:loadPulse 1s ease infinite;}
-#loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;font-family:var(--font-chrome);}
+/* loading — .loadingSpinner itself lives in ios-theme.css */
+#loadingText{color:var(--muted);font-size:14px;padding:4px 0 16px;text-align:center;font-family:var(--font-chrome);}
 
 /* drill content */
 #sentenceText{font-size:19px;line-height:1.7;}
@@ -116,6 +114,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 <div class="card" id="drillCard">
   <div class="flash-overlay" id="flashOverlay"></div>
 
+  <div id="loadingSpinner" class="loadingSpinner"><span></span><span></span><span></span></div>
   <div id="loadingText">Generating drill…</div>
 
   <div id="drillContent" class="hidden">
@@ -438,10 +437,11 @@ async function generateDrill(){
   }
 
   const card=document.getElementById('drillCard');
+  const loadingSpinner=document.getElementById('loadingSpinner');
   const loadingText=document.getElementById('loadingText');
   const drillContent=document.getElementById('drillContent');
 
-  card.classList.add('loading');
+  loadingSpinner.classList.remove('hidden');
   loadingText.textContent='Generating drill…';
   loadingText.style.cursor='';
   loadingText.onclick=null;
@@ -453,11 +453,11 @@ async function generateDrill(){
     presentDrill(drill);
   }catch(e){
     console.error('[preps drill]',e);
+    loadingSpinner.classList.add('hidden');
     loadingText.textContent=`Failed: ${e.message} — tap to retry.`;
     loadingText.style.wordBreak='break-word';
     loadingText.style.cursor='pointer';
     loadingText.onclick=()=>{ loadingText.onclick=null; generateDrill(); };
-    card.classList.remove('loading');
   }
 }
 
@@ -492,13 +492,14 @@ function renderSentenceHTML(drill){
 
 function renderDrill(drill){
   const card=document.getElementById('drillCard');
+  const loadingSpinner=document.getElementById('loadingSpinner');
   const loadingText=document.getElementById('loadingText');
   const drillContent=document.getElementById('drillContent');
   const sentenceText=document.getElementById('sentenceText');
   const glossText=document.getElementById('glossText');
   const optionsGrid=document.getElementById('optionsGrid');
 
-  card.classList.remove('loading');
+  loadingSpinner.classList.add('hidden');
   loadingText.classList.add('hidden');
   drillContent.classList.remove('hidden');
 

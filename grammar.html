@@ -86,10 +86,8 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
   .piece.connector:hover{background:rgba(10,132,255,0.2);}
 }
 
-/* loading */
-@keyframes loadPulse{0%,100%{border-color:var(--border)}50%{border-color:rgba(10,132,255,0.5)}}
-.card.loading{animation:loadPulse 1s ease infinite;}
-#loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;font-family:var(--font-chrome);}
+/* loading — .loadingSpinner itself lives in ios-theme.css */
+#loadingText{color:var(--muted);font-size:14px;padding:4px 0 16px;text-align:center;font-family:var(--font-chrome);}
 
 /* undo-word: slides open under the textarea when there's something to undo */
 .undoWrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease;}
@@ -162,6 +160,7 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 <div class="card" id="drillCard">
   <div class="flash-overlay" id="flashOverlay"></div>
 
+  <div id="loadingSpinner" class="loadingSpinner"><span></span><span></span><span></span></div>
   <div id="loadingText">Generating drill…</div>
 
   <div id="drillContent" class="hidden">
@@ -790,11 +789,12 @@ async function generateDrill(){
   }
 
   const card=document.getElementById('drillCard');
+  const loadingSpinner=document.getElementById('loadingSpinner');
   const loadingText=document.getElementById('loadingText');
   const drillContent=document.getElementById('drillContent');
   const feedback=document.getElementById('feedback');
 
-  card.classList.add('loading');
+  loadingSpinner.classList.remove('hidden');
   loadingText.textContent='Generating drill…';
   loadingText.classList.remove('hidden');
   drillContent.classList.add('hidden');
@@ -805,15 +805,16 @@ async function generateDrill(){
     presentDrill(drill);
   }catch(e){
     console.error('[grammar drill]',e);
+    loadingSpinner.classList.add('hidden');
     loadingText.textContent=`Failed: ${e.message} — tap Next to retry.`;
     loadingText.style.wordBreak='break-word';
-    card.classList.remove('loading');
   }
 }
 
 /* ── Render drill ── */
 function renderDrill(drill){
   const card=document.getElementById('drillCard');
+  const loadingSpinner=document.getElementById('loadingSpinner');
   const loadingText=document.getElementById('loadingText');
   const drillContent=document.getElementById('drillContent');
   const inp=document.getElementById('answerInput');
@@ -821,7 +822,7 @@ function renderDrill(drill){
   const piecesWrap=document.getElementById('piecesWrap');
   const englishText=document.getElementById('englishText');
 
-  card.classList.remove('loading');
+  loadingSpinner.classList.add('hidden');
   loadingText.classList.add('hidden');
   drillContent.classList.remove('hidden');
 
