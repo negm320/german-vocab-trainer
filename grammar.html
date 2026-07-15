@@ -22,7 +22,30 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 .bar{font-family:var(--font-chrome);font-size:28px;font-weight:700;color:var(--text);margin:2px 0 16px;}
 
 /* card */
-.card{padding:16px;position:relative;overflow:hidden;border-radius:var(--r-card);}
+.card{padding:16px;position:relative;border-radius:var(--r-card);}
+
+/* ── drill entrance (new card) ── */
+@keyframes drillSlideIn{from{transform:translateX(18px);opacity:0}to{transform:translateX(0);opacity:1}}
+.card.drill-enter #drillContent{animation:drillSlideIn .25s cubic-bezier(.25,.46,.45,.94) both;}
+
+/* ── word chips stagger in ── */
+@keyframes pieceIn{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+.card.drill-enter .piece{animation:pieceIn .3s ease both;}
+.card.drill-enter .piece:nth-child(1){animation-delay:.02s}
+.card.drill-enter .piece:nth-child(2){animation-delay:.05s}
+.card.drill-enter .piece:nth-child(3){animation-delay:.08s}
+.card.drill-enter .piece:nth-child(4){animation-delay:.11s}
+.card.drill-enter .piece:nth-child(5){animation-delay:.14s}
+.card.drill-enter .piece:nth-child(6){animation-delay:.17s}
+.card.drill-enter .piece:nth-child(7){animation-delay:.20s}
+.card.drill-enter .piece:nth-child(8){animation-delay:.23s}
+.card.drill-enter .piece:nth-child(9){animation-delay:.26s}
+.card.drill-enter .piece:nth-child(10){animation-delay:.29s}
+.card.drill-enter .piece:nth-child(n+11){animation-delay:.32s}
+
+/* ── feedback line reveal ── */
+@keyframes feedbackIn{from{transform:translateY(-4px);opacity:0}to{transform:translateY(0);opacity:1}}
+#feedback:not(.hidden){animation:feedbackIn .25s ease both;}
 
 /* divider */
 .divider{border:none;border-top:1px solid var(--divider);margin:14px 0;}
@@ -54,17 +77,30 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 
 /* word pieces */
 .piecesWrap{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;}
-.piece{padding:7px 13px;border-radius:10px;background:var(--btn);border:1.5px solid var(--border);font-size:15px;font-family:'Lora',Georgia,serif;color:var(--text);cursor:pointer;user-select:none;}
-.piece:hover{background:var(--btn2);}
+.piece{padding:7px 13px;border-radius:10px;background:var(--btn);border:1.5px solid var(--border);font-size:15px;font-family:'Lora',Georgia,serif;color:var(--text);cursor:pointer;user-select:none;transition:opacity .2s ease,background .15s,transform .15s;}
 .piece:active{transform:scale(.96);}
 .piece.connector{background:rgba(10,132,255,0.12);border-color:rgba(10,132,255,0.4);color:var(--accent);}
-.piece.connector:hover{background:rgba(10,132,255,0.2);}
 .piece.used{opacity:0.3;text-decoration:line-through;}
+@media (hover:hover){
+  .piece:hover{background:var(--btn2);}
+  .piece.connector:hover{background:rgba(10,132,255,0.2);}
+}
 
 /* loading */
 @keyframes loadPulse{0%,100%{border-color:var(--border)}50%{border-color:rgba(10,132,255,0.5)}}
 .card.loading{animation:loadPulse 1s ease infinite;}
 #loadingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;font-family:var(--font-chrome);}
+
+/* undo-word: slides open under the textarea when there's something to undo */
+.undoWrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease;}
+.undoWrap.show{grid-template-rows:1fr;}
+.undoWrap>div{overflow:hidden;}
+.undoWrap button{
+  margin-top:8px;background:transparent;border:1px solid var(--border-soft);
+  color:var(--muted);font-size:13px;padding:7px 14px;border-radius:999px;
+  font-family:var(--font-chrome);
+}
+.undoWrap button:active{background:rgba(255,255,255,.06);}
 
 /* mic states (chat.html mic, verbatim) */
 #micBtn svg{width:26px;height:26px;fill:var(--accent);flex-shrink:0;transition:fill .2s;}
@@ -86,8 +122,12 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 .checkPillHalf{flex:1;background:transparent;border:none;color:var(--text);font-size:15px;font-family:var(--font-chrome);cursor:pointer;height:100%;transition:background .15s;}
 .checkPillHalf:first-child{border-radius:27px 0 0 27px;}
 .checkPillHalf:last-child{border-radius:0 27px 27px 0;}
-.checkPillHalf:hover{background:rgba(255,255,255,.06);}
-.micCircle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:80px;height:80px;border-radius:50%;background:var(--btn);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:background .15s,border-color .15s;}
+.checkPillHalf:active{background:rgba(255,255,255,.1);}
+.micCircle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:80px;height:80px;border-radius:50%;background:var(--btn);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:background .15s,border-color .15s,transform .15s;}
+.micCircle:active{transform:translate(-50%,-50%) scale(.95);}
+@media (hover:hover){
+  .checkPillHalf:hover{background:rgba(255,255,255,.06);}
+}
 
 /* word class borders (literal hues, not tied to theme tokens) */
 .piece.acc-dat{border-color:#b8860b;}
@@ -125,7 +165,7 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
   <div id="loadingText">Generating drill…</div>
 
   <div id="drillContent" class="hidden">
-    <div id="englishText" style="font-size:15px;color:var(--muted);line-height:1.6;"></div>
+    <div id="englishText" style="font-size:17px;color:var(--text);line-height:1.6;"></div>
 
     <hr class="divider">
 
@@ -135,12 +175,14 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 
     <textarea id="answerInput" rows="1" autocomplete="off" spellcheck="false" placeholder="Type or tap words above…" style="resize:none;overflow:hidden;line-height:1.5;"></textarea>
 
+    <div class="undoWrap" id="undoWrap"><div>
+      <button id="btnUndo">← Undo word</button>
+    </div></div>
+
     <div id="micStatus" class="hidden"></div>
     <div id="feedback" class="hidden" style="margin-top:12px;font-size:14px;line-height:1.6;"></div>
   </div>
 </div>
-
-<button id="btnUndo" class="hidden" style="width:100%;margin-top:8px;">← Undo word</button>
 
 <div class="bottomBar">
   <div class="checkPill">
@@ -792,8 +834,14 @@ function renderDrill(drill){
   feedback.classList.add('hidden');
   feedback.innerHTML='';
 
-  document.getElementById('btnUndo')?.classList.add('hidden');
+  document.getElementById('undoWrap')?.classList.remove('show');
   piecesWrap.innerHTML='';
+
+  card.classList.remove('drill-enter');
+  void card.offsetWidth;
+  card.classList.add('drill-enter');
+  clearTimeout(renderDrill._enterTimer);
+  renderDrill._enterTimer=setTimeout(()=>card.classList.remove('drill-enter'),700);
   drill.pieces.forEach(({word,role})=>{
     const btn=document.createElement('button');
     const clean=word.replace(/[.,!?;:"""„"–—]/g,'');
@@ -934,8 +982,8 @@ function updatePieceStates(){
       btn.classList.remove('used');
     }
   });
-  const btnUndo=document.getElementById('btnUndo');
-  if(btnUndo) btnUndo.classList.toggle('hidden',!inp.value.trim());
+  const undoWrap=document.getElementById('undoWrap');
+  if(undoWrap) undoWrap.classList.toggle('show',!!inp.value.trim());
 }
 
 /* ── Check answer ── */
@@ -945,6 +993,7 @@ function checkAnswer(){
   const feedback=document.getElementById('feedback');
 
   inp.classList.remove('good-field','bad-field');
+  document.getElementById('undoWrap')?.classList.remove('show');
 
   const {verdict,typoIndices}=evaluateAnswer(inp.value,currentDrill.correct);
 

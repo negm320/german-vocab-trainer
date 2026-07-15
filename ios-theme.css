@@ -109,8 +109,15 @@ button{
   border:1px solid var(--border);
   border-radius:var(--r-input);
   font-family:var(--font-chrome);
+  transition:background .15s;
 }
-button:hover{background:var(--btn2)}
+button:active{background:var(--btn2)}
+/* :hover (not :active) so taps on touchscreens don't leave a button looking
+   permanently "lit up" — touch UAs apply :hover on tap and only clear it on
+   the next tap elsewhere, since there's no real pointer to leave with. */
+@media (hover:hover){
+  button:hover{background:var(--btn2)}
+}
 
 .divider{border-top:1px solid var(--divider);}
 
