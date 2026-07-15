@@ -1,0 +1,240 @@
+/* ============================================================
+   iOS Dark Mode theme — shared design tokens + components
+   Used by: top5k.html (phase 1). Will extend to the other 4
+   screens (grammar/preps/ausdruck/chat) in later passes.
+   ============================================================ */
+
+:root{
+  /* surfaces */
+  --bg:#000;
+  --card:#1c1c1e;
+  --input:#2c2c2e;
+  --btn:#2c2c2e;
+  --btn2:#3a3a3c;
+  --hole:#2c2c2e;
+  --divider:rgba(255,255,255,0.1);
+  --border:rgba(255,255,255,0.12);
+  --border-soft:rgba(255,255,255,0.15);
+
+  /* text */
+  --text:#fff;
+  --muted:rgba(235,235,245,0.6);
+  --muted2:rgba(235,235,245,0.45);
+  --muted3:rgba(235,235,245,0.35);
+
+  /* accents */
+  --accent:#0A84FF;
+  --accent-bg:rgba(10,132,255,0.18);
+  --good:#32D74B;
+  --good-bg:rgba(50,215,75,0.12);
+  --bad:#FF453A;
+  --bad-bg:rgba(255,69,58,0.12);
+  --warn:#FF9F0A;
+
+  /* radii */
+  --r-card:20px;
+  --r-input:10px;
+  --r-input-lg:14px;
+  --r-pill:999px;
+  --r-dock:30px;
+
+  /* fonts */
+  --font-body:'Lora',Georgia,serif;
+  --font-chrome:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;
+}
+
+/* ============ base ============ */
+body{
+  background:var(--bg);
+  color:var(--text);
+}
+
+.pill{
+  font-family:var(--font-chrome);
+  border:1px solid var(--border-soft);
+  background:var(--card);
+  color:var(--muted);
+}
+
+.card{
+  background:var(--card);
+  border:none;
+  border-radius:var(--r-card);
+  box-shadow:none;
+}
+
+input,textarea{
+  background:var(--input);
+  border:1px solid var(--border);
+  border-radius:var(--r-input);
+}
+
+button{
+  background:var(--btn);
+  border:1px solid var(--border);
+  border-radius:var(--r-input);
+  font-family:var(--font-chrome);
+}
+button:hover{background:var(--btn2)}
+
+.divider{border-top:1px solid var(--divider);}
+
+/* ============ icon buttons (top bar) ============ */
+.iosIconBtn{
+  width:34px;height:34px;border-radius:17px;
+  background:rgba(120,120,128,0.28);
+  border:0.5px solid var(--border-soft);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  padding:0;cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.iosIconBtn svg{stroke:var(--muted);transition:stroke .15s;}
+.iosIconBtn.active{background:var(--accent-bg);border-color:rgba(10,132,255,0.4);}
+.iosIconBtn.active svg{stroke:var(--accent);}
+
+/* ============ floating glass dock ============ */
+.iosDock{
+  position:fixed;
+  left:18px;right:18px;bottom:12px;
+  z-index:60;
+  border-radius:var(--r-dock);
+  max-width:684px;
+  margin:0 auto;
+}
+.iosDock-glass{
+  position:absolute;inset:0;border-radius:var(--r-dock);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  background:rgba(120,120,128,0.32);
+}
+.iosDock-highlight{
+  position:absolute;inset:0;border-radius:var(--r-dock);
+  box-shadow:inset 1.5px 1.5px 1px rgba(255,255,255,0.15),
+             inset -1px -1px 1px rgba(255,255,255,0.06);
+  border:0.5px solid rgba(255,255,255,0.18);
+}
+.iosDock-row{
+  position:relative;display:flex;padding:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.35),0 2px 8px rgba(0,0,0,0.25);
+  border-radius:var(--r-dock);
+}
+.iosDock-item{
+  flex:1;background:transparent;border:none;border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  padding:9px 0;cursor:pointer;text-decoration:none;
+  color:var(--muted);
+}
+.iosDock-item svg{stroke:currentColor;stroke-width:1.8;transition:stroke-width .15s;}
+.iosDock-item.active{background:var(--accent-bg);color:var(--accent);}
+.iosDock-item.active svg{stroke-width:2.4;}
+
+/* ============ bottom sheet ============ */
+.iosSheetScrim{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);
+  z-index:9070;opacity:0;pointer-events:none;
+  transition:opacity .2s ease;
+}
+.iosSheetScrim.show{opacity:1;pointer-events:all;}
+
+.iosSheet{
+  position:fixed;left:0;right:0;bottom:0;
+  background:var(--card);
+  border-radius:20px 20px 0 0;
+  padding:10px 18px calc(24px + env(safe-area-inset-bottom,0px));
+  z-index:9071;
+  max-height:85vh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  transform:translateY(100%);
+  transition:transform .28s cubic-bezier(.25,.46,.45,.94);
+  box-shadow:0 -8px 30px rgba(0,0,0,0.4);
+}
+.iosSheet.show{transform:translateY(0);}
+.iosSheet.hidden{display:none;}
+
+.iosSheet-handle{
+  width:36px;height:5px;border-radius:3px;
+  background:rgba(255,255,255,0.25);
+  margin:0 auto 14px;
+  flex-shrink:0;
+}
+
+.iosSheet-label{
+  font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--muted2);font-family:var(--font-chrome);margin-bottom:8px;
+}
+
+.iosSheet-title{
+  font-size:16px;font-weight:700;color:var(--text);
+  font-family:var(--font-chrome);margin-bottom:10px;
+}
+
+/* generic sheet buttons */
+.iosSheet button{
+  font-family:var(--font-chrome);font-size:14px;
+  background:var(--input);border:1px solid var(--border);color:var(--text);
+  border-radius:10px;padding:10px 14px;
+}
+.iosSheet .iosSheet-primary{
+  background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;width:100%;
+}
+.iosSheet .iosSheet-cancel{
+  background:var(--input);border:none;color:var(--text);width:100%;
+}
+.iosSheet .iosSheet-danger{
+  background:var(--bad-bg);border:1px solid rgba(255,69,58,0.35);color:var(--bad);width:100%;font-weight:600;
+}
+
+/* segmented control (used for Mode row) */
+.iosSegment{display:flex;background:var(--input);border-radius:10px;padding:3px;gap:0;}
+.iosSegment button{flex:1;background:transparent;border:none;border-radius:8px;padding:8px;font-size:13px;color:var(--text);}
+.iosSegment button.active{background:var(--accent);}
+
+/* ============ full-screen setup / onboarding ============ */
+.iosSetupScreen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;z-index:10000;
+  font-family:var(--font-chrome);
+}
+.iosSetupScreen.hidden{display:none!important;}
+.iosSetupCard{
+  width:min(400px,100%);
+  background:var(--card);
+  border:1px solid var(--border-soft);
+  border-radius:var(--r-card);
+  padding:28px 24px;
+}
+.iosSetupIcon{
+  width:56px;height:56px;border-radius:16px;
+  background:var(--accent-bg);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 18px;
+}
+.iosSetupCard h2{
+  margin:0 0 8px;font-size:20px;font-weight:700;color:var(--text);
+  text-align:center;font-family:var(--font-chrome);
+}
+.iosSetupCard p{
+  margin:0 0 20px;font-size:13px;line-height:1.6;color:var(--muted);
+  text-align:center;font-family:var(--font-chrome);
+}
+.iosSetupCard input{
+  width:100%;background:var(--input);border:1px solid var(--border);
+  border-radius:var(--r-input-lg);padding:14px;color:var(--text);
+  font-size:15px;font-family:var(--font-chrome);margin-bottom:12px;outline:none;
+}
+.iosSetupCard button{
+  width:100%;background:var(--accent);border:1px solid var(--accent);
+  border-radius:var(--r-input-lg);padding:13px;color:#fff;font-weight:600;
+  font-size:15px;font-family:var(--font-chrome);
+}
+
+/* ============ level-up overlay (restyled, same element ids) ============ */
+.lvlOverlay .lvlBg{
+  background:radial-gradient(ellipse at center,rgba(10,132,255,0.20) 0%,rgba(0,0,0,0.97) 70%);
+}
+.lvlOverlay .lvlNum{color:var(--accent);font-family:var(--font-chrome);}
+.lvlOverlay .lvlText{color:var(--muted);font-family:var(--font-chrome);}
+.lvlOverlay .lvlSub{color:var(--muted3);font-family:var(--font-chrome);}
