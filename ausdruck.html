@@ -66,9 +66,15 @@ button:hover{background:var(--btn2);}
 #topicLoading,#gradingText{color:var(--muted);font-size:14px;padding:16px 0;text-align:center;}
 
 /* topic */
-.topicRow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;}
+#topicBlock{position:relative;padding-right:40px;}
 .topicLabel{letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
 .topicText{font-size:18px;line-height:1.6;}
+#btnSkipTopic{
+  position:absolute;top:-4px;right:-4px;
+  width:32px;height:32px;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;line-height:1;border-radius:50%;
+}
 
 /* compose area */
 .composeArea{position:relative;margin-top:14px;}
@@ -210,13 +216,9 @@ button:hover{background:var(--btn2);}
 <div class="card" id="composeScreen">
   <div id="topicLoading">Thema wird generiert…</div>
   <div id="topicBlock" class="hidden">
-    <div class="topicRow">
-      <div>
-        <div class="topicLabel muted small">Thema</div>
-        <div class="topicText" id="topicText"></div>
-      </div>
-      <button id="btnSkipTopic" class="ghostBtn">🔄 Neues Thema</button>
-    </div>
+    <button id="btnSkipTopic" class="ghostBtn" title="Neues Thema" aria-label="Neues Thema">🔄</button>
+    <div class="topicLabel muted small">Thema</div>
+    <div class="topicText" id="topicText"></div>
   </div>
 
   <hr class="divider">
