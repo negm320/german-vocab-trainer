@@ -87,13 +87,8 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 
 /* footer controls */
 .footerRow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}
-.ghostBtn{background:transparent;border:1px solid var(--border-soft);color:var(--muted);font-size:13px;padding:7px 14px;border-radius:999px;font-family:var(--font-chrome);transition:background .15s,color .15s,border-color .15s;}
-.ghostBtn:active{background:rgba(255,255,255,.06);}
-#btnFlag.flag-confirm{background:var(--bad-bg);border-color:rgba(255,69,58,.6);color:var(--bad);}
-#btnHighlightToggle.on{color:var(--accent);border-color:rgba(10,132,255,.4);background:var(--accent-bg);}
-@media (hover:hover){
-  .ghostBtn:hover{color:var(--text);border-color:var(--muted);}
-}
+#btnFlag.flag-confirm{background:var(--bad-bg);border-color:rgba(255,69,58,.6);}
+#btnFlag.flag-confirm svg{stroke:var(--bad);}
 </style>
 </head>
 <body>
@@ -132,8 +127,12 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
     <div class="prepGrid" id="optionsGrid"></div>
 
     <div class="footerRow">
-      <button id="btnHighlightToggle" class="ghostBtn" title="Toggle highlighting of the governing word">👁 Highlight</button>
-      <button id="btnFlag" class="ghostBtn" title="Flag: sentence has no single correct preposition">🚩 Flag sentence</button>
+      <button id="btnHighlightToggle" class="iosIconBtn" title="Toggle highlighting of the governing word">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+      </button>
+      <button id="btnFlag" class="iosIconBtn" title="Flag: sentence has no single correct preposition">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"></path><path d="M5 4h13l-3 4.5L18 13H5"></path></svg>
+      </button>
     </div>
   </div>
 </div>
@@ -473,8 +472,7 @@ let highlightGovEnabled=loadHighlightGov();
 function syncHighlightToggleUI(){
   const btn=document.getElementById('btnHighlightToggle');
   if(!btn) return;
-  btn.classList.toggle('on',highlightGovEnabled);
-  btn.textContent=highlightGovEnabled?'👁 Highlight: On':'👁 Highlight: Off';
+  btn.classList.toggle('active',highlightGovEnabled);
 }
 
 /* ── Render drill ── */
