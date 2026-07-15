@@ -457,7 +457,11 @@ Output the topic in German only, one or two sentences, no preamble, no quotation
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
-    generationConfig:{temperature:0.95,maxOutputTokens:200}
+    // thinkingBudget:0 disables Gemini 2.5's default "thinking" pass — those
+    // hidden reasoning tokens count against maxOutputTokens, so without this
+    // a short budget like this one can get entirely eaten by reasoning and
+    // leave the visible topic text truncated mid-sentence.
+    generationConfig:{temperature:0.95,maxOutputTokens:300,thinkingConfig:{thinkingBudget:0}}
   });
   const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
 
