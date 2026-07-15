@@ -64,21 +64,31 @@ button:hover{background:var(--btn2);}
 
 /* drill content */
 #sentenceText{font-size:19px;line-height:1.7;}
+@keyframes blankPulse{0%{background:rgba(106,166,255,0.08)}50%{background:rgba(106,166,255,0.24)}100%{background:rgba(106,166,255,0.08)}}
 #sentenceText .blank{
   display:inline-block;border-bottom:2px solid var(--accent);min-width:58px;height:14px;
   margin:0 2px;vertical-align:bottom;background:rgba(106,166,255,0.08);border-radius:3px 3px 0 0;
-  color:transparent;font-size:0;
+  color:transparent;font-size:0;animation:blankPulse 1.6s ease-in-out 1;
 }
 #sentenceText .govHighlight{color:var(--accent);font-weight:600;}
-#glossText{margin-top:8px;font-size:14px;color:var(--muted);line-height:1.6;}
+#glossText{margin-top:10px;padding-left:12px;border-left:2px solid var(--border);font-size:14px;color:var(--muted);line-height:1.6;font-style:italic;}
 
 /* options grid */
 .prepGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
-.prepOption{padding:15px 10px;font-size:16px;border-radius:12px;background:var(--btn);border:1px solid var(--border);color:var(--text);cursor:pointer;transition:background .15s,border-color .15s,color .15s;}
-.prepOption:hover:not(:disabled){background:var(--btn2);}
+.prepOption{padding:15px 10px;font-size:16px;border-radius:12px;background:var(--btn);border:1px solid var(--border);color:var(--text);cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .12s,box-shadow .15s;}
+.prepOption:hover:not(:disabled){background:var(--btn2);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.25);}
+.prepOption:active:not(:disabled){transform:translateY(0);box-shadow:none;}
 .prepOption:disabled{cursor:default;opacity:.85;}
 .prepOption.correct{background:rgba(34,197,94,.18);border-color:var(--good);color:var(--good);}
+.prepOption.correct::before{content:'✓  ';}
 .prepOption.wrong{background:rgba(239,68,68,.16);border-color:var(--bad);color:var(--bad);}
+.prepOption.wrong::before{content:'✗  ';}
+
+@media (prefers-reduced-motion: reduce){
+  #sentenceText .blank{animation:none;}
+  .prepOption{transition:background .15s,border-color .15s,color .15s;}
+  .prepOption:hover:not(:disabled){transform:none;box-shadow:none;}
+}
 
 /* footer controls */
 .footerRow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}

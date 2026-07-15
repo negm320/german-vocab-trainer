@@ -110,20 +110,45 @@ button:hover{background:var(--btn2);}
 
 /* scores */
 .scoreBlock{display:flex;flex-direction:column;align-items:center;}
-.naturalnessScore{text-align:center;margin-bottom:16px;}
-.naturalnessScore .scoreValue{font-size:52px;font-weight:600;color:var(--accent);line-height:1;}
-.naturalnessScore .scoreLabel{margin-top:4px;}
+.naturalnessScore{text-align:center;margin-bottom:20px;}
+.scoreRing{position:relative;width:112px;height:112px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.scoreRing::before{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(var(--score-color,var(--accent)) calc(var(--score-frac,0)*360deg), var(--border) 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px));
+}
+.scoreRing .scoreValue{position:relative;font-size:40px;font-weight:600;color:var(--score-color,var(--accent));line-height:1;}
+.naturalnessScore .scoreLabel{margin-top:10px;}
 .subScores{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;text-align:center;}
-.subScore{display:flex;flex-direction:column;gap:2px;}
+.subScore{display:flex;flex-direction:column;align-items:center;gap:5px;}
 .subScore .scoreValue{font-size:20px;font-weight:600;}
+.scoreDots{display:flex;gap:3px;}
+.scoreDots span{width:5px;height:5px;border-radius:50%;background:var(--border);}
+.scoreDots span.filled{background:var(--dot-color,var(--accent));}
 
 /* highlighted text */
 .gradedText{font-size:16px;line-height:1.85;margin:6px 0;}
 .errSpan{cursor:pointer;padding-bottom:1px;}
 
 /* error tooltip */
-#errTooltip{position:fixed;max-width:260px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:5000;display:none;}
+#errTooltip{
+  position:fixed;max-width:260px;
+  background:var(--card);border:1px solid var(--border);border-left:3px solid var(--tip-color,var(--accent));
+  border-radius:8px;padding:11px 13px 12px;font-size:13px;line-height:1.5;
+  box-shadow:0 10px 30px rgba(0,0,0,.45);
+  z-index:5000;display:none;
+  opacity:0;transform:translateY(-4px) scale(.97);
+  transition:opacity .12s ease,transform .12s ease;
+}
 #errTooltip.show{display:block;}
+#errTooltip.visible{opacity:1;transform:translateY(0) scale(1);}
+#errTooltip::before{
+  content:'';position:absolute;top:-6px;left:var(--tip-arrow,24px);
+  width:10px;height:10px;background:var(--card);
+  border-left:1px solid var(--border);border-top:1px solid var(--border);
+  transform:rotate(45deg);
+}
 #errTooltip .corrLine{font-weight:600;margin-bottom:4px;}
 
 /* corrected toggle */
@@ -136,10 +161,19 @@ button:hover{background:var(--btn2);}
 .stretchBetter{color:var(--good);font-weight:600;margin-bottom:4px;}
 
 /* history */
-.historyItem{padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.historyItem{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background .15s;}
+.historyItem:hover{background:rgba(255,255,255,.03);}
 .historyItem:last-child{border-bottom:none;}
+.historyMain{flex:1;min-width:0;}
 .historyDate{font-size:12px;color:var(--muted);}
-.historyTopic{font-size:15px;margin-top:2px;}
+.historyTopic{font-size:15px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.historyChip{
+  flex-shrink:0;width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:600;
+  border:1.5px solid var(--chip-color,var(--border));color:var(--chip-color,var(--muted));
+}
+.historyChevron{flex-shrink:0;color:var(--muted);font-size:15px;}
 </style>
 </head>
 <body>
@@ -217,14 +251,14 @@ button:hover{background:var(--btn2);}
 
   <div class="scoreBlock">
     <div class="naturalnessScore">
-      <div class="scoreValue" id="scoreNaturalness">–</div>
+      <div class="scoreRing" id="scoreRing"><div class="scoreValue" id="scoreNaturalness">–</div></div>
       <div class="scoreLabel muted small">Natürlichkeit&nbsp;/5</div>
     </div>
     <div class="subScores">
-      <div class="subScore"><span class="scoreValue" id="scoreTask">–</span><span class="muted small">Aufgabe</span></div>
-      <div class="subScore"><span class="scoreValue" id="scoreRange">–</span><span class="muted small">Spektrum</span></div>
-      <div class="subScore"><span class="scoreValue" id="scoreAccuracy">–</span><span class="muted small">Genauigkeit</span></div>
-      <div class="subScore"><span class="scoreValue" id="scoreCoherence">–</span><span class="muted small">Kohärenz</span></div>
+      <div class="subScore"><span class="scoreValue" id="scoreTask">–</span><span class="scoreDots" id="dotsTask"></span><span class="muted small">Aufgabe</span></div>
+      <div class="subScore"><span class="scoreValue" id="scoreRange">–</span><span class="scoreDots" id="dotsRange"></span><span class="muted small">Spektrum</span></div>
+      <div class="subScore"><span class="scoreValue" id="scoreAccuracy">–</span><span class="scoreDots" id="dotsAccuracy"></span><span class="muted small">Genauigkeit</span></div>
+      <div class="subScore"><span class="scoreValue" id="scoreCoherence">–</span><span class="scoreDots" id="dotsCoherence"></span><span class="muted small">Kohärenz</span></div>
     </div>
   </div>
 
@@ -622,13 +656,18 @@ function showErrTooltip(span,err){
   const tip=document.getElementById('errTooltip');
   const color=CATEGORY_COLORS[err.category]||'var(--accent)';
   const label=CATEGORY_LABELS[err.category]||err.category||'';
-  tip.style.borderColor=color;
+  tip.style.setProperty('--tip-color',color);
   tip.innerHTML=`<div class="corrLine" style="color:${color}">${escapeHTML(label)}: ${escapeHTML(err.correction||'')}</div><div class="muted">${escapeHTML(err.note||'')}</div>`;
-  const rect=span.getBoundingClientRect();
+  tip.classList.remove('visible');
   tip.classList.add('show');
+  const rect=span.getBoundingClientRect();
   const tipWidth=tip.offsetWidth||260;
-  tip.style.left=Math.max(8,Math.min(window.innerWidth-tipWidth-8,rect.left))+'px';
+  const left=Math.max(8,Math.min(window.innerWidth-tipWidth-8,rect.left));
+  tip.style.left=left+'px';
   tip.style.top=(rect.bottom+8)+'px';
+  const arrowLeft=Math.max(14,Math.min(tipWidth-24,(rect.left+rect.width/2)-left));
+  tip.style.setProperty('--tip-arrow',arrowLeft+'px');
+  requestAnimationFrame(()=>tip.classList.add('visible'));
 }
 
 function wireErrorSpans(container,errors){
@@ -646,13 +685,37 @@ function wireErrorSpans(container,errors){
 document.addEventListener('click',e=>{
   const tip=document.getElementById('errTooltip');
   if(tip&&tip.classList.contains('show')&&!tip.contains(e.target)&&!e.target.classList.contains('errSpan')){
-    tip.classList.remove('show');
+    tip.classList.remove('visible');
+    setTimeout(()=>tip.classList.remove('show'),120);
   }
 });
 
 function fmtScore(v){
   const n=Number(v);
   return Number.isFinite(n)?n:'–';
+}
+
+// Red-to-green hue ramp anchored on the existing --bad/--good tokens, so a
+// score's color says how strong it is without introducing a new accent.
+function scoreColor(v){
+  const n=Number(v);
+  if(!Number.isFinite(n)) return 'var(--muted)';
+  const t=Math.max(0,Math.min(1,n/5));
+  const hue=4+t*138;
+  return `hsl(${hue},68%,55%)`;
+}
+
+function renderScoreDots(containerId,value){
+  const el=document.getElementById(containerId);
+  const n=Number(value);
+  const filled=Number.isFinite(n)?Math.round(n):0;
+  el.style.setProperty('--dot-color',scoreColor(n));
+  el.innerHTML='';
+  for(let i=0;i<5;i++){
+    const dot=document.createElement('span');
+    if(i<filled) dot.className='filled';
+    el.appendChild(dot);
+  }
 }
 
 let feedbackReturnTo='compose';
@@ -679,11 +742,21 @@ function showFeedback(entry,returnTo){
 function renderFeedback(entry){
   const scores=entry.scores||{};
   document.getElementById('feedbackTopic').textContent=entry.topic||'';
+
+  const nat=Number(scores.naturalness);
   document.getElementById('scoreNaturalness').textContent=fmtScore(scores.naturalness);
+  const ring=document.getElementById('scoreRing');
+  ring.style.setProperty('--score-frac',Number.isFinite(nat)?Math.max(0,Math.min(1,nat/5)):0);
+  ring.style.setProperty('--score-color',scoreColor(nat));
+
   document.getElementById('scoreTask').textContent=fmtScore(scores.task);
   document.getElementById('scoreRange').textContent=fmtScore(scores.range);
   document.getElementById('scoreAccuracy').textContent=fmtScore(scores.accuracy);
   document.getElementById('scoreCoherence').textContent=fmtScore(scores.coherence);
+  renderScoreDots('dotsTask',scores.task);
+  renderScoreDots('dotsRange',scores.range);
+  renderScoreDots('dotsAccuracy',scores.accuracy);
+  renderScoreDots('dotsCoherence',scores.coherence);
 
   const gradedTextEl=document.getElementById('gradedText');
   const errors=entry.errors||[];
@@ -708,7 +781,15 @@ function renderFeedback(entry){
 
 /* ── History ── */
 function fmtDate(iso){
-  try{ return new Date(iso).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso; }
+  try{
+    const d=new Date(iso);
+    const now=new Date();
+    const time=d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    if(d.toDateString()===now.toDateString()) return `Heute, ${time}`;
+    const yesterday=new Date(now); yesterday.setDate(now.getDate()-1);
+    if(d.toDateString()===yesterday.toDateString()) return `Gestern, ${time}`;
+    return d.toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch(e){ return iso; }
 }
 
 function renderHistoryList(){
@@ -721,7 +802,17 @@ function renderHistoryList(){
   [...store.entries].reverse().forEach(entry=>{
     const item=document.createElement('div');
     item.className='historyItem';
-    item.innerHTML=`<div class="historyDate">${escapeHTML(fmtDate(entry.date))}</div><div class="historyTopic">${escapeHTML(entry.topic||'')}</div>`;
+    const nat=Number(entry.scores&&entry.scores.naturalness);
+    const chipColor=scoreColor(nat);
+    const chipText=Number.isFinite(nat)?nat:'–';
+    item.innerHTML=`
+      <div class="historyMain">
+        <div class="historyDate">${escapeHTML(fmtDate(entry.date))}</div>
+        <div class="historyTopic">${escapeHTML(entry.topic||'')}</div>
+      </div>
+      <div class="historyChip" style="--chip-color:${chipColor}">${chipText}</div>
+      <div class="historyChevron">›</div>
+    `;
     let lock=0;
     item.addEventListener('pointerdown',e=>{
       e.preventDefault();
