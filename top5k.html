@@ -1341,7 +1341,11 @@ const Core={
     const enSentEl=$('#coreEnSentence');
     if(isCloze){
       // Order: German cloze (0) → English sentence highlighted (1) → prefix hint (2) → English word/Masri (3)
-      if(promptEl)  promptEl.style.order='0';
+      // promptEl is now the first visible child, so its normal 8px top margin
+      // (meant to separate it from the word/translation row above it in
+      // word/sentence mode) would stack on top of the card's own padding —
+      // zero it here so the top gap matches the card's left/right padding.
+      if(promptEl){ promptEl.style.order='0'; promptEl.style.marginTop='0'; }
       if(enSentEl){
         if((x.enSent||'').trim()){
           setHTML('#coreEnSentence', sentData.enInSent ? highlightWordInSentence(sentData.enSent,sentData.enInSent) : escapeHTML(sentData.enSent));
@@ -1357,7 +1361,7 @@ const Core={
 
     } else {
       if(hintRowEl){ hintRowEl.style.order='0'; hintRowEl.style.marginTop=''; }
-      if(promptEl)  promptEl.style.order='2';
+      if(promptEl){ promptEl.style.order='2'; promptEl.style.marginTop=''; }
       if(prefixEl)  prefixEl.style.order='3';
       if(enSentEl){ enSentEl.classList.add('hidden'); enSentEl.innerHTML=''; }
     }
