@@ -7,55 +7,44 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<meta name="theme-color" content="#0b0e12">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="ios-theme.css">
+<script src="ios-sheet.js" defer></script>
 <style>
-:root{
-  --bg:#0b0e12;--card:#12161d;--text:#e9eef5;--muted:#9aacbf;--border:#243041;
-  --accent:#6aa6ff;--good:#22c55e;--bad:#ef4444;--btn:#1a2230;--btn2:#1e2a3c;--hole:#0f141c;
-}
 *{box-sizing:border-box;margin:0;padding:0;}
 button,input,textarea,select{font-family:inherit;}
 html{height:100%;}
 body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;display:flex;flex-direction:column;overflow:hidden;}
 
-/* ── Tabs ── */
-.tabBar{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-.tabBar::-webkit-scrollbar{display:none;}
-.tabItem{padding:8px 20px;font-size:14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap;flex-shrink:0;}
-.tabItem.active{color:var(--text);border-bottom-color:var(--accent);}
-.tabItem:hover:not(.active){color:var(--text);}
-
 /* ── Chat header ── */
-.chatHeader{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
-.hAvatar{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#0b0e12;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;flex-shrink:0;}
-.hName{font-size:15px;font-weight:600;line-height:1.2;}
+.chatHeader{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--card);border-bottom:1px solid var(--divider);flex-shrink:0;}
+.hAvatar{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;flex-shrink:0;font-family:var(--font-chrome);}
+.hName{font-size:15px;font-weight:600;line-height:1.2;font-family:var(--font-chrome);}
 .statusLine{display:flex;align-items:center;gap:5px;margin-top:2px;}
 .statusDot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .25s;}
-#statusText{font-size:12px;color:var(--muted);}
+#statusText{font-size:12px;color:var(--muted);font-family:var(--font-chrome);}
 
 /* ── Messages area ── */
 .messagesWrap{flex:1;overflow:hidden;position:relative;}
 .messages{height:100%;overflow-y:auto;padding:10px 12px 0;}
-.messagesInner{display:flex;flex-direction:column;gap:2px;padding-bottom:124px;}
+.messagesInner{display:flex;flex-direction:column;gap:2px;padding-bottom:220px;}
 
 /* ── Timestamp ── */
-.ts{text-align:center;color:var(--muted);font-size:11px;margin:8px 0 4px;flex-shrink:0;}
+.ts{text-align:center;color:var(--muted);font-size:11px;margin:8px 0 4px;flex-shrink:0;font-family:var(--font-chrome);}
 
 /* ── Bubble rows ── */
 .bRow{display:flex;align-items:flex-end;gap:7px;}
 .bRow.lena{justify-content:flex-start;}
 .bRow.user{justify-content:flex-end;}
-.bAvatar{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#0b0e12;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;}
+.bAvatar{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;font-family:var(--font-chrome);}
 .bubble{max-width:74%;padding:9px 13px;font-size:15px;line-height:1.55;word-break:break-word;}
-.bRow.lena .bubble{background:var(--card);border:1px solid var(--border);border-radius:16px 16px 16px 3px;}
-.bRow.user .bubble{background:#1b2f4e;border:1px solid #2b4470;border-radius:16px 16px 3px 16px;}
+.bRow.lena .bubble{background:var(--input);color:var(--text);border-radius:16px 16px 16px 3px;}
+.bRow.user .bubble{background:var(--accent);color:#fff;border-radius:16px 16px 3px 16px;}
 
-/* ── Input bar ── */
+/* ── Input bar — sits above the floating dock, not flush to the viewport bottom ── */
 .inputBar{
-  position:absolute;bottom:0;left:0;right:0;
+  position:absolute;bottom:94px;left:0;right:0;
   padding:56px 12px 14px;
   background:linear-gradient(to bottom,transparent 0%,var(--bg) 42%);
   pointer-events:none;
@@ -65,12 +54,12 @@ body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Geo
 #chatInput{
   width:100%;min-height:46px;
   padding:12px 88px 12px 16px;
-  border:1px solid var(--border);border-radius:14px;
-  background:var(--hole);color:var(--text);font-size:15px;
+  border-radius:14px;
+  color:var(--text);font-size:15px;
   line-height:1.4;outline:none;resize:none;overflow:hidden;
 }
 #chatInput::placeholder{color:var(--muted);}
-#chatInput.interim{color:rgba(154,172,191,.55);font-style:italic;}
+#chatInput.interim{color:var(--muted2);font-style:italic;}
 
 /* Mic — large circle that overlaps the right end of the field */
 #micBtn{
@@ -102,31 +91,13 @@ body.kb-open #micBtn{right:5px;top:50%;transform:translateY(-50%);width:30px;hei
 body.kb-open #micBtn svg{width:16px;height:16px;}
 body.kb-open #chatInput{padding-right:44px;}
 body.kb-open .ripple{display:none;}
+body.kb-open .iosDock{display:none;}
 
-/* ── API key overlay ── */
-#apiKeyScreen{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000;}
-#apiKeyScreen.show{display:flex;}
-.setupBox{width:min(480px,100%);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.45);}
-.setupBox h2{margin:0 0 8px;font-size:18px;}
-.setupBox p{margin:0 0 16px;font-size:13px;color:var(--muted);line-height:1.6;}
-#apiKeyInput{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--hole);color:var(--text);font-size:16px;margin-bottom:12px;outline:none;}
-#apiKeySave{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--btn);color:var(--text);font-size:15px;cursor:pointer;}
-#apiKeySave:hover{background:var(--btn2);}
-#apiKeyHint{margin-top:8px;font-size:12px;color:var(--bad);}
 .hidden{display:none!important}
 </style>
 </head>
 <body>
 <script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='grammar')location.replace('grammar.html');else if(t==='preps')location.replace('preps.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
-
-<!-- Tab bar -->
-<div class="tabBar">
-  <a class="tabItem" href="top5k.html" data-tab="vocab">Vocab</a>
-  <a class="tabItem" href="grammar.html" data-tab="grammar">Grammar</a>
-  <a class="tabItem" href="preps.html" data-tab="preps">Präpositionen</a>
-  <a class="tabItem" href="ausdruck.html" data-tab="ausdruck">Ausdruck</a>
-  <a class="tabItem active" href="chat.html" data-tab="chat">Chat</a>
-</div>
 
 <!-- Header -->
 <div class="chatHeader">
@@ -160,14 +131,40 @@ body.kb-open .ripple{display:none;}
   </div>
 </div>
 
+<!-- Floating iOS dock -->
+<nav class="iosDock" aria-label="Screens">
+  <div class="iosDock-glass"></div>
+  <div class="iosDock-highlight"></div>
+  <div class="iosDock-row">
+    <a class="iosDock-item tabItem" href="top5k.html" data-tab="vocab" aria-label="Vocab">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c2.2-1 5.4-1 8 .2v13.6c-2.6-1.2-5.8-1.2-8-.2V5z"></path><path d="M20 5c-2.2-1-5.4-1-8 .2v13.6c2.6-1.2 5.8-1.2 8-.2V5z"></path></svg>
+    </a>
+    <a class="iosDock-item tabItem" href="grammar.html" data-tab="grammar" aria-label="Grammar">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h11M4 17h7"></path></svg>
+    </a>
+    <a class="iosDock-item tabItem" href="preps.html" data-tab="preps" aria-label="Präpositionen">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H7a3 3 0 000 6h1"></path><path d="M9 4L6 7l3 3"></path><path d="M4 17h13a3 3 0 000-6h-1"></path><path d="M15 20l3-3-3-3"></path></svg>
+    </a>
+    <a class="iosDock-item tabItem" href="ausdruck.html" data-tab="ausdruck" aria-label="Ausdruck">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4.5L16 4.5a1.5 1.5 0 012 2L7 17.5 4 20z"></path><path d="M13.5 6L16.5 9"></path></svg>
+    </a>
+    <a class="iosDock-item active tabItem" href="chat.html" data-tab="chat" aria-label="Chat">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-4 4V5z"></path></svg>
+    </a>
+  </div>
+</nav>
+
 <!-- API key overlay -->
-<div id="apiKeyScreen">
-  <div class="setupBox">
+<div id="apiKeyScreen" class="iosSetupScreen hidden">
+  <div class="iosSetupCard">
+    <div class="iosSetupIcon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"></circle><path d="M10.5 12.5L20 3l2 2-2 2 2 2-3 3-2-2-3.5 3.5"></path></svg>
+    </div>
     <h2>Gemini API Key</h2>
     <p>Ein kostenloser Gemini API-Schlüssel wird benötigt.<br>Hol dir einen auf <strong>aistudio.google.com</strong></p>
     <input id="apiKeyInput" type="text" placeholder="AIza…" spellcheck="false" autocomplete="off"/>
     <button id="apiKeySave">Speichern &amp; weiter</button>
-    <div id="apiKeyHint" class="hidden"></div>
+    <div id="apiKeyHint" class="muted small hidden" style="margin-top:10px;color:var(--bad);text-align:center;font-family:var(--font-chrome);"></div>
   </div>
 </div>
 
@@ -212,7 +209,7 @@ const statusText    = document.getElementById('statusText');
 /* ── Status ── */
 const STATUS = {
   online:   { bg:'var(--good)',   label:'online'      },
-  thinking: { bg:'#f97316',      label:'thinking…'   },
+  thinking: { bg:'var(--warn)',   label:'thinking…'   },
   speaking: { bg:'var(--accent)', label:'speaking…'   },
   listening:{ bg:'var(--bad)',    label:'listening…'  },
 };
@@ -307,7 +304,12 @@ async function tryCloudPullOnLoad() {
     const localSavedAt = parseInt(localStorage.getItem(CHAT_SAVED_AT_KEY) || '0', 10);
     const localEmpty = history.length === 0;
     if (!(remoteUpdatedAt > localSavedAt || localEmpty)) return false;
-    if (confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`)) {
+    const restore = await window.IOSSheet?.confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`, {
+      title: 'Cloud Sync',
+      confirmLabel: 'Restore',
+      cancelLabel: 'Keep this device'
+    });
+    if (restore) {
       history = row.value;
       saveHistory();
       renderHistory();
@@ -659,7 +661,7 @@ async function getLenaOpener() {
 
 async function boot() {
   if (!localStorage.getItem(GEMINI_KEY_LS)) {
-    document.getElementById('apiKeyScreen').classList.add('show');
+    document.getElementById('apiKeyScreen').classList.remove('hidden');
     return;
   }
   loadHistory();

@@ -81,13 +81,21 @@
     const buttons = el.querySelectorAll('button');
     const confirmBtn = buttons[buttons.length - 2];
     const cancelBtn = buttons[buttons.length - 1];
-    confirmBtn.addEventListener('click', function(){
-      close(id);
-      if(typeof opts.onConfirm === 'function') opts.onConfirm();
-    });
-    cancelBtn.addEventListener('click', function(){ close(id); });
 
-    open(id);
+    // Returns a Promise<boolean> (in addition to the onConfirm callback) so
+    // callers that need to gate follow-up logic on the user's choice — like
+    // chat.html deciding whether to fire its own opener message — can just
+    // `await` it instead of restructuring around a fire-and-forget callback.
+    return new Promise(function(resolve){
+      confirmBtn.addEventListener('click', function(){
+        close(id);
+        if(typeof opts.onConfirm === 'function') opts.onConfirm();
+        resolve(true);
+      });
+      cancelBtn.addEventListener('click', function(){ close(id); resolve(false); });
+
+      open(id);
+    });
   }
 
   /* ---- drag-to-dismiss (from the grab handle) ---- */
