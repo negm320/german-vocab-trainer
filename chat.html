@@ -178,6 +178,20 @@ const SUPABASE_URL_KEY   = 'top5k_supabase_url';
 const SUPABASE_KEY_KEY   = 'top5k_supabase_key';
 const CHAT_SAVED_AT_KEY  = 'top5k_chat_saved_at_v1';
 
+/* ── Gemini API helpers ── */
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
+// Gemini 3.x thinking is on by default (thinkingLevel, not the old
+// thinkingBudget) and those hidden reasoning tokens count against
+// maxOutputTokens — with a budget this small (150-200 tokens for a short
+// chat reply), default thinking would eat the whole thing and leave an
+// empty reply, so it's pinned to "minimal" here.
+const GEMINI_THINKING_CONFIG = { thinkingLevel: 'minimal' };
+
+function extractGeminiText(data) {
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  return parts.filter(p => !p.thought).map(p => p.text || '').join('').trim();
+}
+
 const SYSTEM_PROMPT = `You are Lena, 28, an urban planner living in Hamburg. You are chatting in German with someone who is learning the language. Write in natural casual German — the kind used between friends or in text messages. Keep it B1–B2 level: clear, natural sentences, not overly complex. No Konjunktiv I or II. No Futur I with werden. Never correct grammar explicitly — just reply naturally. Ask a short question back occasionally to keep the conversation going. Be warm, curious, and friendly. Keep replies to 1–3 short sentences. Write German only.`;
 
 /* ── state ── */
@@ -405,20 +419,20 @@ async function fetchLenaReply() {
   setStatus('thinking');
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
       {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           system_instruction:{ parts:[{ text:SYSTEM_PROMPT }] },
           contents: buildContents(),
-          generationConfig:{ temperature:1.05, maxOutputTokens:200 }
+          generationConfig:{ temperature:1.05, maxOutputTokens:200, thinkingConfig:GEMINI_THINKING_CONFIG }
         })
       }
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+    const reply = extractGeminiText(data);
     if (!reply) throw new Error('empty reply');
     history.push({ role:'lena', text:reply });
     saveHistory();
@@ -630,20 +644,20 @@ async function getLenaOpener() {
   setStatus('thinking');
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
       {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           system_instruction:{ parts:[{ text:SYSTEM_PROMPT }] },
           contents:[{ role:'user', parts:[{ text:'Hallo! Fang die Unterhaltung an.' }] }],
-          generationConfig:{ temperature:1.1, maxOutputTokens:150 }
+          generationConfig:{ temperature:1.1, maxOutputTokens:150, thinkingConfig:GEMINI_THINKING_CONFIG }
         })
       }
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+    const reply = extractGeminiText(data);
     if (!reply) throw new Error('empty');
     history = [
       { role:'user', text:'Hallo!', hidden:true },

@@ -228,6 +228,45 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 <script>
 const GEMINI_KEY_LS='top5k_gemini_key';
 
+/* ── Gemini API helpers ── */
+const GEMINI_MODEL='gemini-3.5-flash-lite';
+// Gemini 3.x thinking is on by default (thinkingLevel, not the old
+// thinkingBudget) and those hidden reasoning tokens count against
+// maxOutputTokens — "minimal" keeps that budget for the actual answer
+// instead of letting it get silently eaten by reasoning.
+const GEMINI_THINKING_CONFIG={thinkingLevel:'minimal'};
+
+function extractGeminiText(data){
+  const parts=data?.candidates?.[0]?.content?.parts||[];
+  return parts.filter(p=>!p.thought).map(p=>p.text||'').join('').trim();
+}
+
+// Parses only the first complete top-level JSON object starting at the
+// first "{", ignoring any trailing content after it — some Gemini 3
+// responses append stray extra data after a well-formed object, which
+// breaks a naive indexOf('{')/lastIndexOf('}') slice.
+function parseFirstJSON(raw){
+  const start=raw.indexOf('{');
+  if(start===-1) throw new Error(`no JSON object — raw: ${raw.slice(0,120)}`);
+  let depth=0,inStr=false,esc=false;
+  for(let i=start;i<raw.length;i++){
+    const c=raw[i];
+    if(inStr){
+      if(esc) esc=false;
+      else if(c==='\\') esc=true;
+      else if(c==='"') inStr=false;
+    }else{
+      if(c==='"') inStr=true;
+      else if(c==='{') depth++;
+      else if(c==='}'){
+        depth--;
+        if(depth===0) return JSON.parse(raw.slice(start,i+1));
+      }
+    }
+  }
+  throw new Error(`unterminated JSON — raw: ${raw.slice(0,120)}`);
+}
+
 const CONNECTORS=new Set([
   'weil','dass','obwohl','wenn','als','damit','nachdem','bevor','während',
   'ob','bis','seit','seitdem','sobald','solange','sofern','falls','indem',
@@ -707,9 +746,9 @@ Before returning, check: ${selfCheckText}`;
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
-    generationConfig:{temperature:0.7,maxOutputTokens:4096,responseMimeType:"application/json"}
+    generationConfig:{temperature:0.7,maxOutputTokens:4096,responseMimeType:"application/json",thinkingConfig:GEMINI_THINKING_CONFIG}
   });
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
 
   const retryDelays=[800,1600,3200];
   let lastErr=new Error('unknown error');
@@ -726,10 +765,8 @@ Before returning, check: ${selfCheckText}`;
         throw new Error(`API ${res.status}: ${errBody.slice(0,200)}`);
       }else{
         const data=await res.json();
-        const raw=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
-        const s=raw.indexOf('{'), e=raw.lastIndexOf('}');
-        if(s===-1||e<=s) throw new Error(`no JSON object — raw: ${raw.slice(0,120)}`);
-        const drill=JSON.parse(raw.slice(s,e+1));
+        const raw=extractGeminiText(data);
+        const drill=parseFirstJSON(raw);
         if(!drill.english) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
         const hasWords=Array.isArray(drill.words)&&drill.words.length>0&&drill.words.every(x=>x&&typeof x.w==='string');
         let pairs;
