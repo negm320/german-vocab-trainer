@@ -114,14 +114,17 @@
 
   function onPointerMove(e){
     if(!drag) return;
-    const dy = Math.max(0, e.clientY - drag.startY);
+    const dy = e.clientY - drag.startY;
     const now = Date.now();
     const dt = now - drag.lastT;
     if(dt > 0) drag.velocity = (e.clientY - drag.lastY) / dt;
     drag.lastY = e.clientY;
     drag.lastT = now;
     drag.dy = dy;
-    drag.sheet.style.transform = 'translateY(' + dy + 'px)';
+    // Downward drag moves the sheet toward dismiss, same as before. Upward
+    // drag doesn't move the sheet (it's already fully open) — it's only
+    // tracked so onPointerUp can use it to expand a collapsed <details>.
+    drag.sheet.style.transform = dy > 0 ? ('translateY(' + dy + 'px)') : '';
   }
 
   function onPointerUp(){
@@ -129,6 +132,20 @@
     const sheet = drag.sheet, dy = drag.dy, velocity = drag.velocity;
     document.removeEventListener('pointermove', onPointerMove);
     document.removeEventListener('pointerup', onPointerUp);
+
+    if(dy < 0){
+      // Upward swipe on the handle: expand a collapsed "Advanced" section
+      // instead of requiring a tap on its <summary>.
+      if(dy < -30 || velocity < -0.5){
+        const details = sheet.querySelector('details');
+        if(details && !details.open) details.open = true;
+      }
+      sheet.style.transition = 'transform .25s cubic-bezier(.25,.46,.45,.94)';
+      sheet.style.transform = '';
+      setTimeout(function(){ sheet.style.transition = ''; }, 260);
+      drag = null;
+      return;
+    }
 
     const shouldDismiss = dy > sheet.offsetHeight * 0.3 || dy > 120 || velocity > 0.6;
     if(shouldDismiss){

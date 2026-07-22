@@ -170,6 +170,10 @@ button:hover{background:var(--btn2)}
 
 /* sheet-style modals (edit/import/copy/boost) */
 .modalBox{width:100%;font-family:var(--font-chrome);}
+/* editModal's box scrolls internally (own overflow-y), which per spec forces
+   overflow-x to clip too — pad it out so focus rings aren't cut off, and pull
+   back with a matching negative margin so content stays aligned as before. */
+.modalBox--scroll{padding:2px 5px;margin:0 -5px;}
 .modalBox strong{font-size:16px;font-weight:700;}
 .modalBox label{font-family:var(--font-chrome);}
 #copyModalText{width:100%;height:45vh;margin-top:10px;background:var(--hole);border:1px solid var(--border);border-radius:12px;padding:10px;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;}
@@ -2385,7 +2389,7 @@ document.addEventListener('DOMContentLoaded',boot);
 <!-- Edit Modal -->
 <div id="editModal" class="hidden" aria-hidden="true">
   <div class="iosSheet-handle"></div>
-  <div class="modalBox" style="max-height:80vh;overflow-y:auto;">
+  <div class="modalBox modalBox--scroll" style="max-height:80vh;overflow-y:auto;">
     <div class="iosSheet-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
       Edit word
       <button id="editModalClose" class="muted" style="padding:6px 12px;font-size:13px;">Cancel</button>
