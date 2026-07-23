@@ -232,9 +232,12 @@ const GEMINI_KEY_LS='top5k_gemini_key';
 const GEMINI_MODEL='gemini-3.5-flash-lite';
 // Gemini 3.x thinking is on by default (thinkingLevel, not the old
 // thinkingBudget) and those hidden reasoning tokens count against
-// maxOutputTokens — "minimal" keeps that budget for the actual answer
-// instead of letting it get silently eaten by reasoning.
-const GEMINI_THINKING_CONFIG={thinkingLevel:'minimal'};
+// maxOutputTokens — but this drill's maxOutputTokens is 4096 for a single
+// sentence, so there's ample room to spend on reasoning. "low" buys a bit
+// more deliberation (composing the German before translating it, choosing
+// an idiomatic English gloss) than "minimal", and the added latency is
+// hidden by the QUEUE_DEPTH=2 prefetch.
+const GEMINI_THINKING_CONFIG={thinkingLevel:'low'};
 
 function extractGeminiText(data){
   const parts=data?.candidates?.[0]?.content?.parts||[];
@@ -729,10 +732,10 @@ async function fetchDrill(){
     vocabLines+=`\n- Second vocabulary word: "${word2.german}" (English: "${word2.english}"). Same rules; it may live in the other clause. Include it ONLY if both words can share one scenario a real person would plausibly describe. If they can't, silently drop this second word — a natural sentence with one vocabulary word always beats a forced sentence with two.`;
   }
 
-  const selfCheckBase=`(1) would a real person say this exact German sentence casually? (2) is every ordinary past-tense verb in Perfekt, with Präteritum only on sein/haben/modals? (3) does each English clause read as natural English, not word-for-word German? (4) if a subordinate clause comes first, does the main clause start with its finite verb? (5) would a real person actually reach for this connector in this exact scenario, not just any grammatically valid one?`;
+  const selfCheckBase=`(1) would a real person say this exact German sentence casually? (2) is every ordinary past-tense verb in Perfekt, with Präteritum only on sein/haben/modals? (3) does each English clause read as natural English, not word-for-word German? (4) if a subordinate clause comes first, does the main clause start with its finite verb? (5) would a real person actually reach for this connector in this exact scenario, not just any grammatically valid one? (6) would a native English speaker write this exact english sentence?`;
   const selfCheckText=word1
-    ? `${selfCheckBase} (6) does the sentence contain the vocabulary word, correctly inflected and used the way a native speaker actually uses it? Revise until all six hold.`
-    : `${selfCheckBase} Revise until all five hold.`;
+    ? `${selfCheckBase} (7) does the sentence contain the vocabulary word, correctly inflected and used the way a native speaker actually uses it? Revise until all seven hold.`
+    : `${selfCheckBase} Revise until all six hold.`;
 
   let injectLine;
   if(word1&&word2) injectLine=`inject: ${word1.german} + ${word2.german}`;
@@ -758,6 +761,7 @@ words — First compose the German sentence: an array of {w,r} objects, one per 
 english — Then translate the German sentence you just composed into fluent, natural English. The English must keep the German's CLAUSE structure: the same number of clauses, in the same order, joined by the same kind of connector (a "weil"-clause → a "because"-clause; a "dass"-clause → a "that"-clause), and the same meaning — same polarity and negation, same quantifiers, same modality, nothing added, dropped, or weakened. But INSIDE each clause, use ordinary English word order (subject–verb–object). NEVER carry German verb-final or verb-second order into the English.
   Right: "dass sie die falsche Medizin genommen hatte" → "that she had taken the wrong medicine"
   Wrong: "that she the wrong medicine taken had"
+  German Perfekt normally becomes English simple past ("hat geschrieben" → "wrote", not "has written"); use present perfect only where English genuinely requires it. Translate "man" as "you" or "we", never "one". Render "um … zu" as plain "to", not "in order to". No word-for-word calques of any kind — the English must read as something a native speaker would actually say, even where that means departing from the German wording.
 
 Rules:
 - Topic: ${topic}.${vocabLines}
