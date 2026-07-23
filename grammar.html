@@ -422,11 +422,42 @@ const TOPICS=[
   'a sleepless night before an important day'
 ];
 const FRONTABLE_CONNECTORS=['weil','obwohl','wenn','als','nachdem',
-  'bevor','während','falls','sobald'];
-const B2_CONNECTORS=[...FRONTABLE_CONNECTORS,'damit','sodass','dass','ob'];
+  'bevor','falls','sobald'];
+const B2_CONNECTORS=[...FRONTABLE_CONNECTORS,'während','damit','sodass','dass','ob'];
 const SUBJECTS=['er','sie','wir','du','ihr','man','ich','Anna','Tom','Maria','Lukas'];
 let lastTopicIndex=-1;
 let lastInjectedIds=[];
+
+// Rolling no-repeat list of the last few connectors actually used, fed back
+// into each prompt so the model doesn't keep reaching for the same one or
+// two — same push/format pattern as recentPairs/formatRecentPairs in
+// preps.html, but persisted so the ban survives a reload.
+const RECENT_CONN_CAP=3;
+const RECENT_CONN_LS='grammar_recent_conn_v1';
+let recentConnectors=[];
+try{
+  const raw=localStorage.getItem(RECENT_CONN_LS);
+  const arr=raw?JSON.parse(raw):null;
+  if(Array.isArray(arr)) recentConnectors=arr.slice(-RECENT_CONN_CAP);
+}catch(e){}
+
+function pushRecentConnector(conn){
+  recentConnectors.push(conn.toLowerCase());
+  if(recentConnectors.length>RECENT_CONN_CAP) recentConnectors.shift();
+  try{ localStorage.setItem(RECENT_CONN_LS,JSON.stringify(recentConnectors)); }catch(e){}
+}
+
+function formatRecentConnectors(){
+  return recentConnectors.length?recentConnectors.join(', '):'none yet';
+}
+
+function detectConnector(pairs){
+  for(const {word} of pairs){
+    const clean=word.replace(/[.,!?;:"""„"–—]/g,'').toLowerCase();
+    if(B2_CONNECTORS.includes(clean)) return clean;
+  }
+  return null;
+}
 
 /* ── Vocabulary injection (top5k profile) ── */
 function pickInjectionWord(profile,excludeIds){
@@ -698,10 +729,10 @@ async function fetchDrill(){
     vocabLines+=`\n- Second vocabulary word: "${word2.german}" (English: "${word2.english}"). Same rules; it may live in the other clause. Include it ONLY if both words can share one scenario a real person would plausibly describe. If they can't, silently drop this second word — a natural sentence with one vocabulary word always beats a forced sentence with two.`;
   }
 
-  const selfCheckBase=`(1) would a real person say this exact German sentence casually? (2) is every ordinary past-tense verb in Perfekt, with Präteritum only on sein/haben/modals? (3) does each English clause read as natural English, not word-for-word German? (4) if a subordinate clause comes first, does the main clause start with its finite verb?`;
+  const selfCheckBase=`(1) would a real person say this exact German sentence casually? (2) is every ordinary past-tense verb in Perfekt, with Präteritum only on sein/haben/modals? (3) does each English clause read as natural English, not word-for-word German? (4) if a subordinate clause comes first, does the main clause start with its finite verb? (5) would a real person actually reach for this connector in this exact scenario, not just any grammatically valid one?`;
   const selfCheckText=word1
-    ? `${selfCheckBase} (5) does the vocabulary word appear, correctly inflected and used the way a native speaker actually uses it? Revise until all five hold.`
-    : `${selfCheckBase} Revise until all four hold.`;
+    ? `${selfCheckBase} (6) does the sentence contain the vocabulary word, correctly inflected and used the way a native speaker actually uses it? Revise until all six hold.`
+    : `${selfCheckBase} Revise until all five hold.`;
 
   let injectLine;
   if(word1&&word2) injectLine=`inject: ${word1.german} + ${word2.german}`;
@@ -712,35 +743,37 @@ async function fetchDrill(){
   do{ topicIdx=Math.floor(Math.random()*TOPICS.length); }while(topicIdx===lastTopicIndex&&TOPICS.length>1);
   lastTopicIndex=topicIdx;
   const topic=TOPICS[topicIdx];
-  const connector=B2_CONNECTORS[Math.floor(Math.random()*B2_CONNECTORS.length)];
   const subject=SUBJECTS[Math.floor(Math.random()*SUBJECTS.length)];
-  const clauseOrder=FRONTABLE_CONNECTORS.includes(connector)&&Math.random()<0.5?'subordinate clause first':'main clause first';
+  const clauseOrder=Math.random()<0.5?'subordinate clause first':'main clause first';
+  const clauseOrderRule=clauseOrder==='subordinate clause first'
+    ? `Clause order: subordinate clause first. Pick a connector that fronts naturally in spoken German (weil, obwohl, wenn, als, nachdem, bevor, falls, sobald and the like all front fine). The main clause MUST then begin with its finite verb (the inversion): "Weil es regnet, BLEIBE ich zu Hause" — never "Weil es regnet, ich bleibe zu Hause".`
+    : `Clause order: main clause first. Any subordinating connector is fine here.`;
 
   const prompt=`Generate one German sentence for a B2 word-order drill. Return JSON only — no markdown, no code fences.
 
-Schema: {"english":"...","words":[{"w":"...","r":"..."},...]}
+Schema: {"words":[{"w":"...","r":"..."},...],"english":"..."}
 
-english — Write the German sentence first, then translate it into fluent, natural English. The English must keep the German's CLAUSE structure: the same number of clauses, in the same order, joined by the same kind of connector (a "weil"-clause → a "because"-clause; a "dass"-clause → a "that"-clause), and the same meaning — same polarity and negation, same quantifiers, same modality, nothing added, dropped, or weakened. But INSIDE each clause, use ordinary English word order (subject–verb–object). NEVER carry German verb-final or verb-second order into the English.
+words — First compose the German sentence: an array of {w,r} objects, one per word, in order. "w" is the exact surface form, with any trailing punctuation attached to the word it follows (e.g. "glaube,"). "r" is exactly one of: "verb" (any finite verb, infinitive, or participle), "sep-prefix" (a separated verb prefix, e.g. "an" in "Ich rufe an"), or "other". Everything that is not a verb or separated prefix is "other". Emit exactly one object per word; never drop, merge, or invent a word.
+
+english — Then translate the German sentence you just composed into fluent, natural English. The English must keep the German's CLAUSE structure: the same number of clauses, in the same order, joined by the same kind of connector (a "weil"-clause → a "because"-clause; a "dass"-clause → a "that"-clause), and the same meaning — same polarity and negation, same quantifiers, same modality, nothing added, dropped, or weakened. But INSIDE each clause, use ordinary English word order (subject–verb–object). NEVER carry German verb-final or verb-second order into the English.
   Right: "dass sie die falsche Medizin genommen hatte" → "that she had taken the wrong medicine"
   Wrong: "that she the wrong medicine taken had"
 
-words — An array of {w,r} objects, one per word of the German sentence, in order. "w" is the exact surface form, with any trailing punctuation attached to the word it follows (e.g. "glaube,"). "r" is exactly one of: "verb" (any finite verb, infinitive, or participle), "sep-prefix" (a separated verb prefix, e.g. "an" in "Ich rufe an"), or "other". Everything that is not a verb or separated prefix is "other". Emit exactly one object per word; never drop, merge, or invent a word.
-
 Rules:
 - Topic: ${topic}.${vocabLines}
-- Required subordinating connector: "${connector}" — it must appear, used with its correct meaning.
+- Connector: choose whichever subordinating connector the scenario naturally calls for (weil, dass, obwohl, wenn, als, damit, nachdem, bevor, während, ob, bis, seit, seitdem, sobald, solange, sofern, falls, indem, sodass, and the like) — the one a real person would actually reach for here, not just any grammatically valid one. Do NOT use any of these recently-used connectors: ${formatRecentConnectors()}. If the vocabulary word above is itself a subordinating connector or linking adverb (e.g. wovon, dadurch, sodass), use IT as the sentence's connector instead of introducing a separate one.
+- ${clauseOrderRule}
 - Main-clause subject: ${subject} — but if this subject genuinely clashes with the vocabulary word, silently choose another everyday subject instead.
-- Clause order: ${clauseOrder}. If "subordinate clause first", the main clause MUST then begin with its finite verb (the inversion): "Weil es regnet, BLEIBE ich zu Hause" — never "Weil es regnet, ich bleibe zu Hause".
 - Length: 7–25 words, more than one clause, the way a real person would actually say it.
-- Tense: present and past are both fine — mix them naturally, do not force either. BUT when you use the past, use the Perfekt (haben/sein + participle) for ordinary verbs: "hat geschwitzt", "hat gekauft", "ist gekommen" — never the written Präteritum "schwitzte", "kaufte", "kam". Präteritum is allowed ONLY for sein ("war"), haben ("hatte"), and modal verbs ("konnte", "wollte", "musste", "sollte", "durfte", "mochte").
-- Register: casual spoken German — what friends, colleagues, or text messages actually sound like. No Konjunktiv, no Futur with "werden", no literary or bookish constructions, no clever idioms.
+- Tense: present and past are both fine — mix them naturally, do not force either.
+- Register: this is casual spoken German — what friends, colleagues, or text messages actually sound like. Because it's spoken register, an ordinary past-tense verb must be Perfekt ("hat geschwitzt", "hat gekauft", "ist gekommen") — narrative-Präteritum forms like "schwitzte", "kaufte", "kam", "erlitt", "forderte", "trank", "fragte" are wrong here even when they read elegant; that register belongs to written narrative, not speech. Präteritum stays allowed ONLY for sein ("war"), haben ("hatte"), and modal verbs ("konnte", "wollte", "musste", "sollte", "durfte", "mochte"). No Konjunktiv, no Futur with "werden", no literary or bookish constructions, no clever idioms.
 - Full written forms only: "habe" not "hab'", "gehe" not "geh'", "geht es" not "geht's", "eine" not "'ne".
 - Word count is never a goal; never drop or compress words to save space. A complete, natural sentence always beats a terse one.
 
 Examples of the exact quality and format wanted — note the natural English and the Perfekt past:
-{"english":"I think that he missed the bus.","words":[{"w":"Ich","r":"other"},{"w":"glaube,","r":"verb"},{"w":"dass","r":"other"},{"w":"er","r":"other"},{"w":"den","r":"other"},{"w":"Bus","r":"other"},{"w":"verpasst","r":"verb"},{"w":"hat.","r":"verb"}]}
-{"english":"Because it rained heavily, we stayed home.","words":[{"w":"Weil","r":"other"},{"w":"es","r":"other"},{"w":"stark","r":"other"},{"w":"geregnet","r":"verb"},{"w":"hat,","r":"verb"},{"w":"sind","r":"verb"},{"w":"wir","r":"other"},{"w":"zu","r":"other"},{"w":"Hause","r":"other"},{"w":"geblieben.","r":"verb"}]}
-{"english":"I'll call you as soon as I've arrived.","words":[{"w":"Ich","r":"other"},{"w":"rufe","r":"verb"},{"w":"dich","r":"other"},{"w":"an,","r":"sep-prefix"},{"w":"sobald","r":"other"},{"w":"ich","r":"other"},{"w":"angekommen","r":"verb"},{"w":"bin.","r":"verb"}]}
+{"words":[{"w":"Ich","r":"other"},{"w":"glaube,","r":"verb"},{"w":"dass","r":"other"},{"w":"er","r":"other"},{"w":"den","r":"other"},{"w":"Bus","r":"other"},{"w":"verpasst","r":"verb"},{"w":"hat.","r":"verb"}],"english":"I think that he missed the bus."}
+{"words":[{"w":"Weil","r":"other"},{"w":"es","r":"other"},{"w":"stark","r":"other"},{"w":"geregnet","r":"verb"},{"w":"hat,","r":"verb"},{"w":"sind","r":"verb"},{"w":"wir","r":"other"},{"w":"zu","r":"other"},{"w":"Hause","r":"other"},{"w":"geblieben.","r":"verb"}],"english":"Because it rained heavily, we stayed home."}
+{"words":[{"w":"Ich","r":"other"},{"w":"rufe","r":"verb"},{"w":"dich","r":"other"},{"w":"an,","r":"sep-prefix"},{"w":"sobald","r":"other"},{"w":"ich","r":"other"},{"w":"angekommen","r":"verb"},{"w":"bin.","r":"verb"}],"english":"I'll call you as soon as I've arrived."}
 
 Before returning, check: ${selfCheckText}`;
 
@@ -782,6 +815,8 @@ Before returning, check: ${selfCheckText}`;
         }else{
           throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
         }
+        const usedConnector=detectConnector(pairs);
+        if(usedConnector) pushRecentConnector(usedConnector);
         for(let i=pairs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pairs[i],pairs[j]]=[pairs[j],pairs[i]];}
         drill.pieces=pairs;
         drill._hasWords=hasWords;
