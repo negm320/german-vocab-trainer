@@ -170,12 +170,12 @@ const STATS_SAVED_AT_KEY='preps_saved_at_v1';
 const LOG_CAP=5000;
 
 /* ── Gemini API helpers ── */
-const GEMINI_MODEL='gemini-3.5-flash-lite';
+const GEMINI_MODEL='gemini-3-flash-preview';
 // Gemini 3.x thinking is on by default (thinkingLevel, not the old
 // thinkingBudget) and those hidden reasoning tokens count against
-// maxOutputTokens — "minimal" keeps that budget for the actual answer
-// instead of letting it get silently eaten by reasoning.
-const GEMINI_THINKING_CONFIG={thinkingLevel:'minimal'};
+// maxOutputTokens — "medium" trades some of that budget for higher
+// quality reasoning on the actual answer.
+const GEMINI_THINKING_CONFIG={thinkingLevel:'medium'};
 
 function extractGeminiText(data){
   const parts=data?.candidates?.[0]?.content?.parts||[];
