@@ -983,6 +983,7 @@ function unlockSynth(){
 let recognition=null;
 let micActive=false;
 let micBase='';
+let micInterimSuffix='';
 
 {
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -995,9 +996,21 @@ let micBase='';
 
     recognition.onstart=()=>{
       micBase=ausdruckInput.value.trimEnd();
+      micInterimSuffix='';
     };
 
     recognition.onresult=e=>{
+      // Resync the base with whatever is actually in the field right now.
+      // micBase used to be frozen at recognition start, so any manual edit
+      // (deleting/fixing a word) while the mic was still listening got
+      // clobbered by the next result — the old word would reappear next
+      // to the new one. Stripping only the interim suffix we last painted
+      // (if it's still there) recovers the true base, edits included.
+      const live=ausdruckInput.value;
+      micBase=(micInterimSuffix&&live.endsWith(micInterimSuffix)
+        ?live.slice(0,live.length-micInterimSuffix.length)
+        :live).trimEnd();
+
       let interim='', final='';
       for(let i=e.resultIndex;i<e.results.length;i++){
         if(e.results[i].isFinal) final+=e.results[i][0].transcript;
@@ -1008,8 +1021,10 @@ let micBase='';
         micBase=(micBase+sep(micBase)+final).trimStart();
         ausdruckInput.value=micBase;
         ausdruckInput.classList.remove('interim');
+        micInterimSuffix='';
       }else if(interim){
-        ausdruckInput.value=micBase+sep(micBase)+interim;
+        micInterimSuffix=sep(micBase)+interim;
+        ausdruckInput.value=micBase+micInterimSuffix;
         ausdruckInput.classList.add('interim');
       }
       updateCounts();
@@ -1020,6 +1035,7 @@ let micBase='';
     recognition.onend=()=>{
       micBtn.classList.remove('listening');
       micActive=false;
+      micInterimSuffix='';
       ausdruckInput.classList.remove('interim');
     };
   }else{
