@@ -57,6 +57,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 #topicBlock{position:relative;padding-right:40px;}
 .topicLabel{letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--font-chrome);}
 .topicText{font-size:18px;line-height:1.6;}
+#topicHints{margin-top:8px;display:flex;flex-direction:column;gap:4px;line-height:1.5;}
 #btnSkipTopic{position:absolute;top:-4px;right:-4px;width:32px;height:32px;}
 #btnSkipTopic svg{width:15px;height:15px;}
 
@@ -213,6 +214,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
     </button>
     <div class="topicLabel muted small">Thema</div>
     <div class="topicText" id="topicText"></div>
+    <div class="muted small" id="topicHints"></div>
   </div>
 
   <hr class="divider">
@@ -480,6 +482,7 @@ function parseFirstJSON(raw){
 
 /* ── Topic generation ── */
 let currentTopic=null;
+let currentHints=[];
 let sessionSkippedTopics=[];
 
 async function fetchTopic(){
@@ -490,13 +493,31 @@ async function fetchTopic(){
   const recentList=last15.concat(sessionSkippedTopics);
   const recentTopics=recentList.length?recentList.join(' | '):'noch keine';
 
-  const prompt=`Give one short German writing prompt for a B1–B2 learner to speak about for ~10 sentences. Rotate register across: a past experience, an opinion, a plan, describing a scene, a hypothetical everyday situation. Vary the domain across work, travel, health, bureaucracy, relationships, money, technology, city life, food, childhood.
-Do NOT reuse or paraphrase any of these recent topics: ${recentTopics}
-Output the topic in German only, one or two sentences, no preamble, no quotation marks.`;
+  const prompt=`You generate a German speaking prompt for a B1–B2 learner to talk about for ~10 sentences.
+
+Topic rules:
+- CONCRETE and answerable from the learner's own life: a specific moment, a real
+  decision, an everyday situation they've lived through, or a small personal
+  preference with a reason.
+- NEVER an abstract essay theme — no "die Rolle von X", no "Vor- und Nachteile",
+  no "Was denkst du über <big topic>". If it can't be answered by telling a small
+  personal story or describing a concrete scene, it's wrong.
+- Vary domain across work, travel, health, everyday errands, relationships, money,
+  food, childhood, city life, technology — but always anchored to a personal,
+  concrete angle.
+- One or two warm, inviting German sentences, no quotation marks.
+
+Also give 2–3 short German guiding questions (W-Fragen) that scaffold the answer,
+walking setup → detail → reflection so the learner never faces a blank page.
+
+Do NOT reuse or paraphrase any recent topic: ${recentTopics}
+
+Output ONLY JSON, no preamble, no code fences:
+{"topic":"…","hints":["…","…","…"]}`;
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
-    generationConfig:{temperature:0.95,maxOutputTokens:4096,thinkingConfig:GEMINI_THINKING_CONFIG}
+    generationConfig:{temperature:0.95,maxOutputTokens:4096,responseMimeType:"application/json",thinkingConfig:GEMINI_THINKING_CONFIG}
   });
   const url=`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
 
@@ -516,9 +537,11 @@ Output the topic in German only, one or two sentences, no preamble, no quotation
       }else{
         const data=await res.json();
         const raw=extractGeminiText(data);
-        const topic=raw.replace(/^["“”']+|["“”']+$/g,'').trim();
+        const parsed=parseFirstJSON(raw);
+        const topic=(parsed.topic||'').toString().trim();
         if(!topic) throw new Error('empty topic');
-        return topic;
+        const hints=Array.isArray(parsed.hints)?parsed.hints.map(h=>String(h).trim()).filter(Boolean):[];
+        return {topic,hints};
       }
     }catch(e){
       lastErr=e;
@@ -534,8 +557,11 @@ async function generateTopic(){
   const topicSpinner=document.getElementById('topicSpinner');
   const topicBlock=document.getElementById('topicBlock');
   const topicTextEl=document.getElementById('topicText');
+  const topicHintsEl=document.getElementById('topicHints');
 
   currentTopic=null;
+  currentHints=[];
+  topicHintsEl.replaceChildren();
   updateCounts();
   topicLoading.textContent='Thema wird generiert…';
   topicLoading.style.cursor='';
@@ -545,9 +571,15 @@ async function generateTopic(){
   topicBlock.classList.add('hidden');
 
   try{
-    const topic=await fetchTopic();
+    const {topic,hints}=await fetchTopic();
     currentTopic=topic;
+    currentHints=hints;
     topicTextEl.textContent=topic;
+    topicHintsEl.replaceChildren(...hints.map(h=>{
+      const div=document.createElement('div');
+      div.textContent=h;
+      return div;
+    }));
     topicLoading.classList.add('hidden');
     topicSpinner.classList.add('hidden');
     topicBlock.classList.remove('hidden');
