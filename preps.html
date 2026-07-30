@@ -386,18 +386,19 @@ async function fetchDrill(){
   const prompt=`Generate one German preposition drill. Output JSON only, no markdown:
 {"sentence": German sentence with the target preposition replaced by ___,
  "gov": the governing word (verb, adjective, or noun) in its base form,
- "govInSent": the exact surface form of the governing word as it appears in the sentence (conjugated, inflected, or separated exactly as written),
+ "govInSent": array of the exact surface tokens (words) that make up the governing word, in the order they appear in the sentence — include separable prefix and reflexive pronoun as separate tokens when present (e.g. for "Es hängt ___ von deiner Entscheidung ab" → ["hängt","ab"]; for "Ich verlasse mich ___ dich" → ["verlasse","mich"]),
  "prep": the correct preposition,
  "gloss": concise English translation of the full intended sentence,
  "options": array of 4 prepositions including the correct one, shuffled, all plausible}
 
-Rotate the governing word across these types, don't always pick a verb:
-- verb + preposition (e.g. sich verlassen auf, sich beschweren über)
-- adjective + preposition (e.g. stolz auf, zufrieden mit, gespannt auf)
-- noun + preposition (e.g. die Angst vor, der Grund für)
-- fixed prepositional phrase (e.g. aus Versehen, unter Umständen)
+The carrier sentence itself must use only common B1–B2 vocabulary — no C1 or abstract words — and be one short, concrete, everyday clause. All of the difficulty must live in the preposition/collocation being tested, never in the surrounding words.
 
-Vary the topic across work, travel, health, bureaucracy, emotions, money, technology, daily life. 
+Rotate the governing word across these types, don't always pick a verb:
+- verb + preposition (e.g. warten auf, sich freuen auf, sich interessieren für, denken an)
+- adjective + preposition (e.g. stolz auf, zufrieden mit, verantwortlich für)
+- noun + preposition (e.g. die Angst vor, der Grund für, die Frage nach)
+
+Vary the topic across work, travel, health, emotions, money, technology, daily life.
 Do NOT use any of these recently-used pairs: ${formatRecentPairs()}
 The English gloss must make exactly ONE preposition correct. Casual natural everyday German, one clause. Past events use Perfekt, EXCEPT sein/haben/modals which take Präteritum (war, hatte, konnte — never ist gewesen, hat gehabt).`;
 
@@ -429,7 +430,8 @@ The English gloss must make exactly ONE preposition correct. Casual natural ever
         }
         drill.sentence=(drill.sentence||'').trim();
         drill.gov=(drill.gov||'').trim();
-        drill.govInSent=(drill.govInSent||'').trim();
+        const govInSentRaw=typeof drill.govInSent==='string'?[drill.govInSent]:drill.govInSent;
+        drill.govInSent=Array.isArray(govInSentRaw)?govInSentRaw.map(t=>(t||'').trim()).filter(Boolean):[];
         drill.prep=(drill.prep||'').trim();
         drill.gloss=(drill.gloss||'').trim();
         drill.options=drill.options.map(o=>(o||'').trim()).filter(Boolean);
@@ -519,10 +521,15 @@ function escapeHTML(s){
 
 function renderSentenceHTML(drill){
   let html=escapeHTML(drill.sentence);
-  if(highlightGovEnabled&&drill.govInSent){
-    const escGov=escapeHTML(drill.govInSent);
-    const idx=html.indexOf(escGov);
-    if(idx!==-1) html=html.slice(0,idx)+'<span class="govHighlight">'+escGov+'</span>'+html.slice(idx+escGov.length);
+  if(highlightGovEnabled&&Array.isArray(drill.govInSent)){
+    drill.govInSent.forEach(tok=>{
+      const escTok=escapeHTML(tok);
+      if(!escTok) return;
+      const idx=html.toLowerCase().indexOf(escTok.toLowerCase());
+      if(idx===-1) return;
+      const matched=html.slice(idx,idx+escTok.length);
+      html=html.slice(0,idx)+'<span class="govHighlight">'+matched+'</span>'+html.slice(idx+escTok.length);
+    });
   }
   return html.replace(/_{2,}/g,'<span class="blank">___</span>');
 }
