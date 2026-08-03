@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<title>Chat – Lena</title>
+<title>Chat – Szene</title>
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -16,84 +16,91 @@
 button,input,textarea,select{font-family:inherit;}
 html{height:100%;}
 body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;display:flex;flex-direction:column;overflow:hidden;}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.small{font-size:12px}
 
 /* ── Chat header ── */
 .chatHeader{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--card);border-bottom:1px solid var(--divider);flex-shrink:0;}
 .hAvatar{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;flex-shrink:0;font-family:var(--font-chrome);}
-.hName{font-size:15px;font-weight:600;line-height:1.2;font-family:var(--font-chrome);}
+.hMeta{flex:1;min-width:0;}
+.hName{font-size:15px;font-weight:600;line-height:1.2;font-family:var(--font-chrome);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .statusLine{display:flex;align-items:center;gap:5px;margin-top:2px;}
 .statusDot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .25s;}
 #statusText{font-size:12px;color:var(--muted);font-family:var(--font-chrome);}
+.hActions{display:flex;gap:8px;flex-shrink:0;}
+
+/* ── Situation bar ── */
+.scenarioBar{padding:8px 16px;background:var(--card);border-bottom:1px solid var(--divider);flex-shrink:0;}
+.scenarioText{font-size:12.5px;line-height:1.4;}
 
 /* ── Messages area ── */
 .messagesWrap{flex:1;overflow:hidden;position:relative;}
 .messages{height:100%;overflow-y:auto;padding:10px 12px 0;}
 .messagesInner{display:flex;flex-direction:column;gap:2px;padding-bottom:220px;}
 
-/* ── Timestamp ── */
 .ts{text-align:center;color:var(--muted);font-size:11px;margin:8px 0 4px;flex-shrink:0;font-family:var(--font-chrome);}
+.sysRow{padding:14px 0;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.sysRow .loadingSpinner{margin-bottom:0;}
 
 /* ── Bubble rows ── */
 .bRow{display:flex;align-items:flex-end;gap:7px;}
-.bRow.lena{justify-content:flex-start;}
+.bRow.ai{justify-content:flex-start;}
 .bRow.user{justify-content:flex-end;}
 .bAvatar{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;font-family:var(--font-chrome);}
 .bubble{max-width:74%;padding:9px 13px;font-size:15px;line-height:1.55;word-break:break-word;}
-.bRow.lena .bubble{background:var(--input);color:var(--text);border-radius:16px 16px 16px 3px;}
+.bRow.ai .bubble{background:var(--input);color:var(--text);border-radius:16px 16px 16px 3px;}
 .bRow.user .bubble{background:var(--accent);color:#fff;border-radius:16px 16px 3px 16px;}
+.errSpan{cursor:pointer;padding-bottom:1px;}
 
-/* ── Input bar — sits above the floating dock, not flush to the viewport bottom ── */
-.inputBar{
-  position:absolute;bottom:94px;left:0;right:0;
-  padding:56px 12px 14px;
-  background:linear-gradient(to bottom,transparent 0%,var(--bg) 42%);
-  pointer-events:none;
-}
+/* ── Input bar — sits above the floating dock ── */
+.inputBar{position:absolute;bottom:94px;left:0;right:0;padding:56px 12px 14px;background:linear-gradient(to bottom,transparent 0%,var(--bg) 42%);pointer-events:none;}
+.inputBar.hidden{display:none;}
 .inputRow{position:relative;display:flex;align-items:center;pointer-events:all;}
 
-#chatInput{
-  width:100%;min-height:46px;
-  padding:12px 88px 12px 16px;
-  border-radius:14px;
-  color:var(--text);font-size:15px;
-  line-height:1.4;outline:none;resize:none;overflow:hidden;
-}
+#chatInput{width:100%;min-height:46px;padding:12px 88px 12px 16px;border-radius:14px;color:var(--text);font-size:15px;line-height:1.4;outline:none;resize:none;overflow:hidden;}
 #chatInput::placeholder{color:var(--muted);}
 #chatInput.interim{color:var(--muted2);font-style:italic;}
 
-/* Mic — large circle that overlaps the right end of the field */
-#micBtn{
-  position:absolute;right:-6px;top:50%;transform:translateY(-50%);
-  width:76px;height:76px;border-radius:50%;
-  background:var(--btn);border:2px solid var(--border);
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;z-index:2;
-  transition:background .2s,border-color .2s;
-}
+#micBtn{position:absolute;right:-6px;top:50%;transform:translateY(-50%);width:76px;height:76px;border-radius:50%;background:var(--btn);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;transition:background .2s,border-color .2s;}
 #micBtn svg{width:26px;height:26px;fill:var(--accent);flex-shrink:0;transition:fill .2s;}
-
-/* Listening state */
 #micBtn.listening{background:#2c0a0a;border-color:var(--bad);}
 #micBtn.listening svg{fill:var(--bad);}
-
-/* Ripple rings */
-.ripple{
-  position:absolute;inset:-12px;border-radius:50%;
-  border:2px solid var(--bad);opacity:0;pointer-events:none;
-}
+.ripple{position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--bad);opacity:0;pointer-events:none;}
 #micBtn.listening .ripple:nth-child(1){animation:rippleOut 1.6s ease-out infinite;}
 #micBtn.listening .ripple:nth-child(2){animation:rippleOut 1.6s ease-out .53s infinite;}
 #micBtn.listening .ripple:nth-child(3){animation:rippleOut 1.6s ease-out 1.06s infinite;}
 @keyframes rippleOut{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.65);opacity:0}}
 
-/* Keyboard open — mic shrinks into the field */
 body.kb-open #micBtn{right:5px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-width:1px;background:transparent;border-color:transparent;}
 body.kb-open #micBtn svg{width:16px;height:16px;}
 body.kb-open #chatInput{padding-right:44px;}
 body.kb-open .ripple{display:none;}
 body.kb-open .iosDock{display:none;}
 
-.hidden{display:none!important}
+/* ── Next-scene bar (replaces input bar once a scene ends) ── */
+.sceneEndBar{position:absolute;bottom:94px;left:0;right:0;padding:20px 16px calc(14px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;background:linear-gradient(to bottom,transparent 0%,var(--bg) 42%);}
+.sceneEndBar.hidden{display:none;}
+#btnNextScene{padding:13px 30px;background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600;font-size:15px;border-radius:999px;font-family:var(--font-chrome);transition:filter .15s;}
+#btnNextScene:active{filter:brightness(.92);}
+@media (hover:hover){ #btnNextScene:hover{filter:brightness(1.08);} }
+
+/* ── Correction / naturalness tooltip ── */
+#errTooltip{position:fixed;max-width:260px;background:var(--card);border:1px solid var(--border-soft);border-left:3px solid var(--tip-color,var(--accent));border-radius:10px;padding:11px 13px 12px;font-size:13px;line-height:1.5;font-family:var(--font-chrome);box-shadow:0 10px 30px rgba(0,0,0,.45);z-index:5000;display:none;opacity:0;transform:translateY(-4px) scale(.97);transition:opacity .12s ease,transform .12s ease;}
+#errTooltip.show{display:block;}
+#errTooltip.visible{opacity:1;transform:translateY(0) scale(1);}
+#errTooltip::before{content:'';position:absolute;top:-6px;left:var(--tip-arrow,24px);width:10px;height:10px;background:var(--card);border-left:1px solid var(--border-soft);border-top:1px solid var(--border-soft);transform:rotate(45deg);}
+#errTooltip .corrLine{font-weight:600;margin-bottom:4px;}
+
+/* ── Settings sheet (same pattern as top5k.html's menu sheet) ── */
+.menuPanel{display:flex;flex-direction:column;gap:18px;}
+.menuPanel>*{flex-shrink:0;}
+.menuSection{display:flex;flex-direction:column;gap:8px;}
+.menuLabel{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);font-family:var(--font-chrome);}
+.modeRow{display:flex;background:var(--input);border-radius:10px;padding:3px;gap:0;}
+.modeBtn{flex:1;padding:8px;font-size:12.5px;border-radius:8px;border:none;background:transparent;font-family:var(--font-chrome);}
+.modeBtn.active{background:var(--accent);color:#fff;}
+#turnCapInput{width:100%;padding:11px;border-radius:10px;color:var(--text);font-size:15px;}
 </style>
 </head>
 <body>
@@ -101,14 +108,27 @@ body.kb-open .iosDock{display:none;}
 
 <!-- Header -->
 <div class="chatHeader">
-  <div class="hAvatar">L</div>
-  <div>
-    <div class="hName">Lena</div>
+  <div class="hAvatar" id="hAvatar">?</div>
+  <div class="hMeta">
+    <div class="hName" id="hName">Szene wird geladen…</div>
     <div class="statusLine">
       <div class="statusDot" id="statusDot"></div>
       <span id="statusText">online</span>
     </div>
   </div>
+  <div class="hActions">
+    <button id="btnEndScene" class="iosIconBtn hidden" title="Szene beenden" aria-label="Szene beenden">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+    </button>
+    <button id="btnSettings" class="iosIconBtn" title="Einstellungen" aria-label="Einstellungen">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82A1.65 1.65 0 003 13.09H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Situation bar -->
+<div class="scenarioBar">
+  <div class="scenarioText muted" id="scenarioText"></div>
 </div>
 
 <!-- Messages + floating input -->
@@ -116,7 +136,7 @@ body.kb-open .iosDock{display:none;}
   <div class="messages" id="messagesArea">
     <div class="messagesInner" id="messagesInner"></div>
   </div>
-  <div class="inputBar">
+  <div class="inputBar" id="inputBar">
     <div class="inputRow">
       <textarea id="chatInput" rows="1" placeholder="Schreib etwas…" autocomplete="off" spellcheck="false"></textarea>
       <button id="micBtn" aria-label="Mikrofon">
@@ -128,6 +148,9 @@ body.kb-open .iosDock{display:none;}
         </svg>
       </button>
     </div>
+  </div>
+  <div class="sceneEndBar hidden" id="sceneEndBar">
+    <button id="btnNextScene">Nächste Szene →</button>
   </div>
 </div>
 
@@ -154,6 +177,24 @@ body.kb-open .iosDock{display:none;}
   </div>
 </nav>
 
+<!-- Settings sheet -->
+<div id="settingsPanel" class="menuPanel hidden">
+  <div class="iosSheet-handle"></div>
+  <div class="menuSection">
+    <div class="menuLabel">Scene ends when</div>
+    <div class="modeRow">
+      <button class="modeBtn" data-mode="ai">AI decides</button>
+      <button class="modeBtn" data-mode="user">I decide</button>
+      <button class="modeBtn" data-mode="turns">After N turns</button>
+    </div>
+  </div>
+  <div class="menuSection">
+    <div class="menuLabel">Turn cap</div>
+    <input id="turnCapInput" type="number" inputmode="numeric" min="2" max="30" step="1">
+    <p class="muted small" style="margin-top:6px;line-height:1.5;">One turn = you and the character each speaking once. Always applies as a backstop, even in the other modes.</p>
+  </div>
+</div>
+
 <!-- API key overlay -->
 <div id="apiKeyScreen" class="iosSetupScreen hidden">
   <div class="iosSetupCard">
@@ -168,23 +209,25 @@ body.kb-open .iosDock{display:none;}
   </div>
 </div>
 
+<div id="errTooltip"></div>
+
 <script>
 'use strict';
-const GEMINI_KEY_LS = 'top5k_gemini_key';
-const HISTORY_KEY   = 'lena_chat_history';
-const MAX_HIST      = 40;
-const CTX_MSGS      = 20;
-const SUPABASE_URL_KEY   = 'top5k_supabase_url';
-const SUPABASE_KEY_KEY   = 'top5k_supabase_key';
-const CHAT_SAVED_AT_KEY  = 'top5k_chat_saved_at_v1';
+const GEMINI_KEY_LS       = 'top5k_gemini_key';
+const SUPABASE_URL_KEY    = 'top5k_supabase_url';
+const SUPABASE_KEY_KEY    = 'top5k_supabase_key';
+const SCENES_KEY          = 'chat_scenes_v1';
+const SCENES_SAVED_AT_KEY = 'chat_scenes_saved_at_v1';
+const SETTINGS_KEY        = 'chat_settings_v1';
+const SCENES_CAP          = 40;
+const CTX_TURNS           = 24;
+const DEFAULT_SETTINGS    = { endMode:'ai', turnCap:8 };
 
-/* ── Gemini API helpers ── */
 const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 // Gemini 3.x thinking is on by default (thinkingLevel, not the old
 // thinkingBudget) and those hidden reasoning tokens count against
-// maxOutputTokens — with a budget this small (150-200 tokens for a short
-// chat reply), default thinking would eat the whole thing and leave an
-// empty reply, so it's pinned to "minimal" here.
+// maxOutputTokens — pinned to "minimal" so the small budgets below go
+// to the actual answer instead of being eaten by reasoning.
 const GEMINI_THINKING_CONFIG = { thinkingLevel: 'minimal' };
 
 function extractGeminiText(data) {
@@ -192,33 +235,194 @@ function extractGeminiText(data) {
   return parts.filter(p => !p.thought).map(p => p.text || '').join('').trim();
 }
 
-const SYSTEM_PROMPT = `You are Lena, 28, an urban planner living in Hamburg. You are chatting in German with someone who is learning the language. Write in natural casual German — the kind used between friends or in text messages. Keep it B1–B2 level: clear, natural sentences, not overly complex. No Konjunktiv I or II. No Futur I with werden. Never correct grammar explicitly — just reply naturally. Ask a short question back occasionally to keep the conversation going. Be warm, curious, and friendly. Keep replies to 1–3 short sentences. Write German only.`;
-
-/* ── state ── */
-let history   = [];
-let lenaLock  = false;
-let micActive = false;
-let micBase   = '';
-let recognition = null;
-let deVoice   = null;
-
-/* Pre-load German TTS voice (getVoices() is async on most browsers) */
-{
-  const loadVoices = () => {
-    const v = window.speechSynthesis?.getVoices().find(v => v.lang.startsWith('de'));
-    if (v) deVoice = v;
-  };
-  loadVoices();
-  window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
+// Parses only the first complete top-level JSON object starting at the
+// first "{", ignoring any trailing content after it.
+function parseFirstJSON(raw) {
+  const start = raw.indexOf('{');
+  if (start === -1) throw new Error(`no JSON object — raw: ${raw.slice(0,120)}`);
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < raw.length; i++) {
+    const c = raw[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === '"') inStr = false;
+    } else {
+      if (c === '"') inStr = true;
+      else if (c === '{') depth++;
+      else if (c === '}') { depth--; if (depth === 0) return JSON.parse(raw.slice(start, i+1)); }
+    }
+  }
+  throw new Error(`unterminated JSON — raw: ${raw.slice(0,120)}`);
 }
 
-/* ── DOM ── */
+async function geminiRequest({ system, contents, prompt, temperature, maxOutputTokens }) {
+  const key = localStorage.getItem(GEMINI_KEY_LS);
+  if (!key) throw new Error('no key');
+  const body = JSON.stringify({
+    ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
+    contents: contents || [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature, maxOutputTokens, responseMimeType: 'application/json', thinkingConfig: GEMINI_THINKING_CONFIG }
+  });
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+
+  const retryDelays = [800, 1600, 3200];
+  let lastErr = new Error('unknown error');
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, retryDelays[attempt-1]));
+    let shouldRetry = false;
+    try {
+      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body });
+      if (res.status === 429 || res.status >= 500) {
+        lastErr = new Error(`API ${res.status}`);
+        shouldRetry = true;
+      } else if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        throw new Error(`API ${res.status}: ${errBody.slice(0,200)}`);
+      } else {
+        const data = await res.json();
+        const raw = extractGeminiText(data);
+        return parseFirstJSON(raw);
+      }
+    } catch (e) {
+      lastErr = e;
+      if (e instanceof TypeError) shouldRetry = true;
+    }
+    if (!shouldRetry) break;
+  }
+  throw lastErr;
+}
+
+/* ── Scenes storage ── */
+function loadScenesStore() {
+  try {
+    const raw = localStorage.getItem(SCENES_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && s.v === 1 && Array.isArray(s.scenes)) return s;
+    }
+  } catch (e) {}
+  return { v:1, scenes:[] };
+}
+let store = loadScenesStore();
+
+function saveScenes() {
+  if (store.scenes.length > SCENES_CAP) store.scenes.splice(0, store.scenes.length - SCENES_CAP);
+  try {
+    localStorage.setItem(SCENES_KEY, JSON.stringify(store));
+    localStorage.setItem(SCENES_SAVED_AT_KEY, String(Date.now()));
+  } catch (e) {}
+}
+
+/* ── Settings ── */
+function loadSettings() {
+  try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }; }
+  catch (e) { return { ...DEFAULT_SETTINGS }; }
+}
+function saveSettings(s) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch (e) {} }
+
+/* ── Cloud sync (Supabase) — mirror only, app works fully offline without it ── */
+function supabaseConf() {
+  const url = (localStorage.getItem(SUPABASE_URL_KEY) || '').trim().replace(/\/+$/, '');
+  const key = (localStorage.getItem(SUPABASE_KEY_KEY) || '').trim();
+  if (!url || !key) return null;
+  return { url, key };
+}
+
+async function supabaseUpsert(key, value) {
+  const conf = supabaseConf();
+  if (!conf) return null;
+  const res = await fetch(`${conf.url}/rest/v1/kv_state`, {
+    method: 'POST',
+    headers: { 'apikey': conf.key, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify([{ key, value, updated_at: new Date().toISOString() }])
+  });
+  if (!res.ok) throw new Error(`Supabase upsert ${key} failed: HTTP ${res.status}`);
+  const rows = await res.json().catch(() => null);
+  return (rows && rows[0]) || null;
+}
+
+async function supabaseGetRow(key) {
+  const conf = supabaseConf();
+  if (!conf) return null;
+  const res = await fetch(`${conf.url}/rest/v1/kv_state?key=eq.${encodeURIComponent(key)}&select=value,updated_at`, {
+    headers: { 'apikey': conf.key }
+  });
+  if (!res.ok) throw new Error(`Supabase get ${key} failed: HTTP ${res.status}`);
+  const rows = await res.json();
+  return (rows && rows[0]) || null;
+}
+
+let scenesPushTimer = null;
+let scenesPushInFlight = false;
+let scenesPushQueued = false;
+
+function runScenesPush() {
+  if (!supabaseConf()) return;
+  if (scenesPushInFlight) { scenesPushQueued = true; return; }
+  scenesPushInFlight = true;
+  supabaseUpsert(SCENES_KEY, store)
+    .then(row => {
+      const ts = row && row.updated_at ? new Date(row.updated_at).getTime() : null;
+      if (ts) try { localStorage.setItem(SCENES_SAVED_AT_KEY, String(ts)); } catch (e) {}
+    })
+    .catch(e => console.error('Cloud push failed:', e))
+    .finally(() => {
+      scenesPushInFlight = false;
+      if (scenesPushQueued) { scenesPushQueued = false; runScenesPush(); }
+    });
+}
+function scheduleScenesPush(delayMs) {
+  if (!supabaseConf()) return;
+  clearTimeout(scenesPushTimer);
+  scenesPushTimer = setTimeout(runScenesPush, delayMs);
+}
+function pushScenesNow() {
+  if (!supabaseConf()) return;
+  clearTimeout(scenesPushTimer);
+  runScenesPush();
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) pushScenesNow(); });
+
+function fmtWhen(ts) { if (!ts) return 'never'; try { return new Date(ts).toLocaleString(); } catch { return 'never'; } }
+
+async function tryCloudPullOnLoad() {
+  if (!supabaseConf()) return false;
+  try {
+    const row = await supabaseGetRow(SCENES_KEY);
+    if (!row || !row.value || typeof row.value !== 'object' || !Array.isArray(row.value.scenes)) return false;
+    const remoteUpdatedAt = new Date(row.updated_at).getTime();
+    const localSavedAt = parseInt(localStorage.getItem(SCENES_SAVED_AT_KEY) || '0', 10);
+    const localEmpty = store.scenes.length === 0;
+    if (!(remoteUpdatedAt > localSavedAt || localEmpty)) return false;
+    const restore = await window.IOSSheet?.confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`, {
+      title: 'Cloud Sync', confirmLabel: 'Restore', cancelLabel: 'Keep this device'
+    });
+    if (restore) {
+      store = { v:1, scenes: row.value.scenes };
+      saveScenes();
+      resumeFromStore();
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.error('Cloud pull failed:', e);
+    return false;
+  }
+}
+
+/* ── DOM refs ── */
 const messagesArea  = document.getElementById('messagesArea');
 const messagesInner = document.getElementById('messagesInner');
 const chatInput     = document.getElementById('chatInput');
 const micBtn        = document.getElementById('micBtn');
 const statusDot     = document.getElementById('statusDot');
 const statusText    = document.getElementById('statusText');
+const inputBarEl    = document.getElementById('inputBar');
+const sceneEndBarEl = document.getElementById('sceneEndBar');
+
+let currentScene = null;
+let sceneLock    = false; // true while a single AI turn/scenario call is in flight
 
 /* ── Status ── */
 const STATUS = {
@@ -233,119 +437,73 @@ function setStatus(s) {
   statusText.textContent = st.label;
 }
 
-/* ── History ── */
-function loadHistory() {
-  try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { history = []; }
-}
-function saveHistory() {
-  if (history.length > MAX_HIST) history.splice(0, history.length - MAX_HIST);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  try { localStorage.setItem(CHAT_SAVED_AT_KEY, String(Date.now())); } catch {}
+function escapeHTML(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/* ── Cloud sync (Supabase) — mirror only, app works fully offline without it ── */
-function supabaseConf() {
-  const url = (localStorage.getItem(SUPABASE_URL_KEY) || '').trim().replace(/\/+$/, '');
-  const key = (localStorage.getItem(SUPABASE_KEY_KEY) || '').trim();
-  if (!url || !key) return null;
-  return { url, key };
+/* ── Header ── */
+function updateHeader(scene) {
+  const name = scene?.character?.name || '';
+  document.getElementById('hAvatar').textContent = (name[0] || '?').toUpperCase();
+  document.getElementById('hName').textContent = scene ? (name || '…') : 'Szene wird geladen…';
+  document.getElementById('scenarioText').textContent = scene ? (scene.situation || '') : '';
+  document.getElementById('btnEndScene').classList.toggle('hidden', !scene || scene.ended);
 }
 
-async function supabaseUpsert(key, value) {
-  const conf = supabaseConf();
-  if (!conf) return;
-  // sb_publishable_... keys are opaque tokens, not JWTs — apikey header only, never Authorization.
-  const res = await fetch(`${conf.url}/rest/v1/kv_state`, {
-    method: 'POST',
-    headers: {
-      'apikey': conf.key,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates'
-    },
-    body: JSON.stringify([{ key, value, updated_at: new Date().toISOString() }])
-  });
-  if (!res.ok) throw new Error(`Supabase upsert ${key} failed: HTTP ${res.status}`);
-  return res;
+/* ── Bars ── */
+function showInputBar() { inputBarEl.classList.remove('hidden'); sceneEndBarEl.classList.add('hidden'); }
+function showNextSceneAffordance() { inputBarEl.classList.add('hidden'); sceneEndBarEl.classList.remove('hidden'); }
+function hideBothBars() { inputBarEl.classList.add('hidden'); sceneEndBarEl.classList.add('hidden'); }
+
+/* ── System rows (loading / error indicators in the transcript) ── */
+function showScenarioLoading() {
+  const row = document.createElement('div');
+  row.id = 'scenarioLoadingRow';
+  row.className = 'sysRow';
+  row.innerHTML = '<div class="loadingSpinner"><span></span><span></span><span></span></div><div class="muted small">Szene wird generiert…</div>';
+  messagesInner.appendChild(row);
+  scrollBottom();
+}
+function hideScenarioLoading() { document.getElementById('scenarioLoadingRow')?.remove(); }
+function showScenarioError(e) {
+  hideScenarioLoading();
+  const row = document.createElement('div');
+  row.className = 'sysRow';
+  const txt = document.createElement('div');
+  txt.className = 'muted small';
+  txt.style.cursor = 'pointer';
+  txt.style.textAlign = 'center';
+  txt.style.wordBreak = 'break-word';
+  txt.textContent = `Fehler: ${e.message} — zum Wiederholen tippen.`;
+  txt.addEventListener('click', () => { row.remove(); startNewScene(); });
+  row.appendChild(txt);
+  messagesInner.appendChild(row);
+  scrollBottom();
 }
 
-async function supabaseGetRow(key) {
-  const conf = supabaseConf();
-  if (!conf) return null;
-  const res = await fetch(`${conf.url}/rest/v1/kv_state?key=eq.${encodeURIComponent(key)}&select=value,updated_at`, {
-    headers: { 'apikey': conf.key }
-  });
-  if (!res.ok) throw new Error(`Supabase get ${key} failed: HTTP ${res.status}`);
-  const rows = await res.json();
-  return (rows && rows[0]) || null;
+function showGradingIndicator() {
+  const row = document.createElement('div');
+  row.id = 'gradingRow';
+  row.className = 'sysRow';
+  row.innerHTML = '<div class="loadingSpinner"><span></span><span></span><span></span></div><div class="muted small">Wird bewertet…</div>';
+  messagesInner.appendChild(row);
+  scrollBottom();
 }
-
-let chatPushTimer = null;
-let chatPushInFlight = false;
-let chatPushQueued = false;
-
-function runChatPush() {
-  if (!supabaseConf()) return;
-  if (chatPushInFlight) { chatPushQueued = true; return; }
-  chatPushInFlight = true;
-  supabaseUpsert(HISTORY_KEY, history)
-    .catch(e => console.error('Cloud push failed:', e))
-    .finally(() => {
-      chatPushInFlight = false;
-      if (chatPushQueued) { chatPushQueued = false; runChatPush(); }
-    });
-}
-function scheduleChatPush(delayMs) {
-  if (!supabaseConf()) return;
-  clearTimeout(chatPushTimer);
-  chatPushTimer = setTimeout(runChatPush, delayMs);
-}
-function pushChatNow() {
-  if (!supabaseConf()) return;
-  clearTimeout(chatPushTimer);
-  runChatPush();
-}
-document.addEventListener('visibilitychange', () => { if (document.hidden) pushChatNow(); });
-
-function fmtWhen(ts) { if (!ts) return 'never'; try { return new Date(ts).toLocaleString(); } catch { return 'never'; } }
-
-// Returns true if the cloud copy was applied (caller should skip its own local-empty fallback).
-async function tryCloudPullOnLoad() {
-  if (!supabaseConf()) return false;
-  try {
-    const row = await supabaseGetRow(HISTORY_KEY);
-    if (!row || !Array.isArray(row.value)) return false;
-    const remoteUpdatedAt = new Date(row.updated_at).getTime();
-    const localSavedAt = parseInt(localStorage.getItem(CHAT_SAVED_AT_KEY) || '0', 10);
-    const localEmpty = history.length === 0;
-    if (!(remoteUpdatedAt > localSavedAt || localEmpty)) return false;
-    const restore = await window.IOSSheet?.confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`, {
-      title: 'Cloud Sync',
-      confirmLabel: 'Restore',
-      cancelLabel: 'Keep this device'
-    });
-    if (restore) {
-      history = row.value;
-      saveHistory();
-      renderHistory();
-      return true;
-    }
-    return false;
-  } catch (e) {
-    console.error('Cloud pull failed:', e);
-    return false;
-  }
-}
-
-/* ── Render saved history ── */
-function renderHistory() {
-  messagesInner.innerHTML = '';
-  let prevRole = null;
-  history.forEach(m => {
-    if (m.hidden) return;
-    if (prevRole !== m.role) appendTimestamp();
-    appendBubble(m.role, m.text, false);
-    prevRole = m.role;
-  });
+function hideGradingIndicator() { document.getElementById('gradingRow')?.remove(); }
+function showGradingError(e) {
+  hideGradingIndicator();
+  const row = document.createElement('div');
+  row.id = 'gradingRow';
+  row.className = 'sysRow';
+  const txt = document.createElement('div');
+  txt.className = 'muted small';
+  txt.style.cursor = 'pointer';
+  txt.style.textAlign = 'center';
+  txt.style.wordBreak = 'break-word';
+  txt.textContent = `Fehler: ${e.message} — zum Wiederholen tippen.`;
+  txt.addEventListener('click', () => { row.remove(); showGradingIndicator(); gradeCurrentScene(); });
+  row.appendChild(txt);
+  messagesInner.appendChild(row);
   scrollBottom();
 }
 
@@ -358,18 +516,19 @@ function appendTimestamp() {
   messagesInner.appendChild(el);
 }
 
-function appendBubble(role, text, doScroll) {
-  const isLena = role === 'lena';
+function appendBubble(role, text, turnIndex, doScroll) {
+  const isAi = role === 'ai';
   const row = document.createElement('div');
-  row.className = 'bRow ' + (isLena ? 'lena' : 'user');
-  if (isLena) {
+  row.className = 'bRow ' + (isAi ? 'ai' : 'user');
+  if (isAi) {
     const av = document.createElement('div');
     av.className = 'bAvatar';
-    av.textContent = 'L';
+    av.textContent = (currentScene?.character?.name?.[0] || '?').toUpperCase();
     row.appendChild(av);
   }
   const bub = document.createElement('div');
   bub.className = 'bubble';
+  if (turnIndex !== undefined) bub.dataset.turnIndex = String(turnIndex);
   bub.textContent = text;
   row.appendChild(bub);
   messagesInner.appendChild(row);
@@ -381,23 +540,245 @@ function scrollBottom() {
   messagesArea.scrollTop = messagesArea.scrollHeight;
 }
 
-/* ── Build contents array for Gemini (must start with user role) ── */
-function buildContents() {
-  const ctx = history.slice(-CTX_MSGS);
-  const contents = ctx.map(m => ({
-    role: m.role === 'user' ? 'user' : 'model',
-    parts: [{ text: m.text }]
-  }));
+/* ── Render a scene's transcript from scratch (boot / resume) ── */
+function renderScene(scene) {
+  messagesInner.innerHTML = '';
+  let prevRole = null;
+  scene.turns.forEach((t, i) => {
+    if (prevRole !== t.role) appendTimestamp();
+    appendBubble(t.role, t.text, i, false);
+    prevRole = t.role;
+  });
+  scrollBottom();
+  if (scene.ended && scene.feedback) {
+    applyFeedbackToTranscript(scene);
+    showNextSceneAffordance();
+  } else if (!scene.ended) {
+    showInputBar();
+  }
+}
+
+/* ── Building the Gemini turn context ── */
+function buildContents(turns) {
+  const ctx = turns.slice(-CTX_TURNS);
+  const contents = ctx.map(t => ({ role: t.role === 'user' ? 'user' : 'model', parts: [{ text: t.text }] }));
   if (contents.length && contents[0].role === 'model') {
-    contents.unshift({ role:'user', parts:[{ text:'Hallo!' }] });
+    contents.unshift({ role:'user', parts:[{ text:'(Die Szene beginnt.)' }] });
   }
   return contents;
 }
 
-/* ── Send user message ── */
+function buildSystemPrompt(situation, character) {
+  return `You are playing a character in a German role-play conversation with a language learner (B1–B2 level).
+
+Situation: ${situation}
+Your character: ${character.name} — ${character.role}. Manner: ${character.manner}
+
+Rules:
+- Speak only in German, casual and natural, B1–B2 level, 1–3 short sentences per reply.
+- Stay in character and stay inside the situation the whole time.
+- Past events: Perfekt, except sein/haben/modals which stay Präteritum (war, hatte, konnte — never ist gewesen/hat gehabt). No Konjunktiv I/II. No Futur I with werden.
+- Never correct the learner's German explicitly — just respond naturally in character.
+- Decide whether the situation has reached a natural conclusion (goal handled, farewells exchanged, conversation wrapped up). Only set sceneComplete to true when the scene should end right after this reply.
+
+Output ONLY JSON, no preamble, no code fences:
+{"reply":"…","sceneComplete":true|false}`;
+}
+
+/* ── Scenario generation ── */
+async function fetchScenario() {
+  const recent = store.scenes.slice(-8).map(s => s.situation).filter(Boolean);
+  const recentList = recent.length ? recent.join(' | ') : 'noch keine';
+
+  const prompt = `You create a German role-play scenario for a B1–B2 learner to practice spoken conversation.
+
+Invent:
+- A concrete, everyday situation the learner can act out (e.g. ordering food, checking into a hotel, asking a neighbor for a favor, returning a broken item, a job interview, small talk on a train) — vary the domain each time.
+- A character YOU will play opposite the learner: a first name, a one-line role/relationship, and a one-line manner/personality note.
+- An opening line in German, in character, that starts the conversation naturally (a greeting or the first line of the situation).
+
+Casual, natural spoken German, B1–B2 level. Past events use Perfekt, except sein/haben/modals which stay Präteritum (war, hatte, konnte — never ist gewesen/hat gehabt). No Konjunktiv I/II. No Futur I with werden.
+
+Do not reuse or resemble any recent situation: ${recentList}
+
+Output ONLY JSON, no preamble, no code fences:
+{"situation":"…","character":{"name":"…","role":"…","manner":"…"},"opening":"…"}`;
+
+  const data = await geminiRequest({ prompt, temperature:1.0, maxOutputTokens:500 });
+  const situation = (data.situation || '').toString().trim();
+  const character = data.character || {};
+  const opening = (data.opening || '').toString().trim();
+  if (!situation || !character.name || !opening) throw new Error(`bad shape — ${JSON.stringify(data).slice(0,120)}`);
+  return {
+    situation,
+    character: { name:String(character.name).trim(), role:String(character.role||'').trim(), manner:String(character.manner||'').trim() },
+    opening
+  };
+}
+
+/* ── Grading ── */
+async function fetchGrade(scene) {
+  const charName = scene.character?.name || 'Charakter';
+  const userIdxs = [];
+  const lines = scene.turns.map((t, i) => {
+    if (t.role === 'user') { userIdxs.push(i); return `U${userIdxs.length}: ${t.text}`; }
+    return `${charName}: ${t.text}`;
+  });
+  if (!userIdxs.length) return {};
+  const transcript = lines.join('\n');
+
+  const prompt = `Grade a B1–B2 German learner's turns in the role-play transcript below. "${charName}" is an AI character — never grade or comment on those lines, only the learner's turns (labeled U1, U2, …).
+
+Some learner turns were DICTATED via speech recognition — ignore capitalization and punctuation completely; never report them as errors.
+
+For each learner turn worth flagging, return two kinds of notes:
+- "corrections": a clear grammar/vocabulary error — wrong form paired with the fixed form.
+- "naturalness": correct German that's non-idiomatic — acceptable but not how a native would actually say it, paired with the native phrasing.
+Skip any turn with nothing to flag. Keep notes short, in English.
+
+Casual German norms: past events use Perfekt, except sein/haben/modals which stay Präteritum (war, hatte, konnte — never ist gewesen/hat gehabt). Never flag a correct war/hatte as an error.
+
+Output JSON only, no markdown:
+{"feedback":[{"turn":1,"corrections":[{"original":"exact substring from that learner turn","correction":"fixed form","note":"short English reason"}],"naturalness":[{"original":"exact substring from that learner turn","better":"more native phrasing","note":"short English reason"}]}]}
+
+Only include entries for turns that actually have corrections or naturalness items. Each "original" must be an exact substring of that specific learner turn's text so the app can highlight it.
+
+Transcript:
+"""
+${transcript}
+"""`;
+
+  const data = await geminiRequest({ prompt, temperature:0.4, maxOutputTokens:4096 });
+  if (!Array.isArray(data.feedback)) throw new Error(`bad shape — ${JSON.stringify(data).slice(0,120)}`);
+  const feedback = {};
+  data.feedback.forEach(item => {
+    const n = Number(item && item.turn);
+    if (!Number.isFinite(n) || n < 1 || n > userIdxs.length) return;
+    const absIdx = userIdxs[n-1];
+    const corrections = Array.isArray(item.corrections) ? item.corrections.filter(c => c && c.original) : [];
+    const naturalness = Array.isArray(item.naturalness) ? item.naturalness.filter(c => c && c.original) : [];
+    if (corrections.length || naturalness.length) feedback[absIdx] = { corrections, naturalness };
+  });
+  return feedback;
+}
+
+/* ── Highlighting & tooltip ── */
+function renderSpanText(text, spans) {
+  const matches = [];
+  spans.forEach((sp, i) => {
+    if (!sp.original) return;
+    const idx = text.indexOf(sp.original);
+    if (idx === -1) return;
+    matches.push({ start:idx, end:idx+sp.original.length, i });
+  });
+  matches.sort((a,b) => a.start - b.start);
+  const clean = [];
+  let lastEnd = 0;
+  matches.forEach(m => { if (m.start >= lastEnd) { clean.push(m); lastEnd = m.end; } });
+  let html = '', pos = 0;
+  clean.forEach(m => {
+    html += escapeHTML(text.slice(pos, m.start));
+    const sp = spans[m.i];
+    const color = sp.type === 'correction' ? 'var(--bad)' : 'var(--accent)';
+    html += `<span class="errSpan" style="border-bottom:2px solid ${color};" data-span-idx="${m.i}">${escapeHTML(text.slice(m.start, m.end))}</span>`;
+    pos = m.end;
+  });
+  html += escapeHTML(text.slice(pos));
+  return html;
+}
+
+function showSpanTooltip(span, sp) {
+  const tip = document.getElementById('errTooltip');
+  const isCorrection = sp.type === 'correction';
+  const color = isCorrection ? 'var(--bad)' : 'var(--accent)';
+  const label = isCorrection ? 'Correction' : 'More natural';
+  const value = isCorrection ? sp.correction : sp.better;
+  tip.style.setProperty('--tip-color', color);
+  tip.innerHTML = `<div class="corrLine" style="color:${color}">${escapeHTML(label)}: ${escapeHTML(value||'')}</div><div class="muted">${escapeHTML(sp.note||'')}</div>`;
+  tip.classList.remove('visible');
+  tip.classList.add('show');
+  const rect = span.getBoundingClientRect();
+  const tipWidth = tip.offsetWidth || 260;
+  const left = Math.max(8, Math.min(window.innerWidth - tipWidth - 8, rect.left));
+  tip.style.left = left + 'px';
+  tip.style.top = (rect.bottom + 8) + 'px';
+  const arrowLeft = Math.max(14, Math.min(tipWidth-24, (rect.left + rect.width/2) - left));
+  tip.style.setProperty('--tip-arrow', arrowLeft + 'px');
+  requestAnimationFrame(() => tip.classList.add('visible'));
+}
+
+document.addEventListener('click', e => {
+  const tip = document.getElementById('errTooltip');
+  if (tip && tip.classList.contains('show') && !tip.contains(e.target) && !e.target.classList.contains('errSpan')) {
+    tip.classList.remove('visible');
+    setTimeout(() => tip.classList.remove('show'), 120);
+  }
+});
+
+function applyFeedbackToTranscript(scene) {
+  const feedback = scene.feedback || {};
+  messagesInner.querySelectorAll('.bubble[data-turn-index]').forEach(bub => {
+    const idx = parseInt(bub.dataset.turnIndex, 10);
+    const fb = feedback[idx];
+    const turn = scene.turns[idx];
+    if (!fb || !turn || turn.role !== 'user') return;
+    const spans = [
+      ...(fb.corrections || []).map(s => ({ ...s, type:'correction' })),
+      ...(fb.naturalness || []).map(s => ({ ...s, type:'naturalness' }))
+    ];
+    if (!spans.length) return;
+    bub.innerHTML = renderSpanText(turn.text, spans);
+    bub.querySelectorAll('.errSpan').forEach(span => {
+      span.addEventListener('click', e => {
+        e.stopPropagation();
+        const sp = spans[parseInt(span.dataset.spanIdx, 10)];
+        if (sp) showSpanTooltip(span, sp);
+      });
+    });
+  });
+}
+
+/* ── Scene lifecycle ── */
+async function startNewScene() {
+  messagesInner.innerHTML = '';
+  hideBothBars();
+  updateHeader(null);
+  showScenarioLoading();
+  sceneLock = true;
+  setStatus('thinking');
+  try {
+    const data = await fetchScenario();
+    const scene = {
+      date: new Date().toISOString(),
+      situation: data.situation,
+      character: data.character,
+      turns: [{ role:'ai', text:data.opening }],
+      turnCount: 0,
+      ended: false,
+      feedback: null
+    };
+    store.scenes.push(scene);
+    currentScene = scene;
+    saveScenes();
+    scheduleScenesPush(30000);
+    hideScenarioLoading();
+    updateHeader(scene);
+    appendTimestamp();
+    await typeReply(data.opening, 0);
+    sceneLock = false;
+    setStatus('online');
+    showInputBar();
+  } catch (e) {
+    console.error('[scenario]', e);
+    sceneLock = false;
+    setStatus('online');
+    showScenarioError(e);
+  }
+}
+
 async function sendMessage(text) {
   text = text.trim();
-  if (!text || lenaLock) return;
+  if (!text || sceneLock || !currentScene || currentScene.ended) return;
   stopMic();
   chatInput.value = '';
   chatInput.style.height = '0px';
@@ -405,62 +786,90 @@ async function sendMessage(text) {
   chatInput.classList.remove('interim');
   micBase = '';
   appendTimestamp();
-  appendBubble('user', text);
-  history.push({ role:'user', text });
-  saveHistory();
-  await fetchLenaReply();
+  const idx = currentScene.turns.length;
+  appendBubble('user', text, idx);
+  currentScene.turns.push({ role:'user', text });
+  saveScenes();
+  await fetchAIReply();
 }
 
-/* ── Fetch Lena's reply ── */
-async function fetchLenaReply() {
-  const key = localStorage.getItem(GEMINI_KEY_LS);
-  if (!key) return;
-  lenaLock = true;
+async function fetchAIReply() {
+  sceneLock = true;
   setStatus('thinking');
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
-      {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          system_instruction:{ parts:[{ text:SYSTEM_PROMPT }] },
-          contents: buildContents(),
-          generationConfig:{ temperature:1.05, maxOutputTokens:200, thinkingConfig:GEMINI_THINKING_CONFIG }
-        })
-      }
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const reply = extractGeminiText(data);
+    const sys = buildSystemPrompt(currentScene.situation, currentScene.character);
+    const contents = buildContents(currentScene.turns);
+    const data = await geminiRequest({ system:sys, contents, temperature:1.05, maxOutputTokens:300 });
+    const reply = (data.reply || '').toString().trim();
     if (!reply) throw new Error('empty reply');
-    history.push({ role:'lena', text:reply });
-    saveHistory();
-    scheduleChatPush(30000);
-    await typeReply(reply);
-  } catch(e) {
-    console.error('[lena]', e);
-    lenaLock = false;
+    const sceneComplete = data.sceneComplete === true;
+    if (currentScene.ended) return; // scene was manually ended while this was in flight
+    const turnIndex = currentScene.turns.length;
+    currentScene.turns.push({ role:'ai', text:reply });
+    currentScene.turnCount = (currentScene.turnCount || 0) + 1;
+    saveScenes();
+    scheduleScenesPush(30000);
+    appendTimestamp();
+    await typeReply(reply, turnIndex);
+    checkSceneEnd(sceneComplete);
+  } catch (e) {
+    console.error('[scene reply]', e);
+    sceneLock = false;
     setStatus('online');
     appendTimestamp();
-    appendBubble('lena', 'Ups, das hat leider nicht geklappt. Versuch es nochmal!');
+    appendBubble('ai', 'Ups, das hat leider nicht geklappt. Versuch es nochmal!');
   }
 }
 
-/* ── Type Lena's reply word by word ── */
-async function typeReply(text) {
+function checkSceneEnd(sceneComplete) {
+  const settings = loadSettings();
+  const capReached = (currentScene.turnCount || 0) >= settings.turnCap;
+  const aiWantsEnd = settings.endMode === 'ai' && sceneComplete;
+  sceneLock = false;
+  setStatus('online');
+  if (capReached || aiWantsEnd) endScene();
+}
+
+async function endScene() {
+  if (!currentScene || currentScene.ended) return;
+  stopMic();
+  currentScene.ended = true;
+  saveScenes();
+  updateHeader(currentScene);
+  hideBothBars();
+  showGradingIndicator();
+  await gradeCurrentScene();
+}
+
+async function gradeCurrentScene() {
+  try {
+    const feedback = await fetchGrade(currentScene);
+    currentScene.feedback = feedback;
+    saveScenes();
+    pushScenesNow();
+    hideGradingIndicator();
+    applyFeedbackToTranscript(currentScene);
+    showNextSceneAffordance();
+  } catch (e) {
+    console.error('[scene grade]', e);
+    showGradingError(e);
+  }
+}
+
+/* ── Type AI reply word by word ── */
+async function typeReply(text, turnIndex) {
   setStatus('speaking');
   const words = text.split(' ');
 
-  appendTimestamp();
   const row = document.createElement('div');
-  row.className = 'bRow lena';
+  row.className = 'bRow ai';
   const av = document.createElement('div');
   av.className = 'bAvatar';
-  av.textContent = 'L';
+  av.textContent = (currentScene?.character?.name?.[0] || '?').toUpperCase();
   row.appendChild(av);
   const bub = document.createElement('div');
   bub.className = 'bubble';
+  bub.dataset.turnIndex = String(turnIndex);
   row.appendChild(bub);
   messagesInner.appendChild(row);
 
@@ -472,25 +881,26 @@ async function typeReply(text) {
     scrollBottom();
     await pause(150);
   }
-
-  lenaLock = false;
-  setStatus('online');
 }
 
 function pause(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 /* ── TTS ── */
-/* iOS requires speechSynthesis.speak() to be called inside a user-gesture
-   handler. We unlock it on the first tap/enter with a silent utterance so
-   later async calls (after the Gemini fetch) go through on iOS too. */
-document.addEventListener('pointerdown', () => unlockSynth(), { once: true });
+let deVoice = null;
+{
+  const loadVoices = () => {
+    const v = window.speechSynthesis?.getVoices().find(v => v.lang.startsWith('de'));
+    if (v) deVoice = v;
+  };
+  loadVoices();
+  window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
+}
 
+document.addEventListener('pointerdown', () => unlockSynth(), { once: true });
 let synthUnlocked = false;
 function unlockSynth() {
   if (synthUnlocked || !window.speechSynthesis) return;
   synthUnlocked = true;
-  // iOS requires a real (non-empty) utterance spoken inside a user gesture
-  // to unlock speechSynthesis for later async calls.
   const u = new SpeechSynthesisUtterance('okay');
   u.volume = 0;
   u.rate = 10;
@@ -501,7 +911,6 @@ function speakText(text) {
   const synth = window.speechSynthesis;
   if (!synth) return;
   synth.cancel();
-  // Chrome needs ~50 ms after cancel() before a new speak() is accepted.
   setTimeout(() => {
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = 'de-DE';
@@ -512,6 +921,10 @@ function speakText(text) {
 }
 
 /* ── Speech recognition ── */
+let recognition = null;
+let micActive = false;
+let micBase = '';
+
 {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SR) {
@@ -551,7 +964,7 @@ function speakText(text) {
       micBtn.classList.remove('listening');
       micActive = false;
       chatInput.classList.remove('interim');
-      if (!lenaLock) setStatus('online');
+      if (!sceneLock) setStatus('online');
     };
   } else {
     micBtn.classList.add('hidden');
@@ -577,7 +990,20 @@ function stopMic() {
   }
 }
 
-/* ── Wire buttons ── */
+/* ── Button wiring helper (pointerdown+mousedown, 400ms throttle) ── */
+function wireButton(id, handler) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  let lock = 0;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const now = Date.now(); if (now - lock < 400) return; lock = now;
+    handler();
+  }, { passive:false });
+  el.addEventListener('mousedown', e => e.preventDefault());
+}
+
+/* ── Wire input/mic ── */
 {
   let lockMic = 0;
   micBtn.addEventListener('pointerdown', e => {
@@ -597,7 +1023,6 @@ function stopMic() {
   }, { passive:false });
   micBtn.addEventListener('mousedown', e => e.preventDefault());
 
-  // Auto-resize textarea
   function resizeInput() {
     chatInput.style.height = '0px';
     chatInput.style.height = chatInput.scrollHeight + 'px';
@@ -614,62 +1039,65 @@ function stopMic() {
   });
 }
 
+/* ── Settings sheet wiring ── */
+function applySettingsUI(s) {
+  document.querySelectorAll('#settingsPanel .modeBtn').forEach(b => b.classList.toggle('active', b.dataset.mode === s.endMode));
+  document.getElementById('turnCapInput').value = s.turnCap;
+}
+document.querySelectorAll('#settingsPanel .modeBtn').forEach(b => {
+  b.addEventListener('click', () => {
+    const s = loadSettings();
+    s.endMode = b.dataset.mode;
+    saveSettings(s);
+    applySettingsUI(s);
+  });
+});
+document.getElementById('turnCapInput').addEventListener('change', e => {
+  const s = loadSettings();
+  let v = parseInt(e.target.value, 10);
+  if (!Number.isFinite(v)) v = DEFAULT_SETTINGS.turnCap;
+  v = Math.max(2, Math.min(30, v));
+  s.turnCap = v;
+  saveSettings(s);
+  e.target.value = v;
+});
+wireButton('btnSettings', () => { applySettingsUI(loadSettings()); window.IOSSheet?.open('settingsPanel'); });
+wireButton('btnEndScene', () => { if (currentScene && !currentScene.ended) endScene(); });
+wireButton('btnNextScene', () => startNewScene());
+
 /* ── Tab persistence ── */
 document.querySelectorAll('.tabItem[data-tab]').forEach(a => {
   a.addEventListener('click', () => localStorage.setItem('top5k_active_tab', a.dataset.tab));
 });
 
 /* ── API key screen ── */
-{
-  let lockSave = 0;
-  document.getElementById('apiKeySave').addEventListener('pointerdown', e => {
-    e.preventDefault();
-    const now = Date.now(); if (now - lockSave < 400) return; lockSave = now;
-    const val = (document.getElementById('apiKeyInput').value || '').trim();
-    const hint = document.getElementById('apiKeyHint');
-    if (!val) { hint.textContent = 'Bitte API-Schlüssel eingeben.'; hint.classList.remove('hidden'); return; }
-    localStorage.setItem(GEMINI_KEY_LS, val);
-    location.reload();
-  }, { passive:false });
-  document.getElementById('apiKeySave').addEventListener('mousedown', e => e.preventDefault());
-  document.getElementById('apiKeyInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('apiKeySave').dispatchEvent(new PointerEvent('pointerdown', { bubbles:true }));
-  });
-}
+wireButton('apiKeySave', () => {
+  const val = (document.getElementById('apiKeyInput').value || '').trim();
+  const hint = document.getElementById('apiKeyHint');
+  if (!val) { hint.textContent = 'Bitte API-Schlüssel eingeben.'; hint.classList.remove('hidden'); return; }
+  localStorage.setItem(GEMINI_KEY_LS, val);
+  location.reload();
+});
+document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('apiKeySave').dispatchEvent(new PointerEvent('pointerdown', { bubbles:true }));
+});
 
 /* ── Boot ── */
-async function getLenaOpener() {
-  const key = localStorage.getItem(GEMINI_KEY_LS);
-  lenaLock = true;
-  setStatus('thinking');
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
-      {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          system_instruction:{ parts:[{ text:SYSTEM_PROMPT }] },
-          contents:[{ role:'user', parts:[{ text:'Hallo! Fang die Unterhaltung an.' }] }],
-          generationConfig:{ temperature:1.1, maxOutputTokens:150, thinkingConfig:GEMINI_THINKING_CONFIG }
-        })
-      }
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const reply = extractGeminiText(data);
-    if (!reply) throw new Error('empty');
-    history = [
-      { role:'user', text:'Hallo!', hidden:true },
-      { role:'lena', text:reply }
-    ];
-    saveHistory();
-    scheduleChatPush(30000);
-    await typeReply(reply);
-  } catch(e) {
-    console.error('[lena opener]', e);
-    lenaLock = false;
-    setStatus('online');
+function resumeFromStore() {
+  const last = store.scenes[store.scenes.length - 1];
+  if (!last) { startNewScene(); return; }
+  currentScene = last;
+  updateHeader(last);
+  renderScene(last);
+  if (last.ended) {
+    if (!last.feedback) {
+      hideBothBars();
+      showGradingIndicator();
+      gradeCurrentScene();
+    }
+  } else {
+    const settings = loadSettings();
+    if ((last.turnCount || 0) >= settings.turnCap) endScene();
   }
 }
 
@@ -678,12 +1106,11 @@ async function boot() {
     document.getElementById('apiKeyScreen').classList.remove('hidden');
     return;
   }
-  loadHistory();
-  if (history.length === 0) {
+  if (store.scenes.length === 0) {
     const restored = await tryCloudPullOnLoad();
-    if (!restored) getLenaOpener();
+    if (!restored) startNewScene();
   } else {
-    renderHistory();
+    resumeFromStore();
     tryCloudPullOnLoad();
   }
 }
