@@ -127,6 +127,17 @@
     drag.sheet.style.transform = dy > 0 ? ('translateY(' + dy + 'px)') : '';
   }
 
+  // Velocity handoff: pick the settle animation's duration from how far is
+  // left to travel divided by how fast the finger was actually moving, so a
+  // hard flick finishes quickly and a slow drag settles unhurried — instead
+  // of every release animating for the same fixed time regardless of speed.
+  // `velocity` is px/ms; a floor keeps a released-while-nearly-still drag
+  // from settling in slow motion.
+  function settleMs(distance, velocity, min, max){
+    const speed = Math.max(Math.abs(velocity), 0.35);
+    return Math.max(min, Math.min(max, Math.abs(distance) / speed));
+  }
+
   function onPointerUp(){
     if(!drag) return;
     const sheet = drag.sheet, dy = drag.dy, velocity = drag.velocity;
@@ -140,30 +151,52 @@
         const details = sheet.querySelector('details');
         if(details && !details.open) details.open = true;
       }
-      sheet.style.transition = 'transform .25s cubic-bezier(.25,.46,.45,.94)';
+      const ms = settleMs(dy, velocity, 160, 300);
+      sheet.style.transition = 'transform ' + (ms / 1000).toFixed(3) + 's cubic-bezier(.25,.46,.45,.94)';
       sheet.style.transform = '';
-      setTimeout(function(){ sheet.style.transition = ''; }, 260);
+      setTimeout(function(){ sheet.style.transition = ''; }, ms + 20);
       drag = null;
       return;
     }
 
     const shouldDismiss = dy > sheet.offsetHeight * 0.3 || dy > 120 || velocity > 0.6;
     if(shouldDismiss){
-      sheet.style.transition = 'transform .22s ease-out';
+      const ms = settleMs(sheet.offsetHeight - dy, velocity, 140, 260);
+      sheet.style.transition = 'transform ' + (ms / 1000).toFixed(3) + 's ease-out';
       sheet.style.transform = 'translateY(100%)';
       scrimEl().classList.remove('show');
-      setTimeout(function(){ finishClose(sheet); }, 220);
+      setTimeout(function(){ finishClose(sheet); }, ms);
       if(escHandler){ document.removeEventListener('keydown', escHandler); escHandler = null; }
       openId = null;
     } else {
-      sheet.style.transition = 'transform .25s cubic-bezier(.25,.46,.45,.94)';
+      const ms = settleMs(dy, velocity, 160, 300);
+      sheet.style.transition = 'transform ' + (ms / 1000).toFixed(3) + 's cubic-bezier(.25,.46,.45,.94)';
       sheet.style.transform = '';
-      setTimeout(function(){ sheet.style.transition = ''; }, 260);
+      setTimeout(function(){ sheet.style.transition = ''; }, ms + 20);
     }
     drag = null;
   }
 
   document.addEventListener('pointerdown', onPointerDown);
 
-  window.IOSSheet = { open: open, close: close, confirm: confirm };
+  /* ---- shared AI-request error classifier ----
+     The 4 AI-backed screens (grammar/preps/ausdruck/chat) all throw errors
+     shaped like `API ${status}: ${responseBodySlice}` from their fetch
+     layer. That body is truncated to ~200 chars before it ever reaches
+     here, so it's frequently cut off mid-JSON — classify by sniffing the
+     raw text instead of relying on a clean JSON.parse. Each screen maps
+     the returned category to its own (possibly localized) copy; this only
+     centralizes "what kind of failure was this", not the wording. */
+  function classifyError(err){
+    const raw = String((err && err.message) || err || '');
+    const status = (raw.match(/^API (\d+):/) || [])[1];
+    const code = status ? parseInt(status, 10) : null;
+    if(/api key/i.test(raw) || code === 400 || code === 403) return 'apikey';
+    if(code === 429 || /quota|rate.?limit|RESOURCE_EXHAUSTED/i.test(raw)) return 'quota';
+    if(code && code >= 500) return 'server';
+    if(/network|failed to fetch|networkerror/i.test(raw)) return 'network';
+    return 'unknown';
+  }
+
+  window.IOSSheet = { open: open, close: close, confirm: confirm, classifyError: classifyError };
 })();

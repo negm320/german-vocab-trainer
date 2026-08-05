@@ -228,6 +228,16 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 <script>
 const GEMINI_KEY_LS='top5k_gemini_key';
 
+/* Plain-language copy for IOSSheet.classifyError()'s categories — keeps the
+   raw fetch error (status code + truncated response body) off-screen. */
+const ERR_MSG_EN={
+  apikey:'Your API key looks invalid',
+  quota:'Rate limit reached — please wait a moment',
+  server:'The AI service is having trouble right now',
+  network:'Network error — check your connection',
+  unknown:'Something went wrong'
+};
+
 /* ── Gemini API helpers ── */
 const GEMINI_MODEL='gemini-3.5-flash-lite';
 // Gemini 3.x thinking is on by default (thinkingLevel, not the old
@@ -872,7 +882,7 @@ async function generateDrill(){
 
   loadingSpinner.classList.remove('hidden');
   loadingText.textContent='Generating drill…';
-  loadingText.classList.remove('hidden');
+  loadingText.classList.remove('hidden','errorText');
   drillContent.classList.add('hidden');
   feedback?.classList.add('hidden');
 
@@ -882,7 +892,8 @@ async function generateDrill(){
   }catch(e){
     console.error('[grammar drill]',e);
     loadingSpinner.classList.add('hidden');
-    loadingText.textContent=`Failed: ${e.message} — tap Next to retry.`;
+    loadingText.textContent=`${ERR_MSG_EN[IOSSheet.classifyError(e)]} — tap Next to retry.`;
+    loadingText.classList.add('errorText');
     loadingText.style.wordBreak='break-word';
   }
 }

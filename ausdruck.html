@@ -320,6 +320,16 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 
 <script>
 const GEMINI_KEY_LS='top5k_gemini_key';
+
+/* Plain-language copy for IOSSheet.classifyError()'s categories — keeps the
+   raw fetch error (status code + truncated response body) off-screen. */
+const ERR_MSG_DE={
+  apikey:'Der API-Schlüssel scheint ungültig zu sein',
+  quota:'Anfragelimit erreicht — bitte kurz warten',
+  server:'Der KI-Dienst hat gerade Probleme',
+  network:'Netzwerkfehler — prüfe deine Verbindung',
+  unknown:'Etwas ist schiefgelaufen'
+};
 const SUPABASE_URL_KEY='top5k_supabase_url';
 const SUPABASE_KEY_KEY='top5k_supabase_key';
 const ENTRIES_KEY='ausdruck_entries_v1';
@@ -566,7 +576,7 @@ async function generateTopic(){
   topicLoading.textContent='Thema wird generiert…';
   topicLoading.style.cursor='';
   topicLoading.onclick=null;
-  topicLoading.classList.remove('hidden');
+  topicLoading.classList.remove('hidden','errorText');
   topicSpinner.classList.remove('hidden');
   topicBlock.classList.add('hidden');
 
@@ -589,7 +599,8 @@ async function generateTopic(){
   }catch(e){
     console.error('[ausdruck topic]',e);
     topicSpinner.classList.add('hidden');
-    topicLoading.textContent=`Fehler: ${e.message} — zum Wiederholen tippen.`;
+    topicLoading.textContent=`${ERR_MSG_DE[IOSSheet.classifyError(e)]} — zum Wiederholen tippen.`;
+    topicLoading.classList.add('errorText');
     topicLoading.style.wordBreak='break-word';
     topicLoading.style.cursor='pointer';
     topicLoading.onclick=()=>{ topicLoading.onclick=null; generateTopic(); };
@@ -680,6 +691,7 @@ async function handleSubmit(){
   gradingActions.classList.add('hidden');
   gradingSpinner.classList.remove('hidden');
   gradingText.textContent='Wird bewertet…';
+  gradingText.classList.remove('errorText');
   gradingText.style.cursor='';
   gradingText.onclick=null;
   gradingScreen.classList.remove('hidden');
@@ -706,7 +718,8 @@ async function handleSubmit(){
     console.error('[ausdruck grade]',e);
     grading=false;
     gradingSpinner.classList.add('hidden');
-    gradingText.textContent=`Fehler: ${e.message} — zum Wiederholen tippen.`;
+    gradingText.textContent=`${ERR_MSG_DE[IOSSheet.classifyError(e)]} — zum Wiederholen tippen.`;
+    gradingText.classList.add('errorText');
     gradingText.style.wordBreak='break-word';
     gradingText.style.cursor='pointer';
     gradingText.onclick=()=>{ gradingText.onclick=null; handleSubmit(); };

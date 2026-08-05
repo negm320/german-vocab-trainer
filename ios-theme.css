@@ -294,3 +294,33 @@ button:active{background:var(--btn2)}
 .lvlOverlay .lvlNum{color:var(--accent);font-family:var(--font-chrome);}
 .lvlOverlay .lvlText{color:var(--muted);font-family:var(--font-chrome);}
 .lvlOverlay .lvlSub{color:var(--muted3);font-family:var(--font-chrome);}
+
+/* ============ inline error text (AI request failures) ============ */
+/* Paired with IOSSheet.classifyError() in ios-sheet.js — gives failed
+   requests a distinct, plain-language, on-brand look instead of reading
+   like ordinary body/muted text. */
+.errorText{color:var(--bad)!important;font-weight:600;}
+
+/* ============ reduced motion / transparency ============ */
+/* Every page here (top5k/grammar/preps/ausdruck/chat) defines its own set
+   of decorative keyframes inline (card slides, streak-dot pop, flash
+   overlays, mic ripples, level-up, …). Rather than hand-tune ~30 animations
+   spread across 5 files, collapse all of them to their end state near-
+   instantly — every one already uses fill-mode both/forwards, so nothing
+   gets stuck mid-transition, it just arrives without visible motion. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:0.001ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:0.001ms!important;
+    scroll-behavior:auto!important;
+  }
+}
+
+/* Translucent surfaces (dock, sheet scrim, icon buttons) go frosty/solid
+   instead of blurred when the user has asked for less transparency. */
+@media (prefers-reduced-transparency: reduce){
+  .iosDock-glass{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--card);}
+  .iosIconBtn{background:var(--btn);}
+  .iosSheetScrim.show{background:rgba(0,0,0,0.85);}
+}

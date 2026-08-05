@@ -163,6 +163,16 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
 
 <script>
 const GEMINI_KEY_LS='top5k_gemini_key';
+
+/* Plain-language copy for IOSSheet.classifyError()'s categories — keeps the
+   raw fetch error (status code + truncated response body) off-screen. */
+const ERR_MSG_EN={
+  apikey:'Your API key looks invalid',
+  quota:'Rate limit reached — please wait a moment',
+  server:'The AI service is having trouble right now',
+  network:'Network error — check your connection',
+  unknown:'Something went wrong'
+};
 const SUPABASE_URL_KEY='top5k_supabase_url';
 const SUPABASE_KEY_KEY='top5k_supabase_key';
 const STATS_KEY='preps_stats_v1';
@@ -484,7 +494,7 @@ async function generateDrill(){
   loadingText.textContent='Generating drill…';
   loadingText.style.cursor='';
   loadingText.onclick=null;
-  loadingText.classList.remove('hidden');
+  loadingText.classList.remove('hidden','errorText');
   drillContent.classList.add('hidden');
 
   try{
@@ -493,7 +503,8 @@ async function generateDrill(){
   }catch(e){
     console.error('[preps drill]',e);
     loadingSpinner.classList.add('hidden');
-    loadingText.textContent=`Failed: ${e.message} — tap to retry.`;
+    loadingText.textContent=`${ERR_MSG_EN[IOSSheet.classifyError(e)]} — tap to retry.`;
+    loadingText.classList.add('errorText');
     loadingText.style.wordBreak='break-word';
     loadingText.style.cursor='pointer';
     loadingText.onclick=()=>{ loadingText.onclick=null; generateDrill(); };
