@@ -20,19 +20,24 @@ body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Geo
 .muted{color:var(--muted)}
 .small{font-size:12px}
 
-/* ── Chat header ── */
-.chatHeader{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--card);border-bottom:1px solid var(--divider);flex-shrink:0;}
-.hAvatar{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;flex-shrink:0;font-family:var(--font-chrome);}
-.hMeta{flex:1;min-width:0;}
-.hName{font-size:15px;font-weight:600;line-height:1.2;font-family:var(--font-chrome);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.statusLine{display:flex;align-items:center;gap:5px;margin-top:2px;}
-.statusDot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .25s;}
-#statusText{font-size:12px;color:var(--muted);font-family:var(--font-chrome);}
+/* ── Scene slate — replaces a contact-card header + a squeezed situation
+   line with one unit that leads with the invented situation (the actual
+   generated content, different every scene) and folds the character into
+   a "cast credit" beneath it, like a scene heading in a script. ── */
+.sceneSlate{padding:12px 16px 13px;background:var(--card);border-bottom:1px solid var(--divider);flex-shrink:0;}
+.slateTop{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.slateEyebrow{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);font-family:var(--font-chrome);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slateLabel{font-weight:700;color:var(--muted);flex-shrink:0;}
+.slateDot{width:6px;height:6px;border-radius:50%;background:var(--good);flex-shrink:0;transition:background .25s;}
+#statusText{overflow:hidden;text-overflow:ellipsis;}
 .hActions{display:flex;gap:8px;flex-shrink:0;}
 
-/* ── Situation bar ── */
-.scenarioBar{padding:8px 16px;background:var(--card);border-bottom:1px solid var(--divider);flex-shrink:0;}
-.scenarioText{font-size:12.5px;line-height:1.4;}
+.slateSituation{font-family:'Lora',Georgia,serif;font-style:italic;font-weight:500;font-size:17px;line-height:1.4;color:var(--text);margin:9px 0 8px;}
+
+.slateCast{display:flex;align-items:baseline;gap:7px;font-size:12.5px;line-height:1.4;}
+.castDot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-bottom:1px;background:var(--accent);}
+.castLine{min-width:0;}
+.castLine strong{font-weight:700;color:var(--text);font-family:var(--font-chrome);}
 
 /* ── Messages area ── */
 .messagesWrap{flex:1;overflow:hidden;position:relative;}
@@ -43,15 +48,31 @@ body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Geo
 .sysRow{padding:14px 0;display:flex;flex-direction:column;align-items:center;gap:6px;}
 .sysRow .loadingSpinner{margin-bottom:0;}
 
-/* ── Bubble rows ── */
+/* ── Bubble rows ──
+   The AI avatar/bubble accent color is set inline per-message (JS: castHue())
+   from a hash of the character's name, so each invented character keeps one
+   consistent identity color through the whole scene — echoing the cast-dot
+   in the scene slate above. */
 .bRow{display:flex;align-items:flex-end;gap:7px;}
 .bRow.ai{justify-content:flex-start;}
 .bRow.user{justify-content:flex-end;}
 .bAvatar{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;font-family:var(--font-chrome);}
 .bubble{max-width:74%;padding:9px 13px;font-size:15px;line-height:1.55;word-break:break-word;}
-.bRow.ai .bubble{background:var(--input);color:var(--text);border-radius:16px 16px 16px 3px;}
+.bRow.ai .bubble{background:var(--input);color:var(--text);border-radius:16px 16px 16px 3px;border-left:2.5px solid var(--accent);}
 .bRow.user .bubble{background:var(--accent);color:#fff;border-radius:16px 16px 3px 16px;}
 .errSpan{cursor:pointer;padding-bottom:1px;}
+
+/* ── Correction/naturalness legend ──
+   Corrections and naturalness notes previously differed only by underline
+   color (solid red vs solid blue) — not colorblind-safe, and undiscoverable
+   without tapping a span. Naturalness now gets a dashed underline instead of
+   solid, and this legend teaches the convention once, the first time
+   feedback lands in a scene. */
+.fbLegend{display:flex;justify-content:center;gap:16px;margin:8px 0 2px;font-size:11px;color:var(--muted2);font-family:var(--font-chrome);}
+.fbLegend-item{display:flex;align-items:center;gap:5px;}
+.fbLegend-item::before{content:'';display:inline-block;width:14px;height:0;border-bottom:2px solid;}
+.fbLegend-corr::before{border-bottom-style:solid;border-color:var(--bad);}
+.fbLegend-nat::before{border-bottom-style:dashed;border-color:var(--warn);}
 
 /* ── Input bar — sits above the floating dock ── */
 .inputBar{position:absolute;bottom:94px;left:0;right:0;padding:56px 12px 14px;background:linear-gradient(to bottom,transparent 0%,var(--bg) 42%);pointer-events:none;}
@@ -79,8 +100,9 @@ body.kb-open .ripple{display:none;}
 body.kb-open .iosDock{display:none;}
 
 /* ── Next-scene bar (replaces input bar once a scene ends) ── */
-.sceneEndBar{position:absolute;bottom:94px;left:0;right:0;padding:20px 16px calc(14px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;background:linear-gradient(to bottom,transparent 0%,var(--bg) 42%);}
+.sceneEndBar{position:absolute;bottom:94px;left:0;right:0;padding:16px 16px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:9px;background:linear-gradient(to bottom,transparent 0%,var(--bg) 42%);}
 .sceneEndBar.hidden{display:none;}
+.sceneEndCaption{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted3);font-family:var(--font-chrome);}
 #btnNextScene{padding:13px 30px;background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600;font-size:15px;border-radius:999px;font-family:var(--font-chrome);transition:filter .15s;}
 #btnNextScene:active{filter:brightness(.92);}
 @media (hover:hover){ #btnNextScene:hover{filter:brightness(1.08);} }
@@ -106,29 +128,29 @@ body.kb-open .iosDock{display:none;}
 <body>
 <script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='grammar')location.replace('grammar.html');else if(t==='preps')location.replace('preps.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
 
-<!-- Header -->
-<div class="chatHeader">
-  <div class="hAvatar" id="hAvatar">?</div>
-  <div class="hMeta">
-    <div class="hName" id="hName">Szene wird geladen…</div>
-    <div class="statusLine">
-      <div class="statusDot" id="statusDot"></div>
-      <span id="statusText">online</span>
+<!-- Scene slate: situation first (the hero line), character folded into a
+     cast credit beneath it — a scene heading, not a contact card. -->
+<div class="sceneSlate">
+  <div class="slateTop">
+    <div class="slateEyebrow">
+      <span class="slateLabel">Szene</span>
+      <span class="slateDot" id="statusDot"></span>
+      <span id="statusText">in der Szene</span>
+    </div>
+    <div class="hActions">
+      <button id="btnEndScene" class="iosIconBtn hidden" title="Szene beenden" aria-label="Szene beenden">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+      </button>
+      <button id="btnSettings" class="iosIconBtn" title="Einstellungen" aria-label="Einstellungen">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82A1.65 1.65 0 003 13.09H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+      </button>
     </div>
   </div>
-  <div class="hActions">
-    <button id="btnEndScene" class="iosIconBtn hidden" title="Szene beenden" aria-label="Szene beenden">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
-    </button>
-    <button id="btnSettings" class="iosIconBtn" title="Einstellungen" aria-label="Einstellungen">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82A1.65 1.65 0 003 13.09H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
-    </button>
+  <div class="slateSituation" id="scenarioText">Szene wird geladen…</div>
+  <div class="slateCast hidden" id="slateCast">
+    <span class="castDot" id="castDot"></span>
+    <span class="castLine"><strong id="hName"></strong><span id="castMeta" class="muted"></span></span>
   </div>
-</div>
-
-<!-- Situation bar -->
-<div class="scenarioBar">
-  <div class="scenarioText muted" id="scenarioText"></div>
 </div>
 
 <!-- Messages + floating input -->
@@ -150,6 +172,7 @@ body.kb-open .iosDock{display:none;}
     </div>
   </div>
   <div class="sceneEndBar hidden" id="sceneEndBar">
+    <div class="sceneEndCaption">Szene beendet</div>
     <button id="btnNextScene">Nächste Szene →</button>
   </div>
 </div>
@@ -214,6 +237,16 @@ body.kb-open .iosDock{display:none;}
 <script>
 'use strict';
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
+
+/* Plain-language copy for IOSSheet.classifyError()'s categories — keeps the
+   raw fetch error (status code + truncated response body) off-screen. */
+const ERR_MSG_DE={
+  apikey:'Der API-Schlüssel scheint ungültig zu sein',
+  quota:'Anfragelimit erreicht — bitte kurz warten',
+  server:'Der KI-Dienst hat gerade Probleme',
+  network:'Netzwerkfehler — prüfe deine Verbindung',
+  unknown:'Etwas ist schiefgelaufen'
+};
 const SUPABASE_URL_KEY    = 'top5k_supabase_url';
 const SUPABASE_KEY_KEY    = 'top5k_supabase_key';
 const SCENES_KEY          = 'chat_scenes_v1';
@@ -424,12 +457,14 @@ const sceneEndBarEl = document.getElementById('sceneEndBar');
 let currentScene = null;
 let sceneLock    = false; // true while a single AI turn/scenario call is in flight
 
-/* ── Status ── */
+/* ── Status ──
+   In-scene, German phrasing throughout — "online" read as a messaging-app
+   artifact sitting on top of a fictional character in an invented scene. */
 const STATUS = {
-  online:   { bg:'var(--good)',   label:'online'      },
-  thinking: { bg:'var(--warn)',   label:'thinking…'   },
-  speaking: { bg:'var(--accent)', label:'speaking…'   },
-  listening:{ bg:'var(--bad)',    label:'listening…'  },
+  online:   { bg:'var(--good)',   label:'in der Szene' },
+  thinking: { bg:'var(--warn)',   label:'überlegt…'     },
+  speaking: { bg:'var(--accent)', label:'spricht…'      },
+  listening:{ bg:'var(--bad)',    label:'hört zu…'      },
 };
 function setStatus(s) {
   const st = STATUS[s] || STATUS.online;
@@ -441,12 +476,35 @@ function escapeHTML(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/* ── Header ── */
+/* ── Cast color identity ──
+   Every invented character gets one consistent color for the whole scene —
+   a deterministic hash of their name into a curated set of iOS system hues
+   (already the palette family this app's accent/good/bad/warn colors come
+   from), so a new character is visually a new character, not another flat
+   blue circle. */
+const CAST_HUES = ['#0A84FF','#FF375F','#FF9F0A','#64D2FF','#BF5AF2','#63E6BE'];
+function castHue(name) {
+  if (!name) return CAST_HUES[0];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return CAST_HUES[h % CAST_HUES.length];
+}
+function hexToRgba(hex, alpha) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${alpha})`;
+}
+
+/* ── Scene slate ── */
 function updateHeader(scene) {
   const name = scene?.character?.name || '';
-  document.getElementById('hAvatar').textContent = (name[0] || '?').toUpperCase();
-  document.getElementById('hName').textContent = scene ? (name || '…') : 'Szene wird geladen…';
-  document.getElementById('scenarioText').textContent = scene ? (scene.situation || '') : '';
+  const role = scene?.character?.role || '';
+  const manner = scene?.character?.manner || '';
+  const meta = [role, manner].filter(Boolean).join(', ');
+  document.getElementById('scenarioText').textContent = scene ? (scene.situation || '') : 'Szene wird geladen…';
+  document.getElementById('hName').textContent = name;
+  document.getElementById('castMeta').textContent = meta ? ' — ' + meta : '';
+  document.getElementById('castDot').style.background = scene ? castHue(name) : 'var(--muted3)';
+  document.getElementById('slateCast').classList.toggle('hidden', !scene);
   document.getElementById('btnEndScene').classList.toggle('hidden', !scene || scene.ended);
 }
 
@@ -470,11 +528,11 @@ function showScenarioError(e) {
   const row = document.createElement('div');
   row.className = 'sysRow';
   const txt = document.createElement('div');
-  txt.className = 'muted small';
+  txt.className = 'muted small errorText';
   txt.style.cursor = 'pointer';
   txt.style.textAlign = 'center';
   txt.style.wordBreak = 'break-word';
-  txt.textContent = `Fehler: ${e.message} — zum Wiederholen tippen.`;
+  txt.textContent = `${ERR_MSG_DE[IOSSheet.classifyError(e)]} — zum Wiederholen tippen.`;
   txt.addEventListener('click', () => { row.remove(); startNewScene(); });
   row.appendChild(txt);
   messagesInner.appendChild(row);
@@ -496,11 +554,11 @@ function showGradingError(e) {
   row.id = 'gradingRow';
   row.className = 'sysRow';
   const txt = document.createElement('div');
-  txt.className = 'muted small';
+  txt.className = 'muted small errorText';
   txt.style.cursor = 'pointer';
   txt.style.textAlign = 'center';
   txt.style.wordBreak = 'break-word';
-  txt.textContent = `Fehler: ${e.message} — zum Wiederholen tippen.`;
+  txt.textContent = `${ERR_MSG_DE[IOSSheet.classifyError(e)]} — zum Wiederholen tippen.`;
   txt.addEventListener('click', () => { row.remove(); showGradingIndicator(); gradeCurrentScene(); });
   row.appendChild(txt);
   messagesInner.appendChild(row);
@@ -518,17 +576,21 @@ function appendTimestamp() {
 
 function appendBubble(role, text, turnIndex, doScroll) {
   const isAi = role === 'ai';
+  const hue = isAi ? castHue(currentScene?.character?.name) : null;
   const row = document.createElement('div');
   row.className = 'bRow ' + (isAi ? 'ai' : 'user');
   if (isAi) {
     const av = document.createElement('div');
     av.className = 'bAvatar';
+    av.style.background = hexToRgba(hue, 0.22);
+    av.style.color = hue;
     av.textContent = (currentScene?.character?.name?.[0] || '?').toUpperCase();
     row.appendChild(av);
   }
   const bub = document.createElement('div');
   bub.className = 'bubble';
   if (turnIndex !== undefined) bub.dataset.turnIndex = String(turnIndex);
+  if (isAi) bub.style.borderLeftColor = hue;
   bub.textContent = text;
   row.appendChild(bub);
   messagesInner.appendChild(row);
@@ -679,8 +741,16 @@ function renderSpanText(text, spans) {
   clean.forEach(m => {
     html += escapeHTML(text.slice(pos, m.start));
     const sp = spans[m.i];
-    const color = sp.type === 'correction' ? 'var(--bad)' : 'var(--accent)';
-    html += `<span class="errSpan" style="border-bottom:2px solid ${color};" data-span-idx="${m.i}">${escapeHTML(text.slice(m.start, m.end))}</span>`;
+    // Corrections and naturalness notes are told apart by line style as well
+    // as color, not color alone — see .fbLegend.
+    const isCorrection = sp.type === 'correction';
+    // Naturalness notes only ever land on the learner's own (accent-blue)
+    // bubble, so their mark can't reuse --accent — it would vanish against
+    // the bubble's own background. --warn (amber, "a soft suggestion, not
+    // an error") reads clearly there and stays distinct from corrections.
+    const color = isCorrection ? 'var(--bad)' : 'var(--warn)';
+    const style = isCorrection ? 'solid' : 'dashed';
+    html += `<span class="errSpan" style="border-bottom:2px ${style} ${color};" data-span-idx="${m.i}">${escapeHTML(text.slice(m.start, m.end))}</span>`;
     pos = m.end;
   });
   html += escapeHTML(text.slice(pos));
@@ -690,7 +760,7 @@ function renderSpanText(text, spans) {
 function showSpanTooltip(span, sp) {
   const tip = document.getElementById('errTooltip');
   const isCorrection = sp.type === 'correction';
-  const color = isCorrection ? 'var(--bad)' : 'var(--accent)';
+  const color = isCorrection ? 'var(--bad)' : 'var(--warn)';
   const label = isCorrection ? 'Correction' : 'More natural';
   const value = isCorrection ? sp.correction : sp.better;
   tip.style.setProperty('--tip-color', color);
@@ -717,6 +787,7 @@ document.addEventListener('click', e => {
 
 function applyFeedbackToTranscript(scene) {
   const feedback = scene.feedback || {};
+  let anyMarked = false;
   messagesInner.querySelectorAll('.bubble[data-turn-index]').forEach(bub => {
     const idx = parseInt(bub.dataset.turnIndex, 10);
     const fb = feedback[idx];
@@ -727,6 +798,7 @@ function applyFeedbackToTranscript(scene) {
       ...(fb.naturalness || []).map(s => ({ ...s, type:'naturalness' }))
     ];
     if (!spans.length) return;
+    anyMarked = true;
     bub.innerHTML = renderSpanText(turn.text, spans);
     bub.querySelectorAll('.errSpan').forEach(span => {
       span.addEventListener('click', e => {
@@ -736,6 +808,14 @@ function applyFeedbackToTranscript(scene) {
       });
     });
   });
+  // Teach the correction/naturalness convention once, the first time either
+  // kind of note actually appears in this scene.
+  if (anyMarked && !messagesInner.querySelector('.fbLegend')) {
+    const legend = document.createElement('div');
+    legend.className = 'fbLegend';
+    legend.innerHTML = '<span class="fbLegend-item fbLegend-corr">Correction</span><span class="fbLegend-item fbLegend-nat">More natural</span>';
+    messagesInner.appendChild(legend);
+  }
 }
 
 /* ── Scene lifecycle ── */
@@ -860,16 +940,20 @@ async function gradeCurrentScene() {
 async function typeReply(text, turnIndex) {
   setStatus('speaking');
   const words = text.split(' ');
+  const hue = castHue(currentScene?.character?.name);
 
   const row = document.createElement('div');
   row.className = 'bRow ai';
   const av = document.createElement('div');
   av.className = 'bAvatar';
+  av.style.background = hexToRgba(hue, 0.22);
+  av.style.color = hue;
   av.textContent = (currentScene?.character?.name?.[0] || '?').toUpperCase();
   row.appendChild(av);
   const bub = document.createElement('div');
   bub.className = 'bubble';
   bub.dataset.turnIndex = String(turnIndex);
+  bub.style.borderLeftColor = hue;
   row.appendChild(bub);
   messagesInner.appendChild(row);
 
