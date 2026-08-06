@@ -16,7 +16,10 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 button,input,textarea,select{font-family:inherit;}
 html{height:100%;}
-body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;display:flex;flex-direction:column;overflow:hidden;}
+/* padding-bottom = keyboard height (set live from visualViewport) so the
+   flex layout reflows above the keyboard instead of hiding behind it.
+   box-sizing:border-box (set globally) keeps total height at 100%. */
+body{height:100%;padding-bottom:var(--kb-inset,0px);background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;display:flex;flex-direction:column;overflow:hidden;transition:padding-bottom .22s ease;}
 .hidden{display:none!important}
 .muted{color:var(--muted)}
 .small{font-size:12px}
@@ -47,19 +50,24 @@ body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Geo
 .sceneSlate .iosIconBtn{background:transparent;border-color:transparent;}
 .sceneSlate .iosIconBtn:active{background:rgba(120,120,128,0.24);}
 @media (hover:hover){ .sceneSlate .iosIconBtn:hover{background:rgba(120,120,128,0.18);} }
-.slateTop{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.slateEyebrow{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);font-family:var(--font-chrome);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.slateLabel{font-weight:600;color:var(--muted2);flex-shrink:0;}
-.slateDot{width:6px;height:6px;border-radius:50%;background:var(--good);flex-shrink:0;transition:background .25s;}
-#statusText{overflow:hidden;text-overflow:ellipsis;}
-.hActions{display:flex;gap:8px;flex-shrink:0;}
+/* One clear hierarchy (bible: build hierarchy with weight + size, make the
+   most important thing the most obvious; a conversation screen answers
+   "who am I talking to?" first). Title row = the character you're speaking
+   with; the live status is the coloured dot beside their name (no more
+   redundant "SZENE · IN DER SZENE" eyebrow). The situation drops to a
+   quieter context line beneath — read once, not the headline. */
+.slateTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.slateWho{display:flex;align-items:center;gap:9px;min-width:0;}
+.statusDot{width:9px;height:9px;border-radius:50%;background:var(--good);flex-shrink:0;transition:background .25s;}
+/* Thinking/speaking → the dot breathes (replaces the old "überlegt…" text). */
+.statusDot.busy{animation:dotPulse 1.1s ease-in-out infinite;}
+@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.45;transform:scale(.8);}}
+.whoText{min-width:0;display:flex;flex-direction:column;}
+.whoName{font-family:var(--font-chrome);font-weight:600;font-size:17px;line-height:1.25;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.whoRole{font-family:var(--font-chrome);font-size:12.5px;line-height:1.3;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hActions{display:flex;gap:6px;flex-shrink:0;}
 
-.slateSituation{font-family:'Lora',Georgia,serif;font-style:italic;font-weight:500;font-size:17px;line-height:1.4;color:var(--text);margin:9px 0 8px;}
-
-.slateCast{display:flex;align-items:baseline;gap:7px;font-size:12.5px;line-height:1.4;}
-.castDot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-bottom:1px;background:var(--accent);}
-.castLine{min-width:0;}
-.castLine strong{font-weight:700;color:var(--text);font-family:var(--font-chrome);}
+.slateSituation{font-family:'Lora',Georgia,serif;font-style:italic;font-weight:400;font-size:14.5px;line-height:1.45;color:rgba(235,235,245,0.80);margin:11px 0 0;}
 
 /* ── Messages area ── */
 /* overflow:visible so the floating pill's drop shadow isn't clipped; the
@@ -198,10 +206,12 @@ body.kb-open .ripple{display:none;}
      translucent glass layer the transcript scrolls up under. -->
 <div class="sceneSlate">
   <div class="slateTop">
-    <div class="slateEyebrow">
-      <span class="slateLabel">Szene</span>
-      <span class="slateDot" id="statusDot"></span>
-      <span id="statusText">in der Szene</span>
+    <div class="slateWho">
+      <span class="statusDot" id="statusDot" title="in der Szene"></span>
+      <div class="whoText">
+        <strong class="whoName" id="hName">Szene</strong>
+        <span class="whoRole" id="castMeta"></span>
+      </div>
     </div>
     <div class="hActions">
       <button id="btnEndScene" class="iosIconBtn hidden" title="Szene beenden" aria-label="Szene beenden">
@@ -212,11 +222,7 @@ body.kb-open .ripple{display:none;}
       </button>
     </div>
   </div>
-  <div class="slateSituation" id="scenarioText">Szene wird geladen…</div>
-  <div class="slateCast hidden" id="slateCast">
-    <span class="castDot" id="castDot"></span>
-    <span class="castLine"><strong id="hName"></strong><span id="castMeta" class="muted"></span></span>
-  </div>
+  <p class="slateSituation" id="scenarioText">Szene wird geladen…</p>
 </div>
 
   <div class="messages" id="messagesArea">
@@ -523,7 +529,6 @@ const messagesInner = document.getElementById('messagesInner');
 const chatInput     = document.getElementById('chatInput');
 const micBtn        = document.getElementById('micBtn');
 const statusDot     = document.getElementById('statusDot');
-const statusText    = document.getElementById('statusText');
 const chatPillEl    = document.getElementById('chatPill');
 const composerFaceEl= document.getElementById('composerFace');
 const composerRowEl = document.getElementById('composerRow');
@@ -546,7 +551,8 @@ const STATUS = {
 function setStatus(s) {
   const st = STATUS[s] || STATUS.online;
   statusDot.style.background = st.bg;
-  statusText.textContent = st.label;
+  statusDot.title = st.label;                 // status now lives in the dot
+  statusDot.classList.toggle('busy', s === 'thinking' || s === 'speaking');
 }
 
 function escapeHTML(s) {
@@ -576,12 +582,10 @@ function updateHeader(scene) {
   const name = scene?.character?.name || '';
   const role = scene?.character?.role || '';
   const manner = scene?.character?.manner || '';
-  const meta = [role, manner].filter(Boolean).join(', ');
+  const meta = [role, manner].filter(Boolean).join(' · ');
   document.getElementById('scenarioText').textContent = scene ? (scene.situation || '') : 'Szene wird geladen…';
-  document.getElementById('hName').textContent = name;
-  document.getElementById('castMeta').textContent = meta ? ' — ' + meta : '';
-  document.getElementById('castDot').style.background = scene ? castHue(name) : 'var(--muted3)';
-  document.getElementById('slateCast').classList.toggle('hidden', !scene);
+  document.getElementById('hName').textContent = name || 'Szene';
+  document.getElementById('castMeta').textContent = meta;
   document.getElementById('btnEndScene').classList.toggle('hidden', !scene || scene.ended);
 }
 
@@ -1205,24 +1209,32 @@ function setupPill() {
   morphSpring.onUpdate(v => renderMorph(v.m));
   renderMorph(0);
 
-  const kbSpring = IOSMotion.createSpring({ y: 0 }, { damping: 1, response: 0.3 });
-  kbSpring.onUpdate(v => {
-    chatPillEl.style.transform = v.y > 0.5 ? ('translateY(' + (-v.y).toFixed(1) + 'px)') : '';
-  });
-
   document.getElementById('pillOpener').addEventListener('click', openNav);
   // The active Chat tab doesn't navigate — it returns you to the composer.
   document.getElementById('chatTabItem').addEventListener('click', e => { e.preventDefault(); closeNav(); });
 
+  /* ── Keyboard: shrink the whole app to the visible area ──
+     iOS does NOT shrink the layout viewport when the keyboard opens (only
+     the visual viewport). The old code just translated the pill up, leaving
+     the transcript full-height with its bottom (and the latest message)
+     hidden under the keyboard — you had to scroll up to read the reply.
+     Instead, pad the body by the keyboard's height so the flex layout
+     reflows into what's actually visible: the pill (absolute-bottom of the
+     now-shorter wrapper) lands just above the keyboard, and the transcript
+     scrolls within the visible band. Then snap to the newest message so it
+     sits right above the composer. */
   const vv = window.visualViewport;
   if (vv) {
+    const scrollToLatest = () => { messagesArea.scrollTop = messagesArea.scrollHeight; };
     const update = () => {
       const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const wasOpen = kbOpen;
       kbOpen = inset > 120;
       document.body.classList.toggle('kb-open', kbOpen);
       if (kbOpen && navOpen) closeNav();      // can't browse tabs mid-type
-      kbSpring.to({ y: kbOpen ? (inset - 4) : 0 });
+      document.documentElement.style.setProperty('--kb-inset', (kbOpen ? inset : 0) + 'px');
       updateMsgBottomPad();
+      if (kbOpen) requestAnimationFrame(scrollToLatest);   // keep the reply in view
     };
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
