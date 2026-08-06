@@ -1,7 +1,6 @@
 /* ============================================================
-   IOSSheet — shared bottom-sheet helper (dependency-free)
-   Used by: top5k.html (phase 1). Reusable later for grammar/
-   preps/ausdruck/chat sheets and confirm dialogs.
+   IOSSheet — shared bottom-sheet helper (dependency-free except for
+   IOSMotion, which must load before this file)
 
    API:
      IOSSheet.open(id)
@@ -10,6 +9,17 @@
 
    Sheets can also be dragged down from their grab handle
    (.iosSheet-handle) to dismiss, like a native iOS sheet.
+
+   Motion: every state change (open, tap-to-close, drag-release) drives
+   the sheet's transform through one IOSMotion spring per sheet element,
+   never a CSS transition or a fixed setTimeout. That means:
+     - Grabbing the handle at ANY point — mid-open, mid-close, mid-settle
+       from a previous drag — interrupts whatever is currently happening
+       and takes over from wherever the sheet actually is on screen, not
+       wherever it was headed.
+     - A drag release hands its real measured velocity to the spring, so
+       a hard flick settles quickly and a slow drag settles unhurried,
+       instead of every release animating for the same fixed duration.
    ============================================================ */
 (function(){
   function scrimEl(){
@@ -26,22 +36,53 @@
   let openId = null;
   let escHandler = null;
 
+  // One spring per sheet element. Apple's own figures for a drawer/sheet
+  // (damping 0.8, response 0.3) — enough momentum-carry to feel thrown,
+  // not so much it visibly overshoots and bounces on every open.
+  const springs = new WeakMap();
+  const SHEET_SPRING = { damping: 0.8, response: 0.3 };
+
+  function liveY(sheet){
+    const s = springs.get(sheet);
+    if(s) return s.get('y');
+    return sheet.classList.contains('show') ? 0 : sheet.offsetHeight;
+  }
+
+  // fromOverride lets a caller that was just doing raw 1:1 pointer
+  // tracking (drag release) hand in the true last-rendered value
+  // directly, instead of this function inferring it from a spring that
+  // was never driving the sheet during that drag.
+  function driveTo(sheet, targetY, opts, onDone, fromOverride){
+    const prev = springs.get(sheet);
+    const fromY = fromOverride != null ? fromOverride : liveY(sheet);
+    if(prev) prev.stop();
+    const s = IOSMotion.createSpring({ y: fromY }, SHEET_SPRING);
+    s.onUpdate(v => { sheet.style.transform = v.y > 0.05 ? ('translateY(' + v.y + 'px)') : ''; });
+    s.onComplete(() => { if(onDone) onDone(); });
+    springs.set(sheet, s);
+    s.to({ y: targetY }, opts || {});
+  }
+
   function finishClose(el){
     el.classList.remove('show');
     el.classList.add('hidden');
-    el.style.transition = '';
     el.style.transform = '';
+    springs.delete(el);
     if(el.dataset.iosSheetTemp === '1') el.remove();
   }
 
   function open(id){
     const el = document.getElementById(id);
     if(!el) return;
+    const wasHidden = el.classList.contains('hidden');
     el.classList.remove('hidden');
     el.classList.add('iosSheet');
-    // force reflow so the transform transition plays
-    void el.offsetHeight;
+    if(wasHidden){
+      void el.offsetHeight; // force layout so offsetHeight is measurable
+      el.style.transform = 'translateY(' + el.offsetHeight + 'px)';
+    }
     el.classList.add('show');
+    driveTo(el, 0, {});
 
     const scrim = scrimEl();
     scrim.classList.add('show');
@@ -55,10 +96,11 @@
   function close(id){
     const el = document.getElementById(id || openId);
     if(!el) return;
-    el.classList.remove('show');
-    const scrim = scrimEl();
-    scrim.classList.remove('show');
-    setTimeout(function(){ finishClose(el); }, 280);
+    // .show stays on until finishClose — same as a drag-dismiss already
+    // did — so the handle stays grabbable for the whole close animation
+    // instead of only some close paths being interruptible.
+    scrimEl().classList.remove('show');
+    driveTo(el, el.offsetHeight, {}, () => finishClose(el));
     if(escHandler){ document.removeEventListener('keydown', escHandler); escHandler = null; }
     openId = null;
   }
@@ -106,73 +148,56 @@
     if(!handle) return;
     const sheet = handle.closest('.iosSheet');
     if(!sheet || !sheet.classList.contains('show')) return;
-    drag = { sheet: sheet, startY: e.clientY, lastY: e.clientY, lastT: Date.now(), dy: 0, velocity: 0 };
-    sheet.style.transition = 'none';
+    const baseY = liveY(sheet);
+    const prev = springs.get(sheet);
+    if(prev) prev.stop(); // grabbing takes over from whatever was animating
+    drag = { sheet: sheet, startY: e.clientY, lastY: e.clientY, lastT: Date.now(), dy: baseY, visualY: Math.max(0, baseY), velocity: 0, baseY: baseY };
     document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('pointerup', onPointerUp);
   }
 
   function onPointerMove(e){
     if(!drag) return;
-    const dy = e.clientY - drag.startY;
+    // dy is the *unclamped* total offset from fully-open, used for the
+    // dismiss/expand distance decisions below. visualY is what actually
+    // renders — never above the fully-open resting position.
+    const dy = drag.baseY + (e.clientY - drag.startY);
     const now = Date.now();
     const dt = now - drag.lastT;
-    if(dt > 0) drag.velocity = (e.clientY - drag.lastY) / dt;
+    if(dt > 0) drag.velocity = (e.clientY - drag.lastY) / dt; // px/ms
     drag.lastY = e.clientY;
     drag.lastT = now;
     drag.dy = dy;
-    // Downward drag moves the sheet toward dismiss, same as before. Upward
-    // drag doesn't move the sheet (it's already fully open) — it's only
-    // tracked so onPointerUp can use it to expand a collapsed <details>.
-    drag.sheet.style.transform = dy > 0 ? ('translateY(' + dy + 'px)') : '';
-  }
-
-  // Velocity handoff: pick the settle animation's duration from how far is
-  // left to travel divided by how fast the finger was actually moving, so a
-  // hard flick finishes quickly and a slow drag settles unhurried — instead
-  // of every release animating for the same fixed time regardless of speed.
-  // `velocity` is px/ms; a floor keeps a released-while-nearly-still drag
-  // from settling in slow motion.
-  function settleMs(distance, velocity, min, max){
-    const speed = Math.max(Math.abs(velocity), 0.35);
-    return Math.max(min, Math.min(max, Math.abs(distance) / speed));
+    drag.visualY = Math.max(0, dy);
+    drag.sheet.style.transform = drag.visualY > 0.05 ? ('translateY(' + drag.visualY + 'px)') : '';
   }
 
   function onPointerUp(){
     if(!drag) return;
-    const sheet = drag.sheet, dy = drag.dy, velocity = drag.velocity;
+    const sheet = drag.sheet, dy = drag.dy, visualY = drag.visualY, velocityPxPerSec = drag.velocity * 1000;
     document.removeEventListener('pointermove', onPointerMove);
     document.removeEventListener('pointerup', onPointerUp);
 
     if(dy < 0){
       // Upward swipe on the handle: expand a collapsed "Advanced" section
       // instead of requiring a tap on its <summary>.
-      if(dy < -30 || velocity < -0.5){
+      if(dy < -30 || drag.velocity < -0.5){
         const details = sheet.querySelector('details');
         if(details && !details.open) details.open = true;
       }
-      const ms = settleMs(dy, velocity, 160, 300);
-      sheet.style.transition = 'transform ' + (ms / 1000).toFixed(3) + 's cubic-bezier(.25,.46,.45,.94)';
-      sheet.style.transform = '';
-      setTimeout(function(){ sheet.style.transition = ''; }, ms + 20);
+      driveTo(sheet, 0, { velocity: { y: velocityPxPerSec } }, null, visualY);
       drag = null;
       return;
     }
 
-    const shouldDismiss = dy > sheet.offsetHeight * 0.3 || dy > 120 || velocity > 0.6;
+    const shouldDismiss = dy > sheet.offsetHeight * 0.3 || dy > 120 || drag.velocity > 0.6;
     if(shouldDismiss){
-      const ms = settleMs(sheet.offsetHeight - dy, velocity, 140, 260);
-      sheet.style.transition = 'transform ' + (ms / 1000).toFixed(3) + 's ease-out';
-      sheet.style.transform = 'translateY(100%)';
       scrimEl().classList.remove('show');
-      setTimeout(function(){ finishClose(sheet); }, ms);
       if(escHandler){ document.removeEventListener('keydown', escHandler); escHandler = null; }
       openId = null;
+      driveTo(sheet, sheet.offsetHeight, { velocity: { y: velocityPxPerSec } }, () => finishClose(sheet), visualY);
     } else {
-      const ms = settleMs(dy, velocity, 160, 300);
-      sheet.style.transition = 'transform ' + (ms / 1000).toFixed(3) + 's cubic-bezier(.25,.46,.45,.94)';
-      sheet.style.transform = '';
-      setTimeout(function(){ sheet.style.transition = ''; }, ms + 20);
+      driveTo(sheet, 0, { velocity: { y: velocityPxPerSec } }, null, visualY);
     }
     drag = null;
   }
