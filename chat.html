@@ -317,6 +317,12 @@ body.kb-open .ripple{display:none;}
     <input id="turnCapInput" type="number" inputmode="numeric" min="2" max="30" step="1">
     <p class="muted small" style="margin-top:6px;line-height:1.5;">One turn = you and the character each speaking once. Always applies as a backstop, even in the other modes.</p>
   </div>
+  <div class="menuSection">
+    <div class="iosSheet-label">App</div>
+    <button id="btnHardRefresh" class="iosPrimaryBtn">Neu laden (Cache leeren)</button>
+    <p class="muted small" style="margin-top:6px;line-height:1.5;">Holt die neueste Version — nötig, weil eine installierte PWA nicht per Wischen aktualisiert. Dein Fortschritt bleibt erhalten.</p>
+    <p class="muted small" id="appVersionLabel" style="margin-top:8px;text-align:center;opacity:.7;"></p>
+  </div>
 </div>
 
 <!-- API key overlay -->
@@ -338,6 +344,28 @@ body.kb-open .ripple{display:none;}
 <script>
 'use strict';
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
+/* Bump on each deploy so you can see (in Settings) whether the newest
+   version actually loaded. */
+const APP_VERSION = '2026-08-07 · 1';
+
+/* Force-refresh for the installed PWA: no service worker means iOS just
+   serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
+   no pull-to-refresh. This re-fetches every same-origin asset past the
+   cache ({cache:'reload'}), which repopulates the HTTP cache with the fresh
+   copies, then reloads so the page picks them up. localStorage (your
+   progress, scenes, API key) is untouched. */
+async function hardRefresh() {
+  const urls = new Set([location.href.split('#')[0].split('?')[0]]);
+  document.querySelectorAll('link[href],script[src]').forEach(el => {
+    const u = el.href || el.src;
+    try { if (u && new URL(u).origin === location.origin) urls.add(u.split('?')[0]); } catch (e) {}
+  });
+  try {
+    if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); }
+    await Promise.all([...urls].map(u => fetch(u, { cache: 'reload' }).catch(() => {})));
+  } catch (e) {}
+  location.reload();
+}
 
 /* Plain-language copy for IOSSheet.classifyError()'s categories — keeps the
    raw fetch error (status code + truncated response body) off-screen. */
@@ -1376,6 +1404,8 @@ document.getElementById('turnCapInput').addEventListener('change', e => {
   saveSettings(s);
   e.target.value = v;
 });
+document.getElementById('appVersionLabel').textContent = 'Version ' + APP_VERSION;
+wireButton('btnHardRefresh', hardRefresh);
 wireButton('btnSettings', () => { applySettingsUI(loadSettings()); window.IOSSheet?.open('settingsPanel'); });
 wireButton('btnEndScene', () => { if (currentScene && !currentScene.ended) endScene(); });
 wireButton('btnNextScene', () => startNewScene());
