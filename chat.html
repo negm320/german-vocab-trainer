@@ -10,6 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="ios-theme.css">
+<script src="ios-motion.js" defer></script>
 <script src="ios-sheet.js" defer></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -26,7 +27,7 @@ body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Geo
    a "cast credit" beneath it, like a scene heading in a script. ── */
 .sceneSlate{padding:12px 16px 13px;background:var(--card);border-bottom:1px solid var(--divider);flex-shrink:0;}
 .slateTop{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.slateEyebrow{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);font-family:var(--font-chrome);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slateEyebrow{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);font-family:var(--font-chrome);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .slateLabel{font-weight:700;color:var(--muted);flex-shrink:0;}
 .slateDot{width:6px;height:6px;border-radius:50%;background:var(--good);flex-shrink:0;transition:background .25s;}
 #statusText{overflow:hidden;text-overflow:ellipsis;}
@@ -74,8 +75,21 @@ body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Geo
 .fbLegend-corr::before{border-bottom-style:solid;border-color:var(--bad);}
 .fbLegend-nat::before{border-bottom-style:dashed;border-color:var(--warn);}
 
-/* ── Input bar — sits above the floating dock ── */
-.inputBar{position:absolute;bottom:94px;left:0;right:0;padding:56px 12px 14px;background:linear-gradient(to bottom,transparent 0%,var(--bg) 42%);pointer-events:none;}
+/* ── Input bar — sits above the floating dock ──
+   --bar-bottom and the dock's transform/opacity are both driven by ONE
+   spring (see the "Keyboard-aware bottom chrome" JS below), so the input
+   bar rising to meet the keyboard and the dock stepping out of its way
+   read as one coordinated surface reacting together, not two elements
+   that happen to sit near each other. The fade itself is a real frosted
+   material (blur + a graduated multi-stop gradient) instead of a flat
+   2-stop color wash that goes solid a third of the way down and leaves a
+   dead flat-black gap before the dock. */
+.inputBar{
+  position:absolute;bottom:var(--bar-bottom,94px);left:0;right:0;padding:56px 12px 14px;
+  background:linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 40%, rgba(0,0,0,.92) 75%, var(--bg) 100%);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  pointer-events:none;
+}
 .inputBar.hidden{display:none;}
 .inputRow{position:relative;display:flex;align-items:center;pointer-events:all;}
 
@@ -83,26 +97,34 @@ body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Geo
 #chatInput::placeholder{color:var(--muted);}
 #chatInput.interim{color:var(--muted2);font-style:italic;}
 
-#micBtn{position:absolute;right:-6px;top:50%;transform:translateY(-50%);width:76px;height:76px;border-radius:50%;background:var(--btn);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;transition:background .2s,border-color .2s;}
+/* transform-origin lets the spring-driven scale (JS: micScale channel)
+   shrink the button toward its own right edge, so it tucks in cleanly
+   without needing a separately-animated position on top of the scale. */
+#micBtn{position:absolute;right:-6px;top:50%;width:76px;height:76px;border-radius:50%;background:var(--btn);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;transition:background .2s,border-color .2s;transform-origin:right center;}
 #micBtn svg{width:26px;height:26px;fill:var(--accent);flex-shrink:0;transition:fill .2s;}
-#micBtn.listening{background:#2c0a0a;border-color:var(--bad);}
-#micBtn.listening svg{fill:var(--bad);}
+/* .listening state colors + ripple animation timing + @keyframes
+   rippleOut now live in ios-theme.css (shared with ausdruck.html/
+   grammar.html instead of copy-pasted) — only this button's own size
+   scales the ripple inset. */
 .ripple{position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--bad);opacity:0;pointer-events:none;}
-#micBtn.listening .ripple:nth-child(1){animation:rippleOut 1.6s ease-out infinite;}
-#micBtn.listening .ripple:nth-child(2){animation:rippleOut 1.6s ease-out .53s infinite;}
-#micBtn.listening .ripple:nth-child(3){animation:rippleOut 1.6s ease-out 1.06s infinite;}
-@keyframes rippleOut{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.65);opacity:0}}
 
-body.kb-open #micBtn{right:5px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-width:1px;background:transparent;border-color:transparent;}
-body.kb-open #micBtn svg{width:16px;height:16px;}
+/* Only the non-compositor-friendly, purely-layout changes stay as plain
+   instant class swaps (padding can't be smoothly springed the way
+   transform/opacity can) — the size/position change now lives in the
+   micScale spring channel above instead of here. */
 body.kb-open #chatInput{padding-right:44px;}
 body.kb-open .ripple{display:none;}
-body.kb-open .iosDock{display:none;}
 
 /* ── Next-scene bar (replaces input bar once a scene ends) ── */
-.sceneEndBar{position:absolute;bottom:94px;left:0;right:0;padding:16px 16px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:9px;background:linear-gradient(to bottom,transparent 0%,var(--bg) 42%);}
+.sceneEndBar{
+  position:absolute;bottom:var(--bar-bottom,94px);left:0;right:0;padding:16px 16px calc(14px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;align-items:center;gap:9px;
+  background:linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 40%, rgba(0,0,0,.92) 75%, var(--bg) 100%);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
 .sceneEndBar.hidden{display:none;}
-.sceneEndCaption{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted3);font-family:var(--font-chrome);}
+/* "Szene beendet" now uses the shared .iosSheet-label eyebrow class
+   directly instead of its own (slightly wider-tracked, quieter) copy. */
 #btnNextScene{padding:13px 30px;background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600;font-size:15px;border-radius:999px;font-family:var(--font-chrome);transition:filter .15s;}
 #btnNextScene:active{filter:brightness(.92);}
 @media (hover:hover){ #btnNextScene:hover{filter:brightness(1.08);} }
@@ -114,14 +136,9 @@ body.kb-open .iosDock{display:none;}
 #errTooltip::before{content:'';position:absolute;top:-6px;left:var(--tip-arrow,24px);width:10px;height:10px;background:var(--card);border-left:1px solid var(--border-soft);border-top:1px solid var(--border-soft);transform:rotate(45deg);}
 #errTooltip .corrLine{font-weight:600;margin-bottom:4px;}
 
-/* ── Settings sheet (same pattern as top5k.html's menu sheet) ── */
-.menuPanel{display:flex;flex-direction:column;gap:18px;}
-.menuPanel>*{flex-shrink:0;}
-.menuSection{display:flex;flex-direction:column;gap:8px;}
-.menuLabel{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);font-family:var(--font-chrome);}
-.modeRow{display:flex;background:var(--input);border-radius:10px;padding:3px;gap:0;}
-.modeBtn{flex:1;padding:8px;font-size:12.5px;border-radius:8px;border:none;background:transparent;font-family:var(--font-chrome);}
-.modeBtn.active{background:var(--accent);color:#fff;}
+/* ── Settings sheet — .menuPanel/.menuSection/.iosSheet-label/.iosSegment
+   now live in ios-theme.css (shared with top5k.html instead of
+   copy-pasted). ── */
 #turnCapInput{width:100%;padding:11px;border-radius:10px;color:var(--text);font-size:15px;}
 </style>
 </head>
@@ -172,7 +189,7 @@ body.kb-open .iosDock{display:none;}
     </div>
   </div>
   <div class="sceneEndBar hidden" id="sceneEndBar">
-    <div class="sceneEndCaption">Szene beendet</div>
+    <div class="iosSheet-label">Szene beendet</div>
     <button id="btnNextScene">Nächste Szene →</button>
   </div>
 </div>
@@ -204,15 +221,15 @@ body.kb-open .iosDock{display:none;}
 <div id="settingsPanel" class="menuPanel hidden">
   <div class="iosSheet-handle"></div>
   <div class="menuSection">
-    <div class="menuLabel">Scene ends when</div>
-    <div class="modeRow">
-      <button class="modeBtn" data-mode="ai">AI decides</button>
-      <button class="modeBtn" data-mode="user">I decide</button>
-      <button class="modeBtn" data-mode="turns">After N turns</button>
+    <div class="iosSheet-label">Scene ends when</div>
+    <div class="iosSegment">
+      <button data-mode="ai">AI decides</button>
+      <button data-mode="user">I decide</button>
+      <button data-mode="turns">After N turns</button>
     </div>
   </div>
   <div class="menuSection">
-    <div class="menuLabel">Turn cap</div>
+    <div class="iosSheet-label">Turn cap</div>
     <input id="turnCapInput" type="number" inputmode="numeric" min="2" max="30" step="1">
     <p class="muted small" style="margin-top:6px;line-height:1.5;">One turn = you and the character each speaking once. Always applies as a backstop, even in the other modes.</p>
   </div>
@@ -1063,14 +1080,57 @@ function stopMic() {
   chatInput.classList.remove('interim');
 }
 
-/* ── Keyboard detection ── */
-{
+/* ── Keyboard-aware bottom chrome ──
+   This used to just flip a boolean class past a 120px threshold, which
+   shrunk the mic button and display:none'd the dock — but never actually
+   repositioned the input bar itself. body{height:100%} tracks the LAYOUT
+   viewport, which iOS Safari does not shrink when the keyboard opens (only
+   the visual viewport shrinks) — so bottom:94px stayed anchored to the
+   original, now keyboard-covered, bottom edge the whole time. The input
+   row was never really following the keyboard.
+   This instead measures the real, continuously-updating gap between the
+   layout and visual viewports (that gap IS the keyboard once it's open,
+   whatever height it actually is on this device) and springs the input
+   bar's position, the dock's hide/show, and the mic button's shrink all
+   through one spring, so they read as one surface reacting together
+   instead of three independent snaps. */
+// IOSMotion loads via a deferred <script>, which runs after the document is
+// parsed — but this file's own <script> has no `defer`, so it runs
+// synchronously DURING parsing, before that. Referencing IOSMotion at this
+// function's top level would throw ReferenceError if called too early;
+// setupBottomChrome() is only invoked from the DOMContentLoaded listener
+// below (same as boot()), by which point deferred scripts have run.
+function setupBottomChrome() {
+  const dockEl = document.querySelector('.iosDock');
+  const bottomChrome = IOSMotion.createSpring(
+    { barBottom: 94, dockShift: 0, dockOpacity: 1, micScale: 1 },
+    { damping: 1, response: 0.3 }
+  );
+  bottomChrome.onUpdate(v => {
+    document.documentElement.style.setProperty('--bar-bottom', v.barBottom + 'px');
+    if (dockEl) {
+      dockEl.style.transform = v.dockShift > 0.05 ? ('translateY(' + v.dockShift + 'px)') : '';
+      dockEl.style.opacity = v.dockOpacity;
+      dockEl.style.pointerEvents = v.dockOpacity > 0.5 ? '' : 'none';
+    }
+    micBtn.style.transform = 'translateY(-50%) scale(' + v.micScale + ')';
+  });
+
   const vv = window.visualViewport;
   if (vv) {
-    const baseH = vv.height;
-    vv.addEventListener('resize', () => {
-      document.body.classList.toggle('kb-open', baseH - vv.height > 120);
-    });
+    const update = () => {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const kbOpen = inset > 120;
+      document.body.classList.toggle('kb-open', kbOpen);
+      bottomChrome.to({
+        barBottom: kbOpen ? (inset + 10) : 94,
+        dockShift: kbOpen && dockEl ? (dockEl.offsetHeight + 40) : 0,
+        dockOpacity: kbOpen ? 0 : 1,
+        micScale: kbOpen ? 0.4 : 1
+      });
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
   }
 }
 
@@ -1125,10 +1185,10 @@ function wireButton(id, handler) {
 
 /* ── Settings sheet wiring ── */
 function applySettingsUI(s) {
-  document.querySelectorAll('#settingsPanel .modeBtn').forEach(b => b.classList.toggle('active', b.dataset.mode === s.endMode));
+  document.querySelectorAll('#settingsPanel .iosSegment button').forEach(b => b.classList.toggle('active', b.dataset.mode === s.endMode));
   document.getElementById('turnCapInput').value = s.turnCap;
 }
-document.querySelectorAll('#settingsPanel .modeBtn').forEach(b => {
+document.querySelectorAll('#settingsPanel .iosSegment button').forEach(b => {
   b.addEventListener('click', () => {
     const s = loadSettings();
     s.endMode = b.dataset.mode;
@@ -1199,7 +1259,7 @@ async function boot() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', boot);
+document.addEventListener('DOMContentLoaded', () => { setupBottomChrome(); boot(); });
 </script>
 </body>
 </html>

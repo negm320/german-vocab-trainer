@@ -10,6 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="ios-theme.css">
+<script src="ios-motion.js" defer></script>
 <script src="ios-sheet.js" defer></script>
 <style>
 *{box-sizing:border-box}
@@ -47,15 +48,19 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
   .ghostBtn.link:hover{background:var(--accent-bg);}
 }
 
-/* footer controls */
-.footerRow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}
+/* footer controls — .footerRow now lives in ios-theme.css (shared with
+   preps.html instead of copy-pasted). */
 
 /* loading (topic + grading) — .loadingSpinner itself now lives in ios-theme.css */
 #topicLoading,#gradingText{color:var(--muted);font-size:14px;padding:4px 0 16px;text-align:center;font-family:var(--font-chrome);}
 
-/* topic */
+/* topic — "Thema"'s look now comes from the shared .iosSheet-label
+   eyebrow class instead of falling back to the generic .muted.small
+   combo (which was a full size step and a full color-intensity step
+   more prominent than every other eyebrow label in the app). Only the
+   local spacing stays here. */
 #topicBlock{position:relative;padding-right:40px;}
-.topicLabel{letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--font-chrome);}
+.topicLabel{margin-bottom:6px;}
 .topicText{font-size:18px;line-height:1.6;}
 #topicHints{margin-top:8px;display:flex;flex-direction:column;gap:4px;line-height:1.5;}
 #btnSkipTopic{position:absolute;top:-4px;right:-4px;width:32px;height:32px;}
@@ -82,25 +87,22 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
   transition:background .2s,border-color .2s;
 }
 #micBtn svg{width:22px;height:22px;fill:var(--accent);flex-shrink:0;transition:fill .2s;}
-#micBtn.listening{background:#2c0a0a;border-color:var(--bad);}
-#micBtn.listening svg{fill:var(--bad);}
+/* .listening state colors + ripple animation timing + @keyframes
+   rippleOut now live in ios-theme.css (shared with chat.html/
+   grammar.html instead of copy-pasted). This button is smaller than
+   the others (64px vs 76/80px), so its .ripple inset stays local and
+   proportionally smaller (-10px vs their -12px) rather than matching
+   them exactly. */
 .ripple{
   position:absolute;inset:-10px;border-radius:50%;
   border:2px solid var(--bad);opacity:0;pointer-events:none;
 }
-#micBtn.listening .ripple:nth-child(1){animation:rippleOut 1.6s ease-out infinite;}
-#micBtn.listening .ripple:nth-child(2){animation:rippleOut 1.6s ease-out .53s infinite;}
-#micBtn.listening .ripple:nth-child(3){animation:rippleOut 1.6s ease-out 1.06s infinite;}
-@keyframes rippleOut{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.65);opacity:0}}
 
 .countRow{margin-top:8px;text-align:right;font-family:var(--font-chrome);}
 
-.primaryBtn{width:100%;margin-top:14px;padding:13px;background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600;font-size:16px;border-radius:12px;font-family:var(--font-chrome);transition:filter .15s;}
-.primaryBtn:active:not(:disabled){filter:brightness(.92);}
-.primaryBtn:disabled{opacity:.4;cursor:default;filter:none;background:var(--btn);border-color:var(--border);color:var(--muted);}
-@media (hover:hover){
-  .primaryBtn:hover:not(:disabled){filter:brightness(1.08);}
-}
+/* .primaryBtn's look now comes from the shared .iosPrimaryBtn class
+   (ios-theme.css) — only this screen's own spacing stays local. */
+.iosPrimaryBtn{margin-top:14px;}
 
 /* scores */
 .scoreBlock{display:flex;flex-direction:column;align-items:center;}
@@ -212,7 +214,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
     <button id="btnSkipTopic" class="iosIconBtn" title="Neues Thema" aria-label="Neues Thema">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0115-6.7L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 01-15 6.7L3 16"></path><path d="M3 21v-5h5"></path></svg>
     </button>
-    <div class="topicLabel muted small">Thema</div>
+    <div class="topicLabel iosSheet-label">Thema</div>
     <div class="topicText" id="topicText"></div>
     <div class="muted small" id="topicHints"></div>
   </div>
@@ -232,7 +234,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
   </div>
   <div class="countRow muted small"><span id="wordCount">0 Wörter</span> · <span id="sentCount">0 Sätze</span></div>
 
-  <button id="btnSubmit" class="primaryBtn" disabled>Bewerten</button>
+  <button id="btnSubmit" class="iosPrimaryBtn" disabled>Bewerten</button>
 </div>
 
 <!-- Grading loading screen -->
@@ -271,7 +273,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
   <div class="muted hidden" id="correctedBlock"></div>
 
   <div class="stretchBlock hidden" id="stretchBlock">
-    <div class="muted small" style="margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Noch natürlicher</div>
+    <div class="iosSheet-label" style="margin-bottom:6px;">Noch natürlicher</div>
     <div class="stretchOrig" id="stretchOrig"></div>
     <div class="stretchBetter" id="stretchBetter"></div>
     <div class="muted small" id="stretchNote"></div>

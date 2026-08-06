@@ -10,6 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="ios-theme.css">
+<script src="ios-motion.js" defer></script>
 <script src="ios-sheet.js" defer></script>
 <style>
 *{box-sizing:border-box}
@@ -65,12 +66,18 @@ input,textarea{
 
 /* action rows */
 .actionRow{display:flex;gap:6px;margin-top:8px;}
-.actionRow button{flex:1;background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 8px;color:var(--text);cursor:pointer;font-size:14px;font-family:var(--font-chrome);}
-.actionRow button:hover{background:var(--btn2)}
-.actionRow.secondary button{font-size:12px;padding:8px 4px;color:var(--muted);}
-.actionRow.secondary button.active{background:var(--accent-bg);border-color:rgba(10,132,255,.4);color:var(--accent);}
-#coreCheckNext{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;font-size:15px;}
-#coreCheckNext:hover{background:var(--accent);opacity:.92;}
+/* :not(.iosPrimaryBtn) so this generic row styling can't out-specificity
+   (.actionRow button is 0,1,1 vs .iosPrimaryBtn's 0,1,0) the shared
+   primary-CTA class on #coreCheckNext — excluding it here instead of
+   fighting for specificity lets .iosPrimaryBtn's accent color/radius/
+   padding apply cleanly. */
+.actionRow button:not(.iosPrimaryBtn){flex:1;background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 8px;color:var(--text);cursor:pointer;font-size:14px;font-family:var(--font-chrome);}
+.actionRow button:not(.iosPrimaryBtn):hover{background:var(--btn2)}
+.actionRow .iosPrimaryBtn{flex:1;}
+/* #coreCheckNext's accent styling now comes from the shared .iosPrimaryBtn
+   class (ios-theme.css) instead of an ID-specific override. The
+   Edit/Hide/Back/Typo row now uses the shared .iosButtonRow.quiet
+   instead of its own .actionRow.secondary variant. */
 
 /* generic button reset */
 button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer;}
@@ -154,17 +161,9 @@ button:hover{background:var(--btn2)}
 .banner .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .banner .btns button{padding:8px 10px;border-radius:999px}
 
-/* ⋯ menu sheet content */
-.menuPanel{display:flex;flex-direction:column;gap:18px;}
-.menuPanel>*{flex-shrink:0;}
-.menuSection{display:flex;flex-direction:column;gap:8px;}
-.menuLabel{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);font-family:var(--font-chrome);}
-.modeRow{display:flex;background:var(--input);border-radius:10px;padding:3px;gap:0;}
-.modeBtn{flex:1;padding:8px;font-size:13px;border-radius:8px;border:none;background:transparent;font-family:var(--font-chrome);}
-.modeBtn.active{background:var(--accent);color:#fff;}
-.menuRow{display:flex;gap:6px;flex-wrap:wrap;}
-.menuRow button{flex:1;padding:10px 8px;font-size:13px;font-family:var(--font-chrome);min-width:90px;}
-.menuRow button.active{background:var(--accent-bg);border-color:rgba(10,132,255,.4);color:var(--accent);}
+/* ⋯ menu sheet content — .menuPanel/.menuSection/.iosSheet-label/
+   .iosSegment/.iosButtonRow now live in ios-theme.css (shared with
+   chat.html instead of copy-pasted). */
 .danger-btn{color:var(--bad);border-color:rgba(255,69,58,.35);background:var(--bad-bg);width:100%;padding:13px;font-weight:600;font-family:var(--font-chrome);}
 .danger-btn:hover{background:rgba(255,69,58,.18);}
 
@@ -269,11 +268,11 @@ button:hover{background:var(--btn2)}
 
   <!-- Primary: Check / Next (combined) -->
   <div class="actionRow" style="margin-top:10px;">
-    <button id="coreCheckNext">Check</button>
+    <button id="coreCheckNext" class="iosPrimaryBtn">Check</button>
   </div>
 
   <!-- Secondary: Back, Typo, Hide, Edit -->
-  <div class="actionRow secondary" style="margin-top:6px;">
+  <div class="iosButtonRow quiet" style="margin-top:6px;">
     <button id="coreEdit" class="muted">Edit</button>
     <button id="coreHide" class="muted">Hide</button>
     <button id="coreBack" class="muted">Back</button>
@@ -333,18 +332,18 @@ button:hover{background:var(--btn2)}
 
   <!-- Mode -->
   <div class="menuSection">
-    <div class="menuLabel">Mode</div>
-    <div class="modeRow">
-      <button id="btnModeWord" class="modeBtn">Word</button>
-      <button id="btnModeCloze" class="modeBtn">Cloze</button>
-      <button id="btnModeSentence" class="modeBtn">Sentence</button>
+    <div class="iosSheet-label">Mode</div>
+    <div class="iosSegment">
+      <button id="btnModeWord">Word</button>
+      <button id="btnModeCloze">Cloze</button>
+      <button id="btnModeSentence">Sentence</button>
     </div>
   </div>
 
   <!-- Word tools -->
   <div class="menuSection">
-    <div class="menuLabel">Word tools</div>
-    <div class="menuRow">
+    <div class="iosSheet-label">Word tools</div>
+    <div class="iosButtonRow">
       <button id="coreSuper">Super</button>
       <button id="coreOneStreak">1-Streak</button>
       <button id="coreSetScore">Set Score</button>
@@ -353,8 +352,8 @@ button:hover{background:var(--btn2)}
 
   <!-- App -->
   <div class="menuSection">
-    <div class="menuLabel">App</div>
-    <div class="menuRow">
+    <div class="iosSheet-label">App</div>
+    <div class="iosButtonRow">
       <button id="btnExport">Export</button>
       <button id="btnImport">Import</button>
       <button id="btnResetApiKey">Reset API Key</button>
@@ -371,7 +370,7 @@ button:hover{background:var(--btn2)}
 
   <!-- Cloud sync -->
   <div class="menuSection" id="menuCloudSync">
-    <div class="menuLabel">Cloud sync (Supabase)</div>
+    <div class="iosSheet-label">Cloud sync (Supabase)</div>
     <div style="display:flex;flex-direction:column;gap:6px;">
       <input id="supabaseUrlInput" type="text" placeholder="Supabase URL" spellcheck="false" autocomplete="off">
       <input id="supabaseKeyInput" type="text" placeholder="Supabase publishable key" spellcheck="false" autocomplete="off">
@@ -382,20 +381,22 @@ button:hover{background:var(--btn2)}
 
   <!-- Cloze settings -->
   <div class="menuSection" id="menuClozeSettings">
-    <div class="menuLabel">Cloze settings</div>
-    <div class="menuRow">
+    <div class="iosSheet-label">Cloze settings</div>
+    <div class="iosButtonRow">
       <button id="btnToggleHint">Show hint button</button>
     </div>
   </div>
 
   <!-- Boost -->
   <div class="menuSection">
-    <button id="btnBoostPool" style="color:var(--muted);border-color:var(--border-soft);width:100%;padding:11px;font-family:var(--font-chrome);">Boost pool</button>
+    <div class="iosButtonRow">
+      <button id="btnBoostPool">Boost pool</button>
+    </div>
   </div>
 
   <!-- Danger zone -->
   <div class="menuSection">
-    <div class="menuLabel" style="color:var(--bad);">Danger zone</div>
+    <div class="iosSheet-label" style="color:var(--bad);">Danger zone</div>
     <button id="coreReset" class="danger-btn">Reset all progress</button>
   </div>
 

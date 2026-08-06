@@ -4,6 +4,34 @@
    screens (grammar/preps/ausdruck/chat) in later passes.
    ============================================================ */
 
+/* ============ cross-page navigation ============
+   Each of the 5 screens is a separate HTML document — tapping a dock
+   icon is a real browser navigation, not an in-app view swap. Without
+   this, that's a full unload-and-reload: the page goes blank, then the
+   next one paints from scratch. This opts both the outgoing and
+   incoming document into the browser's native cross-document view
+   transition (must be present in both documents' CSS to activate), so
+   it cross-fades instead. Needs Chrome 126+ / Safari 18+ — on anything
+   older this rule is simply ignored and navigation behaves exactly as
+   it did before (no fallback code needed). */
+@view-transition{
+  navigation:auto;
+}
+/* Match the app's own easing (already used throughout its CSS
+   keyframes) instead of the browser's default abrupt 250ms ease. */
+::view-transition-old(root),
+::view-transition-new(root){
+  animation-duration:0.32s;
+  animation-timing-function:cubic-bezier(.25,.46,.45,.94);
+}
+@media (prefers-reduced-motion: reduce){
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*){
+    animation:none!important;
+  }
+}
+
 :root{
   /* surfaces */
   --bg:#000;
@@ -128,6 +156,23 @@ button:active{background:var(--btn2)}
 .loadingSpinner span:nth-child(3){animation-delay:.3s;}
 @keyframes dotBounce{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-5px);opacity:1;}}
 
+/* ============ mic button (dictation) — listening state ============
+   Shared across the 3 screens with a mic button (chat/ausdruck/
+   grammar) — the "listening" state colors and ripple animation timing
+   were copy-pasted identically 3 times. Each screen's own button SIZE,
+   POSITION, and .ripple inset stay local — they're legitimately
+   different (a floating standalone bar vs a textarea corner vs
+   centered in a split pill), and .ripple's inset in particular scales
+   with that screen's own button size (a smaller button gets a
+   proportionally smaller inset), so it's deliberately not part of this
+   shared block. */
+#micBtn.listening{background:#2c0a0a;border-color:var(--bad);}
+#micBtn.listening svg{fill:var(--bad);}
+#micBtn.listening .ripple:nth-child(1){animation:rippleOut 1.6s ease-out infinite;}
+#micBtn.listening .ripple:nth-child(2){animation:rippleOut 1.6s ease-out .53s infinite;}
+#micBtn.listening .ripple:nth-child(3){animation:rippleOut 1.6s ease-out 1.06s infinite;}
+@keyframes rippleOut{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.65);opacity:0}}
+
 /* ============ icon buttons (top bar) ============ */
 .iosIconBtn{
   width:34px;height:34px;border-radius:17px;
@@ -150,6 +195,12 @@ button:active{background:var(--btn2)}
   border-radius:var(--r-dock);
   max-width:684px;
   margin:0 auto;
+  /* Same position/size on every screen — naming it lets the view
+     transition treat it as one persisting element across a page
+     navigation (softly cross-fading just the active-tab highlight)
+     instead of the whole dock fading out and back in with the rest of
+     the page. */
+  view-transition-name:ios-dock;
 }
 .iosDock-glass{
   position:absolute;inset:0;border-radius:var(--r-dock);
@@ -196,9 +247,12 @@ button:active{background:var(--btn2)}
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   transform:translateY(100%);
-  transition:transform .28s cubic-bezier(.25,.46,.45,.94);
   box-shadow:0 -8px 30px rgba(0,0,0,0.4);
 }
+/* No CSS transition here — IOSMotion (ios-sheet.js) drives every open/
+   close/drag-release through a real spring instead, so it can be
+   interrupted and re-targeted mid-flight. This class rule is just the
+   pre-JS/fallback resting state. */
 .iosSheet.show{transform:translateY(0);}
 .iosSheet.hidden{display:none;}
 
@@ -216,9 +270,18 @@ button:active{background:var(--btn2)}
   box-sizing:content-box;
 }
 
+/* ============ eyebrow label ============
+   The ONE canonical "small uppercase muted label above a group of
+   content" — four screens each independently tuned their own version
+   (this one bold; chat's slateEyebrow/sceneEndCaption at a wider
+   letter-spacing; ausdruck's topicLabel falling back to the generic
+   .muted.small combo, a full size AND color step more prominent than
+   everywhere else). Spacing below the label is left to each usage site
+   (a flex gap, or a local margin) rather than baked in here, since that
+   varies by context — this only fixes what the label itself looks like. */
 .iosSheet-label{
   font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
-  color:var(--muted2);font-family:var(--font-chrome);margin-bottom:8px;
+  color:var(--muted2);font-family:var(--font-chrome);
 }
 
 .iosSheet-title{
@@ -242,10 +305,75 @@ button:active{background:var(--btn2)}
   background:var(--bad-bg);border:1px solid rgba(255,69,58,0.35);color:var(--bad);width:100%;font-weight:600;
 }
 
-/* segmented control (used for Mode row) */
-.iosSegment{display:flex;background:var(--input);border-radius:10px;padding:3px;gap:0;}
-.iosSegment button{flex:1;background:transparent;border:none;border-radius:8px;padding:8px;font-size:13px;color:var(--text);}
-.iosSegment button.active{background:var(--accent);}
+/* ============ segmented control ============
+   The ONE canonical segmented control for the whole app — mutually-
+   exclusive mode switches (Word/Cloze/Sentence, AI decides/I decide/
+   After N turns, etc.). This used to be defined here but never actually
+   used anywhere — every screen that needed one built its own private
+   copy instead, missing enough padding/definition to read as one
+   glued-together blob. Fixed by giving the track real padding and
+   letting the selected segment read as a pill floating on it (fill +
+   soft shadow) — no dividers between segments at all; a first attempt
+   at hairline dividers between unselected neighbors ended up reading as
+   a stray leftover border rather than an intentional line, so the
+   selected pill alone carries all the definition here. */
+.iosSegment{display:flex;background:var(--input);border-radius:10px;padding:4px;gap:0;}
+.iosSegment button{
+  flex:1;min-width:0;background:transparent;border:none;
+  border-radius:8px;padding:8px;font-size:13px;color:var(--text);font-family:var(--font-chrome);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:background .2s,box-shadow .2s;
+}
+.iosSegment button.active{
+  background:var(--accent);color:#fff;font-weight:600;
+  box-shadow:0 1px 4px rgba(0,0,0,.35);
+}
+
+/* ============ primary CTA button ============
+   The ONE canonical "this is the main action on this screen" button —
+   four screens had four different shapes/colors for this same job
+   (a full accent bar, an accent pill, a bare-button-radius accent fill,
+   and — the real bug — grammar's Check button wasn't accent-colored at
+   all, reading as a neutral surface rather than the primary action). */
+.iosPrimaryBtn{width:100%;padding:13px;background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600;font-size:15px;border-radius:12px;font-family:var(--font-chrome);transition:filter .15s;}
+.iosPrimaryBtn:active:not(:disabled){filter:brightness(.92);}
+.iosPrimaryBtn:disabled{opacity:.4;cursor:default;filter:none;background:var(--btn);border-color:var(--border);color:var(--muted);}
+@media (hover:hover){
+  .iosPrimaryBtn:hover:not(:disabled){filter:brightness(1.08);}
+}
+
+/* ============ button row (chip group) ============
+   The ONE canonical "row of grouped, evenly-stretched action buttons" —
+   top5k had two independently-tuned versions of this job (.menuRow, and
+   .actionRow's "secondary" variant) with byte-identical .active state
+   values but different base sizing — a clear sign they were meant to be
+   the same component and drifted apart from copy-pasting instead of
+   sharing. Base is the normal-weight look (settings rows like Word
+   Tools/App); add .quiet for the smaller, de-emphasized case
+   (peripheral tools like Edit/Hide/Back/Typo). */
+.iosButtonRow{display:flex;gap:6px;flex-wrap:wrap;}
+.iosButtonRow button{flex:1;min-width:90px;padding:10px 8px;font-size:13px;font-family:var(--font-chrome);}
+.iosButtonRow button.active{background:var(--accent-bg);border-color:rgba(10,132,255,.4);color:var(--accent);}
+.iosButtonRow.quiet{flex-wrap:nowrap;}
+.iosButtonRow.quiet button{min-width:0;font-size:12px;padding:8px 4px;color:var(--muted);}
+
+/* ============ footer row ============
+   A genuinely different job from .iosButtonRow above — centered,
+   auto-width ghost/icon buttons (nav links, icon-only toggles), not
+   stretched utility actions. Correctly kept distinct, but was
+   copy-pasted byte-for-byte into preps.html and ausdruck.html instead
+   of shared. */
+.footerRow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}
+
+/* ============ sheet menu content ============
+   Was copy-pasted verbatim into top5k.html and chat.html instead of
+   living in one place — centralized here so there's exactly one
+   definition of "a labeled section inside a settings sheet". */
+.menuPanel{display:flex;flex-direction:column;gap:18px;}
+.menuPanel>*{flex-shrink:0;}
+.menuSection{display:flex;flex-direction:column;gap:8px;}
+/* Section labels here ("Mode", "Word tools", …) use the shared
+   .iosSheet-label eyebrow class directly instead of their own .menuLabel. */
 
 /* ============ full-screen setup / onboarding ============ */
 .iosSetupScreen{

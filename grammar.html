@@ -10,6 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="ios-theme.css">
+<script src="ios-motion.js" defer></script>
 <script src="ios-sheet.js" defer></script>
 <style>
 *{box-sizing:border-box}
@@ -55,10 +56,6 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 .good-field{border-color:var(--good)!important;box-shadow:0 0 0 1px rgba(50,215,75,.45);}
 .bad-field{border-color:var(--bad)!important;box-shadow:0 0 0 1px rgba(255,69,58,.45);}
 
-/* action row */
-.actionRow{display:flex;gap:6px;margin-top:10px;}
-.actionRow button{flex:1;padding:10px 8px;font-size:14px;font-family:var(--font-chrome);}
-
 /* states */
 .hidden{display:none!important}
 .muted{color:var(--muted)}
@@ -100,15 +97,11 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 }
 .undoWrap button:active{background:rgba(255,255,255,.06);}
 
-/* mic states (chat.html mic, verbatim) */
+/* mic states — .listening colors + ripple animation timing +
+   @keyframes rippleOut now live in ios-theme.css (shared with
+   chat.html/ausdruck.html instead of copy-pasted). */
 #micBtn svg{width:26px;height:26px;fill:var(--accent);flex-shrink:0;transition:fill .2s;}
-#micBtn.listening{background:#2c0a0a;border-color:var(--bad);}
-#micBtn.listening svg{fill:var(--bad);}
 .ripple{position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--bad);opacity:0;pointer-events:none;}
-#micBtn.listening .ripple:nth-child(1){animation:rippleOut 1.6s ease-out infinite;}
-#micBtn.listening .ripple:nth-child(2){animation:rippleOut 1.6s ease-out .53s infinite;}
-#micBtn.listening .ripple:nth-child(3){animation:rippleOut 1.6s ease-out 1.06s infinite;}
-@keyframes rippleOut{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.65);opacity:0}}
 #micStatus{font-size:12px;color:var(--muted);margin-top:6px;min-height:1.2em;font-family:var(--font-chrome);}
 .input-interim{color:var(--muted)!important;}
 
@@ -121,10 +114,20 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 .checkPillHalf:first-child{border-radius:27px 0 0 27px;}
 .checkPillHalf:last-child{border-radius:0 27px 27px 0;}
 .checkPillHalf:active{background:rgba(255,255,255,.1);}
+/* This split pill is a genuinely different interaction (Check and Next
+   both persistently available, not one button swapping label) from the
+   single-button primary CTA used elsewhere, so it keeps its own shape —
+   but "Check" is still the primary action on this screen, and every
+   other screen's primary action reads as accent-filled. Un-styled here,
+   it was indistinguishable from a neutral surface. #btnCheck's own
+   rules need an ID to outrank .checkPillHalf's active/hover states. */
+#btnCheck{background:var(--accent);color:#fff;font-weight:600;}
+#btnCheck:active{filter:brightness(.85);}
 .micCircle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:80px;height:80px;border-radius:50%;background:var(--btn);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:background .15s,border-color .15s,transform .15s;}
 .micCircle:active{transform:translate(-50%,-50%) scale(.95);}
 @media (hover:hover){
   .checkPillHalf:hover{background:rgba(255,255,255,.06);}
+  #btnCheck:hover{filter:brightness(1.08);}
 }
 
 /* word class borders (literal hues, not tied to theme tokens) */
