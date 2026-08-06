@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<!-- black-translucent lets the web content (and the glass header) extend UP
+     under the iOS status bar instead of stopping below it; the header then
+     pads its top by env(safe-area-inset-top) so its text clears the clock. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Chat – Szene</title>
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
@@ -34,10 +39,13 @@ body{height:100%;padding-bottom:var(--kb-inset,0px);background:var(--bg);color:v
    and blur beneath it; a soft scroll-edge fade replaces the divider. */
 .sceneSlate{
   position:absolute;top:0;left:0;right:0;z-index:5;
-  padding:14px 16px 15px;
+  /* top padding folds in the status-bar height so the glass fills up under
+     the clock while the content still clears it. Tap to expand (see JS). */
+  padding:calc(12px + env(safe-area-inset-top,0px)) 16px 14px;
   background:linear-gradient(180deg, rgba(28,28,30,0.80), rgba(28,28,30,0.62));
   backdrop-filter:blur(28px) saturate(180%);
   -webkit-backdrop-filter:blur(28px) saturate(180%);
+  cursor:pointer;
 }
 .sceneSlate::after{
   content:'';position:absolute;left:0;right:0;top:100%;height:24px;
@@ -67,7 +75,17 @@ body{height:100%;padding-bottom:var(--kb-inset,0px);background:var(--bg);color:v
 .whoRole{font-family:var(--font-chrome);font-size:12.5px;line-height:1.3;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .hActions{display:flex;gap:6px;flex-shrink:0;}
 
-.slateSituation{font-family:'Lora',Georgia,serif;font-style:italic;font-weight:400;font-size:14.5px;line-height:1.45;color:rgba(235,235,245,0.80);margin:11px 0 0;}
+/* ── Collapsible slate ──
+   Compact by default so the header stays light: the role truncates to one
+   line and the situation clamps to two. Tap the header (see JS) to expand —
+   role wraps in full, situation shows in full — and a tap anywhere else
+   retracts it. A chevron telegraphs that it opens. */
+.slateSituation{font-family:'Lora',Georgia,serif;font-style:italic;font-weight:400;font-size:14.5px;line-height:1.45;color:rgba(235,235,245,0.80);margin:10px 0 0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
+.sceneSlate.expanded .whoRole{white-space:normal;overflow:visible;}
+.sceneSlate.expanded .slateSituation{-webkit-line-clamp:unset;overflow:visible;}
+.slateChevron{position:absolute;right:16px;bottom:8px;color:var(--muted2);transition:transform .22s ease;pointer-events:none;}
+.slateChevron svg{width:16px;height:16px;display:block;}
+.sceneSlate.expanded .slateChevron{transform:rotate(180deg);}
 
 /* ── Messages area ── */
 /* overflow:visible so the floating pill's drop shadow isn't clipped; the
@@ -226,6 +244,7 @@ body.kb-open .ripple{display:none;}
     </div>
   </div>
   <p class="slateSituation" id="scenarioText">Szene wird geladen…</p>
+  <div class="slateChevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></div>
 </div>
 
   <div class="messages" id="messagesArea">
@@ -614,6 +633,7 @@ function updateHeader(scene) {
   document.getElementById('hName').textContent = name || 'Szene';
   document.getElementById('castMeta').textContent = meta;
   document.getElementById('btnEndScene').classList.toggle('hidden', !scene || scene.ended);
+  document.querySelector('.sceneSlate').classList.remove('expanded'); // a new scene starts collapsed
 }
 
 /* ── Pill faces ──
@@ -642,6 +662,17 @@ function updateSlatePad() {
   document.documentElement.style.setProperty('--slate-pad', (sceneSlateEl.offsetHeight + 8) + 'px');
 }
 new ResizeObserver(updateSlatePad).observe(sceneSlateEl);
+
+/* Tap the slate to reveal the full talker description + situation; tap
+   anywhere else to retract. The action buttons keep their own behaviour.
+   (--slate-pad follows automatically via the ResizeObserver above.) */
+sceneSlateEl.addEventListener('click', e => {
+  if (e.target.closest('.hActions')) return;
+  sceneSlateEl.classList.toggle('expanded');
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.sceneSlate')) sceneSlateEl.classList.remove('expanded');
+});
 
 /* ── System rows (loading / error indicators in the transcript) ── */
 function showScenarioLoading() {
@@ -1258,7 +1289,12 @@ function setupPill() {
       if (kbOpen && navOpen) closeNav();      // can't browse tabs mid-type
       document.documentElement.style.setProperty('--kb-inset', (kbOpen ? inset : 0) + 'px');
       updateMsgBottomPad();
-      if (kbOpen) requestAnimationFrame(scrollToLatest);   // keep the reply in view
+      if (kbOpen) requestAnimationFrame(() => {
+        window.scrollTo(0, 0);   // iOS tries to scroll the whole page up to the
+                                 // focused field; anchor it so the header/status
+                                 // bar don't get pushed off the top
+        scrollToLatest();        // and keep the newest message above the composer
+      });
     };
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
