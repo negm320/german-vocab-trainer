@@ -25,10 +25,31 @@ body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Geo
    line with one unit that leads with the invented situation (the actual
    generated content, different every scene) and folds the character into
    a "cast credit" beneath it, like a scene heading in a script. ── */
-.sceneSlate{padding:12px 16px 13px;background:var(--card);border-bottom:1px solid var(--divider);flex-shrink:0;}
+/* Translucent glass slate (was a solid --card slab with a hard 1px
+   divider — the one heavy, flat panel while the rest of the app went to
+   floating glass). Sits absolute over the transcript so messages scroll up
+   and blur beneath it; a soft scroll-edge fade replaces the divider. */
+.sceneSlate{
+  position:absolute;top:0;left:0;right:0;z-index:5;
+  padding:14px 16px 15px;
+  background:linear-gradient(180deg, rgba(28,28,30,0.80), rgba(28,28,30,0.62));
+  backdrop-filter:blur(28px) saturate(180%);
+  -webkit-backdrop-filter:blur(28px) saturate(180%);
+}
+.sceneSlate::after{
+  content:'';position:absolute;left:0;right:0;top:100%;height:24px;
+  background:linear-gradient(180deg, rgba(0,0,0,0.20), rgba(0,0,0,0));
+  pointer-events:none;
+}
+/* Chrome buttons go ghost in the slate — the filled grey circles read as
+   heavy here; bare glyphs (lit on press) keep the italic situation line
+   the clear hero. */
+.sceneSlate .iosIconBtn{background:transparent;border-color:transparent;}
+.sceneSlate .iosIconBtn:active{background:rgba(120,120,128,0.24);}
+@media (hover:hover){ .sceneSlate .iosIconBtn:hover{background:rgba(120,120,128,0.18);} }
 .slateTop{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .slateEyebrow{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);font-family:var(--font-chrome);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.slateLabel{font-weight:700;color:var(--muted);flex-shrink:0;}
+.slateLabel{font-weight:600;color:var(--muted2);flex-shrink:0;}
 .slateDot{width:6px;height:6px;border-radius:50%;background:var(--good);flex-shrink:0;transition:background .25s;}
 #statusText{overflow:hidden;text-overflow:ellipsis;}
 .hActions{display:flex;gap:8px;flex-shrink:0;}
@@ -41,9 +62,18 @@ body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Geo
 .castLine strong{font-weight:700;color:var(--text);font-family:var(--font-chrome);}
 
 /* ── Messages area ── */
-.messagesWrap{flex:1;overflow:hidden;position:relative;}
-.messages{height:100%;overflow-y:auto;padding:10px 12px 0;}
-.messagesInner{display:flex;flex-direction:column;gap:2px;padding-bottom:220px;}
+/* overflow:visible so the floating pill's drop shadow isn't clipped; the
+   inner .messages element is its own overflow-y:auto scroller and clips
+   the bubbles itself. min-height:0 is essential: a flex item defaults to
+   min-height:auto (won't shrink below content), so with overflow:visible
+   the wrapper would grow to the full message height and push the absolute
+   pill off the bottom of the screen — min-height:0 lets flex clamp it to
+   the available space instead. */
+.messagesWrap{flex:1;min-height:0;overflow:visible;position:relative;}
+/* padding-top reserves the slate's live height (set via ResizeObserver)
+   so the first bubble starts below it but can scroll up underneath. */
+.messages{height:100%;overflow-y:auto;padding:var(--slate-pad,104px) 12px 0;}
+.messagesInner{display:flex;flex-direction:column;gap:2px;padding-bottom:var(--msg-bottom-pad,96px);}
 
 .ts{text-align:center;color:var(--muted);font-size:11px;margin:8px 0 4px;flex-shrink:0;font-family:var(--font-chrome);}
 .sysRow{padding:14px 0;display:flex;flex-direction:column;align-items:center;gap:6px;}
@@ -75,59 +105,70 @@ body{height:100%;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Geo
 .fbLegend-corr::before{border-bottom-style:solid;border-color:var(--bad);}
 .fbLegend-nat::before{border-bottom-style:dashed;border-color:var(--warn);}
 
-/* ── Input bar — sits above the floating dock ──
-   --bar-bottom and the dock's transform/opacity are both driven by ONE
-   spring (see the "Keyboard-aware bottom chrome" JS below), so the input
-   bar rising to meet the keyboard and the dock stepping out of its way
-   read as one coordinated surface reacting together, not two elements
-   that happen to sit near each other. The fade itself is a real frosted
-   material (blur + a graduated multi-stop gradient) instead of a flat
-   2-stop color wash that goes solid a third of the way down and leaves a
-   dead flat-black gap before the dock. */
-.inputBar{
-  position:absolute;bottom:var(--bar-bottom,94px);left:0;right:0;padding:56px 12px 14px;
-  background:linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 40%, rgba(0,0,0,.92) 75%, var(--bg) 100%);
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  pointer-events:none;
-}
-.inputBar.hidden{display:none;}
-.inputRow{position:relative;display:flex;align-items:center;pointer-events:all;}
+/* ── The morphing pill ────────────────────────────────────────────────
+   ONE floating Liquid-Glass capsule owns the bottom slot. On the other
+   four screens it's the 5-tab dock. Here it defaults to the chat
+   composer and *morphs* into that same 5-tab dock when the opener is
+   tapped — so there are never two floating bars stacked, and when the
+   keyboard is up it's only the composer riding it (the dock literally
+   doesn't exist in that moment, because it's the same pill). That makes
+   the old dock-over-keyboard collision structurally impossible, and lets
+   us delete the heavy frosted gradient the composer used to sit in.
+   Reuses the shared .iosDock shell (position/glass/view-transition-name
+   from ios-theme.css) so navigating in/out of chat morphs dock<->composer
+   for free via the cross-document view transition. */
+/* position:absolute (overriding .iosDock's fixed) keeps the pill in the
+   same stacking context as the scrolling messages, which is what lets its
+   backdrop-filter blur them. .messagesWrap is the positioned ancestor;
+   bottom sits at the viewport bottom because the wrapper fills to there. */
+#chatPill{position:absolute;min-height:58px;overflow:hidden;transition:border-radius .2s ease;}
+#chatPill .iosDock-glass,#chatPill .iosDock-highlight{border-radius:inherit;}
+/* When the composer wraps to multiple lines the pill grows tall, and a
+   full-pill radius on a tall capsule looks wrong (a giant lozenge) — so it
+   flattens to a rounded rectangle, matching the text field inside it. */
+#chatPill.expanded{border-radius:24px;}
+/* ...but opening the nav dock always shows the compact dock, even if the
+   composer still holds several lines of text: the pill collapses back to
+   its one-line height (the taller composer content clips off the top as
+   .pillFace's max-height animates down) and returns to a full pill.
+   navmode wins over .expanded because it's declared after it. */
+#chatPill.navmode{border-radius:var(--r-dock);}
+#chatPill.navmode .pillFace{max-height:58px;}
 
-#chatInput{width:100%;min-height:46px;padding:12px 88px 12px 16px;border-radius:14px;color:var(--text);font-size:15px;line-height:1.4;outline:none;resize:none;overflow:hidden;}
+/* Composer face defines the pill's height (so it grows with a multi-line
+   textarea); the nav face is an absolute overlay that fades in over it.
+   max-height gives the collapse something numeric to animate between. */
+.pillFace{position:relative;z-index:1;max-height:260px;overflow:hidden;transition:max-height .32s ease;}
+.composerRow,.sceneEndRow{display:flex;min-height:58px;gap:8px;}
+.composerRow.hidden,.sceneEndRow.hidden{display:none;}
+/* Icons anchor to the BOTTOM of the row (align-items:flex-end), so as the
+   textarea grows upward the opener + mic stay put at the bottom edge next
+   to the newest line instead of drifting to the vertical centre of a tall
+   field. Symmetric 9px padding keeps them balanced at one line. */
+.composerRow{align-items:flex-end;padding:9px;}
+.sceneEndRow{align-items:center;justify-content:center;padding:0 9px;gap:12px;}
+
+.pillOpener,#micBtn{position:relative;flex-shrink:0;width:40px;height:40px;border-radius:50%;background:var(--btn);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s,border-color .2s;}
+.pillOpener svg{width:20px;height:20px;stroke:var(--accent);stroke-width:2;fill:none;}
+#micBtn svg{width:20px;height:20px;stroke:var(--accent);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;transition:stroke .2s;}
+
+/* Pill shape (var(--r-pill)) lives in ios-theme.css (.iosComposerInput).
+   The field collapses toward the opener during the morph, so its
+   transform-origin is the left edge. */
+#chatInput{flex:1;min-width:0;min-height:40px;max-height:120px;padding:9px 15px;color:var(--text);font-size:15px;line-height:1.4;outline:none;resize:none;overflow-y:auto;transform-origin:left center;}
 #chatInput::placeholder{color:var(--muted);}
 #chatInput.interim{color:var(--muted2);font-style:italic;}
-
-/* transform-origin lets the spring-driven scale (JS: micScale channel)
-   shrink the button toward its own right edge, so it tucks in cleanly
-   without needing a separately-animated position on top of the scale. */
-#micBtn{position:absolute;right:-6px;top:50%;width:76px;height:76px;border-radius:50%;background:var(--btn);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;transition:background .2s,border-color .2s;transform-origin:right center;}
-#micBtn svg{width:26px;height:26px;fill:var(--accent);flex-shrink:0;transition:fill .2s;}
-/* .listening state colors + ripple animation timing + @keyframes
-   rippleOut now live in ios-theme.css (shared with ausdruck.html/
-   grammar.html instead of copy-pasted) — only this button's own size
-   scales the ripple inset. */
-.ripple{position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--bad);opacity:0;pointer-events:none;}
-
-/* Only the non-compositor-friendly, purely-layout changes stay as plain
-   instant class swaps (padding can't be smoothly springed the way
-   transform/opacity can) — the size/position change now lives in the
-   micScale spring channel above instead of here. */
-body.kb-open #chatInput{padding-right:44px;}
+.ripple{position:absolute;inset:-7px;border-radius:50%;border:2px solid var(--bad);opacity:0;pointer-events:none;}
 body.kb-open .ripple{display:none;}
 
-/* ── Next-scene bar (replaces input bar once a scene ends) ── */
-.sceneEndBar{
-  position:absolute;bottom:var(--bar-bottom,94px);left:0;right:0;padding:16px 16px calc(14px + env(safe-area-inset-bottom,0px));
-  display:flex;flex-direction:column;align-items:center;gap:9px;
-  background:linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 40%, rgba(0,0,0,.92) 75%, var(--bg) 100%);
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-}
-.sceneEndBar.hidden{display:none;}
-/* "Szene beendet" now uses the shared .iosSheet-label eyebrow class
-   directly instead of its own (slightly wider-tracked, quieter) copy. */
-#btnNextScene{padding:13px 30px;background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600;font-size:15px;border-radius:999px;font-family:var(--font-chrome);transition:filter .15s;}
+#btnNextScene{padding:11px 24px;background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600;font-size:15px;border-radius:999px;font-family:var(--font-chrome);transition:filter .15s;}
 #btnNextScene:active{filter:brightness(.92);}
 @media (hover:hover){ #btnNextScene:hover{filter:brightness(1.08);} }
+
+/* Nav face: the 5 tabs, cascaded in by the morph (JS sets per-item
+   opacity + translateX). Starts hidden so it doesn't flash before JS. */
+.pillNav{position:absolute;inset:0;z-index:2;display:flex;align-items:center;padding:6px 8px;pointer-events:none;}
+.pillNav .iosDock-item{opacity:0;}
 
 /* ── Correction / naturalness tooltip ── */
 #errTooltip{position:fixed;max-width:260px;background:var(--card);border:1px solid var(--border-soft);border-left:3px solid var(--tip-color,var(--accent));border-radius:10px;padding:11px 13px 12px;font-size:13px;line-height:1.5;font-family:var(--font-chrome);box-shadow:0 10px 30px rgba(0,0,0,.45);z-index:5000;display:none;opacity:0;transform:translateY(-4px) scale(.97);transition:opacity .12s ease,transform .12s ease;}
@@ -145,8 +186,16 @@ body.kb-open .ripple{display:none;}
 <body>
 <script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='grammar')location.replace('grammar.html');else if(t==='preps')location.replace('preps.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
 
+<!-- Messages + floating chrome. The scene slate (top) and composer pill
+     (bottom) both live INSIDE .messagesWrap as absolute glass layers, so
+     their backdrop-filters can sample the transcript scrolling under them —
+     a position:fixed element's backdrop can't reach into the messages'
+     composited scroll layer. -->
+<div class="messagesWrap">
+
 <!-- Scene slate: situation first (the hero line), character folded into a
-     cast credit beneath it — a scene heading, not a contact card. -->
+     cast credit beneath it — a scene heading, not a contact card. A
+     translucent glass layer the transcript scrolls up under. -->
 <div class="sceneSlate">
   <div class="slateTop">
     <div class="slateEyebrow">
@@ -170,52 +219,59 @@ body.kb-open .ripple{display:none;}
   </div>
 </div>
 
-<!-- Messages + floating input -->
-<div class="messagesWrap">
   <div class="messages" id="messagesArea">
     <div class="messagesInner" id="messagesInner"></div>
   </div>
-  <div class="inputBar" id="inputBar">
-    <div class="inputRow">
-      <textarea id="chatInput" rows="1" placeholder="Schreib etwas…" autocomplete="off" spellcheck="false"></textarea>
+
+  <!-- The morphing pill lives INSIDE .messagesWrap (position:absolute, not a
+       fixed top-level element) so its backdrop-filter can actually sample
+       the scrolling bubbles behind it. A position:fixed element's backdrop
+       can't reach into the messages' own composited scroll layer, so the
+       blur silently no-ops over them (the symptom: sharp text under glass). -->
+  <nav class="iosDock" id="chatPill" aria-label="Chat">
+  <div class="iosDock-glass"></div>
+  <div class="iosDock-highlight"></div>
+
+  <div class="pillFace" id="composerFace">
+    <div class="composerRow" id="composerRow">
+      <button class="pillOpener" id="pillOpener" aria-label="Bildschirme öffnen">
+        <svg viewBox="0 0 24 24"><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path></svg>
+      </button>
+      <textarea id="chatInput" class="iosComposerInput" rows="1" placeholder="Schreib etwas…" autocomplete="off" spellcheck="false"></textarea>
       <button id="micBtn" aria-label="Mikrofon">
         <div class="ripple"></div>
         <div class="ripple"></div>
         <div class="ripple"></div>
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+          <path d="M9 5a3 3 0 0 1 3 -3a3 3 0 0 1 3 3v5a3 3 0 0 1 -3 3a3 3 0 0 1 -3 -3l0 -5"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M8 21l8 0"/><path d="M12 17l0 4"/>
         </svg>
       </button>
     </div>
+    <div class="sceneEndRow hidden" id="sceneEndRow">
+      <span class="iosSheet-label">Szene beendet</span>
+      <button id="btnNextScene">Nächste Szene →</button>
+    </div>
   </div>
-  <div class="sceneEndBar hidden" id="sceneEndBar">
-    <div class="iosSheet-label">Szene beendet</div>
-    <button id="btnNextScene">Nächste Szene →</button>
-  </div>
-</div>
 
-<!-- Floating iOS dock -->
-<nav class="iosDock" aria-label="Screens">
-  <div class="iosDock-glass"></div>
-  <div class="iosDock-highlight"></div>
-  <div class="iosDock-row">
+  <div class="pillNav" id="pillNav">
     <a class="iosDock-item tabItem" href="top5k.html" data-tab="vocab" aria-label="Vocab">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c2.2-1 5.4-1 8 .2v13.6c-2.6-1.2-5.8-1.2-8-.2V5z"></path><path d="M20 5c-2.2-1-5.4-1-8 .2v13.6c2.6-1.2 5.8-1.2 8-.2V5z"></path></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12"></path><path d="M19 16h-12a2 2 0 0 0 -2 2"></path><path d="M9 8h6"></path></svg>
     </a>
     <a class="iosDock-item tabItem" href="grammar.html" data-tab="grammar" aria-label="Grammar">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h11M4 17h7"></path></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l11 0"></path><path d="M9 12l11 0"></path><path d="M9 18l11 0"></path><path d="M5 6l0 .01"></path><path d="M5 12l0 .01"></path><path d="M5 18l0 .01"></path></svg>
     </a>
     <a class="iosDock-item tabItem" href="preps.html" data-tab="preps" aria-label="Präpositionen">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H7a3 3 0 000 6h1"></path><path d="M9 4L6 7l3 3"></path><path d="M4 17h13a3 3 0 000-6h-1"></path><path d="M15 20l3-3-3-3"></path></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 17l-18 0"></path><path d="M6 10l-3 -3l3 -3"></path><path d="M3 7l18 0"></path><path d="M18 20l3 -3l-3 -3"></path></svg>
     </a>
     <a class="iosDock-item tabItem" href="ausdruck.html" data-tab="ausdruck" aria-label="Ausdruck">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4.5L16 4.5a1.5 1.5 0 012 2L7 17.5 4 20z"></path><path d="M13.5 6L16.5 9"></path></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"></path><path d="M13.5 6.5l4 4"></path></svg>
     </a>
-    <a class="iosDock-item active tabItem" href="chat.html" data-tab="chat" aria-label="Chat">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-4 4V5z"></path></svg>
+    <a class="iosDock-item active tabItem" id="chatTabItem" href="chat.html" data-tab="chat" aria-label="Chat">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9h8"></path><path d="M8 13h6"></path><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12"></path></svg>
     </a>
   </div>
 </nav>
+</div>
 
 <!-- Settings sheet -->
 <div id="settingsPanel" class="menuPanel hidden">
@@ -468,8 +524,12 @@ const chatInput     = document.getElementById('chatInput');
 const micBtn        = document.getElementById('micBtn');
 const statusDot     = document.getElementById('statusDot');
 const statusText    = document.getElementById('statusText');
-const inputBarEl    = document.getElementById('inputBar');
-const sceneEndBarEl = document.getElementById('sceneEndBar');
+const chatPillEl    = document.getElementById('chatPill');
+const composerFaceEl= document.getElementById('composerFace');
+const composerRowEl = document.getElementById('composerRow');
+const sceneEndRowEl = document.getElementById('sceneEndRow');
+const pillNavEl     = document.getElementById('pillNav');
+const navItemsEls   = Array.from(pillNavEl.querySelectorAll('.iosDock-item'));
 
 let currentScene = null;
 let sceneLock    = false; // true while a single AI turn/scenario call is in flight
@@ -525,10 +585,32 @@ function updateHeader(scene) {
   document.getElementById('btnEndScene').classList.toggle('hidden', !scene || scene.ended);
 }
 
-/* ── Bars ── */
-function showInputBar() { inputBarEl.classList.remove('hidden'); sceneEndBarEl.classList.add('hidden'); }
-function showNextSceneAffordance() { inputBarEl.classList.add('hidden'); sceneEndBarEl.classList.remove('hidden'); }
-function hideBothBars() { inputBarEl.classList.add('hidden'); sceneEndBarEl.classList.add('hidden'); }
+/* ── Pill faces ──
+   The composer and the next-scene button share the pill's one "primary"
+   face (only one shown at a time); the nav dock is the other face, driven
+   by the morph spring below. */
+function showInputBar() { composerRowEl.classList.remove('hidden'); sceneEndRowEl.classList.add('hidden'); updateMsgBottomPad(); }
+function showNextSceneAffordance() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.remove('hidden'); updateMsgBottomPad(); }
+function hideBothBars() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.add('hidden'); updateMsgBottomPad(); }
+
+/* ── Dynamic bottom safe-zone ──
+   messagesInner reserves exactly the pill's live height (which grows with
+   a multi-line composer) plus its bottom inset, so the last bubble always
+   clears the floating pill instead of scrolling behind its glass. Tracked
+   live via a ResizeObserver rather than guessed once. */
+function updateMsgBottomPad() {
+  const pad = chatPillEl.offsetHeight + 28;
+  document.documentElement.style.setProperty('--msg-bottom-pad', pad + 'px');
+}
+new ResizeObserver(updateMsgBottomPad).observe(chatPillEl);
+
+/* Same idea at the top: reserve the slate's live height (it grows with the
+   situation text) so the first bubble starts just below it. */
+const sceneSlateEl = document.querySelector('.sceneSlate');
+function updateSlatePad() {
+  document.documentElement.style.setProperty('--slate-pad', (sceneSlateEl.offsetHeight + 8) + 'px');
+}
+new ResizeObserver(updateSlatePad).observe(sceneSlateEl);
 
 /* ── System rows (loading / error indicators in the transcript) ── */
 function showScenarioLoading() {
@@ -880,7 +962,8 @@ async function sendMessage(text) {
   chatInput.value = '';
   chatInput.style.height = '0px';
   chatInput.style.height = chatInput.scrollHeight + 'px';
-  chatInput.classList.remove('interim');
+  chatInput.classList.remove('interim', 'multiline');
+  chatPillEl.classList.remove('expanded');
   micBase = '';
   appendTimestamp();
   const idx = currentScene.turns.length;
@@ -1080,54 +1163,66 @@ function stopMic() {
   chatInput.classList.remove('interim');
 }
 
-/* ── Keyboard-aware bottom chrome ──
-   This used to just flip a boolean class past a 120px threshold, which
-   shrunk the mic button and display:none'd the dock — but never actually
-   repositioned the input bar itself. body{height:100%} tracks the LAYOUT
-   viewport, which iOS Safari does not shrink when the keyboard opens (only
-   the visual viewport shrinks) — so bottom:94px stayed anchored to the
-   original, now keyboard-covered, bottom edge the whole time. The input
-   row was never really following the keyboard.
-   This instead measures the real, continuously-updating gap between the
-   layout and visual viewports (that gap IS the keyboard once it's open,
-   whatever height it actually is on this device) and springs the input
-   bar's position, the dock's hide/show, and the mic button's shrink all
-   through one spring, so they read as one surface reacting together
-   instead of three independent snaps. */
-// IOSMotion loads via a deferred <script>, which runs after the document is
-// parsed — but this file's own <script> has no `defer`, so it runs
-// synchronously DURING parsing, before that. Referencing IOSMotion at this
-// function's top level would throw ReferenceError if called too early;
-// setupBottomChrome() is only invoked from the DOMContentLoaded listener
-// below (same as boot()), by which point deferred scripts have run.
-function setupBottomChrome() {
-  const dockEl = document.querySelector('.iosDock');
-  const bottomChrome = IOSMotion.createSpring(
-    { barBottom: 94, dockShift: 0, dockOpacity: 1, micScale: 1 },
-    { damping: 1, response: 0.3 }
-  );
-  bottomChrome.onUpdate(v => {
-    document.documentElement.style.setProperty('--bar-bottom', v.barBottom + 'px');
-    if (dockEl) {
-      dockEl.style.transform = v.dockShift > 0.05 ? ('translateY(' + v.dockShift + 'px)') : '';
-      dockEl.style.opacity = v.dockOpacity;
-      dockEl.style.pointerEvents = v.dockOpacity > 0.5 ? '' : 'none';
-    }
-    micBtn.style.transform = 'translateY(-50%) scale(' + v.micScale + ')';
+/* ── The morphing pill: composer <-> nav, + keyboard ride ──
+   Two springs, one pill.
+
+   (1) MORPH spring — a single 0..1 channel `m`. m=0 is the composer face,
+   m=1 is the 5-tab dock. render() paints both faces off that one value so
+   they cross-dissolve as one thing: the composer fades and its field
+   collapses toward the opener (transform-origin:left), while the nav tabs
+   cascade in left-to-right (each tab's local progress is offset by its
+   index, so they chase one another out of the opener instead of appearing
+   together). The opener glyph just fades under the incoming Vocab tab —
+   grid becomes book.
+
+   (2) KEYBOARD spring — translates the whole pill up to ride the keyboard.
+   Because the composer IS the pill, there's no second floating bar to
+   collide with the keyboard; the dock simply can't be open while typing
+   (we snap the morph shut if it somehow is).
+
+   IOSMotion loads via a deferred <script> (runs after parse); this file's
+   <script> is not deferred, so IOSMotion isn't defined during parse.
+   setupPill() is only called from DOMContentLoaded, by which point it is. */
+let morphSpring = null, kbOpen = false, navOpen = false;
+function clamp01(x){ return x < 0 ? 0 : x > 1 ? 1 : x; }
+function renderMorph(m) {
+  composerFaceEl.style.opacity = clamp01(1 - m * 1.6);
+  composerFaceEl.style.pointerEvents = m < 0.4 ? 'auto' : 'none';
+  chatInput.style.transform = 'scaleX(' + (1 - 0.85 * m).toFixed(3) + ')';
+  micBtn.style.transform = 'scale(' + (1 - 0.3 * m).toFixed(3) + ')';
+  navItemsEls.forEach((el, i) => {
+    const local = clamp01((m - i * 0.11) / 0.55);
+    el.style.opacity = local.toFixed(3);
+    el.style.transform = 'translateX(' + ((1 - local) * -14).toFixed(1) + 'px)';
   });
+  pillNavEl.style.pointerEvents = m > 0.6 ? 'auto' : 'none';
+}
+function openNav()  { if (kbOpen) return; navOpen = true;  chatPillEl.classList.add('navmode');    morphSpring.to({ m: 1 }); }
+function closeNav() { navOpen = false; chatPillEl.classList.remove('navmode'); morphSpring.to({ m: 0 }); }
+
+function setupPill() {
+  morphSpring = IOSMotion.createSpring({ m: 0 }, { damping: 1, response: 0.4 });
+  morphSpring.onUpdate(v => renderMorph(v.m));
+  renderMorph(0);
+
+  const kbSpring = IOSMotion.createSpring({ y: 0 }, { damping: 1, response: 0.3 });
+  kbSpring.onUpdate(v => {
+    chatPillEl.style.transform = v.y > 0.5 ? ('translateY(' + (-v.y).toFixed(1) + 'px)') : '';
+  });
+
+  document.getElementById('pillOpener').addEventListener('click', openNav);
+  // The active Chat tab doesn't navigate — it returns you to the composer.
+  document.getElementById('chatTabItem').addEventListener('click', e => { e.preventDefault(); closeNav(); });
 
   const vv = window.visualViewport;
   if (vv) {
     const update = () => {
       const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      const kbOpen = inset > 120;
+      kbOpen = inset > 120;
       document.body.classList.toggle('kb-open', kbOpen);
-      bottomChrome.to({
-        barBottom: kbOpen ? (inset + 10) : 94,
-        dockShift: kbOpen && dockEl ? (dockEl.offsetHeight + 40) : 0,
-        dockOpacity: kbOpen ? 0 : 1,
-        micScale: kbOpen ? 0.4 : 1
-      });
+      if (kbOpen && navOpen) closeNav();      // can't browse tabs mid-type
+      kbSpring.to({ y: kbOpen ? (inset - 4) : 0 });
+      updateMsgBottomPad();
     };
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
@@ -1169,7 +1264,19 @@ function wireButton(id, handler) {
 
   function resizeInput() {
     chatInput.style.height = '0px';
-    chatInput.style.height = chatInput.scrollHeight + 'px';
+    const sh = chatInput.scrollHeight;
+    chatInput.style.height = sh + 'px';
+    // One line → pill; wrapped → rounded rectangle (see .iosComposerInput
+    // in ios-theme.css). Threshold derived from the field's own line-height
+    // + vertical padding (robust across fonts) rather than a magic number:
+    // multiline once the content passes ~1.5 lines. The pill shell flattens
+    // in lockstep so field + capsule share one shape.
+    const cs = getComputedStyle(chatInput);
+    const lh = parseFloat(cs.lineHeight) || 21;
+    const padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const multi = sh > lh * 1.5 + padV;
+    chatInput.classList.toggle('multiline', multi);
+    chatPillEl.classList.toggle('expanded', multi);
   }
   chatInput.addEventListener('input', resizeInput);
 
@@ -1259,7 +1366,7 @@ async function boot() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => { setupBottomChrome(); boot(); });
+document.addEventListener('DOMContentLoaded', () => { setupPill(); boot(); });
 </script>
 </body>
 </html>

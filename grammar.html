@@ -100,7 +100,7 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 /* mic states — .listening colors + ripple animation timing +
    @keyframes rippleOut now live in ios-theme.css (shared with
    chat.html/ausdruck.html instead of copy-pasted). */
-#micBtn svg{width:26px;height:26px;fill:var(--accent);flex-shrink:0;transition:fill .2s;}
+#micBtn svg{width:26px;height:26px;stroke:var(--accent);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;transition:stroke .2s;}
 .ripple{position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--bad);opacity:0;pointer-events:none;}
 #micStatus{font-size:12px;color:var(--muted);margin-top:6px;min-height:1.2em;font-family:var(--font-chrome);}
 .input-interim{color:var(--muted)!important;}
@@ -175,7 +175,7 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 
     <hr class="divider">
 
-    <textarea id="answerInput" rows="1" autocomplete="off" spellcheck="false" placeholder="Type or tap words above…" style="resize:none;overflow:hidden;line-height:1.5;"></textarea>
+    <textarea id="answerInput" class="iosComposerInput" rows="1" autocomplete="off" spellcheck="false" placeholder="Type or tap words above…" style="resize:none;overflow:hidden;line-height:1.5;"></textarea>
 
     <div class="undoWrap" id="undoWrap"><div>
       <button id="btnUndo">← Undo word</button>
@@ -195,7 +195,7 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
       <div class="ripple"></div>
       <div class="ripple"></div>
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+        <path d="M9 5a3 3 0 0 1 3 -3a3 3 0 0 1 3 3v5a3 3 0 0 1 -3 3a3 3 0 0 1 -3 -3l0 -5"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M8 21l8 0"/><path d="M12 17l0 4"/>
       </svg>
     </button>
   </div>
@@ -211,19 +211,19 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
   <div class="iosDock-highlight"></div>
   <div class="iosDock-row">
     <a class="iosDock-item tabItem" href="top5k.html" data-tab="vocab" aria-label="Vocab">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c2.2-1 5.4-1 8 .2v13.6c-2.6-1.2-5.8-1.2-8-.2V5z"></path><path d="M20 5c-2.2-1-5.4-1-8 .2v13.6c2.6-1.2 5.8-1.2 8-.2V5z"></path></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12"></path><path d="M19 16h-12a2 2 0 0 0 -2 2"></path><path d="M9 8h6"></path></svg>
     </a>
     <a class="iosDock-item active tabItem" href="grammar.html" data-tab="grammar" aria-label="Grammar">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h11M4 17h7"></path></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l11 0"></path><path d="M9 12l11 0"></path><path d="M9 18l11 0"></path><path d="M5 6l0 .01"></path><path d="M5 12l0 .01"></path><path d="M5 18l0 .01"></path></svg>
     </a>
     <a class="iosDock-item tabItem" href="preps.html" data-tab="preps" aria-label="Präpositionen">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H7a3 3 0 000 6h1"></path><path d="M9 4L6 7l3 3"></path><path d="M4 17h13a3 3 0 000-6h-1"></path><path d="M15 20l3-3-3-3"></path></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 17l-18 0"></path><path d="M6 10l-3 -3l3 -3"></path><path d="M3 7l18 0"></path><path d="M18 20l3 -3l-3 -3"></path></svg>
     </a>
     <a class="iosDock-item tabItem" href="ausdruck.html" data-tab="ausdruck" aria-label="Ausdruck">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4.5L16 4.5a1.5 1.5 0 012 2L7 17.5 4 20z"></path><path d="M13.5 6L16.5 9"></path></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"></path><path d="M13.5 6.5l4 4"></path></svg>
     </a>
     <a class="iosDock-item tabItem" href="chat.html" data-tab="chat" aria-label="Chat">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-4 4V5z"></path></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9h8"></path><path d="M8 13h6"></path><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12"></path></svg>
     </a>
   </div>
 </nav>
@@ -645,14 +645,32 @@ function updateSnapPreview(){
   status.classList.remove('hidden');
 }
 
+/* One place that resizes the answer field AND keeps its shape in sync:
+   pill at one line, rounded rectangle once it wraps (see .iosComposerInput
+   in ios-theme.css). Called from every spot that changes the field's
+   content — typing, tapping word pieces, and dictation. */
+function sizeAnswerField(){
+  const inp=document.getElementById('answerInput');
+  if(!inp) return;
+  inp.style.height='0px';
+  const sh=inp.scrollHeight;
+  inp.style.height=sh+'px';
+  // Threshold from the field's own line-height + padding (this field uses
+  // line-height:1.5, so a fixed 52px never tripped) — multiline past ~1.5
+  // lines flips it from pill to rounded rectangle.
+  const cs=getComputedStyle(inp);
+  const lh=parseFloat(cs.lineHeight)||24;
+  const padV=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+  inp.classList.toggle('multiline', sh > lh*1.5 + padV);
+}
+
 function setInputInterim(text){
   const inp=document.getElementById('answerInput');
   if(!inp) return;
   const {text:snappedText}=snapTokens(text,currentDrill?._candidates||[]);
   inp.value=micBase+(micBase&&!micBase.endsWith(' ')?' ':'')+snappedText;
   inp.classList.add('input-interim');
-  inp.style.height='0px';
-  inp.style.height=inp.scrollHeight+'px';
+  sizeAnswerField();
   updatePieceStates();
 }
 
@@ -665,8 +683,7 @@ function setInputFinal(text){
   micBase=inp.value;
   snapFlags.push(...snapped.map(i=>baseWordCount+i));
   inp.classList.remove('input-interim');
-  inp.style.height='0px';
-  inp.style.height=inp.scrollHeight+'px';
+  sizeAnswerField();
   updatePieceStates();
   updateSnapPreview();
 }
@@ -919,8 +936,7 @@ function renderDrill(drill){
   englishText.textContent=drill.english;
   inp.value='';
   micBase='';
-  inp.style.height='0px';
-  inp.style.height=inp.scrollHeight+'px';
+  sizeAnswerField();
   inp.classList.remove('good-field','bad-field','input-shake');
   feedback.classList.add('hidden');
   feedback.innerHTML='';
@@ -1132,8 +1148,7 @@ function boot(){
 
   const answerEl=document.getElementById('answerInput');
   function autoResize(){
-    answerEl.style.height='0px';
-    answerEl.style.height=answerEl.scrollHeight+'px';
+    sizeAnswerField();
     updatePieceStates();
   }
   answerEl?.addEventListener('input',autoResize);

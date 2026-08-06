@@ -64,7 +64,7 @@
   --r-input:10px;
   --r-input-lg:14px;
   --r-pill:999px;
-  --r-dock:30px;
+  --r-dock:999px;   /* full pill — a short bar rounds to true capsule ends */
 
   /* fonts — single family throughout for consistency */
   --font-body:'Lora',Georgia,serif;
@@ -132,6 +132,23 @@ input,textarea{
   border-radius:var(--r-input);
 }
 
+/* ============ composer field (pill at one line, rounded rect when
+   expanded) ============
+   App-wide shape rule for free-text entry fields: a single line reads as
+   a pill (var(--r-pill) rounds fully at that height, so it matches an
+   adjacent circular mic/send button as one shape language). The moment
+   the field wraps to a second line, a full pill starts to look wrong —
+   an oversized lozenge — so it flattens to a rounded rectangle. Pages
+   with an auto-growing field toggle `.multiline` on/off as it wraps;
+   always-multiline fields (e.g. Ausdruck's) just carry `.multiline`
+   from the start. */
+.iosComposerInput{
+  border-radius:var(--r-pill);
+}
+.iosComposerInput.multiline{
+  border-radius:18px;
+}
+
 button{
   background:var(--btn);
   border:1px solid var(--border);
@@ -167,7 +184,9 @@ button:active{background:var(--btn2)}
    proportionally smaller inset), so it's deliberately not part of this
    shared block. */
 #micBtn.listening{background:#2c0a0a;border-color:var(--bad);}
-#micBtn.listening svg{fill:var(--bad);}
+/* Mic glyph is the Tabler outline mic (stroke-drawn), shared across all
+   three screens — the listening state recolors its stroke, not a fill. */
+#micBtn.listening svg{stroke:var(--bad);}
 #micBtn.listening .ripple:nth-child(1){animation:rippleOut 1.6s ease-out infinite;}
 #micBtn.listening .ripple:nth-child(2){animation:rippleOut 1.6s ease-out .53s infinite;}
 #micBtn.listening .ripple:nth-child(3){animation:rippleOut 1.6s ease-out 1.06s infinite;}
@@ -195,28 +214,46 @@ button:active{background:var(--btn2)}
   border-radius:var(--r-dock);
   max-width:684px;
   margin:0 auto;
-  /* Same position/size on every screen — naming it lets the view
-     transition treat it as one persisting element across a page
-     navigation (softly cross-fading just the active-tab highlight)
-     instead of the whole dock fading out and back in with the rest of
-     the page. */
-  view-transition-name:ios-dock;
+  /* NB: this used to carry `view-transition-name:ios-dock` so the dock
+     persisted/morphed across page navigations. That had to go: a
+     view-transition-name establishes a *backdrop root* even at rest, which
+     silently broke the .iosDock-glass backdrop-filter — it could only
+     sample inside the (empty) dock, never the content scrolling behind it,
+     so the "glass" never actually blurred anything. The page still
+     cross-fades via the root view-transition; the dock just cross-fades
+     with it instead of morphing. Working glass > a subtle morph. */
 }
+/* ── Liquid-Glass recipe ──
+   Two layers do the work. The GLASS layer is the material itself: a heavy
+   backdrop blur with a big saturation+brightness lift, so the colored
+   bubbles that scroll beneath it don't just blur — they bloom into soft
+   washes of their own colour (that colour bleed is the single strongest
+   "this is glass" cue). Over pure black, where there's nothing to refract,
+   a faint self-tint keeps it from vanishing — but it's a top-lit gradient
+   (brighter along the top edge, settling darker toward the bottom) rather
+   than a flat grey slab, so it reads as a lit surface, not a panel.
+   The HIGHLIGHT layer is the light catching the rim: ONE crisp specular
+   line along the very top edge, and a soft inner shadow pooling at the
+   bottom for thickness — replacing the old fake 3D bevel (a bright
+   top-left + dark bottom-right inset) that just looked embossed. */
 .iosDock-glass{
   position:absolute;inset:0;border-radius:var(--r-dock);
-  backdrop-filter:blur(20px) saturate(180%);
-  -webkit-backdrop-filter:blur(20px) saturate(180%);
-  background:rgba(120,120,128,0.32);
+  backdrop-filter:blur(32px) saturate(200%) brightness(1.16);
+  -webkit-backdrop-filter:blur(32px) saturate(200%) brightness(1.16);
+  background:linear-gradient(180deg,
+    rgba(255,255,255,0.16) 0%,
+    rgba(150,150,160,0.10) 42%,
+    rgba(90,90,100,0.12) 100%);
 }
 .iosDock-highlight{
   position:absolute;inset:0;border-radius:var(--r-dock);
-  box-shadow:inset 1.5px 1.5px 1px rgba(255,255,255,0.15),
-             inset -1px -1px 1px rgba(255,255,255,0.06);
-  border:0.5px solid rgba(255,255,255,0.18);
+  border:0.5px solid rgba(255,255,255,0.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.28),
+             inset 0 -14px 20px -16px rgba(0,0,0,0.55);
 }
 .iosDock-row{
   position:relative;display:flex;padding:8px;
-  box-shadow:0 8px 24px rgba(0,0,0,0.35),0 2px 8px rgba(0,0,0,0.25);
+  box-shadow:0 10px 30px rgba(0,0,0,0.42),0 2px 8px rgba(0,0,0,0.28);
   border-radius:var(--r-dock);
 }
 .iosDock-item{
