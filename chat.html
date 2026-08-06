@@ -163,8 +163,11 @@ body{height:100%;padding-bottom:var(--kb-inset,0px);background:var(--bg);color:v
 /* Pill shape (var(--r-pill)) lives in ios-theme.css (.iosComposerInput).
    The field collapses toward the opener during the morph, so its
    transform-origin is the left edge. */
-#chatInput{flex:1;min-width:0;min-height:40px;max-height:120px;padding:9px 15px;color:var(--text);font-size:15px;line-height:1.4;outline:none;resize:none;overflow-y:auto;transform-origin:left center;}
-#chatInput::placeholder{color:var(--muted);}
+/* contenteditable div (not a textarea — see the getComposer comment in JS):
+   white-space:pre-wrap wraps + keeps newlines; it grows with content up to
+   max-height then scrolls. Placeholder is a CSS :empty::before overlay. */
+#chatInput{flex:1;min-width:0;min-height:40px;max-height:120px;padding:9px 15px;color:var(--text);font-size:15px;line-height:1.4;outline:none;overflow-y:auto;transform-origin:left center;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;-webkit-user-select:text;user-select:text;}
+#chatInput:empty::before{content:attr(data-placeholder);color:var(--muted);pointer-events:none;}
 #chatInput.interim{color:var(--muted2);font-style:italic;}
 .ripple{position:absolute;inset:-7px;border-radius:50%;border:2px solid var(--bad);opacity:0;pointer-events:none;}
 body.kb-open .ripple{display:none;}
@@ -243,7 +246,7 @@ body.kb-open .ripple{display:none;}
       <button class="pillOpener" id="pillOpener" aria-label="Bildschirme öffnen">
         <svg viewBox="0 0 24 24"><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path></svg>
       </button>
-      <textarea id="chatInput" class="iosComposerInput" rows="1" placeholder="Schreib etwas…" autocomplete="off" spellcheck="false"></textarea>
+      <div id="chatInput" class="iosComposerInput" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Schreib etwas…" data-placeholder="Schreib etwas…" spellcheck="false"></div>
       <button id="micBtn" aria-label="Mikrofon">
         <div class="ripple"></div>
         <div class="ripple"></div>
@@ -527,6 +530,14 @@ async function tryCloudPullOnLoad() {
 const messagesArea  = document.getElementById('messagesArea');
 const messagesInner = document.getElementById('messagesInner');
 const chatInput     = document.getElementById('chatInput');
+/* chatInput is a contenteditable <div>, not a <textarea> — iOS attaches its
+   form-input accessory bar (the < > / Done toolbar over the keyboard) to
+   real form controls, and a contenteditable element isn't one, so the bar
+   never appears. These helpers stand in for .value: innerText reads the
+   visible text (with newlines), and we set/clear via textContent so the
+   element goes truly :empty (showing the CSS placeholder). */
+const getComposer = () => chatInput.innerText.split(String.fromCharCode(160)).join(String.fromCharCode(32));
+function setComposer(t) { chatInput.textContent = t || ''; }
 const micBtn        = document.getElementById('micBtn');
 const statusDot     = document.getElementById('statusDot');
 const chatPillEl    = document.getElementById('chatPill');
@@ -535,6 +546,22 @@ const composerRowEl = document.getElementById('composerRow');
 const sceneEndRowEl = document.getElementById('sceneEndRow');
 const pillNavEl     = document.getElementById('pillNav');
 const navItemsEls   = Array.from(pillNavEl.querySelectorAll('.iosDock-item'));
+
+/* A contenteditable div auto-grows, so there's no height to set (unlike a
+   textarea) — we only keep the pill's SHAPE in sync: one line → pill,
+   wrapped → rounded rectangle. Threshold from the field's own line-height
+   + padding (robust across fonts). Also strips the stray <br> WebKit leaves
+   in an "emptied" contenteditable, so :empty (the placeholder) works. */
+function updateComposerShape() {
+  if (chatInput.innerHTML === '<br>' || chatInput.textContent === '') chatInput.innerHTML = '';
+  const sh = chatInput.scrollHeight;
+  const cs = getComputedStyle(chatInput);
+  const lh = parseFloat(cs.lineHeight) || 21;
+  const padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  const multi = sh > lh * 1.5 + padV;
+  chatInput.classList.toggle('multiline', multi);
+  chatPillEl.classList.toggle('expanded', multi);
+}
 
 let currentScene = null;
 let sceneLock    = false; // true while a single AI turn/scenario call is in flight
@@ -963,9 +990,7 @@ async function sendMessage(text) {
   text = text.trim();
   if (!text || sceneLock || !currentScene || currentScene.ended) return;
   stopMic();
-  chatInput.value = '';
-  chatInput.style.height = '0px';
-  chatInput.style.height = chatInput.scrollHeight + 'px';
+  setComposer('');
   chatInput.classList.remove('interim', 'multiline');
   chatPillEl.classList.remove('expanded');
   micBase = '';
@@ -1123,7 +1148,7 @@ let micBase = '';
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
-      micBase = chatInput.value.trimEnd();
+      micBase = getComposer().trimEnd();
       setStatus('listening');
     };
 
@@ -1136,14 +1161,13 @@ let micBase = '';
       const sep = w => w && !w.endsWith(' ') ? ' ' : '';
       if (final) {
         micBase = (micBase + sep(micBase) + final).trimStart();
-        chatInput.value = micBase;
+        setComposer(micBase);
         chatInput.classList.remove('interim');
       } else if (interim) {
-        chatInput.value = micBase + sep(micBase) + interim;
+        setComposer(micBase + sep(micBase) + interim);
         chatInput.classList.add('interim');
       }
-      chatInput.style.height = '0px';
-      chatInput.style.height = chatInput.scrollHeight + 'px';
+      updateComposerShape();
     };
 
     recognition.onerror = e => { if (e.error !== 'aborted') console.warn('[mic]', e.error); };
@@ -1264,7 +1288,7 @@ function wireButton(id, handler) {
     if (!recognition) return;
     if (micActive) {
       stopMic();
-      const t = chatInput.value.trim();
+      const t = getComposer().trim();
       if (t) sendMessage(t);
     } else {
       micActive = true;
@@ -1274,29 +1298,21 @@ function wireButton(id, handler) {
   }, { passive:false });
   micBtn.addEventListener('mousedown', e => e.preventDefault());
 
-  function resizeInput() {
-    chatInput.style.height = '0px';
-    const sh = chatInput.scrollHeight;
-    chatInput.style.height = sh + 'px';
-    // One line → pill; wrapped → rounded rectangle (see .iosComposerInput
-    // in ios-theme.css). Threshold derived from the field's own line-height
-    // + vertical padding (robust across fonts) rather than a magic number:
-    // multiline once the content passes ~1.5 lines. The pill shell flattens
-    // in lockstep so field + capsule share one shape.
-    const cs = getComputedStyle(chatInput);
-    const lh = parseFloat(cs.lineHeight) || 21;
-    const padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-    const multi = sh > lh * 1.5 + padV;
-    chatInput.classList.toggle('multiline', multi);
-    chatPillEl.classList.toggle('expanded', multi);
-  }
-  chatInput.addEventListener('input', resizeInput);
+  chatInput.addEventListener('input', updateComposerShape);
+
+  // Paste as plain text — a contenteditable would otherwise keep the
+  // source's HTML/formatting.
+  chatInput.addEventListener('paste', e => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
+  });
 
   chatInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
+      e.preventDefault();          // Enter sends; Shift+Enter inserts a newline
       unlockSynth();
-      const t = chatInput.value.trim();
+      const t = getComposer().trim();
       if (t) sendMessage(t);
     }
   });
