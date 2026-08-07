@@ -21,10 +21,13 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 button,input,textarea,select{font-family:inherit;}
 html{height:100%;}
-/* padding-bottom = keyboard height (set live from visualViewport) so the
-   flex layout reflows above the keyboard instead of hiding behind it.
-   box-sizing:border-box (set globally) keeps total height at 100%. */
-body{height:100%;padding-bottom:var(--kb-inset,0px);background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;display:flex;flex-direction:column;overflow:hidden;transition:padding-bottom .22s ease;}
+/* height tracks the VISUAL viewport (set live from visualViewport in JS), so
+   the whole app always fills exactly the area above the keyboard — header at
+   top, composer just above the keyboard, messages filling between. iOS
+   keeps the layout viewport full-height when the keyboard opens, which is
+   why padding/translate tricks let content scroll off the top; sizing the
+   body to visualViewport.height sidesteps that entirely. */
+body{height:var(--app-h,100%);background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;display:flex;flex-direction:column;overflow:hidden;}
 .hidden{display:none!important}
 .muted{color:var(--muted)}
 .small{font-size:12px}
@@ -99,7 +102,11 @@ body{height:100%;padding-bottom:var(--kb-inset,0px);background:var(--bg);color:v
 /* padding-top reserves the slate's live height (set via ResizeObserver)
    so the first bubble starts below it but can scroll up underneath. */
 .messages{height:100%;overflow-y:auto;padding:var(--slate-pad,104px) 12px 0;}
-.messagesInner{display:flex;flex-direction:column;gap:2px;padding-bottom:var(--msg-bottom-pad,96px);}
+/* min-height:100% + justify-content:flex-end anchors messages to the BOTTOM
+   (chat convention): a few messages sit just above the composer with empty
+   space under the header, instead of clinging to the top with a big gap
+   below. Overflowing content still scrolls normally. */
+.messagesInner{display:flex;flex-direction:column;justify-content:flex-end;min-height:100%;gap:2px;padding-bottom:var(--msg-bottom-pad,96px);}
 
 .ts{text-align:center;color:var(--muted);font-size:11px;margin:8px 0 4px;flex-shrink:0;font-family:var(--font-chrome);}
 .sysRow{padding:14px 0;display:flex;flex-direction:column;align-items:center;gap:6px;}
@@ -341,12 +348,16 @@ body.kb-open .ripple{display:none;}
 
 <div id="errTooltip"></div>
 
+<!-- Diagnostic readout for the iOS keyboard/viewport — hidden by default,
+     toggled by tapping the version number in Settings. -->
+<div id="kbDebug" style="position:fixed;top:0;left:0;z-index:99999;background:rgba(200,0,0,.9);color:#fff;font:11px/1.35 ui-monospace,monospace;padding:5px 7px;white-space:pre;pointer-events:none;border-bottom-right-radius:8px;display:none;"></div>
+
 <script>
 'use strict';
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-07 · 1';
+const APP_VERSION = '2026-08-07 · 2';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -1296,34 +1307,29 @@ function setupPill() {
   // The active Chat tab doesn't navigate — it returns you to the composer.
   document.getElementById('chatTabItem').addEventListener('click', e => { e.preventDefault(); closeNav(); });
 
-  /* ── Keyboard: shrink the whole app to the visible area ──
-     iOS does NOT shrink the layout viewport when the keyboard opens (only
-     the visual viewport). The old code just translated the pill up, leaving
-     the transcript full-height with its bottom (and the latest message)
-     hidden under the keyboard — you had to scroll up to read the reply.
-     Instead, pad the body by the keyboard's height so the flex layout
-     reflows into what's actually visible: the pill (absolute-bottom of the
-     now-shorter wrapper) lands just above the keyboard, and the transcript
-     scrolls within the visible band. Then snap to the newest message so it
-     sits right above the composer. */
+  /* ── Keyboard: size the app to the VISUAL viewport ──
+     iOS keeps the layout viewport full-height when the keyboard opens (only
+     the visual viewport shrinks), so any layout anchored to the layout
+     bottom ends up under the keyboard, and iOS scrolls the page up to reach
+     the focused field — dragging the header/messages off the top (the "big
+     black void" symptom). Setting body height to visualViewport.height makes
+     the whole app occupy exactly the visible band: header pinned at top,
+     composer just above the keyboard, messages filling between. Then snap to
+     the newest message. */
   const vv = window.visualViewport;
   if (vv) {
     const scrollToLatest = () => { messagesArea.scrollTop = messagesArea.scrollHeight; };
     const update = () => {
       const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      const wasOpen = kbOpen;
       kbOpen = inset > 120;
       document.body.classList.toggle('kb-open', kbOpen);
       if (kbOpen && navOpen) closeNav();      // can't browse tabs mid-type
-      document.documentElement.style.setProperty('--kb-inset', (kbOpen ? inset : 0) + 'px');
+      document.documentElement.style.setProperty('--app-h', vv.height + 'px');
       updateMsgBottomPad();
-      if (kbOpen) requestAnimationFrame(() => {
-        window.scrollTo(0, 0);   // iOS tries to scroll the whole page up to the
-                                 // focused field; anchor it so the header/status
-                                 // bar don't get pushed off the top
-        scrollToLatest();        // and keep the newest message above the composer
-      });
+      if (window.__kbDebug) window.__kbDebug();
+      if (kbOpen) requestAnimationFrame(() => { window.scrollTo(0, 0); scrollToLatest(); });
     };
+    update();                                  // size correctly on load
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
   }
@@ -1405,6 +1411,30 @@ document.getElementById('turnCapInput').addEventListener('change', e => {
   e.target.value = v;
 });
 document.getElementById('appVersionLabel').textContent = 'Version ' + APP_VERSION;
+/* Tap the version number to toggle a live viewport/keyboard readout — lets
+   you screenshot the exact numbers on-device so keyboard bugs can be fixed
+   from real data instead of guesswork. */
+(function(){
+  const el = document.getElementById('kbDebug');
+  const vv = window.visualViewport;
+  window.__kbDebug = () => {
+    if (el.style.display === 'none') return;
+    const inset = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+    el.textContent =
+      'innerH ' + window.innerHeight +
+      '  vv.h ' + (vv ? Math.round(vv.height) : '-') +
+      '\nvv.top ' + (vv ? Math.round(vv.offsetTop) : '-') +
+      '  inset ' + Math.round(inset) +
+      '\napp-h ' + getComputedStyle(document.documentElement).getPropertyValue('--app-h').trim() +
+      '  scrollY ' + Math.round(window.scrollY) +
+      '\nkbOpen ' + kbOpen + '  bodyH ' + Math.round(document.body.getBoundingClientRect().height);
+  };
+  document.getElementById('appVersionLabel').addEventListener('click', () => {
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    window.__kbDebug();
+    if (!window.__kbDebugTimer) window.__kbDebugTimer = setInterval(() => window.__kbDebug(), 300);
+  });
+})();
 wireButton('btnHardRefresh', hardRefresh);
 wireButton('btnSettings', () => { applySettingsUI(loadSettings()); window.IOSSheet?.open('settingsPanel'); });
 wireButton('btnEndScene', () => { if (currentScene && !currentScene.ended) endScene(); });
