@@ -20,20 +20,24 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 button,input,textarea,select{font-family:inherit;}
-/* overflow:hidden on html + position:fixed body (below) means the DOCUMENT
-   has nothing to scroll. That's the fix for the iOS keyboard bug: chat is a
-   fixed-height app shell, but the document around it was still scrollable,
-   so when the keyboard opened iOS scrolled the whole window to reach the
-   focused input — dragging the header and the under-status-bar area off the
-   top (black band), and "snapping" when you scrolled back. */
-html{height:100%;overflow:hidden;}
+/* ── Normal scrolling document (mirrors top5k, which handles the iOS
+   keyboard correctly on-device) ──
+   Chat used to be a locked-height app shell (html/body height:100% +
+   overflow:hidden, absolutely-positioned header and composer). Every attempt
+   to make that shell cooperate with the iOS keyboard failed: iOS insists on
+   scrolling the web view to reveal the focused input, which dragged the
+   header (and the under-status-bar area) off the top. So stop fighting it —
+   let the DOCUMENT scroll natively like every other screen in this app, and
+   pin the chrome with position:sticky instead of absolute. iOS then does its
+   normal thing and the layout survives. */
+html{}
 /* height tracks the VISUAL viewport (set live from visualViewport in JS), so
    the whole app always fills exactly the area above the keyboard — header at
    top, composer just above the keyboard, messages filling between. iOS
    keeps the layout viewport full-height when the keyboard opens, which is
    why padding/translate tricks let content scroll off the top; sizing the
    body to visualViewport.height sidesteps that entirely. */
-body{position:fixed;top:0;left:0;right:0;height:var(--app-h,100%);background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;display:flex;flex-direction:column;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
 .hidden{display:none!important}
 .muted{color:var(--muted)}
 .small{font-size:12px}
@@ -47,7 +51,10 @@ body{position:fixed;top:0;left:0;right:0;height:var(--app-h,100%);background:var
    floating glass). Sits absolute over the transcript so messages scroll up
    and blur beneath it; a soft scroll-edge fade replaces the divider. */
 .sceneSlate{
-  position:absolute;top:0;left:0;right:0;z-index:5;
+  /* sticky (not absolute): it occupies its space in normal flow, so messages
+     start below it, then it pins to the top and the transcript scrolls
+     underneath — the same scroll-edge effect, without an inner scroller. */
+  position:sticky;top:0;z-index:5;
   /* top padding folds in the status-bar height so the glass fills up under
      the clock while the content still clears it. Tap to expand (see JS). */
   padding:calc(12px + env(safe-area-inset-top,0px)) 16px 14px;
@@ -104,15 +111,20 @@ body{position:fixed;top:0;left:0;right:0;height:var(--app-h,100%);background:var
    the wrapper would grow to the full message height and push the absolute
    pill off the bottom of the screen — min-height:0 lets flex clamp it to
    the available space instead. */
-.messagesWrap{flex:1;min-height:0;overflow:visible;position:relative;}
+/* Fills at least one screen so the sticky composer rests at the bottom edge
+   even when the transcript is short; grows past it as messages accumulate,
+   and the DOCUMENT scrolls (no inner scroller). */
+.messagesWrap{min-height:100vh;display:flex;flex-direction:column;position:relative;}
 /* padding-top reserves the slate's live height (set via ResizeObserver)
    so the first bubble starts below it but can scroll up underneath. */
-.messages{height:100%;overflow-y:auto;padding:var(--slate-pad,104px) 12px 0;}
+/* No height/overflow of its own any more — it just grows and the document
+   scrolls. flex:1 pushes the sticky composer to the bottom of the screen. */
+.messages{flex:1;display:flex;flex-direction:column;padding:10px 12px 0;}
 /* min-height:100% + justify-content:flex-end anchors messages to the BOTTOM
    (chat convention): a few messages sit just above the composer with empty
    space under the header, instead of clinging to the top with a big gap
    below. Overflowing content still scrolls normally. */
-.messagesInner{display:flex;flex-direction:column;justify-content:flex-end;min-height:100%;gap:2px;padding-bottom:var(--msg-bottom-pad,96px);}
+.messagesInner{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;padding-bottom:10px;}
 
 .ts{text-align:center;color:var(--muted);font-size:11px;margin:8px 0 4px;flex-shrink:0;font-family:var(--font-chrome);}
 .sysRow{padding:14px 0;display:flex;flex-direction:column;align-items:center;gap:6px;}
@@ -160,7 +172,10 @@ body{position:fixed;top:0;left:0;right:0;height:var(--app-h,100%);background:var
    same stacking context as the scrolling messages, which is what lets its
    backdrop-filter blur them. .messagesWrap is the positioned ancestor;
    bottom sits at the viewport bottom because the wrapper fills to there. */
-#chatPill{position:absolute;min-height:58px;overflow:hidden;transition:border-radius .2s ease;}
+/* sticky bottom: rides the bottom of the screen while you scroll, and rests
+   in normal flow at the end of the transcript — so iOS's own keyboard
+   handling (which scrolls the focused input into view) just works. */
+#chatPill{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:auto;right:auto;margin:0 18px 12px;min-height:58px;overflow:hidden;transition:border-radius .2s ease;}
 #chatPill .iosDock-glass,#chatPill .iosDock-highlight{border-radius:inherit;}
 /* When the composer wraps to multiple lines the pill grows tall, and a
    full-pill radius on a tall capsule looks wrong (a giant lozenge) — so it
@@ -363,7 +378,7 @@ body.kb-open .ripple{display:none;}
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-07 · 3';
+const APP_VERSION = '2026-08-08 · 4';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -685,32 +700,17 @@ function updateHeader(scene) {
    The composer and the next-scene button share the pill's one "primary"
    face (only one shown at a time); the nav dock is the other face, driven
    by the morph spring below. */
-function showInputBar() { composerRowEl.classList.remove('hidden'); sceneEndRowEl.classList.add('hidden'); updateMsgBottomPad(); }
-function showNextSceneAffordance() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.remove('hidden'); updateMsgBottomPad(); }
-function hideBothBars() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.add('hidden'); updateMsgBottomPad(); }
+function showInputBar() { composerRowEl.classList.remove('hidden'); sceneEndRowEl.classList.add('hidden'); }
+function showNextSceneAffordance() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.remove('hidden'); }
+function hideBothBars() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.add('hidden'); }
 
-/* ── Dynamic bottom safe-zone ──
-   messagesInner reserves exactly the pill's live height (which grows with
-   a multi-line composer) plus its bottom inset, so the last bubble always
-   clears the floating pill instead of scrolling behind its glass. Tracked
-   live via a ResizeObserver rather than guessed once. */
-function updateMsgBottomPad() {
-  const pad = chatPillEl.offsetHeight + 28;
-  document.documentElement.style.setProperty('--msg-bottom-pad', pad + 'px');
-}
-new ResizeObserver(updateMsgBottomPad).observe(chatPillEl);
-
-/* Same idea at the top: reserve the slate's live height (it grows with the
-   situation text) so the first bubble starts just below it. */
+/* The old --slate-pad/--msg-bottom-pad reservations are gone: sticky chrome
+   occupies its own space in normal flow, so the transcript already starts
+   below the header and ends above the composer without measuring anything. */
 const sceneSlateEl = document.querySelector('.sceneSlate');
-function updateSlatePad() {
-  document.documentElement.style.setProperty('--slate-pad', (sceneSlateEl.offsetHeight + 8) + 'px');
-}
-new ResizeObserver(updateSlatePad).observe(sceneSlateEl);
 
 /* Tap the slate to reveal the full talker description + situation; tap
-   anywhere else to retract. The action buttons keep their own behaviour.
-   (--slate-pad follows automatically via the ResizeObserver above.) */
+   anywhere else to retract. The action buttons keep their own behaviour. */
 sceneSlateEl.addEventListener('click', e => {
   if (e.target.closest('.hActions')) return;
   sceneSlateEl.classList.toggle('expanded');
@@ -804,8 +804,10 @@ function appendBubble(role, text, turnIndex, doScroll) {
   return bub;
 }
 
+/* The DOCUMENT scrolls now (no inner scroller), so "scroll to newest" is a
+   window scroll. */
 function scrollBottom() {
-  messagesArea.scrollTop = messagesArea.scrollHeight;
+  window.scrollTo(0, document.documentElement.scrollHeight);
 }
 
 /* ── Render a scene's transcript from scratch (boot / resume) ── */
@@ -1313,35 +1315,28 @@ function setupPill() {
   // The active Chat tab doesn't navigate — it returns you to the composer.
   document.getElementById('chatTabItem').addEventListener('click', e => { e.preventDefault(); closeNav(); });
 
-  /* ── Keyboard: size the app to the VISUAL viewport ──
-     iOS keeps the layout viewport full-height when the keyboard opens (only
-     the visual viewport shrinks), so any layout anchored to the layout
-     bottom ends up under the keyboard, and iOS scrolls the page up to reach
-     the focused field — dragging the header/messages off the top (the "big
-     black void" symptom). Setting body height to visualViewport.height makes
-     the whole app occupy exactly the visible band: header pinned at top,
-     composer just above the keyboard, messages filling between. Then snap to
-     the newest message. */
+  /* ── Keyboard ──
+     Nothing here resizes or repositions the layout any more: the document
+     scrolls natively and the composer is sticky, so iOS's own "scroll the
+     focused field into view" is exactly the behaviour we want. We only track
+     kbOpen (to shut the nav dock while typing) and nudge the newest message
+     into view once iOS has settled. */
   const vv = window.visualViewport;
   if (vv) {
-    const scrollToLatest = () => { messagesArea.scrollTop = messagesArea.scrollHeight; };
     const update = () => {
       const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       kbOpen = inset > 120;
       document.body.classList.toggle('kb-open', kbOpen);
       if (kbOpen && navOpen) closeNav();      // can't browse tabs mid-type
-      document.documentElement.style.setProperty('--app-h', vv.height + 'px');
-      updateMsgBottomPad();
       if (window.__kbDebug) window.__kbDebug();
-      // No window.scrollTo needed: the document can't scroll (fixed body), so
-      // iOS has nothing to drag off-screen. Just keep the newest message
-      // visible above the composer.
-      if (kbOpen) requestAnimationFrame(scrollToLatest);
     };
-    update();                                  // size correctly on load
+    update();
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
   }
+  // When the composer gains focus, let iOS finish opening the keyboard, then
+  // make sure the latest message is visible above it.
+  chatInput.addEventListener('focus', () => setTimeout(scrollBottom, 350));
 }
 
 /* ── Button wiring helper (pointerdown+mousedown, 400ms throttle) ── */
@@ -1434,7 +1429,7 @@ document.getElementById('appVersionLabel').textContent = 'Version ' + APP_VERSIO
       '  vv.h ' + (vv ? Math.round(vv.height) : '-') +
       '\nvv.top ' + (vv ? Math.round(vv.offsetTop) : '-') +
       '  inset ' + Math.round(inset) +
-      '\napp-h ' + getComputedStyle(document.documentElement).getPropertyValue('--app-h').trim() +
+      '\ndocH ' + Math.round(document.documentElement.scrollHeight) +
       '  scrollY ' + Math.round(window.scrollY) +
       '\nkbOpen ' + kbOpen + '  bodyH ' + Math.round(document.body.getBoundingClientRect().height);
   };
