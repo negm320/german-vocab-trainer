@@ -120,6 +120,17 @@ body{background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
    composer pinned itself ~376px underneath the keyboard. Sizing to the
    visible height keeps the whole conversation inside what you can see. */
 .messagesWrap{min-height:var(--vvh,100vh);display:flex;flex-direction:column;position:relative;}
+
+/* ── Keyboard open ──
+   Lock the app to exactly the visible band and let the MESSAGES scroll
+   internally instead of the document. Necessary because position:sticky
+   measures against the LAYOUT viewport (793px here), so as soon as a long
+   conversation makes the document scrollable the sticky composer pins itself
+   behind the keyboard again. With the document unscrollable, the composer
+   simply sits in flow at the bottom of the visible band. */
+body.kb-open{height:var(--vvh);overflow:hidden;}
+body.kb-open .messagesWrap{min-height:0;height:100%;}
+body.kb-open .messages{overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
 /* padding-top reserves the slate's live height (set via ResizeObserver)
    so the first bubble starts below it but can scroll up underneath. */
 /* No height/overflow of its own any more — it just grows and the document
@@ -180,7 +191,10 @@ body{background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
 /* sticky bottom: rides the bottom of the screen while you scroll, and rests
    in normal flow at the end of the transcript — so iOS's own keyboard
    handling (which scrolls the focused input into view) just works. */
-#chatPill{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:auto;right:auto;margin:0 18px 12px;min-height:58px;overflow:hidden;transition:border-radius .2s ease;}
+/* The home-indicator inset belongs in the MARGIN, not the sticky offset: as
+   a sticky offset it pinned the pill ~34px higher than its natural spot,
+   dragging it up over the last message (bubble hidden behind the composer). */
+#chatPill{position:sticky;bottom:12px;left:auto;right:auto;margin:0 18px calc(12px + env(safe-area-inset-bottom,0px));min-height:58px;overflow:hidden;transition:border-radius .2s ease;}
 #chatPill .iosDock-glass,#chatPill .iosDock-highlight{border-radius:inherit;}
 /* When the composer wraps to multiple lines the pill grows tall, and a
    full-pill radius on a tall capsule looks wrong (a giant lozenge) — so it
@@ -383,7 +397,7 @@ body.kb-open .ripple{display:none;}
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-08 · 5';
+const APP_VERSION = '2026-08-08 · 6';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -809,10 +823,15 @@ function appendBubble(role, text, turnIndex, doScroll) {
   return bub;
 }
 
-/* The DOCUMENT scrolls now (no inner scroller), so "scroll to newest" is a
-   window scroll. */
+/* Two scroll modes: keyboard closed, the DOCUMENT scrolls; keyboard open, the
+   app is locked to the visible band and the message list scrolls internally
+   (see body.kb-open in the CSS). */
 function scrollBottom() {
-  window.scrollTo(0, document.documentElement.scrollHeight);
+  if (document.body.classList.contains('kb-open')) {
+    messagesArea.scrollTop = messagesArea.scrollHeight;
+  } else {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+  }
 }
 
 /* ── Render a scene's transcript from scratch (boot / resume) ── */
@@ -1337,15 +1356,25 @@ function setupPill() {
       // Size the page to what's actually visible (see --vvh in the CSS).
       document.documentElement.style.setProperty('--vvh', Math.round(vv.height) + 'px');
       if (window.__kbDebug) window.__kbDebug();
-      if (kbOpen && !wasOpen) requestAnimationFrame(scrollBottom);
+      /* iOS scrolls the window down to reveal the focused composer BEFORE this
+         resize runs. Once the page is only --vvh tall, that leftover scroll
+         offset parks you below all the content — a blank screen until you
+         scroll back up. Everything now fits in the visible band, so scroll
+         the window home. Repeated over a few frames because iOS keeps
+         adjusting while the keyboard animates in. */
+      if (kbOpen) {
+        [0, 60, 150, 300].forEach(t => setTimeout(() => { window.scrollTo(0, 0); scrollBottom(); }, t));
+      }
     };
     update();
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
   }
-  // When the composer gains focus, let iOS finish opening the keyboard, then
-  // make sure the latest message is visible above it.
-  chatInput.addEventListener('focus', () => setTimeout(scrollBottom, 350));
+  // Belt-and-braces: iOS sometimes finishes its own scroll after our handler.
+  chatInput.addEventListener('focus', () => setTimeout(() => {
+    if (kbOpen) { window.scrollTo(0, 0); }
+    scrollBottom();
+  }, 400));
 }
 
 /* ── Button wiring helper (pointerdown+mousedown, 400ms throttle) ── */
