@@ -114,7 +114,12 @@ body{background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
 /* Fills at least one screen so the sticky composer rests at the bottom edge
    even when the transcript is short; grows past it as messages accumulate,
    and the DOCUMENT scrolls (no inner scroller). */
-.messagesWrap{min-height:100vh;display:flex;flex-direction:column;position:relative;}
+/* --vvh is visualViewport.height (set live in JS), NOT 100vh. 100vh is the
+   LAYOUT viewport, which iOS keeps at full height when the keyboard is up —
+   so the page stayed 852px tall while only 417px was visible, and the sticky
+   composer pinned itself ~376px underneath the keyboard. Sizing to the
+   visible height keeps the whole conversation inside what you can see. */
+.messagesWrap{min-height:var(--vvh,100vh);display:flex;flex-direction:column;position:relative;}
 /* padding-top reserves the slate's live height (set via ResizeObserver)
    so the first bubble starts below it but can scroll up underneath. */
 /* No height/overflow of its own any more — it just grows and the document
@@ -378,7 +383,7 @@ body.kb-open .ripple{display:none;}
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-08 · 4';
+const APP_VERSION = '2026-08-08 · 5';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -1325,10 +1330,14 @@ function setupPill() {
   if (vv) {
     const update = () => {
       const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const wasOpen = kbOpen;
       kbOpen = inset > 120;
       document.body.classList.toggle('kb-open', kbOpen);
       if (kbOpen && navOpen) closeNav();      // can't browse tabs mid-type
+      // Size the page to what's actually visible (see --vvh in the CSS).
+      document.documentElement.style.setProperty('--vvh', Math.round(vv.height) + 'px');
       if (window.__kbDebug) window.__kbDebug();
+      if (kbOpen && !wasOpen) requestAnimationFrame(scrollBottom);
     };
     update();
     vv.addEventListener('resize', update);
