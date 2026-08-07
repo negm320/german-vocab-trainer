@@ -20,14 +20,20 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 button,input,textarea,select{font-family:inherit;}
-html{height:100%;}
+/* overflow:hidden on html + position:fixed body (below) means the DOCUMENT
+   has nothing to scroll. That's the fix for the iOS keyboard bug: chat is a
+   fixed-height app shell, but the document around it was still scrollable,
+   so when the keyboard opened iOS scrolled the whole window to reach the
+   focused input — dragging the header and the under-status-bar area off the
+   top (black band), and "snapping" when you scrolled back. */
+html{height:100%;overflow:hidden;}
 /* height tracks the VISUAL viewport (set live from visualViewport in JS), so
    the whole app always fills exactly the area above the keyboard — header at
    top, composer just above the keyboard, messages filling between. iOS
    keeps the layout viewport full-height when the keyboard opens, which is
    why padding/translate tricks let content scroll off the top; sizing the
    body to visualViewport.height sidesteps that entirely. */
-body{height:var(--app-h,100%);background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;display:flex;flex-direction:column;overflow:hidden;}
+body{position:fixed;top:0;left:0;right:0;height:var(--app-h,100%);background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;display:flex;flex-direction:column;overflow:hidden;}
 .hidden{display:none!important}
 .muted{color:var(--muted)}
 .small{font-size:12px}
@@ -357,7 +363,7 @@ body.kb-open .ripple{display:none;}
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-07 · 2';
+const APP_VERSION = '2026-08-07 · 3';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -1327,7 +1333,10 @@ function setupPill() {
       document.documentElement.style.setProperty('--app-h', vv.height + 'px');
       updateMsgBottomPad();
       if (window.__kbDebug) window.__kbDebug();
-      if (kbOpen) requestAnimationFrame(() => { window.scrollTo(0, 0); scrollToLatest(); });
+      // No window.scrollTo needed: the document can't scroll (fixed body), so
+      // iOS has nothing to drag off-screen. Just keep the newest message
+      // visible above the composer.
+      if (kbOpen) requestAnimationFrame(scrollToLatest);
     };
     update();                                  // size correctly on load
     vv.addEventListener('resize', update);
