@@ -196,7 +196,12 @@ body.kb-open #chatPill{bottom:8px;}
    a sticky offset it pinned the pill ~34px higher than its natural spot,
    dragging it up over the last message (bubble hidden behind the composer). */
 #chatPill{position:absolute;left:18px;right:18px;bottom:calc(12px + env(safe-area-inset-bottom,0px));margin:0;min-height:58px;overflow:hidden;transition:border-radius .2s ease;}
-#chatPill .iosDock-glass,#chatPill .iosDock-highlight{border-radius:inherit;}
+/* The outer glass is the DOCK's, not the composer's — invisible while you're
+   typing (the opener and field carry their own), and unfurled by the morph.
+   JS drives opacity + a left-to-right clip so it grows out of the opener. */
+#chatPill .iosDock-glass,#chatPill .iosDock-highlight{border-radius:inherit;opacity:0;}
+/* The scene-end bar is a standalone bar, so it keeps the full pill glass. */
+#chatPill.solid .iosDock-glass,#chatPill.solid .iosDock-highlight{opacity:1;}
 /* When the composer wraps to multiple lines the pill grows tall, and a
    full-pill radius on a tall capsule looks wrong (a giant lozenge) — so it
    flattens to a rounded rectangle, matching the text field inside it. */
@@ -219,12 +224,35 @@ body.kb-open #chatPill{bottom:8px;}
    textarea grows upward the opener + mic stay put at the bottom edge next
    to the newest line instead of drifting to the vertical centre of a tall
    field. Symmetric 9px padding keeps them balanced at one line. */
-.composerRow{align-items:flex-end;padding:9px;}
+.composerRow{align-items:flex-end;padding:0;gap:9px;}
 .sceneEndRow{align-items:center;justify-content:center;padding:0 9px;gap:12px;}
 
-.pillOpener,#micBtn{position:relative;flex-shrink:0;width:40px;height:40px;border-radius:50%;background:var(--btn);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s,border-color .2s;}
-.pillOpener svg{width:20px;height:20px;stroke:var(--accent);stroke-width:2;fill:none;}
-#micBtn svg{width:20px;height:20px;stroke:var(--accent);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;transition:stroke .2s;}
+/* ── Apple-Messages composer ──
+   Two peers instead of glass-stacked-on-glass: a standalone opener circle
+   (their "+") and a field capsule that OWNS the mic (their waveform). The
+   outer #chatPill contributes no glass in this state — its glass belongs to
+   the dock and only unfurls during the morph (see .navmode / JS clip-path).
+   That removes the three-deep glass stack the old layout had. */
+.pillOpener{position:relative;flex-shrink:0;width:44px;height:44px;border-radius:50%;
+  background:rgba(28,28,30,0.55);
+  backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.09);}
+.pillOpener svg{width:21px;height:21px;stroke:#F5F5F5;stroke-width:2;fill:none;}
+
+/* The field capsule: its own glass, with the mic living inside it. */
+.fieldWrap{flex:1;min-width:0;display:flex;align-items:flex-end;gap:4px;padding:2px 6px 2px 2px;
+  border-radius:var(--r-pill);
+  background:rgba(28,28,30,0.55);
+  backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.09);
+  transform-origin:left center;transition:border-radius .2s ease;}
+.fieldWrap.multiline{border-radius:22px;}
+
+#micBtn{position:relative;flex-shrink:0;width:38px;height:38px;border-radius:50%;background:transparent;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s;}
+#micBtn svg{width:20px;height:20px;stroke:var(--muted);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;transition:stroke .2s;}
+#micBtn.listening{background:rgba(255,69,58,0.16);}
+#micBtn.listening svg{stroke:var(--bad);}
 
 /* Pill shape (var(--r-pill)) lives in ios-theme.css (.iosComposerInput).
    The field collapses toward the opener during the morph, so its
@@ -232,7 +260,8 @@ body.kb-open #chatPill{bottom:8px;}
 /* Back to a real <textarea>: contenteditable did NOT remove iOS's keyboard
    accessory bar (the whole reason we tried it) and lost the field's own
    background/inset styling. Height is driven from scrollHeight in JS. */
-#chatInput{flex:1;min-width:0;min-height:40px;max-height:120px;padding:9px 15px;color:var(--text);font-size:15px;line-height:1.4;outline:none;resize:none;overflow-y:auto;transform-origin:left center;}
+/* Transparent: the .fieldWrap capsule around it supplies the glass now. */
+#chatInput{flex:1;min-width:0;min-height:40px;max-height:120px;padding:10px 6px 10px 16px;color:var(--text);font-size:15px;line-height:1.4;outline:none;resize:none;overflow-y:auto;background:transparent;border:none;border-radius:0;}
 #chatInput::placeholder{color:var(--muted);}
 #chatInput.interim{color:var(--muted2);font-style:italic;}
 .ripple{position:absolute;inset:-7px;border-radius:50%;border:2px solid var(--bad);opacity:0;pointer-events:none;}
@@ -314,15 +343,17 @@ body.kb-open .ripple{display:none;}
       <button class="pillOpener" id="pillOpener" aria-label="Bildschirme öffnen">
         <svg viewBox="0 0 24 24"><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path></svg>
       </button>
-      <textarea id="chatInput" class="iosComposerInput" rows="1" placeholder="Schreib etwas…" autocomplete="off" spellcheck="false"></textarea>
-      <button id="micBtn" aria-label="Mikrofon">
-        <div class="ripple"></div>
-        <div class="ripple"></div>
-        <div class="ripple"></div>
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M9 5a3 3 0 0 1 3 -3a3 3 0 0 1 3 3v5a3 3 0 0 1 -3 3a3 3 0 0 1 -3 -3l0 -5"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M8 21l8 0"/><path d="M12 17l0 4"/>
-        </svg>
-      </button>
+      <div class="fieldWrap" id="fieldWrap">
+        <textarea id="chatInput" class="iosComposerInput" rows="1" placeholder="Schreib etwas…" autocomplete="off" spellcheck="false"></textarea>
+        <button id="micBtn" aria-label="Mikrofon">
+          <div class="ripple"></div>
+          <div class="ripple"></div>
+          <div class="ripple"></div>
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 5a3 3 0 0 1 3 -3a3 3 0 0 1 3 3v5a3 3 0 0 1 -3 3a3 3 0 0 1 -3 -3l0 -5"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M8 21l8 0"/><path d="M12 17l0 4"/>
+          </svg>
+        </button>
+      </div>
     </div>
     <div class="sceneEndRow hidden" id="sceneEndRow">
       <span class="iosSheet-label">Szene beendet</span>
@@ -663,6 +694,9 @@ const composerFaceEl= document.getElementById('composerFace');
 const composerRowEl = document.getElementById('composerRow');
 const sceneEndRowEl = document.getElementById('sceneEndRow');
 const pillNavEl     = document.getElementById('pillNav');
+const fieldWrapEl   = document.getElementById('fieldWrap');
+const glassEl       = chatPillEl.querySelector('.iosDock-glass');
+const glassRimEl    = chatPillEl.querySelector('.iosDock-highlight');
 const navItemsEls   = Array.from(pillNavEl.querySelectorAll('.iosDock-item'));
 
 /* Grow the textarea to fit its content, and keep the pill's SHAPE in sync:
@@ -677,6 +711,7 @@ function updateComposerShape() {
   const padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
   const multi = sh > lh * 1.5 + padV;
   chatInput.classList.toggle('multiline', multi);
+  fieldWrapEl?.classList.toggle('multiline', multi);   // the capsule owns the radius now
   chatPillEl.classList.toggle('expanded', multi);
 }
 
@@ -738,9 +773,12 @@ function updateHeader(scene) {
    The composer and the next-scene button share the pill's one "primary"
    face (only one shown at a time); the nav dock is the other face, driven
    by the morph spring below. */
-function showInputBar() { composerRowEl.classList.remove('hidden'); sceneEndRowEl.classList.add('hidden'); }
-function showNextSceneAffordance() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.remove('hidden'); }
-function hideBothBars() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.add('hidden'); }
+/* `solid` gives the pill its own full glass — the composer state doesn't want
+   it (opener + field carry their own), but the scene-end bar is a standalone
+   bar and does. */
+function showInputBar() { composerRowEl.classList.remove('hidden'); sceneEndRowEl.classList.add('hidden'); chatPillEl.classList.remove('solid'); }
+function showNextSceneAffordance() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.remove('hidden'); chatPillEl.classList.add('solid'); }
+function hideBothBars() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.add('hidden'); chatPillEl.classList.remove('solid'); }
 
 /* The header and composer overlay the message scroller, so the scroller has
    to reserve room for both. Tracked live (the header grows when expanded, the
@@ -1357,15 +1395,46 @@ function stopMic() {
    setupPill() is only called from DOMContentLoaded, by which point it is. */
 let morphSpring = null, kbOpen = false, navOpen = false;
 function clamp01(x){ return x < 0 ? 0 : x > 1 ? 1 : x; }
+/* ── The morph ──
+   The dock doesn't cross-fade in on top of the composer — it GROWS OUT of the
+   opener button. The dock's glass is clipped to exactly the opener's circle at
+   m=0 and unfurls rightward to the full capsule at m=1, so the button visibly
+   becomes the dock. Meanwhile the field capsule collapses toward that same
+   point and the tabs cascade out behind the advancing edge, each one starting
+   only once the glass has passed it — so nothing ever appears over bare
+   background. Reversing mid-flight just re-targets the spring. */
 function renderMorph(m) {
-  composerFaceEl.style.opacity = clamp01(1 - m * 1.6);
+  const pillW = chatPillEl.offsetWidth || 1;
+  const opener = document.getElementById('pillOpener');
+  const openerW = (opener?.offsetWidth || 44) + 9;      // + the row gap
+
+  // Glass unfurls from the opener's width out to the full pill.
+  const revealed = openerW + (pillW - openerW) * m;
+  const clipRight = Math.max(0, pillW - revealed);
+  const glassClip = 'inset(0 ' + clipRight.toFixed(1) + 'px 0 0 round 999px)';
+  [glassEl, glassRimEl].forEach(el => {
+    if (!el) return;
+    el.style.clipPath = glassClip;
+    el.style.webkitClipPath = glassClip;
+    el.style.opacity = clamp01(m * 2.2);
+  });
+
+  // The field collapses toward the opener and fades before the glass reaches it.
+  if (fieldWrapEl) {
+    fieldWrapEl.style.opacity = clamp01(1 - m * 2.4);
+    fieldWrapEl.style.transform = 'scaleX(' + (1 - 0.75 * m).toFixed(3) + ')';
+  }
+  // The opener dissolves into the dock it just became.
+  if (opener) opener.style.opacity = clamp01(1 - m * 1.9);
   composerFaceEl.style.pointerEvents = m < 0.4 ? 'auto' : 'none';
-  chatInput.style.transform = 'scaleX(' + (1 - 0.85 * m).toFixed(3) + ')';
-  micBtn.style.transform = 'scale(' + (1 - 0.3 * m).toFixed(3) + ')';
+
+  // Tabs cascade in behind the unfurling edge.
   navItemsEls.forEach((el, i) => {
-    const local = clamp01((m - i * 0.11) / 0.55);
+    // start .22 + 4 staggers of .08 + a .46 window == exactly 1.0, so the last
+    // tab finishes precisely as the morph completes (no tab left half-faded).
+    const local = clamp01((m - 0.22 - i * 0.08) / 0.46);
     el.style.opacity = local.toFixed(3);
-    el.style.transform = 'translateX(' + ((1 - local) * -14).toFixed(1) + 'px)';
+    el.style.transform = 'translateX(' + ((1 - local) * -16).toFixed(1) + 'px) scale(' + (0.86 + 0.14 * local).toFixed(3) + ')';
   });
   pillNavEl.style.pointerEvents = m > 0.6 ? 'auto' : 'none';
 }

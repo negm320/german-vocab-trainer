@@ -344,16 +344,44 @@ button:active{background:var(--btn2)}
   position:absolute;inset:0;border-radius:var(--r-dock);
   backdrop-filter:blur(32px) saturate(200%) brightness(1.16);
   -webkit-backdrop-filter:blur(32px) saturate(200%) brightness(1.16);
+  /* Near-black like the iOS Messages / Instagram docks: the surface recedes
+     and the white glyphs carry the contrast, instead of a light grey slab
+     sitting on top of the canvas. */
   background:linear-gradient(180deg,
-    rgba(255,255,255,0.16) 0%,
-    rgba(150,150,160,0.10) 42%,
-    rgba(90,90,100,0.12) 100%);
+    rgba(255,255,255,0.07) 0%,
+    rgba(90,90,100,0.10) 42%,
+    rgba(20,20,26,0.22) 100%);
+  /* Thickness cues live here rather than on .iosDock-highlight, because that
+     layer is masked down to a 1px ring and would clip these away. */
+  box-shadow:inset 0 0 8px 2px rgba(255,255,255,0.045),
+             inset 0 4px 16px rgba(17,17,26,0.05),
+             inset 0 8px 24px rgba(17,17,26,0.05),
+             inset 0 6px 56px rgba(17,17,26,0.05);
 }
 .iosDock-highlight{
   position:absolute;inset:0;border-radius:var(--r-dock);
-  border:0.5px solid rgba(255,255,255,0.10);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.28),
-             inset 0 -14px 20px -16px rgba(0,0,0,0.55);
+  /* Directional rim. A uniform edge line looks printed on; real glass catches
+     light from one direction, so the rim is brightest at the top-left, picks
+     up a weaker bounce at the bottom-right, and nearly vanishes on the other
+     diagonal (top-right / bottom-left) — the asymmetry visible on Apple's own
+     capsules. Built as a 1px conic-gradient ring: the two stacked masks clip
+     everything except the padding box, leaving just the border ring. */
+  padding:1px;
+  background:conic-gradient(from 0deg,
+    rgba(255,255,255,0.18) 0deg,
+    rgba(255,255,255,0.04) 45deg,
+    rgba(255,255,255,0.08) 90deg,
+    rgba(255,255,255,0.14) 135deg,
+    rgba(255,255,255,0.10) 180deg,
+    rgba(255,255,255,0.04) 225deg,
+    rgba(255,255,255,0.10) 270deg,
+    rgba(255,255,255,0.24) 315deg,
+    rgba(255,255,255,0.18) 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite:exclude;
+  pointer-events:none;
 }
 .iosDock-row{
   position:relative;display:flex;padding:8px;
