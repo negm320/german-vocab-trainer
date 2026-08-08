@@ -13,7 +13,11 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#000000">
+<!-- The strip behind the status bar in a standalone PWA is painted from
+     theme-color. It was pure black while the header is #1c1c1e — that
+     mismatch is the "cut" band above the header. Matching it makes the
+     header read as continuing to the top of the screen. -->
+<meta name="theme-color" content="#1c1c1e">
 <link rel="stylesheet" href="ios-theme.css">
 <script src="ios-motion.js" defer></script>
 <script src="ios-sheet.js" defer></script>
@@ -394,7 +398,7 @@ body.kb-open .ripple{display:none;}
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-08 · 9';
+const APP_VERSION = '2026-08-08 · 10';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -728,7 +732,12 @@ function updateSlatePad() {
   document.documentElement.style.setProperty('--slate-pad', (sceneSlateEl.offsetHeight + 8) + 'px');
 }
 function updateMsgBottomPad() {
-  document.documentElement.style.setProperty('--msg-bottom-pad', (chatPillEl.offsetHeight + 26) + 'px');
+  /* Measure from the pill's ACTUAL top edge, not just its height: it floats
+     12px + the home-indicator inset above the bottom, and ignoring that gap
+     left the last bubble tucked ~20px underneath it. */
+  const wrapBottom = sceneSlateEl.parentElement.getBoundingClientRect().bottom;
+  const gap = Math.max(0, wrapBottom - chatPillEl.getBoundingClientRect().top);
+  document.documentElement.style.setProperty('--msg-bottom-pad', Math.round(gap + 12) + 'px');
 }
 new ResizeObserver(updateSlatePad).observe(sceneSlateEl);
 new ResizeObserver(updateMsgBottomPad).observe(chatPillEl);
