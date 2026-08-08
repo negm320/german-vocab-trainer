@@ -50,7 +50,7 @@ html{height:100%;overflow:hidden;}
    keeps the layout viewport full-height when the keyboard opens, which is
    why padding/translate tricks let content scroll off the top; sizing the
    body to visualViewport.height sidesteps that entirely. */
-body{position:fixed;left:0;right:0;top:var(--vvtop,0px);height:var(--vvh,100%);overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
+body{position:fixed;left:0;right:0;top:var(--vvtop,0px);height:var(--vvh,100%);overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:15px/1.5 var(--font-body);}
 .hidden{display:none!important}
 .muted{color:var(--muted)}
 .small{font-size:12px}
@@ -108,7 +108,7 @@ body{position:fixed;left:0;right:0;top:var(--vvtop,0px);height:var(--vvh,100%);o
    line and the situation clamps to two. Tap the header (see JS) to expand —
    role wraps in full, situation shows in full — and a tap anywhere else
    retracts it. A chevron telegraphs that it opens. */
-.slateSituation{font-family:'Lora',Georgia,serif;font-style:italic;font-weight:400;font-size:14.5px;line-height:1.45;color:rgba(235,235,245,0.80);margin:10px 0 0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
+.slateSituation{font-family:var(--font-body);font-style:italic;font-weight:400;font-size:14.5px;line-height:1.45;color:rgba(235,235,245,0.80);margin:10px 0 0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
 .sceneSlate.expanded .whoRole{white-space:normal;overflow:visible;}
 .sceneSlate.expanded .slateSituation{-webkit-line-clamp:unset;overflow:visible;}
 .slateChevron{position:absolute;right:16px;bottom:8px;color:var(--muted2);transition:transform .22s ease;pointer-events:none;}
