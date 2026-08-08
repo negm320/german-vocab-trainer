@@ -398,7 +398,7 @@ body.kb-open .ripple{display:none;}
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-08 · 10';
+const APP_VERSION = '2026-08-08 · 11';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -1366,6 +1366,11 @@ function setupPill() {
       const wasOpen = kbOpen;
       kbOpen = vv.height < baseH - 120;
       document.body.classList.toggle('kb-open', kbOpen);
+      /* The pill only MOVES when the keyboard opens (46px above the bottom ->
+         8px), it doesn't resize — so its ResizeObserver never fires and the
+         reserved space kept the closed-state value, leaving a gap above the
+         composer. Recompute after the class change has been laid out. */
+      if (kbOpen !== wasOpen) requestAnimationFrame(updateMsgBottomPad);
       if (kbOpen && navOpen) closeNav();      // can't browse tabs mid-type
       // Place the shell exactly over the visible band. offsetTop is the one
       // iOS actually moves when the keyboard opens.
