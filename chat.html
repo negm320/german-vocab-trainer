@@ -128,7 +128,15 @@ body{background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
    conversation makes the document scrollable the sticky composer pins itself
    behind the keyboard again. With the document unscrollable, the composer
    simply sits in flow at the bottom of the visible band. */
-body.kb-open{height:var(--vvh);overflow:hidden;}
+/* position:fixed + top:var(--vvtop) is the crucial bit. iOS does not scroll
+   the document when the keyboard opens (scrollY stays 0) — it OFFSETS the
+   visual viewport (visualViewport.offsetTop, measured at 117px on device).
+   Fixed/sticky elements anchor to the LAYOUT viewport, so anything at
+   layout-y=0 (the header) ends up 117px above the visible area: the whole app
+   "jumps up" and you have to scroll to find it. Pinning the app to
+   top:offsetTop with height:visualViewport.height places it exactly over the
+   visible band, whatever iOS does. */
+body.kb-open{position:fixed;left:0;right:0;top:var(--vvtop,0px);height:var(--vvh);overflow:hidden;}
 body.kb-open .messagesWrap{min-height:0;height:100%;}
 body.kb-open .messages{overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
 /* No home indicator while the keyboard is up, so stop reserving room for it —
@@ -393,14 +401,14 @@ body.kb-open .ripple{display:none;}
 
 <!-- Diagnostic readout for the iOS keyboard/viewport — hidden by default,
      toggled by tapping the version number in Settings. -->
-<div id="kbDebug" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:rgba(150,0,0,.92);color:#fff;font:10px/1.25 ui-monospace,monospace;padding:4px 6px;white-space:pre;pointer-events:none;display:none;"></div>
+<div id="kbDebug" style="position:fixed;top:var(--vvtop,0px);left:0;right:0;z-index:99999;background:rgba(150,0,0,.92);color:#fff;font:10px/1.25 ui-monospace,monospace;padding:4px 6px;white-space:pre;pointer-events:none;display:none;"></div>
 
 <script>
 'use strict';
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-08 · 7';
+const APP_VERSION = '2026-08-08 · 8';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -1356,8 +1364,10 @@ function setupPill() {
       kbOpen = inset > 120;
       document.body.classList.toggle('kb-open', kbOpen);
       if (kbOpen && navOpen) closeNav();      // can't browse tabs mid-type
-      // Size the page to what's actually visible (see --vvh in the CSS).
+      // Size AND position the page to what's actually visible (see --vvh /
+      // --vvtop in the CSS). offsetTop is the one iOS actually moves.
       document.documentElement.style.setProperty('--vvh', Math.round(vv.height) + 'px');
+      document.documentElement.style.setProperty('--vvtop', Math.round(vv.offsetTop) + 'px');
       if (window.__kbDebug) window.__kbDebug();
       /* iOS scrolls the window down to reveal the focused composer BEFORE this
          resize runs. Once the page is only --vvh tall, that leftover scroll
