@@ -148,17 +148,30 @@ body.kb-open #chatPill{bottom:8px;}
 .sysRow .loadingSpinner{margin-bottom:0;}
 
 /* ── Bubble rows ──
-   The AI avatar/bubble accent color is set inline per-message (JS: castHue())
+   (Bubbles are plain iMessage grey/blue — see the .bubble rules below.)
    from a hash of the character's name, so each invented character keeps one
    consistent identity color through the whole scene — echoing the cast-dot
    in the scene slate above. */
-.bRow{display:flex;align-items:flex-end;gap:7px;}
-.bRow.ai{justify-content:flex-start;}
-.bRow.user{justify-content:flex-end;}
-.bAvatar{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;font-family:var(--font-chrome);}
-.bubble{max-width:74%;padding:9px 13px;font-size:15px;line-height:1.55;word-break:break-word;}
-.bRow.ai .bubble{background:var(--input);color:var(--text);border-radius:16px 16px 16px 3px;border-left:2.5px solid var(--accent);}
-.bRow.user .bubble{background:var(--accent);color:#fff;border-radius:16px 16px 3px 16px;}
+/* ── iMessage bubbles ──
+   No avatar and no per-character accent: the character is already named in
+   the header, so a coloured circle on every line is noise. Straight iMessage
+   instead — grey incoming, blue outgoing, one radius, and a real tail drawn
+   with two pseudo-elements: ::before is a rounded square in the bubble's own
+   colour that fills the curl, ::after punches it back out in the page colour. */
+.bRow{display:flex;}
+.bRow.ai{justify-content:flex-start;padding-left:8px;}
+.bRow.user{justify-content:flex-end;padding-right:8px;}
+.bubble{position:relative;max-width:75%;padding:8px 14px;font-size:15px;line-height:1.4;word-break:break-word;border-radius:19px;}
+.bRow.ai .bubble{background:#2c2c2e;color:#fff;}
+.bRow.user .bubble{background:#0a84ff;color:#fff;}
+
+.bRow .bubble::before,.bRow .bubble::after{content:'';position:absolute;bottom:0;width:19px;height:19px;}
+.bRow.ai .bubble::before{left:-7px;background:#2c2c2e;border-bottom-right-radius:16px;z-index:-1;}
+.bRow.ai .bubble::after{left:-19px;background:var(--bg);border-bottom-right-radius:11px;}
+.bRow.user .bubble::before{right:-7px;background:#0a84ff;border-bottom-left-radius:16px;z-index:-1;}
+.bRow.user .bubble::after{right:-19px;background:var(--bg);border-bottom-left-radius:11px;}
+/* Only the last bubble of a run gets a tail, like iMessage. */
+.bRow.tailless .bubble::before,.bRow.tailless .bubble::after{display:none;}
 .errSpan{cursor:pointer;padding-bottom:1px;}
 
 /* ── Correction/naturalness legend ──
@@ -224,7 +237,12 @@ body.kb-open #chatPill{bottom:8px;}
    textarea grows upward the opener + mic stay put at the bottom edge next
    to the newest line instead of drifting to the vertical centre of a tall
    field. Symmetric 9px padding keeps them balanced at one line. */
-.composerRow{align-items:flex-end;padding:0;gap:9px;}
+/* Centred, not bottom-aligned: bottom alignment pushed the opener and field
+   into the pill's rounded corners (which clip, because #chatPill is
+   overflow:hidden) and put the opener's centre off the row's centre, so the
+   morph appeared to start from the wrong point. 7px padding + 44px controls
+   fills the 58px row exactly. */
+.composerRow{align-items:center;padding:7px;gap:9px;}
 .sceneEndRow{align-items:center;justify-content:center;padding:0 9px;gap:12px;}
 
 /* ── Apple-Messages composer ──
@@ -738,23 +756,8 @@ function escapeHTML(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/* ── Cast color identity ──
-   Every invented character gets one consistent color for the whole scene —
-   a deterministic hash of their name into a curated set of iOS system hues
-   (already the palette family this app's accent/good/bad/warn colors come
-   from), so a new character is visually a new character, not another flat
-   blue circle. */
-const CAST_HUES = ['#0A84FF','#FF375F','#FF9F0A','#64D2FF','#BF5AF2','#63E6BE'];
-function castHue(name) {
-  if (!name) return CAST_HUES[0];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return CAST_HUES[h % CAST_HUES.length];
-}
-function hexToRgba(hex, alpha) {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${alpha})`;
-}
+/* (The per-character cast colour + avatar are gone — bubbles are plain
+   iMessage grey/blue now, and the character is named in the header.) */
 
 /* ── Scene slate ── */
 function updateHeader(scene) {
@@ -869,26 +872,28 @@ function appendTimestamp() {
   messagesInner.appendChild(el);
 }
 
+/* iMessage only tails the LAST bubble of a consecutive run from one side;
+   the ones above it are plain capsules. Recomputed after each append. */
+function retailLastRun() {
+  const rows = [...messagesInner.querySelectorAll('.bRow')];
+  rows.forEach((row, i) => {
+    const nxt = rows[i + 1];
+    const sameSide = nxt && nxt.classList.contains('ai') === row.classList.contains('ai');
+    row.classList.toggle('tailless', !!sameSide);
+  });
+}
+
 function appendBubble(role, text, turnIndex, doScroll) {
   const isAi = role === 'ai';
-  const hue = isAi ? castHue(currentScene?.character?.name) : null;
   const row = document.createElement('div');
   row.className = 'bRow ' + (isAi ? 'ai' : 'user');
-  if (isAi) {
-    const av = document.createElement('div');
-    av.className = 'bAvatar';
-    av.style.background = hexToRgba(hue, 0.22);
-    av.style.color = hue;
-    av.textContent = (currentScene?.character?.name?.[0] || '?').toUpperCase();
-    row.appendChild(av);
-  }
   const bub = document.createElement('div');
   bub.className = 'bubble';
   if (turnIndex !== undefined) bub.dataset.turnIndex = String(turnIndex);
-  if (isAi) bub.style.borderLeftColor = hue;
   bub.textContent = text;
   row.appendChild(bub);
   messagesInner.appendChild(row);
+  retailLastRun();
   if (doScroll !== false) scrollBottom();
   return bub;
 }
@@ -1251,22 +1256,15 @@ async function gradeCurrentScene() {
 async function typeReply(text, turnIndex) {
   setStatus('speaking');
   const words = text.split(' ');
-  const hue = castHue(currentScene?.character?.name);
 
   const row = document.createElement('div');
   row.className = 'bRow ai';
-  const av = document.createElement('div');
-  av.className = 'bAvatar';
-  av.style.background = hexToRgba(hue, 0.22);
-  av.style.color = hue;
-  av.textContent = (currentScene?.character?.name?.[0] || '?').toUpperCase();
-  row.appendChild(av);
   const bub = document.createElement('div');
   bub.className = 'bubble';
   bub.dataset.turnIndex = String(turnIndex);
-  bub.style.borderLeftColor = hue;
   row.appendChild(bub);
   messagesInner.appendChild(row);
+  retailLastRun();
 
   await new Promise(r => setTimeout(r, 300));
   speakText(text);
