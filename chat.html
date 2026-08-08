@@ -131,6 +131,9 @@ body{background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
 body.kb-open{height:var(--vvh);overflow:hidden;}
 body.kb-open .messagesWrap{min-height:0;height:100%;}
 body.kb-open .messages{overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
+/* No home indicator while the keyboard is up, so stop reserving room for it —
+   that inset is the "weird space" between the composer and the keyboard. */
+body.kb-open #chatPill{margin-bottom:8px;}
 /* padding-top reserves the slate's live height (set via ResizeObserver)
    so the first bubble starts below it but can scroll up underneath. */
 /* No height/overflow of its own any more — it just grows and the document
@@ -390,14 +393,14 @@ body.kb-open .ripple{display:none;}
 
 <!-- Diagnostic readout for the iOS keyboard/viewport — hidden by default,
      toggled by tapping the version number in Settings. -->
-<div id="kbDebug" style="position:fixed;top:0;left:0;z-index:99999;background:rgba(200,0,0,.9);color:#fff;font:11px/1.35 ui-monospace,monospace;padding:5px 7px;white-space:pre;pointer-events:none;border-bottom-right-radius:8px;display:none;"></div>
+<div id="kbDebug" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:rgba(150,0,0,.92);color:#fff;font:10px/1.25 ui-monospace,monospace;padding:4px 6px;white-space:pre;pointer-events:none;display:none;"></div>
 
 <script>
 'use strict';
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-08 · 6';
+const APP_VERSION = '2026-08-08 · 7';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -1363,7 +1366,10 @@ function setupPill() {
          the window home. Repeated over a few frames because iOS keeps
          adjusting while the keyboard animates in. */
       if (kbOpen) {
-        [0, 60, 150, 300].forEach(t => setTimeout(() => { window.scrollTo(0, 0); scrollBottom(); }, t));
+        [0, 60, 150, 300].forEach(t => setTimeout(() => {
+          window.scrollTo(0, 0); scrollBottom();
+          if (window.__kbRecord) window.__kbRecord('weFix' + t);
+        }, t));
       }
     };
     update();
@@ -1453,28 +1459,52 @@ document.getElementById('turnCapInput').addEventListener('change', e => {
   e.target.value = v;
 });
 document.getElementById('appVersionLabel').textContent = 'Version ' + APP_VERSION;
-/* Tap the version number to toggle a live viewport/keyboard readout — lets
-   you screenshot the exact numbers on-device so keyboard bugs can be fixed
-   from real data instead of guesswork. */
+/* ── Keyboard TIMELINE recorder ──
+   A single snapshot can't diagnose a timing bug ("it jumps, then I scroll").
+   Tapping the version number arms a recorder that logs every viewport/scroll
+   event with a timestamp, so one screenshot of the log shows the whole
+   sequence: what iOS did, what we did, and in which order.
+   Columns:  ms  event  y=window.scrollY  vh=visualViewport.height
+             vt=visualViewport.offsetTop  pB=composer's bottom edge (px from
+             the top of the visible area — should end up just under vh). */
 (function(){
   const el = document.getElementById('kbDebug');
   const vv = window.visualViewport;
-  window.__kbDebug = () => {
-    if (el.style.display === 'none') return;
-    const inset = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
-    el.textContent =
-      'innerH ' + window.innerHeight +
-      '  vv.h ' + (vv ? Math.round(vv.height) : '-') +
-      '\nvv.top ' + (vv ? Math.round(vv.offsetTop) : '-') +
-      '  inset ' + Math.round(inset) +
-      '\ndocH ' + Math.round(document.documentElement.scrollHeight) +
-      '  scrollY ' + Math.round(window.scrollY) +
-      '\nkbOpen ' + kbOpen + '  bodyH ' + Math.round(document.body.getBoundingClientRect().height);
-  };
+  const log = [];
+  let t0 = null;
+  function rec(tag) {
+    if (!window.__kbRec) return;
+    const now = performance.now();
+    if (t0 === null) t0 = now;
+    const p = chatPillEl.getBoundingClientRect();
+    log.push(
+      String(Math.round(now - t0)).padStart(4) + ' ' + tag.padEnd(7) +
+      ' y' + String(Math.round(window.scrollY)).padStart(4) +
+      ' vh' + String(vv ? Math.round(vv.height) : 0).padStart(4) +
+      ' vt' + String(vv ? Math.round(vv.offsetTop) : 0).padStart(3) +
+      ' pB' + String(Math.round(p.bottom)).padStart(4)
+    );
+    if (log.length > 15) log.shift();
+    el.textContent = 'innerH ' + window.innerHeight + '  kb ' + kbOpen + '\n' + log.join('\n');
+  }
+  window.__kbDebug = () => rec('vvEvent');
+  window.__kbRecord = rec;
   document.getElementById('appVersionLabel').addEventListener('click', () => {
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    window.__kbDebug();
-    if (!window.__kbDebugTimer) window.__kbDebugTimer = setInterval(() => window.__kbDebug(), 300);
+    const on = el.style.display === 'none';
+    el.style.display = on ? 'block' : 'none';
+    window.__kbRec = on;
+    if (on) {
+      log.length = 0; t0 = null;
+      rec('armed');
+      // hook everything that could move the layout
+      chatInput.addEventListener('focus', () => rec('focus'));
+      chatInput.addEventListener('blur',  () => rec('blur'));
+      window.addEventListener('scroll', () => rec('winScrl'), { passive: true });
+      if (vv) {
+        vv.addEventListener('resize', () => rec('vvResiz'));
+        vv.addEventListener('scroll', () => rec('vvScrl'));
+      }
+    }
   });
 })();
 wireButton('btnHardRefresh', hardRefresh);
