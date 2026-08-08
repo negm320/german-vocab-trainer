@@ -229,11 +229,11 @@ body.kb-open #chatPill{bottom:8px;}
 /* Pill shape (var(--r-pill)) lives in ios-theme.css (.iosComposerInput).
    The field collapses toward the opener during the morph, so its
    transform-origin is the left edge. */
-/* contenteditable div (not a textarea — see the getComposer comment in JS):
-   white-space:pre-wrap wraps + keeps newlines; it grows with content up to
-   max-height then scrolls. Placeholder is a CSS :empty::before overlay. */
-#chatInput{flex:1;min-width:0;min-height:40px;max-height:120px;padding:9px 15px;color:var(--text);font-size:15px;line-height:1.4;outline:none;overflow-y:auto;transform-origin:left center;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;-webkit-user-select:text;user-select:text;}
-#chatInput:empty::before{content:attr(data-placeholder);color:var(--muted);pointer-events:none;}
+/* Back to a real <textarea>: contenteditable did NOT remove iOS's keyboard
+   accessory bar (the whole reason we tried it) and lost the field's own
+   background/inset styling. Height is driven from scrollHeight in JS. */
+#chatInput{flex:1;min-width:0;min-height:40px;max-height:120px;padding:9px 15px;color:var(--text);font-size:15px;line-height:1.4;outline:none;resize:none;overflow-y:auto;transform-origin:left center;}
+#chatInput::placeholder{color:var(--muted);}
 #chatInput.interim{color:var(--muted2);font-style:italic;}
 .ripple{position:absolute;inset:-7px;border-radius:50%;border:2px solid var(--bad);opacity:0;pointer-events:none;}
 body.kb-open .ripple{display:none;}
@@ -313,7 +313,7 @@ body.kb-open .ripple{display:none;}
       <button class="pillOpener" id="pillOpener" aria-label="Bildschirme öffnen">
         <svg viewBox="0 0 24 24"><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path><path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"></path></svg>
       </button>
-      <div id="chatInput" class="iosComposerInput" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Schreib etwas…" data-placeholder="Schreib etwas…" spellcheck="false"></div>
+      <textarea id="chatInput" class="iosComposerInput" rows="1" placeholder="Schreib etwas…" autocomplete="off" spellcheck="false"></textarea>
       <button id="micBtn" aria-label="Mikrofon">
         <div class="ripple"></div>
         <div class="ripple"></div>
@@ -398,7 +398,7 @@ body.kb-open .ripple{display:none;}
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-08 · 11';
+const APP_VERSION = '2026-08-08 · 12';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -470,7 +470,18 @@ function parseFirstJSON(raw) {
   throw new Error(`unterminated JSON — raw: ${raw.slice(0,120)}`);
 }
 
-async function geminiRequest({ system, contents, prompt, temperature, maxOutputTokens }) {
+/* Salvage a usable string when the model ignores the JSON contract or its
+   JSON gets truncated mid-stream. Both happen with small token budgets, and
+   throwing away a perfectly good German reply to show "Ups, das hat leider
+   nicht geklappt" is far worse than using the prose we already have. */
+function salvageText(raw, key) {
+  const m = raw.match(new RegExp('"' + key + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)'));
+  if (m) return m[1].replace(/\\"/g, '"').replace(/\\n/g, ' ').trim();
+  if (raw.indexOf('{') === -1) return raw.trim();   // plain prose, no JSON at all
+  return '';
+}
+
+async function geminiRequest({ system, contents, prompt, temperature, maxOutputTokens, lenientKey }) {
   const key = localStorage.getItem(GEMINI_KEY_LS);
   if (!key) throw new Error('no key');
   const body = JSON.stringify({
@@ -496,7 +507,20 @@ async function geminiRequest({ system, contents, prompt, temperature, maxOutputT
       } else {
         const data = await res.json();
         const raw = extractGeminiText(data);
-        return parseFirstJSON(raw);
+        try {
+          return parseFirstJSON(raw);
+        } catch (parseErr) {
+          // Truncated or prose-instead-of-JSON: keep the usable text rather
+          // than failing the whole turn (see salvageText).
+          if (lenientKey) {
+            const salvaged = salvageText(raw, lenientKey);
+            if (salvaged) {
+              console.warn('[gemini] salvaged non-JSON reply', data?.candidates?.[0]?.finishReason || '');
+              return { [lenientKey]: salvaged };
+            }
+          }
+          throw parseErr;
+        }
       }
     } catch (e) {
       lastErr = e;
@@ -629,14 +653,8 @@ async function tryCloudPullOnLoad() {
 const messagesArea  = document.getElementById('messagesArea');
 const messagesInner = document.getElementById('messagesInner');
 const chatInput     = document.getElementById('chatInput');
-/* chatInput is a contenteditable <div>, not a <textarea> — iOS attaches its
-   form-input accessory bar (the < > / Done toolbar over the keyboard) to
-   real form controls, and a contenteditable element isn't one, so the bar
-   never appears. These helpers stand in for .value: innerText reads the
-   visible text (with newlines), and we set/clear via textContent so the
-   element goes truly :empty (showing the CSS placeholder). */
-const getComposer = () => chatInput.innerText.split(String.fromCharCode(160)).join(String.fromCharCode(32));
-function setComposer(t) { chatInput.textContent = t || ''; }
+const getComposer = () => chatInput.value;
+function setComposer(t) { chatInput.value = t || ''; }
 const micBtn        = document.getElementById('micBtn');
 const statusDot     = document.getElementById('statusDot');
 const chatPillEl    = document.getElementById('chatPill');
@@ -646,14 +664,13 @@ const sceneEndRowEl = document.getElementById('sceneEndRow');
 const pillNavEl     = document.getElementById('pillNav');
 const navItemsEls   = Array.from(pillNavEl.querySelectorAll('.iosDock-item'));
 
-/* A contenteditable div auto-grows, so there's no height to set (unlike a
-   textarea) — we only keep the pill's SHAPE in sync: one line → pill,
-   wrapped → rounded rectangle. Threshold from the field's own line-height
-   + padding (robust across fonts). Also strips the stray <br> WebKit leaves
-   in an "emptied" contenteditable, so :empty (the placeholder) works. */
+/* Grow the textarea to fit its content, and keep the pill's SHAPE in sync:
+   one line → pill, wrapped → rounded rectangle. Threshold comes from the
+   field's own line-height + padding so it holds across fonts/sizes. */
 function updateComposerShape() {
-  if (chatInput.innerHTML === '<br>' || chatInput.textContent === '') chatInput.innerHTML = '';
+  chatInput.style.height = '0px';
   const sh = chatInput.scrollHeight;
+  chatInput.style.height = sh + 'px';
   const cs = getComputedStyle(chatInput);
   const lh = parseFloat(cs.lineHeight) || 21;
   const padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
@@ -906,7 +923,7 @@ Do not reuse or resemble any recent situation: ${recentList}
 Output ONLY JSON, no preamble, no code fences:
 {"situation":"…","character":{"name":"…","role":"…","manner":"…"},"opening":"…"}`;
 
-  const data = await geminiRequest({ prompt, temperature:1.0, maxOutputTokens:500 });
+  const data = await geminiRequest({ prompt, temperature:1.0, maxOutputTokens:900 });
   const situation = (data.situation || '').toString().trim();
   const character = data.character || {};
   const opening = (data.opening || '').toString().trim();
@@ -1118,7 +1135,10 @@ async function fetchAIReply() {
   try {
     const sys = buildSystemPrompt(currentScene.situation, currentScene.character);
     const contents = buildContents(currentScene.turns);
-    const data = await geminiRequest({ system:sys, contents, temperature:1.05, maxOutputTokens:300 });
+    // 300 was truncating replies mid-sentence (which then failed JSON parsing
+    // and surfaced as "Ups, das hat leider nicht geklappt" after a couple of
+    // turns). lenientKey keeps the text even if the model skips the JSON.
+    const data = await geminiRequest({ system:sys, contents, temperature:1.05, maxOutputTokens:800, lenientKey:'reply' });
     const reply = (data.reply || '').toString().trim();
     if (!reply) throw new Error('empty reply');
     const sceneComplete = data.sceneComplete === true;
@@ -1420,14 +1440,6 @@ function wireButton(id, handler) {
   micBtn.addEventListener('mousedown', e => e.preventDefault());
 
   chatInput.addEventListener('input', updateComposerShape);
-
-  // Paste as plain text — a contenteditable would otherwise keep the
-  // source's HTML/formatting.
-  chatInput.addEventListener('paste', e => {
-    e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-    document.execCommand('insertText', false, text);
-  });
 
   chatInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
