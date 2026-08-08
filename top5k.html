@@ -1787,7 +1787,10 @@ function closeMenu(){
 
 /* ====== boot ====== */
 async function boot(){
-  if(!localStorage.getItem(GEMINI_KEY_LS)){
+  // This screen never calls Gemini (it runs off the CSV) — the key gate is
+  // only here so the key can be entered once for the AI screens. Demo mode
+  // therefore just needs to be let straight through.
+  if(!window.IOSDemo?.on && !localStorage.getItem(GEMINI_KEY_LS)){
     $('#apiKeyScreen')?.classList.remove('hidden');
     return;
   }
