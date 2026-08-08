@@ -30,14 +30,23 @@ button,input,textarea,select{font-family:inherit;}
    let the DOCUMENT scroll natively like every other screen in this app, and
    pin the chrome with position:sticky instead of absolute. iOS then does its
    normal thing and the layout survives. */
-html{}
+/* ── One layout, always ──
+   The app shell is ALWAYS position:fixed over the visible viewport band
+   (top = visualViewport.offsetTop, height = visualViewport.height). No
+   mode-switching between "keyboard open" and "closed" layouts: switching was
+   what let detection and layout chase each other (making body fixed shrank
+   window.innerHeight, which flipped the keyboard detection, which tore the
+   layout back down — the 793↔403 oscillation in the logs).
+   Messages scroll INSIDE their own box, so the document itself never scrolls
+   and iOS has nothing to drag around. */
+html{height:100%;overflow:hidden;}
 /* height tracks the VISUAL viewport (set live from visualViewport in JS), so
    the whole app always fills exactly the area above the keyboard — header at
    top, composer just above the keyboard, messages filling between. iOS
    keeps the layout viewport full-height when the keyboard opens, which is
    why padding/translate tricks let content scroll off the top; sizing the
    body to visualViewport.height sidesteps that entirely. */
-body{background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
+body{position:fixed;left:0;right:0;top:var(--vvtop,0px);height:var(--vvh,100%);overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
 .hidden{display:none!important}
 .muted{color:var(--muted)}
 .small{font-size:12px}
@@ -51,10 +60,9 @@ body{background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
    floating glass). Sits absolute over the transcript so messages scroll up
    and blur beneath it; a soft scroll-edge fade replaces the divider. */
 .sceneSlate{
-  /* sticky (not absolute): it occupies its space in normal flow, so messages
-     start below it, then it pins to the top and the transcript scrolls
-     underneath — the same scroll-edge effect, without an inner scroller. */
-  position:sticky;top:0;z-index:5;
+  /* Overlays the message scroller so the transcript blurs beneath it
+     (.messages reserves the room via --slate-pad). */
+  position:absolute;top:0;left:0;right:0;z-index:5;
   /* top padding folds in the status-bar height so the glass fills up under
      the clock while the content still clears it. Tap to expand (see JS). */
   padding:calc(12px + env(safe-area-inset-top,0px)) 16px 14px;
@@ -119,39 +127,17 @@ body{background:var(--bg);color:var(--text);font:15px/1.5 'Lora',Georgia,serif;}
    so the page stayed 852px tall while only 417px was visible, and the sticky
    composer pinned itself ~376px underneath the keyboard. Sizing to the
    visible height keeps the whole conversation inside what you can see. */
-.messagesWrap{min-height:var(--vvh,100vh);display:flex;flex-direction:column;position:relative;}
-
-/* ── Keyboard open ──
-   Lock the app to exactly the visible band and let the MESSAGES scroll
-   internally instead of the document. Necessary because position:sticky
-   measures against the LAYOUT viewport (793px here), so as soon as a long
-   conversation makes the document scrollable the sticky composer pins itself
-   behind the keyboard again. With the document unscrollable, the composer
-   simply sits in flow at the bottom of the visible band. */
-/* position:fixed + top:var(--vvtop) is the crucial bit. iOS does not scroll
-   the document when the keyboard opens (scrollY stays 0) — it OFFSETS the
-   visual viewport (visualViewport.offsetTop, measured at 117px on device).
-   Fixed/sticky elements anchor to the LAYOUT viewport, so anything at
-   layout-y=0 (the header) ends up 117px above the visible area: the whole app
-   "jumps up" and you have to scroll to find it. Pinning the app to
-   top:offsetTop with height:visualViewport.height places it exactly over the
-   visible band, whatever iOS does. */
-body.kb-open{position:fixed;left:0;right:0;top:var(--vvtop,0px);height:var(--vvh);overflow:hidden;}
-body.kb-open .messagesWrap{min-height:0;height:100%;}
-body.kb-open .messages{overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
+.messagesWrap{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;}
 /* No home indicator while the keyboard is up, so stop reserving room for it —
-   that inset is the "weird space" between the composer and the keyboard. */
-body.kb-open #chatPill{margin-bottom:8px;}
-/* padding-top reserves the slate's live height (set via ResizeObserver)
-   so the first bubble starts below it but can scroll up underneath. */
-/* No height/overflow of its own any more — it just grows and the document
-   scrolls. flex:1 pushes the sticky composer to the bottom of the screen. */
-.messages{flex:1;display:flex;flex-direction:column;padding:10px 12px 0;}
-/* min-height:100% + justify-content:flex-end anchors messages to the BOTTOM
-   (chat convention): a few messages sit just above the composer with empty
-   space under the header, instead of clinging to the top with a big gap
-   below. Overflowing content still scrolls normally. */
-.messagesInner{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;padding-bottom:10px;}
+   that inset was the "weird space" between the composer and the keyboard. */
+body.kb-open #chatPill{bottom:8px;}
+/* The message list is the ONLY scroller in the app. padding-top clears the
+   overlaid header; padding-bottom clears the floating composer (both tracked
+   live by ResizeObservers in JS). */
+.messages{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:var(--slate-pad,110px) 12px 0;}
+/* justify-content:flex-end + min-height:100% keeps a short conversation
+   resting just above the composer instead of clinging to the top. */
+.messagesInner{display:flex;flex-direction:column;justify-content:flex-end;min-height:100%;gap:2px;padding-bottom:var(--msg-bottom-pad,90px);}
 
 .ts{text-align:center;color:var(--muted);font-size:11px;margin:8px 0 4px;flex-shrink:0;font-family:var(--font-chrome);}
 .sysRow{padding:14px 0;display:flex;flex-direction:column;align-items:center;gap:6px;}
@@ -205,7 +191,7 @@ body.kb-open #chatPill{margin-bottom:8px;}
 /* The home-indicator inset belongs in the MARGIN, not the sticky offset: as
    a sticky offset it pinned the pill ~34px higher than its natural spot,
    dragging it up over the last message (bubble hidden behind the composer). */
-#chatPill{position:sticky;bottom:12px;left:auto;right:auto;margin:0 18px calc(12px + env(safe-area-inset-bottom,0px));min-height:58px;overflow:hidden;transition:border-radius .2s ease;}
+#chatPill{position:absolute;left:18px;right:18px;bottom:calc(12px + env(safe-area-inset-bottom,0px));margin:0;min-height:58px;overflow:hidden;transition:border-radius .2s ease;}
 #chatPill .iosDock-glass,#chatPill .iosDock-highlight{border-radius:inherit;}
 /* When the composer wraps to multiple lines the pill grows tall, and a
    full-pill radius on a tall capsule looks wrong (a giant lozenge) — so it
@@ -408,7 +394,7 @@ body.kb-open .ripple{display:none;}
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-08 · 8';
+const APP_VERSION = '2026-08-08 · 9';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -734,10 +720,18 @@ function showInputBar() { composerRowEl.classList.remove('hidden'); sceneEndRowE
 function showNextSceneAffordance() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.remove('hidden'); }
 function hideBothBars() { composerRowEl.classList.add('hidden'); sceneEndRowEl.classList.add('hidden'); }
 
-/* The old --slate-pad/--msg-bottom-pad reservations are gone: sticky chrome
-   occupies its own space in normal flow, so the transcript already starts
-   below the header and ends above the composer without measuring anything. */
+/* The header and composer overlay the message scroller, so the scroller has
+   to reserve room for both. Tracked live (the header grows when expanded, the
+   composer grows with a multi-line message). */
 const sceneSlateEl = document.querySelector('.sceneSlate');
+function updateSlatePad() {
+  document.documentElement.style.setProperty('--slate-pad', (sceneSlateEl.offsetHeight + 8) + 'px');
+}
+function updateMsgBottomPad() {
+  document.documentElement.style.setProperty('--msg-bottom-pad', (chatPillEl.offsetHeight + 26) + 'px');
+}
+new ResizeObserver(updateSlatePad).observe(sceneSlateEl);
+new ResizeObserver(updateMsgBottomPad).observe(chatPillEl);
 
 /* Tap the slate to reveal the full talker description + situation; tap
    anywhere else to retract. The action buttons keep their own behaviour. */
@@ -834,15 +828,9 @@ function appendBubble(role, text, turnIndex, doScroll) {
   return bub;
 }
 
-/* Two scroll modes: keyboard closed, the DOCUMENT scrolls; keyboard open, the
-   app is locked to the visible band and the message list scrolls internally
-   (see body.kb-open in the CSS). */
+/* The message list is the app's only scroller (the document never scrolls). */
 function scrollBottom() {
-  if (document.body.classList.contains('kb-open')) {
-    messagesArea.scrollTop = messagesArea.scrollHeight;
-  } else {
-    window.scrollTo(0, document.documentElement.scrollHeight);
-  }
+  messagesArea.scrollTop = messagesArea.scrollHeight;
 }
 
 /* ── Render a scene's transcript from scratch (boot / resume) ── */
@@ -1358,39 +1346,30 @@ function setupPill() {
      into view once iOS has settled. */
   const vv = window.visualViewport;
   if (vv) {
+    /* Keyboard detection must NOT depend on window.innerHeight: making the
+       shell position:fixed changes innerHeight, which flipped the detection,
+       which tore the layout down and back up (the 793<->403 oscillation).
+       Compare against the tallest viewport we've ever seen instead — a value
+       nothing in our own CSS can move. */
+    let baseH = vv.height;
     const update = () => {
-      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      if (vv.height > baseH) baseH = vv.height;
       const wasOpen = kbOpen;
-      kbOpen = inset > 120;
+      kbOpen = vv.height < baseH - 120;
       document.body.classList.toggle('kb-open', kbOpen);
       if (kbOpen && navOpen) closeNav();      // can't browse tabs mid-type
-      // Size AND position the page to what's actually visible (see --vvh /
-      // --vvtop in the CSS). offsetTop is the one iOS actually moves.
+      // Place the shell exactly over the visible band. offsetTop is the one
+      // iOS actually moves when the keyboard opens.
       document.documentElement.style.setProperty('--vvh', Math.round(vv.height) + 'px');
       document.documentElement.style.setProperty('--vvtop', Math.round(vv.offsetTop) + 'px');
       if (window.__kbDebug) window.__kbDebug();
-      /* iOS scrolls the window down to reveal the focused composer BEFORE this
-         resize runs. Once the page is only --vvh tall, that leftover scroll
-         offset parks you below all the content — a blank screen until you
-         scroll back up. Everything now fits in the visible band, so scroll
-         the window home. Repeated over a few frames because iOS keeps
-         adjusting while the keyboard animates in. */
-      if (kbOpen) {
-        [0, 60, 150, 300].forEach(t => setTimeout(() => {
-          window.scrollTo(0, 0); scrollBottom();
-          if (window.__kbRecord) window.__kbRecord('weFix' + t);
-        }, t));
-      }
+      if (kbOpen && !wasOpen) requestAnimationFrame(scrollBottom);
     };
     update();
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
   }
-  // Belt-and-braces: iOS sometimes finishes its own scroll after our handler.
-  chatInput.addEventListener('focus', () => setTimeout(() => {
-    if (kbOpen) { window.scrollTo(0, 0); }
-    scrollBottom();
-  }, 400));
+  chatInput.addEventListener('focus', () => setTimeout(scrollBottom, 400));
 }
 
 /* ── Button wiring helper (pointerdown+mousedown, 400ms throttle) ── */
