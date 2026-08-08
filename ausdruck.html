@@ -179,6 +179,7 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 'Lora',Georgi
   .historyItem:hover{background:rgba(255,255,255,.03);}
 }
 </style>
+<script src="demo-mode.js" defer></script>
 </head>
 <body>
 <script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='grammar')location.replace('grammar.html');else if(t==='preps')location.replace('preps.html');else if(t==='chat')location.replace('chat.html');})();</script>
@@ -498,6 +499,7 @@ let currentHints=[];
 let sessionSkippedTopics=[];
 
 async function fetchTopic(){
+  if(window.IOSDemo?.on) return IOSDemo.topic();
   const key=localStorage.getItem(GEMINI_KEY_LS);
   if(!key) throw new Error('no key');
 
@@ -617,6 +619,7 @@ function skipTopic(){
 
 /* ── Grading ── */
 async function fetchGrade(topic,text){
+  if(window.IOSDemo?.on) return IOSDemo.ausdruckGrade();
   const key=localStorage.getItem(GEMINI_KEY_LS);
   if(!key) throw new Error('no key');
 
@@ -1173,7 +1176,7 @@ document.getElementById('apiKeyInput')?.addEventListener('keydown',e=>{
 /* ── Boot ── */
 function boot(){
   updateCounts();
-  if(!localStorage.getItem(GEMINI_KEY_LS)){
+  if(!window.IOSDemo?.on && !localStorage.getItem(GEMINI_KEY_LS)){
     document.getElementById('apiKeyScreen').classList.remove('hidden');
     return;
   }

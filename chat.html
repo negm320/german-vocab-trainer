@@ -259,6 +259,7 @@ body.kb-open .ripple{display:none;}
    copy-pasted). ── */
 #turnCapInput{width:100%;padding:11px;border-radius:10px;color:var(--text);font-size:15px;}
 </style>
+<script src="demo-mode.js" defer></script>
 </head>
 <body>
 <script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='grammar')location.replace('grammar.html');else if(t==='preps')location.replace('preps.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
@@ -398,7 +399,7 @@ body.kb-open .ripple{display:none;}
 const GEMINI_KEY_LS       = 'top5k_gemini_key';
 /* Bump on each deploy so you can see (in Settings) whether the newest
    version actually loaded. */
-const APP_VERSION = '2026-08-08 · 12';
+const APP_VERSION = '2026-08-08 · 13';
 
 /* Force-refresh for the installed PWA: no service worker means iOS just
    serves the cached HTML/CSS/JS until the HTTP cache expires, and a PWA has
@@ -906,6 +907,7 @@ Output ONLY JSON, no preamble, no code fences:
 
 /* ── Scenario generation ── */
 async function fetchScenario() {
+  if (window.IOSDemo?.on) return IOSDemo.scenario();
   const recent = store.scenes.slice(-8).map(s => s.situation).filter(Boolean);
   const recentList = recent.length ? recent.join(' | ') : 'noch keine';
 
@@ -937,6 +939,7 @@ Output ONLY JSON, no preamble, no code fences:
 
 /* ── Grading ── */
 async function fetchGrade(scene) {
+  if (window.IOSDemo?.on) return IOSDemo.chatGrade(scene);
   const charName = scene.character?.name || 'Charakter';
   const userIdxs = [];
   const lines = scene.turns.map((t, i) => {
@@ -1133,6 +1136,17 @@ async function fetchAIReply() {
   sceneLock = true;
   setStatus('thinking');
   try {
+    if (window.IOSDemo?.on) {
+      const d = await IOSDemo.chatReply(currentScene.turnCount || 0, loadSettings().turnCap);
+      const ti = currentScene.turns.length;
+      currentScene.turns.push({ role:'ai', text:d.reply });
+      currentScene.turnCount = (currentScene.turnCount || 0) + 1;
+      saveScenes();
+      appendTimestamp();
+      await typeReply(d.reply, ti);
+      checkSceneEnd(d.sceneComplete);
+      return;
+    }
     const sys = buildSystemPrompt(currentScene.situation, currentScene.character);
     const contents = buildContents(currentScene.turns);
     // 300 was truncating replies mid-sentence (which then failed JSON parsing
@@ -1564,7 +1578,7 @@ function resumeFromStore() {
 }
 
 async function boot() {
-  if (!localStorage.getItem(GEMINI_KEY_LS)) {
+  if (!window.IOSDemo?.on && !localStorage.getItem(GEMINI_KEY_LS)) {
     document.getElementById('apiKeyScreen').classList.remove('hidden');
     return;
   }

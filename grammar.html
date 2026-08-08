@@ -137,6 +137,7 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 .piece.time-word{border-color:#22c55e;}
 .piece.verb{background:var(--btn);border-color:var(--bad);color:#fff;}
 </style>
+<script src="demo-mode.js" defer></script>
 </head>
 <body>
 <script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='vocab')location.replace('top5k.html');else if(t==='chat')location.replace('chat.html');else if(t==='preps')location.replace('preps.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
@@ -728,6 +729,7 @@ let drillQueue=[];
 let fetchesInFlight=0;
 
 async function fetchDrill(){
+  if(window.IOSDemo?.on) return IOSDemo.grammarDrill();
   const key=localStorage.getItem(GEMINI_KEY_LS);
   if(!key) throw new Error('no key');
 
@@ -887,7 +889,7 @@ function presentDrill(drill){
 /* ── Generate drill (public) ── */
 async function generateDrill(){
   const key=localStorage.getItem(GEMINI_KEY_LS);
-  if(!key) return;
+  if(!key && !window.IOSDemo?.on) return;
 
   if(drillQueue.length>0){
     presentDrill(drillQueue.shift());
@@ -1129,7 +1131,7 @@ function checkAnswer(){
 
 /* ── Boot ── */
 function boot(){
-  if(!localStorage.getItem(GEMINI_KEY_LS)){
+  if(!window.IOSDemo?.on && !localStorage.getItem(GEMINI_KEY_LS)){
     document.getElementById('apiKeyScreen').classList.remove('hidden');
     return;
   }
