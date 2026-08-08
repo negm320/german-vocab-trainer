@@ -260,7 +260,10 @@ button:active{background:var(--btn2)}
   flex:1;background:transparent;border:none;border-radius:20px;
   display:flex;align-items:center;justify-content:center;
   padding:9px 0;cursor:pointer;text-decoration:none;
-  color:var(--muted);
+  /* iOS 26 spec for an unselected tab item in dark mode is #F5F5F5 — a near
+     white, not the 60%-opacity grey (--muted) this used to use, which read as
+     washed out against the dock glass. Selected stays accent-coloured. */
+  color:#F5F5F5;
 }
 .iosDock-item svg{stroke:currentColor;stroke-width:1.8;transition:stroke-width .15s;}
 .iosDock-item.active{background:var(--accent-bg);color:var(--accent);}
