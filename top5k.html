@@ -1168,26 +1168,9 @@ function levenshtein(a,b){
   const m=a.length,n=b.length;
   const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i?j?0:i:j));
   for(let i=1;i<=m;i++)
-    for(let j=1;j<=n;j++){
+    for(let j=1;j<=n;j++)
       dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-      // adjacent swap ("Wohnnug") counts as one slip, not two
-      if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1]) dp[i][j]=Math.min(dp[i][j],dp[i-2][j-2]+1);
-    }
   return dp[m][n];
-}
-
-// Edit distance tolerated as a typo, scaled to word length. Short words get
-// none: a one-letter slip there is usually a different word or ending
-// (an/in, den/dem, ein/eine), which is exactly what the drill should catch.
-function typoAllowance(target){
-  const n=[...target].length;
-  return n<=4 ? 0 : n<=8 ? 1 : 2;
-}
-// Same stem, different last 1–2 letters (einen/einem, kleine/kleinen) is a
-// grammar mistake, not a typo. The manual Typo button covers real slips.
-function isEndingSwap(a,b){
-  let i=0; while(i<a.length&&i<b.length&&a[i]===b[i]) i++;
-  return i>0&&a.length-i<=2&&b.length-i<=2;
 }
 
 const Core={
@@ -1499,7 +1482,7 @@ const Core={
     if(isCloze&&guess){
       const ng=normDeLocal(guess), nt=normDeLocal(target);
       if(ng===nt){ isCorrect=true; }
-      else if(!isEndingSwap(ng,nt)&&levenshtein(ng,nt)<=typoAllowance(nt)){ isCorrect=true; isTypo=true; }
+      else if(levenshtein(ng,nt)<=2){ isCorrect=true; isTypo=true; }
       else{ isCorrect=false; }
     }
     const prevScore=Math.max(0.1,state.scores[id]??3);
