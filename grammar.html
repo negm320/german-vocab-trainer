@@ -130,6 +130,11 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
   #btnCheck:hover{filter:brightness(1.08);}
 }
 
+/* unnatural-sentence flag */
+.flagBtn{flex-shrink:0;width:36px;height:36px;border-radius:50%;background:transparent;border:1px solid var(--border-soft);font-size:16px;line-height:1;cursor:pointer;opacity:.65;transition:opacity .15s,transform .15s;}
+.flagBtn:active{transform:scale(.92);opacity:1;}
+@media (hover:hover){.flagBtn:hover{opacity:1;}}
+
 /* word class borders (literal hues, not tied to theme tokens) */
 .piece.acc-dat{border-color:#b8860b;}
 .piece.personal-pronoun{border-color:#facc15;}
@@ -168,7 +173,11 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
   <div id="loadingText">Generating drill…</div>
 
   <div id="drillContent" class="hidden">
-    <div id="englishText" style="font-size:17px;color:var(--text);line-height:1.6;"></div>
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div id="englishText" style="flex:1;font-size:17px;color:var(--text);line-height:1.6;"></div>
+      <button id="btnFlagUnnatural" class="flagBtn" title="Sentence sounds unnatural — skip it and avoid ones like it" aria-label="Flag as unnatural">👎</button>
+    </div>
+    <div id="flagNote" class="muted small hidden" style="font-family:var(--font-chrome);margin-top:2px;">Flagged — future sentences will avoid this.</div>
 
     <hr class="divider">
 
@@ -316,140 +325,34 @@ let micActive=false;
 let micBase='';
 let snapFlags=[];
 
-const TOPICS=[
-  // daily life & chores
-  'a broken bike','a broken washing machine','a leaking faucet','a clogged drain',
-  'forgetting to take out the trash','a messy apartment','losing your keys',
-  'running out of coffee','burning dinner','assembling flat-pack furniture',
-  'a broken heater in winter','painting a room','decluttering the flat',
-  'changing a lightbulb','a broken dishwasher','running out of toilet paper',
-  'a stuck window that won\'t close','doing the laundry at a laundrette',
-  // transport
-  'a delayed train','missing the bus','a flat tire on the highway',
-  'stuck in a traffic jam','a canceled flight','missing a flight',
-  'forgetting your passport at home','a speeding ticket','renting a car abroad',
-  'road construction blocking your street','a taxi that never arrives',
-  'a stolen bicycle','a broken escalator in the metro','heavy snow on the tracks',
-  'a bus replacement service','losing your train ticket',
-  // food & drink
-  'cooking a recipe for the first time','a restaurant with a long wait',
-  'ordering the wrong dish by mistake','food delivery arriving cold',
-  'a sold-out item at the bakery','forgetting to book a table',
-  'a disappointing meal at a fancy restaurant','running out of milk',
-  'discovering an expired product','learning to bake bread',
-  'an allergic reaction to a dish','a hangover the morning after',
-  'a friend who only eats vegan','splitting the bill at a restaurant',
-  'a supermarket that closed early','trying a new exotic cuisine',
-  // health & body
-  'a dentist visit','a visit to the doctor','a bad cold that won\'t go away',
-  'insomnia for several nights','a sprained ankle from jogging',
-  'waiting at the pharmacy','recovering after a minor surgery',
-  'getting a vaccine','sore muscles after the gym','a skin rash',
-  'a persistent headache','going to the optician','a check-up that found something',
-  'taking the wrong medication','a heat stroke in summer',
-  // work & career
-  'a job interview','a boring three-hour meeting','working from home distractions',
-  'a difficult colleague','getting a promotion','quitting a job',
-  'starting a new job on Monday','unpaid overtime','a tight work deadline',
-  'salary negotiation','a conflict in the team','office gossip',
-  'a work presentation that went badly','a surprise restructuring at work',
-  'applying for a job you are underqualified for',
-  // school & learning
-  'failing an important exam','studying for a final test',
-  'a group project where nobody contributes','choosing which university to attend',
-  'writing a thesis at the last minute','a very strict teacher',
-  'forgetting a homework assignment','enrolling in an evening course',
-  'learning a new language from scratch','a scholarship application',
-  // technology
-  'a phone update that broke everything','a laptop that crashed before saving',
-  'forgetting a password and being locked out','trouble with Wi-Fi',
-  'a printer that refuses to work','losing all your photos','a virus on the computer',
-  'a video call that keeps freezing','spam emails flooding your inbox',
-  'a broken charger','setting up a new smartphone','a data breach notification',
-  'a streaming service that keeps buffering','buying a used laptop online',
-  'a robot vacuum getting stuck',
-  // money & finances
-  'running out of money before payday','an unexpected bill arriving',
-  'a bank error on your account','going over budget on holiday',
-  'applying for a loan','filing your tax return','saving up for something big',
-  'a subscription you forgot to cancel','splitting rent with flatmates',
-  'finding a cheaper alternative','an expensive car repair',
-  // social & relationships
-  'a first date that was awkward','a breakup via text message',
-  'a family dinner that turned into an argument','arguing with a sibling',
-  'a friend who is always late','a misunderstanding over a message',
-  'visiting elderly grandparents','planning a birthday party',
-  'a friend who is moving to another city','a baby shower invitation',
-  'a housewarming party','an awkward encounter with an ex',
-  'a wedding invitation','a surprise birthday',
-  // travel & holidays
-  'planning a weekend trip','getting lost in a foreign city',
-  'a hotel room that was nothing like the photos','packing too much luggage',
-  'sunburn on the first day of holiday','a language barrier abroad',
-  'a stolen suitcase at the airport','finding a cheap hostel last minute',
-  'a rainy week on holiday','jet lag after a long flight',
-  'a tour guide who spoke too fast','a cancelled bus tour',
-  'losing your travel money abroad',
-  // housing & neighbors
-  'moving flats','a rent increase out of nowhere','a difficult landlord',
-  'a neighbor\'s loud party on a weeknight','a noisy neighbor','apartment hunting',
-  'a broken elevator in the building','pest control visit',
-  'a roof that leaks when it rains','decorating for the holidays',
-  'an argument with a flatmate','finding a parking spot in the city',
-  // animals & pets
-  'a sick cat at the vet','walking the dog in a thunderstorm',
-  'a bird that flew into the house','a neighbor\'s barking dog all night',
-  'finding a stray cat','losing a pet','a spider in the bedroom',
-  'feeding ducks at the park','a mouse in the kitchen',
-  // hobbies & free time
-  'a canceled concert','a disappointing film at the cinema',
-  'a yoga class that was too hard','a hiking trip with wrong footwear',
-  'swimming at the lake in summer','a football match that ended badly',
-  'a painting class for beginners','gardening when it rains','playing chess online',
-  'a board game night with friends','going to a museum',
-  'attending a street festival','a book club meeting','a photography trip',
-  'a DIY project that went wrong','a karaoke night',
-  // shopping
-  'returning a faulty product','a big sale at the clothing store',
-  'a long queue at the checkout','buying second-hand clothes online',
-  'a loyalty card that expired','buying a last-minute gift',
-  'a shop that closed early','an online order that never arrived',
-  'a fitting room with no mirror','comparing prices at two supermarkets',
-  // weather & environment
-  'a sudden thunderstorm','a heat wave with no air conditioning',
-  'heavy snowfall blocking the road','flooding in the neighborhood',
-  'a power outage during a storm','a very foggy morning commute',
-  'recycling rules that are confusing','air pollution alert in the city',
-  'a drought affecting the garden',
-  // news & everyday society
-  'a traffic accident near your home','rising prices at the supermarket',
-  'a local election','a city road closure for a marathon',
-  'a data leak in the news','a strike by public transport workers',
-  'a new café opening on your street','a neighborhood clean-up event',
-  'a local sports team winning the championship',
-  // miscellaneous life moments
-  'a parking ticket','a power outage','forgetting an appointment',
-  'a lost wallet','bad weather plans','buying a new phone',
-  'a long queue at the supermarket','meeting an old friend',
-  'oversleeping and being late','a surprise visitor at the door',
-  'dropping your phone in water','getting a haircut you hate',
-  'waiting for a package that doesn\'t come','a fire drill at work',
-  'a birthday you almost forgot','winning something in a raffle',
-  'helping a stranger on the street','a misplaced passport',
-  'a sleepless night before an important day'
+/* Broad everyday themes, not specific scenarios: a narrow English scenario
+   ("a robot vacuum getting stuck") plus every other constraint below is what
+   pushed the model into contrived sentences. The model picks the concrete
+   moment itself. */
+const THEMES=[
+  'work and colleagues','the flat, neighbours and chores at home','shopping and errands',
+  'food, cooking and eating out','friends and family','free time and hobbies',
+  'getting around: bus, train, car, bike','travel and holidays','health and the doctor',
+  'the weather and the seasons','phones, apps and the internet','money and bills',
+  'school, courses and learning','the weekend and going out','appointments and plans'
 ];
-const FRONTABLE_CONNECTORS=['weil','obwohl','wenn','als','nachdem',
-  'bevor','falls','sobald'];
-const B2_CONNECTORS=[...FRONTABLE_CONNECTORS,'während','damit','sodass','dass','ob'];
-const SUBJECTS=['er','sie','wir','du','ihr','man','ich','Anna','Tom','Maria','Lukas'];
-let lastTopicIndex=-1;
+/* Connectors a real person uses in speech, weighted by how often they come
+   up. The old "ban the last three" rule kept knocking out weil/dass/wenn and
+   steered the model to written-register ones (sofern, indem, sodass). */
+const CONNECTOR_WEIGHTS={
+  weil:5,dass:5,wenn:5,als:3,ob:3,obwohl:3,nachdem:2,bevor:2,
+  damit:1.5,'während':1.5,bis:1.5,seit:1,sobald:1.5,falls:1
+};
+const FRONTABLE_CONNECTORS=['weil','obwohl','wenn','als','nachdem','bevor','falls','sobald','während','seit'];
+const B2_CONNECTORS=Object.keys(CONNECTOR_WEIGHTS);
+let lastThemeIndex=-1;
 let lastInjectedIds=[];
 
 // Rolling no-repeat list of the last few connectors actually used, fed back
 // into each prompt so the model doesn't keep reaching for the same one or
 // two — same push/format pattern as recentPairs/formatRecentPairs in
 // preps.html, but persisted so the ban survives a reload.
-const RECENT_CONN_CAP=3;
+const RECENT_CONN_CAP=1;
 const RECENT_CONN_LS='grammar_recent_conn_v1';
 let recentConnectors=[];
 try{
@@ -462,10 +365,6 @@ function pushRecentConnector(conn){
   recentConnectors.push(conn.toLowerCase());
   if(recentConnectors.length>RECENT_CONN_CAP) recentConnectors.shift();
   try{ localStorage.setItem(RECENT_CONN_LS,JSON.stringify(recentConnectors)); }catch(e){}
-}
-
-function formatRecentConnectors(){
-  return recentConnectors.length?recentConnectors.join(', '):'none yet';
 }
 
 function detectConnector(pairs){
@@ -698,6 +597,7 @@ function appendDebugEntry(drill,pairs,hasWords){
     `english: ${drill.english}`,
     `correct: ${drill.correct}`,
     drill._injectLine||'inject: none',
+    ...(drill._meta?[drill._meta]:[]),
     `mapping:`
   ];
   pairs.forEach(({word,role},i)=>{
@@ -728,6 +628,56 @@ const QUEUE_DEPTH=2;
 let drillQueue=[];
 let fetchesInFlight=0;
 
+/* ── Unnatural-sentence flags ──
+   The 👎 button stores the sentence here; the most recent ones go back into
+   the prompt as examples of what NOT to produce, so the generator drifts
+   toward the learner's own sense of "natural". */
+const FLAGGED_LS='grammar_flagged_v1';
+const FLAGGED_CAP=40, FLAGGED_IN_PROMPT=8;
+function loadFlaggedDrills(){
+  try{ const a=JSON.parse(localStorage.getItem(FLAGGED_LS)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; }
+}
+function flagCurrentDrill(){
+  if(!currentDrill?.correct) return;
+  const list=loadFlaggedDrills().filter(x=>x.german!==currentDrill.correct);
+  list.push({german:currentDrill.correct,english:currentDrill.english,ts:Date.now()});
+  while(list.length>FLAGGED_CAP) list.shift();
+  try{ localStorage.setItem(FLAGGED_LS,JSON.stringify(list)); }catch(e){}
+}
+
+function pickWeighted(weights,exclude){
+  const entries=Object.entries(weights).filter(([k])=>!exclude.includes(k));
+  let r=Math.random()*entries.reduce((t,[,w])=>t+w,0);
+  for(const [k,w] of entries){ r-=w; if(r<=0) return k; }
+  return entries[entries.length-1][0];
+}
+
+/* Split the plain German sentence into chips and tag them from the model's
+   verb/prefix lists. Punctuation stays attached to its word, as before.
+   Separated prefixes are matched from the END (that's where they sit), so a
+   preposition "an" earlier in the sentence isn't mistaken for one. */
+function buildPairs(german,verbs,prefixes){
+  const words=german.trim().split(/\s+/).filter(Boolean)
+    .map(t=>t.endsWith("'")?t.slice(0,-1)+'e':t);
+  const bare=w=>w.replace(/[.,!?;:"""„"–—]/g,'').toLowerCase();
+  const roles=words.map(()=> 'other');
+  const want=list=>{const m={};(list||[]).forEach(v=>{const k=bare(String(v||''));if(k)m[k]=(m[k]||0)+1;});return m;};
+  const pre=want(prefixes);
+  for(let i=words.length-1;i>=0;i--){ const k=bare(words[i]); if(pre[k]>0){ roles[i]='sep-prefix'; pre[k]--; } }
+  const vb=want(verbs);
+  for(let i=0;i<words.length;i++){ if(roles[i]!=='other') continue; const k=bare(words[i]); if(vb[k]>0){ roles[i]='verb'; vb[k]--; } }
+  return words.map((w,i)=>({word:w,role:roles[i]}));
+}
+
+/* Generation model. Sentence quality is a "does this sound native" judgement,
+   which is exactly what the smallest models are worst at, so this screen uses
+   a full Flash model. If that model isn't available on this key (404/400/403)
+   or is rate-limited (429 — free tiers give Flash far fewer requests than
+   Flash-Lite), it falls back to the lite model the other screens use. */
+const DRILL_MODEL='gemini-3.8-flash';
+const DRILL_FALLBACK_MODEL=GEMINI_MODEL;
+let drillModelOffUntil=0; // 429 → lite for 10 min; missing model → lite for the session
+
 async function fetchDrill(){
   if(window.IOSDemo?.on) return IOSDemo.grammarDrill();
   const key=localStorage.getItem(GEMINI_KEY_LS);
@@ -742,91 +692,81 @@ async function fetchDrill(){
     }
   }catch(e){}
 
-  let word1=null, word2=null;
-  if(profile){
-    const roll=Math.random();
-    const injectCount=roll<0.70?1:(roll<0.85?2:0);
-    if(injectCount>=1){
-      word1=pickInjectionWord(profile,new Set(lastInjectedIds));
-    }
-    if(injectCount===2&&word1){
-      const excl2=new Set(lastInjectedIds); excl2.add(word1.id);
-      word2=pickInjectionWord(profile,excl2);
-    }
-  }
-  lastInjectedIds=[word1?.id,word2?.id].filter(Boolean);
+  // One focus per drill: either a vocabulary word (60%) or a set connector.
+  // Stacking topic + subject + connector + clause order + two words is what
+  // made the old sentences contrived.
+  let word=null;
+  if(profile&&Math.random()<0.60) word=pickInjectionWord(profile,new Set(lastInjectedIds));
+  lastInjectedIds=word?[word.id]:[];
 
-  let vocabLines='';
-  if(word1){
-    vocabLines+=`\n- Vocabulary word: "${word1.german}" (English: "${word1.english}"). Include it in the sentence, inflected or conjugated however the sentence requires — any tense, case, or plural form; the dictionary form is not required. First try to fit it naturally within the topic above. If the combination would feel forced or artificial, DROP THE TOPIC ENTIRELY and build the sentence around the word instead, in any everyday scenario where the word is genuinely common. Naturalness always wins; when topic and word conflict, the word stays and the topic goes.`;
-  }
-  if(word2){
-    vocabLines+=`\n- Second vocabulary word: "${word2.german}" (English: "${word2.english}"). Same rules; it may live in the other clause. Include it ONLY if both words can share one scenario a real person would plausibly describe. If they can't, silently drop this second word — a natural sentence with one vocabulary word always beats a forced sentence with two.`;
-  }
+  // Picked here, not after the reply, so two prefetches running at once
+  // don't both land on the same connector.
+  const connector=pickWeighted(CONNECTOR_WEIGHTS,recentConnectors);
+  pushRecentConnector(connector);
+  const front=FRONTABLE_CONNECTORS.includes(connector)&&Math.random()<0.4;
 
-  const selfCheckBase=`(1) would a real person say this exact German sentence casually? (2) is every ordinary past-tense verb in Perfekt, with Präteritum only on sein/haben/modals? (3) does each English clause read as natural English, not word-for-word German? (4) if a subordinate clause comes first, does the main clause start with its finite verb? (5) would a real person actually reach for this connector in this exact scenario, not just any grammatically valid one? (6) would a native English speaker write this exact english sentence?`;
-  const selfCheckText=word1
-    ? `${selfCheckBase} (7) does the sentence contain the vocabulary word, correctly inflected and used the way a native speaker actually uses it? Revise until all seven hold.`
-    : `${selfCheckBase} Revise until all six hold.`;
+  let themeIdx;
+  do{ themeIdx=Math.floor(Math.random()*THEMES.length); }while(themeIdx===lastThemeIndex&&THEMES.length>1);
+  lastThemeIndex=themeIdx;
+  const theme=THEMES[themeIdx];
 
-  let injectLine;
-  if(word1&&word2) injectLine=`inject: ${word1.german} + ${word2.german}`;
-  else if(word1) injectLine=`inject: ${word1.german} (${word1.bucket})`;
-  else injectLine='inject: none';
+  const focusLine=word
+    ? `- Vocabulary word: "${word.german}" (English: "${word.english}"). This is the one thing the sentence must contain, in whatever form the sentence needs (any tense, case, plural). Build the sentence around a situation where a native speaker would genuinely use this word. Suggested connector: "${connector}", but use any other common spoken connector if it fits the word more naturally. If the word itself is a connector or linking word, let it be the connector. Only if the word truly cannot appear in a natural everyday two-clause sentence, leave it out and set "usedWord" to false.`
+    : `- Connector: use "${connector}" to join the two clauses. Pick a situation where a real person would naturally say "${connector}" — not just any situation where it is grammatical.`;
+  const orderLine=front
+    ? `- If it sounds natural, put the "${connector}"-clause FIRST; the main clause then starts with its finite verb ("Weil es regnet, BLEIBE ich zu Hause"). If fronting would sound odd here, put the main clause first.`
+    : `- Clause order: whichever order a native speaker would use here.`;
 
-  let topicIdx;
-  do{ topicIdx=Math.floor(Math.random()*TOPICS.length); }while(topicIdx===lastTopicIndex&&TOPICS.length>1);
-  lastTopicIndex=topicIdx;
-  const topic=TOPICS[topicIdx];
-  const subject=SUBJECTS[Math.floor(Math.random()*SUBJECTS.length)];
-  const clauseOrder=Math.random()<0.5?'subordinate clause first':'main clause first';
-  const clauseOrderRule=clauseOrder==='subordinate clause first'
-    ? `Clause order: subordinate clause first. Pick a connector that fronts naturally in spoken German (weil, obwohl, wenn, als, nachdem, bevor, falls, sobald and the like all front fine). The main clause MUST then begin with its finite verb (the inversion): "Weil es regnet, BLEIBE ich zu Hause" — never "Weil es regnet, ich bleibe zu Hause".`
-    : `Clause order: main clause first. Any subordinating connector is fine here.`;
+  const flagged=loadFlaggedDrills().slice(-FLAGGED_IN_PROMPT);
+  const flaggedLine=flagged.length
+    ? `\nThe learner rejected these earlier sentences as unnatural or silly. Do not produce anything with the same problems:\n${flagged.map(f=>`- ${f.german}`).join('\n')}\n`
+    : '';
 
-  const prompt=`Generate one German sentence for a B2 word-order drill. Return JSON only — no markdown, no code fences.
+  const prompt=`You write sentences for a German word-order drill. The learner sees the English, gets the German words shuffled, and rebuilds the German sentence. The sentence is only useful if it is something a real German speaker would actually say in everyday life — natural and plausible beats clever or complete every time.
 
-Schema: {"words":[{"w":"...","r":"..."},...],"english":"..."}
+Write THREE different candidate sentences, then pick the one that sounds most like real spoken German.
 
-words — First compose the German sentence: an array of {w,r} objects, one per word, in order. "w" is the exact surface form, with any trailing punctuation attached to the word it follows (e.g. "glaube,"). "r" is exactly one of: "verb" (any finite verb, infinitive, or participle), "sep-prefix" (a separated verb prefix, e.g. "an" in "Ich rufe an"), or "other". Everything that is not a verb or separated prefix is "other". Emit exactly one object per word; never drop, merge, or invent a word.
+Each candidate:
+- Two clauses joined by a subordinating connector, usually 8–16 words.
+- Everyday theme, loosely: ${theme}. You choose the concrete moment; if the vocabulary word needs a different theme, change the theme.
+${focusLine}
+${orderLine}
+- Subject: whoever fits naturally (ich, du, wir, er/sie, a first name, a colleague…).
+- Spoken register: ordinary past events use Perfekt ("hat gekauft", "ist gekommen"); Präteritum only for sein, haben and modal verbs (war, hatte, konnte, musste, wollte). No Futur with "werden" (use present tense for the future, as people do). Konjunktiv II is fine in everyday uses (hätte, wäre, würde, könnte, "wenn ich Zeit hätte"). No Konjunktiv I, no bookish or literary words, no idioms.
+- Full written forms: "habe" not "hab'", "geht es" not "geht's", "eine" not "'ne".
+- A believable detail beats a generic one, but nothing dramatic, absurd or overly specific. Would a friend actually text or say this? If not, discard it.
 
-english — Then translate the German sentence you just composed into fluent, natural English. The English must keep the German's CLAUSE structure: the same number of clauses, in the same order, joined by the same kind of connector (a "weil"-clause → a "because"-clause; a "dass"-clause → a "that"-clause), and the same meaning — same polarity and negation, same quantifiers, same modality, nothing added, dropped, or weakened. But INSIDE each clause, use ordinary English word order (subject–verb–object). NEVER carry German verb-final or verb-second order into the English.
-  Right: "dass sie die falsche Medizin genommen hatte" → "that she had taken the wrong medicine"
-  Wrong: "that she the wrong medicine taken had"
-  German Perfekt normally becomes English simple past ("hat geschrieben" → "wrote", not "has written"); use present perfect only where English genuinely requires it. Translate "man" as "you" or "we", never "one". Render "um … zu" as plain "to", not "in order to". No word-for-word calques of any kind — the English must read as something a native speaker would actually say, even where that means departing from the German wording.
+English: translate the chosen German into natural English with the same clauses in the same order and the same meaning, but normal English word order inside each clause (never German verb-final order). Perfekt → English simple past unless English really needs "have done". "man" → "you"/"we", "um … zu" → "to".
+${flaggedLine}
+Return JSON only, no markdown:
+{"candidates":[{"german":"…","english":"…"},{"german":"…","english":"…"},{"german":"…","english":"…"}],
+ "pick":0,
+ "usedWord":true,
+ "verbs":["every verb form in the PICKED German sentence, exactly as written: finite verbs, infinitives, participles"],
+ "prefixes":["separated verb prefixes in the picked sentence, e.g. \\"an\\" in \\"Ich rufe dich an\\"; empty if none"]}
 
-Rules:
-- Topic: ${topic}.${vocabLines}
-- Connector: choose whichever subordinating connector the scenario naturally calls for (weil, dass, obwohl, wenn, als, damit, nachdem, bevor, während, ob, bis, seit, seitdem, sobald, solange, sofern, falls, indem, sodass, and the like) — the one a real person would actually reach for here, not just any grammatically valid one. Do NOT use any of these recently-used connectors: ${formatRecentConnectors()}. If the vocabulary word above is itself a subordinating connector or linking adverb (e.g. wovon, dadurch, sodass), use IT as the sentence's connector instead of introducing a separate one.
-- ${clauseOrderRule}
-- Main-clause subject: ${subject} — but if this subject genuinely clashes with the vocabulary word, silently choose another everyday subject instead.
-- Length: 7–25 words, more than one clause, the way a real person would actually say it.
-- Tense: present and past are both fine — mix them naturally, do not force either.
-- Register: this is casual spoken German — what friends, colleagues, or text messages actually sound like. Because it's spoken register, an ordinary past-tense verb must be Perfekt ("hat geschwitzt", "hat gekauft", "ist gekommen") — narrative-Präteritum forms like "schwitzte", "kaufte", "kam", "erlitt", "forderte", "trank", "fragte" are wrong here even when they read elegant; that register belongs to written narrative, not speech. Präteritum stays allowed ONLY for sein ("war"), haben ("hatte"), and modal verbs ("konnte", "wollte", "musste", "sollte", "durfte", "mochte"). No Konjunktiv, no Futur with "werden", no literary or bookish constructions, no clever idioms.
-- Full written forms only: "habe" not "hab'", "gehe" not "geh'", "geht es" not "geht's", "eine" not "'ne".
-- Word count is never a goal; never drop or compress words to save space. A complete, natural sentence always beats a terse one.
-
-Examples of the exact quality and format wanted — note the natural English and the Perfekt past:
-{"words":[{"w":"Ich","r":"other"},{"w":"glaube,","r":"verb"},{"w":"dass","r":"other"},{"w":"er","r":"other"},{"w":"den","r":"other"},{"w":"Bus","r":"other"},{"w":"verpasst","r":"verb"},{"w":"hat.","r":"verb"}],"english":"I think that he missed the bus."}
-{"words":[{"w":"Weil","r":"other"},{"w":"es","r":"other"},{"w":"stark","r":"other"},{"w":"geregnet","r":"verb"},{"w":"hat,","r":"verb"},{"w":"sind","r":"verb"},{"w":"wir","r":"other"},{"w":"zu","r":"other"},{"w":"Hause","r":"other"},{"w":"geblieben.","r":"verb"}],"english":"Because it rained heavily, we stayed home."}
-{"words":[{"w":"Ich","r":"other"},{"w":"rufe","r":"verb"},{"w":"dich","r":"other"},{"w":"an,","r":"sep-prefix"},{"w":"sobald","r":"other"},{"w":"ich","r":"other"},{"w":"angekommen","r":"verb"},{"w":"bin.","r":"verb"}],"english":"I'll call you as soon as I've arrived."}
-
-Before returning, check: ${selfCheckText}`;
+Example of one good candidate: {"german":"Ich rufe dich an, sobald ich angekommen bin.","english":"I'll call you as soon as I've arrived."} with verbs ["rufe","angekommen","bin"] and prefixes ["an"].`;
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
-    generationConfig:{temperature:0.7,maxOutputTokens:4096,responseMimeType:"application/json",thinkingConfig:GEMINI_THINKING_CONFIG}
+    generationConfig:{temperature:0.9,maxOutputTokens:4096,responseMimeType:"application/json",thinkingConfig:GEMINI_THINKING_CONFIG}
   });
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
 
   const retryDelays=[800,1600,3200];
   let lastErr=new Error('unknown error');
   for(let attempt=0;attempt<3;attempt++){
     if(attempt>0) await new Promise(r=>setTimeout(r,retryDelays[attempt-1]));
+    const onFallback=Date.now()<drillModelOffUntil;
+    const model=onFallback?DRILL_FALLBACK_MODEL:DRILL_MODEL;
+    const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
     let shouldRetry=false;
     try{
       const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body});
-      if(res.status===429||res.status>=500){
+      if([400,403,404,429].includes(res.status)&&!onFallback&&DRILL_MODEL!==DRILL_FALLBACK_MODEL){
+        console.warn(`[grammar] ${DRILL_MODEL} unavailable (HTTP ${res.status}) — falling back to ${DRILL_FALLBACK_MODEL}`);
+        drillModelOffUntil=Date.now()+(res.status===429?10*60*1000:Infinity);
+        shouldRetry=true;
+      }else if(res.status===429||res.status>=500){
         lastErr=new Error(`API ${res.status}`);
         shouldRetry=true;
       }else if(!res.ok){
@@ -835,28 +775,23 @@ Before returning, check: ${selfCheckText}`;
       }else{
         const data=await res.json();
         const raw=extractGeminiText(data);
-        const drill=parseFirstJSON(raw);
-        if(!drill.english) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
-        const hasWords=Array.isArray(drill.words)&&drill.words.length>0&&drill.words.every(x=>x&&typeof x.w==='string');
-        let pairs;
-        if(hasWords){
-          const cleaned=drill.words
-            .map(({w,r})=>{const t=(w||'').trim();return{w:t.endsWith("'")?t.slice(0,-1)+'e':t,r};})
-            .filter(x=>x.w);
-          drill.correct=cleaned.map(x=>x.w).join(' ');
-          pairs=cleaned.map(({w,r})=>({word:w,role:r}));
-        }else if(drill.correct){
-          drill.correct=drill.correct.split(' ').map(t=>t.endsWith("'")?t.slice(0,-1)+'e':t).join(' ');
-          pairs=drill.correct.split(' ').map(word=>({word,role:null}));
-        }else{
-          throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
-        }
-        const usedConnector=detectConnector(pairs);
-        if(usedConnector) pushRecentConnector(usedConnector);
+        const out=parseFirstJSON(raw);
+        const cands=Array.isArray(out.candidates)?out.candidates.filter(c=>c&&typeof c.german==='string'&&c.german.trim()&&typeof c.english==='string'&&c.english.trim()):[];
+        if(!cands.length) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
+        const pickIdx=Number.isInteger(out.pick)&&out.pick>=0&&out.pick<cands.length?out.pick:0;
+        const chosen=cands[pickIdx];
+        const pairs=buildPairs(chosen.german,out.verbs,out.prefixes);
+        const drill={
+          english:chosen.english.trim(),
+          correct:pairs.map(p=>p.word).join(' '),
+          _hasWords:true,
+          _injectLine:word?`inject: ${word.german} (${word.bucket})${out.usedWord===false?' — skipped by model':''}`:'inject: none',
+          _meta:`model=${model} connector=${connector}${front?' (front)':''} theme=${theme} pick=${pickIdx}\n  others: ${cands.filter((_,i)=>i!==pickIdx).map(c=>c.german).join(' | ')}`
+        };
+        const used=detectConnector(pairs);
+        if(used&&used!==connector) pushRecentConnector(used);
         for(let i=pairs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pairs[i],pairs[j]]=[pairs[j],pairs[i]];}
         drill.pieces=pairs;
-        drill._hasWords=hasWords;
-        drill._injectLine=injectLine;
         return drill;
       }
     }catch(e){
@@ -1183,6 +1118,18 @@ function boot(){
     autoResize();
   },{passive:false});
   document.getElementById('btnUndo')?.addEventListener('mousedown',(e)=>e.preventDefault());
+
+  let lockFlag=0;
+  document.getElementById('btnFlagUnnatural')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockFlag<400) return; lockFlag=now;
+    if(!currentDrill) return;
+    flagCurrentDrill();
+    const note=document.getElementById('flagNote');
+    note?.classList.remove('hidden');
+    setTimeout(()=>{ note?.classList.add('hidden'); generateDrill(); },700);
+  },{passive:false});
+  document.getElementById('btnFlagUnnatural')?.addEventListener('mousedown',(e)=>e.preventDefault());
 
   let lockNext=0;
   document.getElementById('btnNext')?.addEventListener('pointerdown',(e)=>{
