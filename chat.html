@@ -931,38 +931,60 @@ function buildContents(turns) {
   return contents;
 }
 
-function buildSystemPrompt(situation, character) {
-  return `You are playing a character in a German role-play conversation with a language learner (B1–B2 level).
+function buildSystemPrompt(situation, character, targetWords) {
+  const vocabRule = (targetWords && targetWords.length)
+    ? `\n- The learner is currently drilling these words: ${targetWords.map(w => `${w.german} (${w.english})`).join(', ')}. Work one of them into your reply now and then — only where a native speaker would naturally say it — so the learner hears it in context and has a reason to use it back. Never force it, never point it out.`
+    : '';
+  return `You are playing a character in a German role-play conversation with a language learner (B1–B2 level). The point of the scene is to get the learner speaking as much as possible.
 
 Situation: ${situation}
 Your character: ${character.name} — ${character.role}. Manner: ${character.manner}
 
 Rules:
-- Speak only in German, casual and natural, B1–B2 level, 1–3 short sentences per reply.
+- Speak only in German, natural spoken German at B1–B2 level, 1–3 short sentences per reply.
+- Use du or Sie the way this relationship really would (shop staff, officials, landlords, interviewers, strangers over ~25 → Sie; friends, family, colleagues your age → du), and never switch mid-scene unless someone offers the du.
+- Keep the learner talking: most replies should end with a question, a small complication, or a reaction that invites a longer answer than "ja" or "nein". Don't answer your own questions.
+- If the learner's message is hard to understand, react like a real person would (ask what they mean, guess and check) — stay in character.
 - Stay in character and stay inside the situation the whole time.
-- Past events: Perfekt, except sein/haben/modals which stay Präteritum (war, hatte, konnte — never ist gewesen/hat gehabt). No Konjunktiv I/II. No Futur I with werden.
-- Never correct the learner's German explicitly — just respond naturally in character.
+- Past events: Perfekt, except sein/haben/modals which stay Präteritum (war, hatte, konnte — never ist gewesen/hat gehabt). No Futur I with werden (use present tense for the future, as people actually do). No Konjunktiv I. Konjunktiv II only in the everyday polite formulas people use all the time (hätte gern, würde, könnte, wäre) — no other Konjunktiv II.
+- Never correct the learner's German explicitly — just respond naturally in character.${vocabRule}
 - Decide whether the situation has reached a natural conclusion (goal handled, farewells exchanged, conversation wrapped up). Only set sceneComplete to true when the scene should end right after this reply.
 
 Output ONLY JSON, no preamble, no code fences:
 {"reply":"…","sceneComplete":true|false}`;
 }
 
+/* Words the vocab trainer (top5k) says are in training or weak right now —
+   it writes this profile on every save. Up to 3, so the scene can recycle them. */
+function pickTargetWords() {
+  try {
+    const p = JSON.parse(localStorage.getItem('top5k_profile_v1') || 'null');
+    if (!p || p.v !== 1 || !Array.isArray(p.words)) return [];
+    const pool = p.words.filter(w => w && w.german && w.english && (w.bucket === 'training' || w.bucket === 'weak'));
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    return pool.slice(0, 3).map(w => ({ german: String(w.german), english: String(w.english) }));
+  } catch (e) { return []; }
+}
+
 /* ── Scenario generation ── */
-async function fetchScenario() {
+async function fetchScenario(targetWords) {
   if (window.IOSDemo?.on) return IOSDemo.scenario();
   const recent = store.scenes.slice(-8).map(s => s.situation).filter(Boolean);
   const recentList = recent.length ? recent.join(' | ') : 'noch keine';
+  const vocabLine = (targetWords && targetWords.length)
+    ? `\nThe learner is currently drilling these words: ${targetWords.map(w => `${w.german} (${w.english})`).join(', ')}. If one of them fits naturally, pick a situation where it would genuinely come up — but a natural, varied situation matters more than fitting a word.\n`
+    : '';
 
   const prompt = `You create a German role-play scenario for a B1–B2 learner to practice spoken conversation.
 
 Invent:
 - A concrete, everyday situation the learner can act out (e.g. ordering food, checking into a hotel, asking a neighbor for a favor, returning a broken item, a job interview, small talk on a train) — vary the domain each time.
-- A character YOU will play opposite the learner: a first name, a one-line role/relationship, and a one-line manner/personality note.
-- An opening line in German, in character, that starts the conversation naturally (a greeting or the first line of the situation).
+- The situation must give the learner a goal or a small problem to solve (get a refund, agree on a time, explain what happened, persuade someone), so there is something to say — not just small talk with no point.
+- A character YOU will play opposite the learner: a first name, a one-line role/relationship, and a one-line manner/personality note. The role must make it clear whether the two speak du or Sie.
+- An opening line in German, in character, that starts the conversation naturally and ends with something the learner has to respond to (a question or a request).
 
-Casual, natural spoken German, B1–B2 level. Past events use Perfekt, except sein/haben/modals which stay Präteritum (war, hatte, konnte — never ist gewesen/hat gehabt). No Konjunktiv I/II. No Futur I with werden.
-
+Natural spoken German, B1–B2 level, with du or Sie as the relationship demands. Past events use Perfekt, except sein/haben/modals which stay Präteritum (war, hatte, konnte — never ist gewesen/hat gehabt). No Futur I with werden. No Konjunktiv I; Konjunktiv II only in everyday polite formulas (hätte gern, würde, könnte, wäre).
+${vocabLine}
 Do not reuse or resemble any recent situation: ${recentList}
 
 Output ONLY JSON, no preamble, no code fences:
@@ -994,14 +1016,18 @@ async function fetchGrade(scene) {
 
   const prompt = `Grade a B1–B2 German learner's turns in the role-play transcript below. "${charName}" is an AI character — never grade or comment on those lines, only the learner's turns (labeled U1, U2, …).
 
-Some learner turns were DICTATED via speech recognition — ignore capitalization and punctuation completely; never report them as errors.
+Situation: ${scene.situation || '—'}
+${charName}'s role: ${scene.character?.role || '—'}
+
+Some learner turns were DICTATED via speech recognition — ignore capitalization and punctuation completely; never report them as errors. Likewise ignore an obvious mis-hearing of a word the learner clearly meant correctly.
 
 For each learner turn worth flagging, return two kinds of notes:
-- "corrections": a clear grammar/vocabulary error — wrong form paired with the fixed form.
-- "naturalness": correct German that's non-idiomatic — acceptable but not how a native would actually say it, paired with the native phrasing.
-Skip any turn with nothing to flag. Keep notes short, in English.
+- "corrections": a clear grammar/vocabulary error — wrong form paired with the fixed form. Flag every real error (case, gender, verb form or position, preposition, wrong word), including a du/Sie mismatch with how ${charName} is addressed in this situation.
+- "naturalness": correct German that a native wouldn't say that way, paired with the native phrasing. At most 2 per turn — only the ones most worth learning, never mere stylistic alternatives.
+Skip any turn with nothing to flag. Keep notes short, in English, and name the rule when there is one (e.g. "dative after mit", "verb goes last after weil").
+Make each "original" the SMALLEST span that contains the problem (usually 1–4 words), not the whole sentence, and make "correction"/"better" replace exactly that span.
 
-Casual German norms: past events use Perfekt, except sein/haben/modals which stay Präteritum (war, hatte, konnte — never ist gewesen/hat gehabt). Never flag a correct war/hatte as an error.
+Casual German norms: past events use Perfekt, except sein/haben/modals which stay Präteritum (war, hatte, konnte — never ist gewesen/hat gehabt). Never flag a correct war/hatte as an error. Using present tense for the future is correct, never flag it.
 
 Output JSON only, no markdown:
 {"feedback":[{"turn":1,"corrections":[{"original":"exact substring from that learner turn","correction":"fixed form","note":"short English reason"}],"naturalness":[{"original":"exact substring from that learner turn","better":"more native phrasing","note":"short English reason"}]}]}
@@ -1130,11 +1156,13 @@ async function startNewScene() {
   sceneLock = true;
   setStatus('thinking');
   try {
-    const data = await fetchScenario();
+    const targetWords = pickTargetWords();
+    const data = await fetchScenario(targetWords);
     const scene = {
       date: new Date().toISOString(),
       situation: data.situation,
       character: data.character,
+      targetWords,
       turns: [{ role:'ai', text:data.opening }],
       turnCount: 0,
       ended: false,
@@ -1190,7 +1218,7 @@ async function fetchAIReply() {
       checkSceneEnd(d.sceneComplete);
       return;
     }
-    const sys = buildSystemPrompt(currentScene.situation, currentScene.character);
+    const sys = buildSystemPrompt(currentScene.situation, currentScene.character, currentScene.targetWords);
     const contents = buildContents(currentScene.turns);
     // 300 was truncating replies mid-sentence (which then failed JSON parsing
     // and surfaced as "Ups, das hat leider nicht geklappt" after a couple of

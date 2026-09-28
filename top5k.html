@@ -511,6 +511,17 @@ function getGenderColor(x){
 /* ====== cloze builder ====== */
 const SEP_PREFIXES = ['durch','nach','über','fest','aus','auf','ein','mit','vor','weg','los','her','hin','an','ab','zu','um'];
 
+function findWholeWord(sentence, term){
+  const sl=sentence.toLowerCase(), tl=term.toLowerCase();
+  const isLetter=c=>!!c&&/\p{L}/u.test(c);
+  let first=-1;
+  for(let i=sl.indexOf(tl); i!==-1; i=sl.indexOf(tl,i+1)){
+    if(first===-1) first=i;
+    if(!isLetter(sentence[i-1])&&!isLetter(sentence[i+tl.length])) return i;
+  }
+  return first;
+}
+
 function buildClozeResult(x, sentData){
   const sd=sentData||{deSent:x.deSent,enSent:x.enSent,conjugated:x.conjugated,enInSent:x.enInSent};
   const searchTerm = (sd.conjugated||'').trim() || (x.german||'').trim();
@@ -540,7 +551,10 @@ function buildClozeResult(x, sentData){
     return {html,prefixHint:null,correctAnswer:parts.join(' '),isSplit:true};
   }
 
-  const idx = sentence.toLowerCase().indexOf(searchTerm.toLowerCase());
+  // Prefer a whole-word hit ("Freund" in "…einen netten Freund", not inside
+  // "Freundin"; "bei" as its own word, not inside "arbeitet"). Fall back to the
+  // first substring hit so fused forms like "zurückgeben" still get a blank.
+  const idx = findWholeWord(sentence, searchTerm);
   if(idx === -1) return null;
 
   const before  = sentence.slice(0, idx);
@@ -1154,9 +1168,26 @@ function levenshtein(a,b){
   const m=a.length,n=b.length;
   const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i?j?0:i:j));
   for(let i=1;i<=m;i++)
-    for(let j=1;j<=n;j++)
+    for(let j=1;j<=n;j++){
       dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+      // adjacent swap ("Wohnnug") counts as one slip, not two
+      if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1]) dp[i][j]=Math.min(dp[i][j],dp[i-2][j-2]+1);
+    }
   return dp[m][n];
+}
+
+// Edit distance tolerated as a typo, scaled to word length. Short words get
+// none: a one-letter slip there is usually a different word or ending
+// (an/in, den/dem, ein/eine), which is exactly what the drill should catch.
+function typoAllowance(target){
+  const n=[...target].length;
+  return n<=4 ? 0 : n<=8 ? 1 : 2;
+}
+// Same stem, different last 1–2 letters (einen/einem, kleine/kleinen) is a
+// grammar mistake, not a typo. The manual Typo button covers real slips.
+function isEndingSwap(a,b){
+  let i=0; while(i<a.length&&i<b.length&&a[i]===b[i]) i++;
+  return i>0&&a.length-i<=2&&b.length-i<=2;
 }
 
 const Core={
@@ -1212,6 +1243,9 @@ const Core={
           superNext:ov.superNext??null
         };
       }
+      // No translation yet (the tail of 5k.csv) — nothing to prompt with in
+      // word mode. Fill it in via Edit, or in the CSV, and it rejoins the queue.
+      if(!item.german.trim()||!item.english.trim()) continue;
       built.push(item);
     }
     state.data=built.map((it,i)=>({...it,lvl:Math.floor(i/APP.wordsPerLevel)+1}));
@@ -1465,7 +1499,7 @@ const Core={
     if(isCloze&&guess){
       const ng=normDeLocal(guess), nt=normDeLocal(target);
       if(ng===nt){ isCorrect=true; }
-      else if(levenshtein(ng,nt)<=2){ isCorrect=true; isTypo=true; }
+      else if(!isEndingSwap(ng,nt)&&levenshtein(ng,nt)<=typoAllowance(nt)){ isCorrect=true; isTypo=true; }
       else{ isCorrect=false; }
     }
     const prevScore=Math.max(0.1,state.scores[id]??3);
@@ -2035,7 +2069,7 @@ async function boot(){
   $('#coreBack')?.addEventListener('click',()=>{ if(!restoreLastReviewUI()) alert('No previous checked card to restore.'); });
 
   // ---- Edit modal ----
-  let _editId=null;
+  let _editId=null, _editSent=null;
   function openEditModal(){
     const id=state.currentId; if(!id) return;
     const base=state.data.find(w=>w.id===id); if(!base) return;
@@ -2044,6 +2078,7 @@ async function boot(){
     $('#editGerman').value     = ov.german    ??base.german    ??'';
     $('#editEnglish').value    = ov.english   ??base.english   ??'';
     const sd=state._currentSentData||{};
+    _editSent={deSent:sd.deSent??'',enSent:sd.enSent??'',conjugated:(sd.conjugated??'').trim()||null,enInSent:(sd.enInSent??'').trim()||null};
     $('#editDeSent').value     = sd.deSent    ??'';
     $('#editEnSent').value     = sd.enSent    ??'';
     $('#editCategory').value   = ov.category  ??base.category  ??'';
@@ -2062,16 +2097,24 @@ async function boot(){
   function saveEditModal(){
     if(!_editId) return;
     const ov=state.overrides[_editId]||{};
+    const sent={
+      deSent:    $('#editDeSent').value,
+      enSent:    $('#editEnSent').value,
+      conjugated:$('#editConjugated').value.trim()||null,
+      enInSent:  $('#editEnInSent').value.trim()||null
+    };
+    // A sentence override pins the word to that one sentence for good (no more
+    // rotation through sentences.json), so only write one when the sentence
+    // was actually changed — or the word already had one.
+    const hadSentOv=ov.deSent!==undefined||ov.enSent!==undefined;
+    const sentChanged=!_editSent||Object.keys(sent).some(k=>sent[k]!==_editSent[k]);
     state.overrides[_editId]={
       ...ov,
       german:    $('#editGerman').value,
       english:   $('#editEnglish').value,
-      deSent:    $('#editDeSent').value,
-      enSent:    $('#editEnSent').value,
       category:  $('#editCategory').value,
       masri:     $('#editMasri').value,
-      conjugated:$('#editConjugated').value.trim()||null,
-      enInSent:  $('#editEnInSent').value.trim()||null
+      ...((hadSentOv||sentChanged)?sent:{})
     };
     const savedId=_editId;
     closeEditModal();
@@ -2111,9 +2154,12 @@ async function boot(){
         const on=!ov.easy1;
         state.overrides[id]={...ov,easy1:on};
         if(on){ delete state.penalty[id]; delete state.reqSeen[id]; }
+        // 1-Streak means one appearance per level — apply it to this level too.
+        if(on&&state.scheduledThisLevel[id]!==undefined) state.scheduledThisLevel[id]=Math.min(state.scheduledThisLevel[id],1);
         Core.rebuildData(); saveState(); Core.updateProgress(); Core.updateDbg();
         // Immediately re-render streak dots so the change is visible
-        renderStreakDots(state.consecutiveCorrect[id]||0, 3);
+        const sch=state.scheduledThisLevel[id]??1, cr=state.completedThisRun[id]||0;
+        renderStreakDots(Math.min(cr,sch),sch);
         if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
       }
       oneStreakBtn.addEventListener('pointerdown',doOneStreak,{passive:false});

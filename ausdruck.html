@@ -631,9 +631,17 @@ Output JSON only, no markdown:
 {"scores":{"naturalness":0-5,"task":0-5,"range":0-5,"accuracy":0-5,"coherence":0-5},
  "errors":[{"original": exact substring copied verbatim from the learner's text, "correction": fixed version, "category": one of case|gender|word_order|verb|preposition|word_choice|spelling, "note": short reason in English}],
  "corrected": the full text corrected into natural German,
- "stretch": {"original": one or more sentence from the text, "better": how a native would more naturally say it, "note": one-line English explanation}}
+ "stretch": {"original": one or two consecutive sentences copied from the text, "better": how a native would more naturally say it, "note": one-line English explanation}}
+
+Score anchors (use the whole scale; the same text must always get the same scores):
+- naturalness: 5 = sounds like a native speaker chatting; 3 = understandable but clearly translated/textbook; 1 = mostly word-for-word from another language.
+- task: 5 = answers the topic fully with concrete personal detail (~10 sentences); 3 = on topic but thin or generic; 1 = barely addresses it.
+- range: 5 = varied vocabulary and structures (subordinate clauses, separable verbs, connectors); 3 = correct but repetitive; 1 = only very basic words and main clauses.
+- accuracy: 5 = no or only trivial errors; 3 = several errors that don't block meaning; 1 = errors in most sentences.
+- coherence: 5 = flows logically with natural connectors (dann, deshalb, trotzdem, weil…); 3 = a list of loosely related sentences; 1 = hard to follow.
 
 Naturalness is the HEADLINE score — reward text that sounds like a real person, not merely error-free text.
+List EVERY real error (don't cap them), each as the smallest span that contains it. "corrected" must change only what is wrong or unnatural — keep the learner's own content and ideas.
 Casual German norms: past events use Perfekt, EXCEPT sein/haben/modals which take Präteritum (war, hatte, konnte — never ist gewesen, hat gehabt). Never "correct" a correct war/hatte into Perfekt.
 Judge only the German actually written; never invent errors. Each "original" must be an exact substring of the learner's text so the app can highlight it. Keep notes short and encouraging.
 
