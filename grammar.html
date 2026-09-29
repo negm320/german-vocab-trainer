@@ -164,6 +164,7 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 <div class="wrap">
 
 <div class="bar">Grammar</div>
+<div id="bankCount" class="muted small hidden" style="font-family:var(--font-chrome);margin:-12px 0 12px;"></div>
 
 <!-- Drill card -->
 <div class="card" id="drillCard">
@@ -630,6 +631,153 @@ const QUEUE_DEPTH=2;
 let drillQueue=[];
 let fetchesInFlight=0;
 
+/* ── Sentence bank (Supabase table grammar_bank) ──
+   Every generated sentence — the one shown AND the two unpicked candidates —
+   is saved, unless it's a near-duplicate of one already there. While the bank
+   is below BANK_TARGET, drills come fresh from the API; once it's full, the
+   API is switched off and drills are served from the bank: unseen first,
+   with ~20% re-tests of sentences answered wrong. Each row also records how
+   often it was seen / answered right and whether it was flagged.
+   Without Supabase configured (or before the table exists) the page simply
+   works as before. One-time setup: supabase/grammar_bank.sql. */
+const BANK_TARGET=10000;
+const BANK_TABLE='grammar_bank';
+const bank={ok:false,count:0,keys:[],keysPromise:null,queue:[],status:'off'};
+
+function sbConf(){
+  const url=(localStorage.getItem('top5k_supabase_url')||'').trim().replace(/\/+$/,'');
+  const key=(localStorage.getItem('top5k_supabase_key')||'').trim();
+  return (url&&key)?{url,key}:null;
+}
+async function sbFetch(path,opts={}){
+  const c=sbConf(); if(!c) throw new Error('supabase not configured');
+  const res=await fetch(`${c.url}/rest/v1/${path}`,{...opts,headers:{apikey:c.key,'Content-Type':'application/json',...(opts.headers||{})}});
+  if(!res.ok) throw new Error(`Supabase ${res.status}: ${(await res.text().catch(()=>'')).slice(0,160)}`);
+  return res;
+}
+
+/* Near-duplicate test: compare the sentences' content words (articles,
+   pronouns, auxiliaries, connectors dropped; crude ending-stripping so
+   "Termin"/"Termine" match). ≥60% overlap = same sentence for our purposes. */
+const BANK_STOP=new Set(('der die das den dem des ein eine einen einem einer eines ich du er sie es wir ihr man mich dich ihn uns euch mir dir ihm ihnen sich mein meine meinen meinem dein deine sein seine ihre unser '+
+  'und oder aber denn nicht auch noch schon so sehr ganz nur mal doch ja zu an auf in im ins am mit von vom bei beim nach für aus um über unter vor zum zur '+
+  'bin bist ist sind seid war waren habe hast hat haben habt hatte hatten werde wirst wird werden kann kannst können muss musst müssen will willst wollen soll sollen '+
+  'weil dass wenn als ob obwohl nachdem bevor damit während bis seit sobald falls da dann').split(' '));
+function contentKeys(german){
+  return [...new Set(german.toLowerCase().replace(/[^\p{L}\s]/gu,' ').split(/\s+/)
+    .filter(w=>w.length>1&&!BANK_STOP.has(w))
+    .map(w=>w.length>4?w.replace(/(en|er|es|em|e|n|s|t)$/,''):w))];
+}
+function isNearDuplicate(keys){
+  if(!keys.length) return false;
+  const a=new Set(keys);
+  for(const b of bank.keys){
+    let inter=0; for(const k of b) if(a.has(k)) inter++;
+    const union=a.size+b.length-inter;
+    if(union&&inter/union>=0.6) return true;
+  }
+  return false;
+}
+
+/* Resolves after one quick count request, which is all the mode decision
+   needs. The duplicate index (every stored sentence) keeps loading in the
+   background; bankSave waits for it. */
+async function bankInit(){
+  if(window.IOSDemo?.on||!sbConf()){ bank.status='off'; updateBankUI(); return; }
+  try{
+    const head=await sbFetch(`${BANK_TABLE}?select=id&limit=1`,{method:'HEAD',headers:{Prefer:'count=exact'}});
+    bank.count=parseInt((head.headers.get('content-range')||'').split('/')[1],10)||0;
+    bank.ok=true;
+    bank.status=bank.count>=BANK_TARGET?'serving':'filling';
+    bank.keysPromise=(async()=>{
+      for(let off=0;;off+=1000){
+        const rows=await (await sbFetch(`${BANK_TABLE}?select=german&order=id.asc&limit=1000&offset=${off}`)).json();
+        rows.forEach(r=>bank.keys.push(contentKeys(r.german||'')));
+        if(rows.length<1000) break;
+      }
+    })().catch(e=>{ console.warn('[bank] index load failed —',e.message); bank.ok=false; });
+  }catch(e){
+    console.warn('[bank] disabled —',e.message);
+    // HEAD responses have no body, so a missing table shows up as a bare 404.
+    bank.status=/Supabase 404|42P01|does not exist/.test(e.message)?'no-table':'error';
+  }
+  updateBankUI();
+}
+
+function updateBankUI(){
+  const el=document.getElementById('bankCount');
+  if(!el) return;
+  if(bank.status==='filling'||bank.status==='serving'){
+    el.textContent=`${bank.count.toLocaleString()} / ${BANK_TARGET.toLocaleString()} saved`+(bank.status==='serving'?' · bank mode':'');
+    el.classList.remove('hidden');
+  }else if(bank.status==='no-table'){
+    el.textContent='sentence bank: table missing';
+    el.classList.remove('hidden');
+  }else el.classList.add('hidden');
+}
+
+/* Save all candidates of one generation. meta = connector/word/theme/model. */
+async function bankSave(cands,pickIdx,meta){
+  if(!bank.ok||bank.status==='serving') return;
+  await bank.keysPromise;
+  if(!bank.ok) return;
+  const rows=[];
+  cands.forEach((c,i)=>{
+    const keys=contentKeys(c.german);
+    if(isNearDuplicate(keys)) return;
+    bank.keys.push(keys); // reserve now, so candidates of this same call dedupe against each other
+    rows.push({german:c.german.trim(),english:c.english.trim(),verbs:c.verbs||[],prefixes:c.prefixes||[],
+      connector:meta.connector,word:meta.word||null,theme:meta.theme,model:meta.model,source:i===pickIdx?'picked':'alt'});
+  });
+  if(!rows.length) return;
+  try{
+    const res=await sbFetch(`${BANK_TABLE}?on_conflict=german`,{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=representation'},body:JSON.stringify(rows)});
+    const saved=await res.json().catch(()=>[]);
+    bank.count+=Array.isArray(saved)?saved.length:0;
+    if(bank.count>=BANK_TARGET) bank.status='serving';
+    updateBankUI();
+  }catch(e){ console.warn('[bank] save failed —',e.message); }
+}
+
+/* Record the first answer to a drill (right/wrong), or a flag. Rows are keyed
+   by the German text, which is unique in the table. */
+async function bankRecord(drill,patch){
+  if(!bank.ok||!drill?.correct) return;
+  try{
+    const q=`${BANK_TABLE}?german=eq.${encodeURIComponent(drill._bankGerman||drill.correct)}`;
+    if(patch.answered!==undefined){
+      const rows=await (await sbFetch(`${q}&select=seen,correct`)).json();
+      if(!rows.length) return;
+      patch={seen:(rows[0].seen||0)+1,correct:(rows[0].correct||0)+(patch.answered?1:0),
+        last_seen:new Date().toISOString(),last_correct:patch.answered};
+    }
+    await sbFetch(q,{method:'PATCH',body:JSON.stringify(patch)});
+  }catch(e){ console.warn('[bank] record failed —',e.message); }
+}
+
+/* Bank mode: pull a small batch — mostly never-seen sentences, sometimes
+   ones answered wrong — and serve them without any API call. */
+async function drillFromBank(){
+  if(!bank.queue.length){
+    const review=Math.random()<0.2;
+    const q=review
+      ? `${BANK_TABLE}?flagged=eq.false&last_correct=eq.false&order=last_seen.asc&limit=20`
+      : `${BANK_TABLE}?flagged=eq.false&order=seen.asc,last_seen.asc.nullsfirst&limit=40`;
+    let rows=await (await sbFetch(q)).json();
+    if(!rows.length&&review) rows=await (await sbFetch(`${BANK_TABLE}?flagged=eq.false&order=seen.asc,last_seen.asc.nullsfirst&limit=40`)).json();
+    for(let i=rows.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rows[i],rows[j]]=[rows[j],rows[i]];}
+    bank.queue=rows;
+  }
+  const row=bank.queue.shift();
+  if(!row) return null;
+  const pairs=buildPairs(row.german,row.verbs,row.prefixes);
+  const drill={english:row.english,correct:pairs.map(p=>p.word).join(' '),_hasWords:true,_bankGerman:row.german,
+    _injectLine:`from bank #${row.id} (${row.source}, seen ${row.seen}×, right ${row.correct}×)`,_meta:`connector=${row.connector} theme=${row.theme} model=${row.model}`};
+  for(let i=pairs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pairs[i],pairs[j]]=[pairs[j],pairs[i]];}
+  drill.pieces=pairs;
+  return drill;
+}
+
 /* ── Unnatural-sentence flags ──
    The flag button stores the sentence here; the most recent ones go back into
    the prompt as examples of what NOT to produce, so the generator drifts
@@ -682,6 +830,10 @@ let drillModelOffUntil=0; // 429 → lite for 10 min; missing model → lite for
 
 async function fetchDrill(){
   if(window.IOSDemo?.on) return IOSDemo.grammarDrill();
+  // Bank full → no API call at all. Any bank error falls through to the API.
+  if(bank.status==='serving'){
+    try{ const d=await drillFromBank(); if(d) return d; }catch(e){ console.warn('[bank] serve failed —',e.message); }
+  }
   const key=localStorage.getItem(GEMINI_KEY_LS);
   if(!key) throw new Error('no key');
 
@@ -741,13 +893,15 @@ ${orderLine}
 English: translate the chosen German into natural English with the same clauses in the same order and the same meaning, but normal English word order inside each clause (never German verb-final order). Perfekt → English simple past unless English really needs "have done". "man" → "you"/"we", "um … zu" → "to".
 ${flaggedLine}
 Return JSON only, no markdown:
-{"candidates":[{"german":"…","english":"…"},{"german":"…","english":"…"},{"german":"…","english":"…"}],
+{"candidates":[{"german":"…","english":"…","verbs":["…"],"prefixes":[]},{…},{…}],
  "pick":0,
- "usedWord":true,
- "verbs":["every verb form in the PICKED German sentence, exactly as written: finite verbs, infinitives, participles"],
- "prefixes":["separated verb prefixes in the picked sentence, e.g. \\"an\\" in \\"Ich rufe dich an\\"; empty if none"]}
+ "usedWord":true}
 
-Example of one good candidate: {"german":"Ich rufe dich an, sobald ich angekommen bin.","english":"I'll call you as soon as I've arrived."} with verbs ["rufe","angekommen","bin"] and prefixes ["an"].`;
+For EVERY candidate (all three are kept for later drills, so all three must be good):
+- "verbs": every verb form in that German sentence exactly as written — finite verbs, infinitives, participles.
+- "prefixes": separated verb prefixes in that sentence (e.g. "an" in "Ich rufe dich an"); empty array if none.
+
+Example of one good candidate: {"german":"Ich rufe dich an, sobald ich angekommen bin.","english":"I'll call you as soon as I've arrived.","verbs":["rufe","angekommen","bin"],"prefixes":["an"]}`;
 
   const body=JSON.stringify({
     contents:[{parts:[{text:prompt}]}],
@@ -782,10 +936,14 @@ Example of one good candidate: {"german":"Ich rufe dich an, sobald ich angekomme
         if(!cands.length) throw new Error(`bad shape — raw: ${raw.slice(0,100)}`);
         const pickIdx=Number.isInteger(out.pick)&&out.pick>=0&&out.pick<cands.length?out.pick:0;
         const chosen=cands[pickIdx];
-        const pairs=buildPairs(chosen.german,out.verbs,out.prefixes);
+        // Per-candidate tags (current schema); top-level lists = older schema.
+        const pairs=buildPairs(chosen.german,chosen.verbs||out.verbs,chosen.prefixes||out.prefixes);
+        bankSave(cands.map(c=>({...c,verbs:c.verbs||(c===chosen?out.verbs:[]),prefixes:c.prefixes||(c===chosen?out.prefixes:[])})),
+          pickIdx,{connector,word:out.usedWord===false?null:word?.german,theme,model});
         const drill={
           english:chosen.english.trim(),
           correct:pairs.map(p=>p.word).join(' '),
+          _bankGerman:chosen.german.trim(),
           _hasWords:true,
           _injectLine:word?`inject: ${word.german} (${word.bucket})${out.usedWord===false?' — skipped by model':''}`:'inject: none',
           _meta:`model=${model} connector=${connector}${front?' (front)':''} theme=${theme} pick=${pickIdx}\n  others: ${cands.filter((_,i)=>i!==pickIdx).map(c=>c.german).join(' | ')}`
@@ -1041,6 +1199,8 @@ function checkAnswer(){
   document.getElementById('undoWrap')?.classList.remove('show');
 
   const {verdict,typoIndices}=evaluateAnswer(inp.value,currentDrill.correct);
+  // Only the first check of a drill counts (a retry after "wrong" isn't a fresh answer).
+  if(!currentDrill._recorded){ currentDrill._recorded=true; bankRecord(currentDrill,{answered:verdict!=='WRONG'}); }
 
   if(verdict==='CORRECT'){
     inp.classList.add('good-field');
@@ -1071,7 +1231,9 @@ function boot(){
     document.getElementById('apiKeyScreen').classList.remove('hidden');
     return;
   }
-  generateDrill();
+  // One quick count request decides API vs bank mode before the first drill;
+  // never wait more than 2 s on it.
+  Promise.race([bankInit(),new Promise(r=>setTimeout(r,2000))]).finally(generateDrill);
 }
 
 /* ── Wire buttons ── */
@@ -1126,6 +1288,7 @@ function boot(){
     const now=Date.now(); if(now-lockFlag<400) return; lockFlag=now;
     if(!currentDrill) return;
     flagCurrentDrill();
+    bankRecord(currentDrill,{flagged:true});
     const flagBtn=document.getElementById('btnFlagUnnatural');
     flagBtn?.classList.add('flag-confirm');
     setTimeout(()=>flagBtn?.classList.remove('flag-confirm'),600);
