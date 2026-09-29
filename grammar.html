@@ -133,7 +133,16 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 /* title row: title left, daily counter + settings right */
 .titleRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 16px;}
 .titleRow .bar{margin:0;}
-.titleRight{display:flex;align-items:center;gap:8px;}
+.titleRight{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.titleRow .bar{min-width:0;white-space:nowrap;}
+/* very narrow phones (iPhone SE 1st gen): tighten so all three fit */
+@media (max-width:359px){
+  .titleRow .bar{font-size:23px;}
+  .titleRight{gap:5px;}
+  .streakPill{padding:0 8px 0 6px;}
+  .dailyPill{padding:0 9px 0 5px;}
+  .dailyPill .unit.word{display:none;}
+}
 
 /* daily counter pill */
 .dailyPill{display:flex;align-items:center;gap:6px;height:34px;padding:0 12px 0 6px;border-radius:17px;
@@ -154,6 +163,18 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 .dailyPill.bump{animation:dailyBump .35s ease;}
 @keyframes goalPop{0%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(.95)}100%{transform:scale(1)}}
 .dailyPill.goalPop{animation:goalPop .6s cubic-bezier(.3,1.6,.5,1);}
+
+/* day streak pill */
+.streakPill{display:flex;align-items:center;gap:4px;height:34px;padding:0 11px 0 8px;border-radius:17px;
+  background:rgba(120,120,128,0.28);border:0.5px solid var(--border-soft);font-family:var(--font-chrome);
+  font-size:14px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;transition:color .3s,background .3s,border-color .3s;}
+.streakPill svg path{fill:none;stroke:var(--muted);stroke-width:1.8;stroke-linejoin:round;transition:fill .3s,stroke .3s;}
+.streakPill.lit{color:var(--text);background:rgba(255,159,10,.14);border-color:rgba(255,159,10,.45);}
+.streakPill.lit svg path{fill:#FF9F0A;stroke:#FF9F0A;}
+
+/* settings group headings */
+.settingsGroup{font-family:var(--font-chrome);font-size:17px;font-weight:700;color:var(--text);margin:6px 0 -6px;}
+.settingsGroup:first-of-type{margin-top:0;}
 
 /* hidden English: blurred until tapped */
 .englishWrap{flex:1;position:relative;min-width:0;}
@@ -204,6 +225,10 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 <div class="titleRow">
   <div class="bar">Grammar</div>
   <div class="titleRight">
+    <div id="streakPill" class="streakPill hidden">
+      <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 3c.6 3.2 4.8 5.3 4.8 10a4.8 4.8 0 0 1-9.6 0c0-2.2 1-3.6 2.1-4.6.2 1.5 1 2.5 2 2.8-.5-2.8.2-5.5.7-8.2z"></path></svg>
+      <span id="streakText"></span>
+    </div>
     <div id="dailyPill" class="dailyPill hidden" aria-live="polite">
       <svg class="dailyRing" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
         <circle class="ringTrack" cx="12" cy="12" r="9.5"></circle>
@@ -277,6 +302,8 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 <!-- Settings sheet -->
 <div id="settingsPanel" class="menuPanel hidden">
   <div class="iosSheet-handle"></div>
+
+  <div class="settingsGroup">Motivation</div>
   <div class="menuSection">
     <div class="iosSheet-label">Daily counter</div>
     <div class="iosSegment" data-setting="showDaily">
@@ -292,6 +319,15 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
     <p class="muted small settingsNote">No goal: the counter just counts. With a goal it fills a ring and turns green when you reach it.</p>
   </div>
   <div class="menuSection">
+    <div class="iosSheet-label">Day streak</div>
+    <div class="iosSegment" data-setting="showStreak">
+      <button data-v="1">Show</button><button data-v="0">Hide</button>
+    </div>
+    <p class="muted small settingsNote">Days in a row you reached your goal (or did at least one sentence, with no goal). The flame lights up once today counts.</p>
+  </div>
+
+  <div class="settingsGroup">Difficulty</div>
+  <div class="menuSection">
     <div class="iosSheet-label">English sentence</div>
     <div class="iosSegment" data-setting="hideEnglish">
       <button data-v="0">Show</button><button data-v="1">Hidden — tap to peek</button>
@@ -299,7 +335,43 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
     <p class="muted small settingsNote">Hidden: rebuild the sentence from the German words alone. If your order uses the right words but differs from the original, it's checked for being correct German too.</p>
   </div>
   <div class="menuSection">
-    <div class="iosSheet-label">Sentence bank</div>
+    <div class="iosSheet-label">Word colour hints</div>
+    <div class="iosSegment" data-setting="colors">
+      <button data-v="all">All</button><button data-v="noverbs">No verb colour</button><button data-v="none">None</button>
+    </div>
+  </div>
+  <div class="menuSection">
+    <div class="iosSheet-label">First-word capital</div>
+    <div class="iosSegment" data-setting="hideCapital">
+      <button data-v="0">Keep</button><button data-v="1">Hide</button>
+    </div>
+    <p class="muted small settingsNote">Hide: the capital letter no longer gives away which word starts the sentence (nouns and names keep theirs).</p>
+  </div>
+  <div class="menuSection">
+    <div class="iosSheet-label">Sentence length</div>
+    <div class="iosSegment" data-setting="length">
+      <button data-v="short">Short</button><button data-v="medium">Medium</button><button data-v="long">Long</button>
+    </div>
+  </div>
+  <div class="menuSection">
+    <div class="iosSheet-label">Your vocab words in sentences</div>
+    <div class="iosSegment" data-setting="vocab">
+      <button data-v="never">Never</button><button data-v="sometimes">Sometimes</button><button data-v="often">Often</button>
+    </div>
+    <p class="muted small settingsNote">Words you're learning or weak on in the Vocab screen get built into new sentences.</p>
+  </div>
+
+  <div class="settingsGroup">Flow</div>
+  <div class="menuSection">
+    <div class="iosSheet-label">After a correct answer</div>
+    <div class="iosSegment" data-setting="autoNext">
+      <button data-v="fast">Quick</button><button data-v="slow">Slow</button><button data-v="manual">Wait for Next</button>
+    </div>
+    <p class="muted small settingsNote">Wait for Next: press Next (or Enter) when you're ready.</p>
+  </div>
+
+  <div class="settingsGroup">Sentence bank</div>
+  <div class="menuSection">
     <div id="bankSettingsLine" class="settingsValue">—</div>
     <div class="iosSegment" data-setting="bankOnPage">
       <button data-v="1">Show on page</button><button data-v="0">Only here</button>
@@ -859,7 +931,11 @@ async function drillFromBank(){
     for(let i=rows.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rows[i],rows[j]]=[rows[j],rows[i]];}
     bank.queue=rows;
   }
-  const row=bank.queue.shift();
+  // Prefer rows matching the length setting; take any row rather than none.
+  const lr=LENGTHS[settings.length];
+  let qi=bank.queue.findIndex(r=>{const n=(r.german||'').split(/\s+/).length;return n>=lr.min&&n<=lr.max;});
+  if(qi<0) qi=0;
+  const row=bank.queue.splice(qi,1)[0];
   if(!row) return null;
   const pairs=buildPairs(row.german,row.verbs,row.prefixes);
   const drill={english:row.english,correct:pairs.map(p=>p.word).join(' '),_hasWords:true,_bankGerman:row.german,_alts:Array.isArray(row.alternatives)?[...row.alternatives]:[],
@@ -907,7 +983,7 @@ function buildPairs(german,verbs,prefixes){
   for(let i=words.length-1;i>=0;i--){ const k=bare(words[i]); if(pre[k]>0){ roles[i]='sep-prefix'; pre[k]--; } }
   const vb=want(verbs);
   for(let i=0;i<words.length;i++){ if(roles[i]!=='other') continue; const k=bare(words[i]); if(vb[k]>0){ roles[i]='verb'; vb[k]--; } }
-  return words.map((w,i)=>({word:w,role:roles[i]}));
+  return words.map((w,i)=>({word:w,role:roles[i],first:i===0}));
 }
 
 /* Generation model. Sentence quality is a "does this sound native" judgement,
@@ -941,7 +1017,7 @@ async function fetchDrill(){
   // Stacking topic + subject + connector + clause order + two words is what
   // made the old sentences contrived.
   let word=null;
-  if(profile&&Math.random()<0.60) word=pickInjectionWord(profile,new Set(lastInjectedIds));
+  if(profile&&Math.random()<VOCAB_RATE[settings.vocab]) word=pickInjectionWord(profile,new Set(lastInjectedIds));
   lastInjectedIds=word?[word.id]:[];
 
   // Picked here, not after the reply, so two prefetches running at once
@@ -972,7 +1048,7 @@ async function fetchDrill(){
 Write THREE different candidate sentences, then pick the one that sounds most like real spoken German.
 
 Each candidate:
-- Two clauses joined by a subordinating connector, usually 8–16 words.
+- Two clauses joined by a subordinating connector, ${LENGTHS[settings.length].prompt}.
 - Everyday theme, loosely: ${theme}. You choose the concrete moment; if the vocabulary word needs a different theme, change the theme.
 ${focusLine}
 ${orderLine}
@@ -1138,11 +1214,12 @@ function renderDrill(drill){
   card.classList.add('drill-enter');
   clearTimeout(renderDrill._enterTimer);
   renderDrill._enterTimer=setTimeout(()=>card.classList.remove('drill-enter'),700);
-  drill.pieces.forEach(({word,role})=>{
+  drill.pieces.forEach(({word,role,first})=>{
     const btn=document.createElement('button');
-    const clean=word.replace(/[.,!?;:"""„"–—]/g,'');
-    const wc=getWordClass(clean,role);
-    btn.className='piece'+(wc?' '+wc:'');
+    let clean=word.replace(/[.,!?;:"""„"–—]/g,'');
+    if(first&&settings.hideCapital&&isFunctionWord(clean,role)) clean=clean.charAt(0).toLowerCase()+clean.slice(1);
+    btn.dataset.role=role||'';
+    btn.className='piece'+pieceClass(clean,role);
     btn.textContent=clean;
     let lock=0;
     btn.addEventListener('pointerdown',(e)=>{
@@ -1284,7 +1361,17 @@ function updatePieceStates(){
 /* ── Check answer ── */
 /* ── Settings ── */
 const SETTINGS_LS='grammar_settings_v1';
-const DEFAULT_SETTINGS={showDaily:true,goal:0,hideEnglish:false,bankOnPage:true};
+const DEFAULT_SETTINGS={showDaily:true,goal:0,hideEnglish:false,bankOnPage:true,
+  showStreak:true,colors:'all',hideCapital:false,length:'medium',vocab:'often',autoNext:'fast'};
+const VOCAB_RATE={never:0,sometimes:0.3,often:0.6};
+const LENGTHS={
+  short:{prompt:'short: 6–10 words',min:5,max:11},
+  medium:{prompt:'usually 8–16 words',min:7,max:17},
+  long:{prompt:'on the longer side: 14–22 words, with a bit more detail',min:13,max:30}
+};
+// Delay (ms) before the next drill after a correct / typo / "also correct"
+// answer; null = wait for Next.
+const AUTO_NEXT={fast:[800,2000,2600],slow:[2500,3500,4000],manual:[null,null,null]};
 function loadSettings(){
   try{ return {...DEFAULT_SETTINGS,...JSON.parse(localStorage.getItem(SETTINGS_LS)||'{}')}; }catch(e){ return {...DEFAULT_SETTINGS}; }
 }
@@ -1294,9 +1381,10 @@ function saveSettings(){ try{ localStorage.setItem(SETTINGS_LS,JSON.stringify(se
 function applySettingsUI(){
   document.querySelectorAll('#settingsPanel .iosSegment').forEach(seg=>{
     const key=seg.dataset.setting;
-    let cur=key==='goal'
-      ? (settings.goal===0?'0':[20,40,60].includes(settings.goal)?String(settings.goal):'custom')
-      : (settings[key]?'1':'0');
+    const v=settings[key];
+    const cur=key==='goal'
+      ? (v===0?'0':[20,40,60].includes(v)?String(v):'custom')
+      : typeof v==='boolean'?(v?'1':'0'):String(v);
     seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.v===cur));
   });
   const gi=document.getElementById('goalInput');
@@ -1324,6 +1412,7 @@ function bumpDaily(){
   renderDaily(true);
 }
 function renderDaily(animate){
+  renderStreak();
   const pill=document.getElementById('dailyPill');
   if(!pill) return;
   pill.classList.toggle('hidden',!settings.showDaily);
@@ -1340,7 +1429,7 @@ function renderDaily(animate){
     pill.classList.toggle('done',n>=goal);
     pill.title=n>=goal?`Goal reached — ${n} sentences today`:`${goal-n} to go today`;
   }else{
-    text.innerHTML=`${n} <span class="unit">today</span>`;
+    text.innerHTML=`${n}<span class="unit word"> today</span>`;
     pill.classList.add('nogoal'); pill.classList.remove('done');
     pill.title=`${n} sentences today`;
   }
@@ -1348,6 +1437,48 @@ function renderDaily(animate){
     const cls=(!wasDone&&pill.classList.contains('done'))?'goalPop':'bump';
     pill.classList.remove('bump','goalPop'); void pill.offsetWidth; pill.classList.add(cls);
   }
+}
+
+/* ── Chip hints ── */
+function pieceClass(clean,role){
+  if(settings.colors==='none') return '';
+  const wc=getWordClass(clean,role);
+  if(!wc||(settings.colors==='noverbs'&&wc==='verb')) return '';
+  return ' '+wc;
+}
+/* Words that are capitalized only because they start the sentence — safe to
+   lowercase for the "hide first-word capital" setting. Anything else (likely
+   a noun or a name) keeps its capital, since that's real German spelling. */
+const LOWERABLE=new Set(['der','die','das','den','dem','des','ein','eine','einen','einem','einer','eines','kein','keine','mein','meine','dein','deine','sein','seine','ihr','ihre','unser','unsere','euer','eure',
+  'wo','wann','warum','wie','was','wer','wen','wem','woher','wohin','welche','welcher','welches','wieso','weshalb',
+  'es','dann','da','so','also','trotzdem','deshalb','deswegen','außerdem','leider','hoffentlich','vielleicht','natürlich','eigentlich','zum','zur','am','im','ins','beim','vom',
+  'bitte','ja','nein','nicht','auch','noch','hier','dort','nur','sogar','zuerst','erst']);
+function isFunctionWord(clean,role){
+  const w=clean.toLowerCase();
+  return role==='verb'||role==='sep-prefix'||LOWERABLE.has(w)||CONNECTORS.has(w)||PERSONAL_PRONOUNS.has(w)
+    ||ACC_DAT_PRONOUNS.has(w)||PREPOSITIONS.has(w)||TIME_WORDS.has(w);
+}
+
+/* ── Day streak ──
+   Consecutive days that met the target (the goal, or 1 sentence with no
+   goal). Today only extends the streak once it's met — until then the
+   streak from yesterday still shows, with the flame unlit. */
+function dayKeyOffset(n){ const d=new Date(); d.setDate(d.getDate()-n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function computeStreak(){
+  const log=loadDaily(), target=settings.goal>0?settings.goal:1;
+  const todayMet=(log[dayKeyOffset(0)]||0)>=target;
+  let n=todayMet?1:0;
+  for(let i=1;i<400;i++){ if((log[dayKeyOffset(i)]||0)>=target) n++; else break; }
+  return {n,todayMet};
+}
+function renderStreak(){
+  const pill=document.getElementById('streakPill');
+  if(!pill) return;
+  const {n,todayMet}=computeStreak();
+  pill.classList.toggle('hidden',!settings.showStreak||n===0);
+  pill.classList.toggle('lit',todayMet);
+  document.getElementById('streakText').textContent=String(n);
+  pill.title=todayMet?`${n}-day streak — today counts`:`${n}-day streak — reach today's target to keep it going`;
 }
 
 /* ── Hidden English: veil + tap to peek ── */
@@ -1398,6 +1529,7 @@ let checking=false;
 async function checkAnswer(){
   if(!currentDrill||checking) return;
   const drill=currentDrill;
+  if(drill._solved){ generateDrill(); return; } // "Wait for Next" mode: Check/Enter again moves on
   const inp=document.getElementById('answerInput');
   const feedback=document.getElementById('feedback');
   const answer=inp.value;
@@ -1436,23 +1568,25 @@ async function checkAnswer(){
   }
   setEnglishVeil(false);
 
+  const [dCorrect,dTypo,dAlt]=AUTO_NEXT[settings.autoNext]||AUTO_NEXT.fast;
+  const next=ms=>{ if(ms==null){ drill._solved=true; return; } setTimeout(()=>{ if(currentDrill===drill) generateDrill(); },ms); };
   if(verdict==='CORRECT'&&!altAccepted){
     inp.classList.add('good-field');
     triggerFlash('good');
     feedback.classList.add('hidden');
-    setTimeout(()=>generateDrill(),800);
+    next(dCorrect);
   }else if(verdict==='CORRECT'){
     inp.classList.add('good-field');
     triggerFlash('good');
     feedback.innerHTML=`<span style="color:var(--good);font-size:13px;">Also correct ✓ — the original order was:</span><br><strong>${escapeHTML(drill.correct)}</strong>`;
     feedback.classList.remove('hidden');
-    setTimeout(()=>{ if(currentDrill===drill) generateDrill(); },2600);
+    next(dAlt);
   }else if(verdict==='TYPO'){
     inp.classList.add('good-field');
     triggerFlash('good');
     feedback.innerHTML=`<span style="color:var(--muted);font-size:13px;">Typo — close enough:</span><br><strong>${buildCorrectHTML(drill.correct,typoIndices)}</strong>`;
     feedback.classList.remove('hidden');
-    setTimeout(()=>generateDrill(),2000);
+    next(dTypo);
   }else{
     inp.classList.add('bad-field');
     triggerFlash('bad');
@@ -1540,8 +1674,13 @@ function boot(){
       if(key==='goal'){
         if(v==='custom'){ gi.dataset.forceShow='1'; applySettingsUI(); gi.focus(); return; }
         gi.dataset.forceShow=''; settings.goal=parseInt(v,10)||0;
-      }else settings[key]=v==='1';
+      }else settings[key]=typeof DEFAULT_SETTINGS[key]==='boolean'?v==='1':v;
       saveSettings(); applySettingsUI(); renderDaily(false); updateBankUI();
+      if(key==='colors') document.querySelectorAll('#piecesWrap .piece').forEach(p=>{
+        const used=p.classList.contains('used');
+        p.className='piece'+pieceClass(p.textContent,p.dataset.role)+(used?' used':'');
+      });
+      if(key==='length'||key==='vocab') drillQueue=[]; // queued drills were made with the old setting
       if(key==='hideEnglish'&&currentDrill&&!currentDrill._recorded) setEnglishVeil(settings.hideEnglish);
     });
   });
