@@ -130,6 +130,44 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
   #btnCheck:hover{filter:brightness(1.08);}
 }
 
+/* title row: title left, daily counter + settings right */
+.titleRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 16px;}
+.titleRow .bar{margin:0;}
+.titleRight{display:flex;align-items:center;gap:8px;}
+
+/* daily counter pill */
+.dailyPill{display:flex;align-items:center;gap:6px;height:34px;padding:0 12px 0 6px;border-radius:17px;
+  background:rgba(120,120,128,0.28);border:0.5px solid var(--border-soft);font-family:var(--font-chrome);
+  font-size:14px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;transition:background .3s,border-color .3s;}
+.dailyPill .unit{font-weight:400;color:var(--muted);}
+.dailyRing{transform:rotate(-90deg);flex-shrink:0;}
+.dailyRing circle{fill:none;stroke-width:2.6;}
+.ringTrack{stroke:rgba(255,255,255,.14);}
+.ringFill{stroke:var(--accent);stroke-linecap:round;transition:stroke-dasharray .45s cubic-bezier(.25,.46,.45,.94),stroke .3s;}
+.ringCheck{fill:none;stroke:var(--good);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;opacity:0;transform:rotate(90deg);transform-origin:12px 12px;transition:opacity .3s;}
+.dailyPill.nogoal .ringFill{stroke-dasharray:100 0;}
+.dailyPill.done{background:var(--good-bg);border-color:rgba(50,215,75,.45);}
+.dailyPill.done .ringFill{stroke:var(--good);}
+.dailyPill.done .ringCheck{opacity:1;}
+.dailyPill.done .ringFill,.dailyPill.done .ringTrack{opacity:.35;}
+@keyframes dailyBump{0%{transform:scale(1)}35%{transform:scale(1.12)}100%{transform:scale(1)}}
+.dailyPill.bump{animation:dailyBump .35s ease;}
+@keyframes goalPop{0%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(.95)}100%{transform:scale(1)}}
+.dailyPill.goalPop{animation:goalPop .6s cubic-bezier(.3,1.6,.5,1);}
+
+/* hidden English: blurred until tapped */
+.englishWrap{flex:1;position:relative;min-width:0;}
+.peekHint{display:none;}
+.englishWrap.veiled #englishText{filter:blur(7px);opacity:.55;user-select:none;}
+.englishWrap.veiled .peekHint{display:flex;position:absolute;inset:0;align-items:center;justify-content:center;
+  font-family:var(--font-chrome);font-size:13px;color:var(--muted);cursor:pointer;}
+.englishWrap.veiled{cursor:pointer;}
+
+/* settings sheet bits */
+.settingsNote{margin:2px 0 0;line-height:1.5;}
+.settingsValue{font-family:var(--font-chrome);font-size:15px;color:var(--text);}
+#goalInput{padding:11px;border-radius:10px;font-size:15px;}
+
 /* unnatural-sentence flag — same icon button + confirm flash as preps.html */
 #btnFlagUnnatural{flex-shrink:0;}
 #btnFlagUnnatural.flag-confirm{background:var(--bad-bg);border-color:rgba(255,69,58,.6);}
@@ -163,7 +201,22 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 
 <div class="wrap">
 
-<div class="bar">Grammar</div>
+<div class="titleRow">
+  <div class="bar">Grammar</div>
+  <div class="titleRight">
+    <div id="dailyPill" class="dailyPill hidden" aria-live="polite">
+      <svg class="dailyRing" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <circle class="ringTrack" cx="12" cy="12" r="9.5"></circle>
+        <circle class="ringFill" cx="12" cy="12" r="9.5" pathLength="100" stroke-dasharray="0 100"></circle>
+        <path class="ringCheck" d="M8 12.3l2.7 2.7L16.2 9.4"></path>
+      </svg>
+      <span id="dailyText"></span>
+    </div>
+    <button id="btnSettings" class="iosIconBtn" title="Settings" aria-label="Settings">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37 1 .608 2.296.07 2.572-1.065z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    </button>
+  </div>
+</div>
 <div id="bankCount" class="muted small hidden" style="font-family:var(--font-chrome);margin:-12px 0 12px;"></div>
 
 <!-- Drill card -->
@@ -175,7 +228,10 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 
   <div id="drillContent" class="hidden">
     <div style="display:flex;align-items:flex-start;gap:10px;">
-      <div id="englishText" style="flex:1;font-size:17px;color:var(--text);line-height:1.6;"></div>
+      <div id="englishWrap" class="englishWrap">
+        <div id="englishText" style="font-size:17px;color:var(--text);line-height:1.6;"></div>
+        <div class="peekHint">Tap to peek at the English</div>
+      </div>
       <button id="btnFlagUnnatural" class="iosIconBtn" title="Sentence sounds unnatural — skip it and avoid ones like it" aria-label="Flag as unnatural">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"></path><path d="M5 4h13l-3 4.5L18 13H5"></path></svg>
       </button>
@@ -217,6 +273,39 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
 <pre id="debugPanel" style="display:none;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;font-size:12px;background:var(--input);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:14px;max-height:320px;overflow-y:auto;overflow-x:hidden;white-space:pre-wrap;word-break:break-all;color:var(--muted);line-height:1.5;"></pre>
 
 </div><!-- /wrap -->
+
+<!-- Settings sheet -->
+<div id="settingsPanel" class="menuPanel hidden">
+  <div class="iosSheet-handle"></div>
+  <div class="menuSection">
+    <div class="iosSheet-label">Daily counter</div>
+    <div class="iosSegment" data-setting="showDaily">
+      <button data-v="1">Show</button><button data-v="0">Hide</button>
+    </div>
+  </div>
+  <div class="menuSection">
+    <div class="iosSheet-label">Daily goal</div>
+    <div class="iosSegment" data-setting="goal">
+      <button data-v="0">None</button><button data-v="20">20</button><button data-v="40">40</button><button data-v="60">60</button><button data-v="custom">Custom</button>
+    </div>
+    <input id="goalInput" class="hidden" type="number" inputmode="numeric" min="1" max="500" step="1" placeholder="Sentences per day">
+    <p class="muted small settingsNote">No goal: the counter just counts. With a goal it fills a ring and turns green when you reach it.</p>
+  </div>
+  <div class="menuSection">
+    <div class="iosSheet-label">English sentence</div>
+    <div class="iosSegment" data-setting="hideEnglish">
+      <button data-v="0">Show</button><button data-v="1">Hidden — tap to peek</button>
+    </div>
+    <p class="muted small settingsNote">Hidden: rebuild the sentence from the German words alone. If your order uses the right words but differs from the original, it's checked for being correct German too.</p>
+  </div>
+  <div class="menuSection">
+    <div class="iosSheet-label">Sentence bank</div>
+    <div id="bankSettingsLine" class="settingsValue">—</div>
+    <div class="iosSegment" data-setting="bankOnPage">
+      <button data-v="1">Show on page</button><button data-v="0">Only here</button>
+    </div>
+  </div>
+</div>
 
 <!-- Floating iOS dock -->
 <nav class="iosDock" aria-label="Screens">
@@ -707,6 +796,8 @@ async function bankInit(){
 function updateBankUI(){
   const el=document.getElementById('bankCount');
   if(!el) return;
+  if(document.getElementById('settingsPanel')?.classList.contains('show')) applySettingsUI();
+  if(!settings.bankOnPage){ el.classList.add('hidden'); return; }
   if(bank.status==='filling'||bank.status==='serving'){
     el.textContent=`${bank.count.toLocaleString()} / ${BANK_TARGET.toLocaleString()} saved`+(bank.status==='serving'?' · bank mode':'');
     el.classList.remove('hidden');
@@ -771,7 +862,7 @@ async function drillFromBank(){
   const row=bank.queue.shift();
   if(!row) return null;
   const pairs=buildPairs(row.german,row.verbs,row.prefixes);
-  const drill={english:row.english,correct:pairs.map(p=>p.word).join(' '),_hasWords:true,_bankGerman:row.german,
+  const drill={english:row.english,correct:pairs.map(p=>p.word).join(' '),_hasWords:true,_bankGerman:row.german,_alts:Array.isArray(row.alternatives)?[...row.alternatives]:[],
     _injectLine:`from bank #${row.id} (${row.source}, seen ${row.seen}×, right ${row.correct}×)`,_meta:`connector=${row.connector} theme=${row.theme} model=${row.model}`};
   for(let i=pairs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pairs[i],pairs[j]]=[pairs[j],pairs[i]];}
   drill.pieces=pairs;
@@ -1031,6 +1122,7 @@ function renderDrill(drill){
   drillContent.classList.remove('hidden');
 
   englishText.textContent=drill.english;
+  setEnglishVeil(settings.hideEnglish);
   inp.value='';
   micBase='';
   sizeAnswerField();
@@ -1190,27 +1282,175 @@ function updatePieceStates(){
 }
 
 /* ── Check answer ── */
-function checkAnswer(){
-  if(!currentDrill) return;
+/* ── Settings ── */
+const SETTINGS_LS='grammar_settings_v1';
+const DEFAULT_SETTINGS={showDaily:true,goal:0,hideEnglish:false,bankOnPage:true};
+function loadSettings(){
+  try{ return {...DEFAULT_SETTINGS,...JSON.parse(localStorage.getItem(SETTINGS_LS)||'{}')}; }catch(e){ return {...DEFAULT_SETTINGS}; }
+}
+let settings=loadSettings();
+function saveSettings(){ try{ localStorage.setItem(SETTINGS_LS,JSON.stringify(settings)); }catch(e){} }
+
+function applySettingsUI(){
+  document.querySelectorAll('#settingsPanel .iosSegment').forEach(seg=>{
+    const key=seg.dataset.setting;
+    let cur=key==='goal'
+      ? (settings.goal===0?'0':[20,40,60].includes(settings.goal)?String(settings.goal):'custom')
+      : (settings[key]?'1':'0');
+    seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.v===cur));
+  });
+  const gi=document.getElementById('goalInput');
+  const custom=settings.goal>0&&![20,40,60].includes(settings.goal);
+  gi.classList.toggle('hidden',!(custom||gi.dataset.forceShow==='1'));
+  if(custom) gi.value=settings.goal;
+  const line=document.getElementById('bankSettingsLine');
+  if(line) line.textContent=bank.status==='filling'||bank.status==='serving'
+    ? `${bank.count.toLocaleString()} / ${BANK_TARGET.toLocaleString()} sentences saved`+(bank.status==='serving'?' — serving from the bank, no API calls':'')
+    : bank.status==='no-table'?'Table missing — run supabase/grammar_bank.sql':'Not connected (needs Supabase)';
+}
+
+/* ── Daily counter ──
+   Counts drills answered today (first Check of each drill, right or wrong —
+   doing the work is what counts). Stored per local date in localStorage. */
+const DAILY_LS='grammar_daily_v1';
+function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function loadDaily(){ try{ const o=JSON.parse(localStorage.getItem(DAILY_LS)||'{}'); return o&&typeof o==='object'?o:{}; }catch(e){ return {}; } }
+function todayCount(){ return loadDaily()[todayKey()]||0; }
+function bumpDaily(){
+  const d=loadDaily(), k=todayKey();
+  d[k]=(d[k]||0)+1;
+  const keys=Object.keys(d).sort(); while(keys.length>120) delete d[keys.shift()];
+  try{ localStorage.setItem(DAILY_LS,JSON.stringify(d)); }catch(e){}
+  renderDaily(true);
+}
+function renderDaily(animate){
+  const pill=document.getElementById('dailyPill');
+  if(!pill) return;
+  pill.classList.toggle('hidden',!settings.showDaily);
+  if(!settings.showDaily) return;
+  const n=todayCount(), goal=settings.goal||0;
+  const text=document.getElementById('dailyText');
+  const fill=pill.querySelector('.ringFill');
+  const wasDone=pill.classList.contains('done');
+  if(goal>0){
+    const pct=Math.min(100,Math.round(n/goal*100));
+    fill.setAttribute('stroke-dasharray',`${pct} 100`);
+    text.innerHTML=`${n}<span class="unit">/${goal}</span>`;
+    pill.classList.remove('nogoal');
+    pill.classList.toggle('done',n>=goal);
+    pill.title=n>=goal?`Goal reached — ${n} sentences today`:`${goal-n} to go today`;
+  }else{
+    text.innerHTML=`${n} <span class="unit">today</span>`;
+    pill.classList.add('nogoal'); pill.classList.remove('done');
+    pill.title=`${n} sentences today`;
+  }
+  if(animate){
+    const cls=(!wasDone&&pill.classList.contains('done'))?'goalPop':'bump';
+    pill.classList.remove('bump','goalPop'); void pill.offsetWidth; pill.classList.add(cls);
+  }
+}
+
+/* ── Hidden English: veil + tap to peek ── */
+function setEnglishVeil(on){
+  document.getElementById('englishWrap')?.classList.toggle('veiled',!!on);
+}
+
+/* ── Alternative word orders ──
+   German often allows more than one correct order (subordinate clause first
+   or last, a time word moved to the front…). When an answer uses exactly the
+   drill's words in a different order, a quick call to the cheap model decides
+   whether it's also correct. Accepted orders are kept on the drill and in the
+   bank row, so the same order is accepted instantly next time. */
+function wordBag(t){ return stripPunct(t).toLowerCase().split(/\s+/).filter(Boolean).sort().join(' '); }
+async function verifyAlternative(drill,answer){
+  if(window.IOSDemo?.on) return {valid:false,reason:''};
+  const key=localStorage.getItem(GEMINI_KEY_LS);
+  if(!key) return null;
+  const prompt=`A German learner rebuilt a sentence from its shuffled words.
+Original: "${drill.correct}"
+Meaning: "${drill.english}"
+Learner's order: "${stripPunct(answer)}"
+Punctuation and capitalization are missing from the learner's version — ignore that completely.
+
+Is the learner's order ALSO a correct German sentence that a native speaker would accept, with the same meaning? Different but valid orders count as correct (e.g. the subordinate clause before or after the main clause with the right verb position, or a time/place phrase moved to the front). Anything a native would find wrong or clearly odd is not correct.
+
+Return JSON only: {"valid":true|false,"reason":"if not valid: one short English sentence naming the rule that was broken, e.g. \\"After weil the conjugated verb goes to the end.\\"; if valid: empty"}`;
+  const body=JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0,maxOutputTokens:400,responseMimeType:'application/json',thinkingConfig:{thinkingLevel:'minimal'}}});
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body});
+  if(!res.ok) throw new Error(`API ${res.status}`);
+  const out=parseFirstJSON(extractGeminiText(await res.json()));
+  return {valid:out.valid===true,reason:String(out.reason||'').trim()};
+}
+async function bankAddAlternative(drill,answer){
+  if(!bank.ok) return;
+  try{
+    const q=`${BANK_TABLE}?german=eq.${encodeURIComponent(drill._bankGerman||drill.correct)}`;
+    const rows=await (await sbFetch(`${q}&select=alternatives`)).json();
+    if(!rows.length) return;
+    const alts=Array.isArray(rows[0].alternatives)?rows[0].alternatives:[];
+    if(alts.some(a=>stripPunct(a).toLowerCase()===stripPunct(answer).toLowerCase())) return;
+    alts.push(stripPunct(answer));
+    await sbFetch(q,{method:'PATCH',body:JSON.stringify({alternatives:alts})});
+  }catch(e){ console.warn('[bank] alternative not saved —',e.message); }
+}
+
+let checking=false;
+async function checkAnswer(){
+  if(!currentDrill||checking) return;
+  const drill=currentDrill;
   const inp=document.getElementById('answerInput');
   const feedback=document.getElementById('feedback');
+  const answer=inp.value;
+  if(!answer.trim()) return;
 
   inp.classList.remove('good-field','bad-field');
   document.getElementById('undoWrap')?.classList.remove('show');
 
-  const {verdict,typoIndices}=evaluateAnswer(inp.value,currentDrill.correct);
-  // Only the first check of a drill counts (a retry after "wrong" isn't a fresh answer).
-  if(!currentDrill._recorded){ currentDrill._recorded=true; bankRecord(currentDrill,{answered:verdict!=='WRONG'}); }
+  let {verdict,typoIndices}=evaluateAnswer(answer,drill.correct);
+  let altAccepted=false, whyWrong='';
+  if(verdict==='WRONG'){
+    drill._alts=drill._alts||[];
+    if(drill._alts.some(a=>evaluateAnswer(answer,a).verdict!=='WRONG')){
+      verdict='CORRECT'; altAccepted=true;
+    }else if(wordBag(answer)===wordBag(drill.correct)){
+      checking=true;
+      feedback.innerHTML='<span class="muted">Different order — checking if it works too…</span>';
+      feedback.classList.remove('hidden');
+      let r=null;
+      try{ r=await verifyAlternative(drill,answer); }catch(e){ console.warn('[grammar] alt check failed —',e.message); }
+      checking=false;
+      if(currentDrill!==drill) return; // user moved on meanwhile
+      if(r?.valid){
+        verdict='CORRECT'; altAccepted=true;
+        drill._alts.push(stripPunct(answer));
+        bankAddAlternative(drill,answer);
+      }else if(r?.reason) whyWrong=r.reason;
+    }
+  }
 
-  if(verdict==='CORRECT'){
+  // Only the first check of a drill counts (a retry after "wrong" isn't a fresh answer).
+  if(!drill._recorded){
+    drill._recorded=true;
+    bankRecord(drill,{answered:verdict!=='WRONG'});
+    bumpDaily();
+  }
+  setEnglishVeil(false);
+
+  if(verdict==='CORRECT'&&!altAccepted){
     inp.classList.add('good-field');
     triggerFlash('good');
     feedback.classList.add('hidden');
     setTimeout(()=>generateDrill(),800);
+  }else if(verdict==='CORRECT'){
+    inp.classList.add('good-field');
+    triggerFlash('good');
+    feedback.innerHTML=`<span style="color:var(--good);font-size:13px;">Also correct ✓ — the original order was:</span><br><strong>${escapeHTML(drill.correct)}</strong>`;
+    feedback.classList.remove('hidden');
+    setTimeout(()=>{ if(currentDrill===drill) generateDrill(); },2600);
   }else if(verdict==='TYPO'){
     inp.classList.add('good-field');
     triggerFlash('good');
-    feedback.innerHTML=`<span style="color:var(--muted);font-size:13px;">Typo — close enough:</span><br><strong>${buildCorrectHTML(currentDrill.correct,typoIndices)}</strong>`;
+    feedback.innerHTML=`<span style="color:var(--muted);font-size:13px;">Typo — close enough:</span><br><strong>${buildCorrectHTML(drill.correct,typoIndices)}</strong>`;
     feedback.classList.remove('hidden');
     setTimeout(()=>generateDrill(),2000);
   }else{
@@ -1220,7 +1460,8 @@ function checkAnswer(){
     void inp.offsetWidth;
     inp.classList.add('input-shake');
     setTimeout(()=>inp.classList.remove('input-shake'),400);
-    feedback.innerHTML=`<span class="muted">Correct: </span><strong>${escapeHTML(currentDrill.correct)}</strong>`;
+    feedback.innerHTML=`<span class="muted">Correct: </span><strong>${escapeHTML(drill.correct)}</strong>`
+      +(whyWrong?`<div class="muted small" style="margin-top:6px;">${escapeHTML(whyWrong)}</div>`:'');
     feedback.classList.remove('hidden');
   }
 }
@@ -1231,6 +1472,7 @@ function boot(){
     document.getElementById('apiKeyScreen').classList.remove('hidden');
     return;
   }
+  renderDaily(false);
   // One quick count request decides API vs bank mode before the first drill;
   // never wait more than 2 s on it.
   Promise.race([bankInit(),new Promise(r=>setTimeout(r,2000))]).finally(generateDrill);
@@ -1281,6 +1523,37 @@ function boot(){
     autoResize();
   },{passive:false});
   document.getElementById('btnUndo')?.addEventListener('mousedown',(e)=>e.preventDefault());
+
+  // Settings sheet
+  let lockSettings=0;
+  document.getElementById('btnSettings')?.addEventListener('pointerdown',(e)=>{
+    e.preventDefault();
+    const now=Date.now(); if(now-lockSettings<400) return; lockSettings=now;
+    document.getElementById('goalInput').dataset.forceShow='';
+    applySettingsUI();
+    window.IOSSheet?.open('settingsPanel');
+  },{passive:false});
+  document.querySelectorAll('#settingsPanel .iosSegment button').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const key=b.parentElement.dataset.setting, v=b.dataset.v;
+      const gi=document.getElementById('goalInput');
+      if(key==='goal'){
+        if(v==='custom'){ gi.dataset.forceShow='1'; applySettingsUI(); gi.focus(); return; }
+        gi.dataset.forceShow=''; settings.goal=parseInt(v,10)||0;
+      }else settings[key]=v==='1';
+      saveSettings(); applySettingsUI(); renderDaily(false); updateBankUI();
+      if(key==='hideEnglish'&&currentDrill&&!currentDrill._recorded) setEnglishVeil(settings.hideEnglish);
+    });
+  });
+  document.getElementById('goalInput')?.addEventListener('change',e=>{
+    let v=parseInt(e.target.value,10);
+    settings.goal=Number.isFinite(v)&&v>0?Math.min(500,v):0;
+    saveSettings(); applySettingsUI(); renderDaily(false);
+  });
+  // Peek at the hidden English
+  document.getElementById('englishWrap')?.addEventListener('click',()=>setEnglishVeil(false));
+  // The count rolls over at midnight even if the page stays open
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) renderDaily(false); });
 
   let lockFlag=0;
   document.getElementById('btnFlagUnnatural')?.addEventListener('pointerdown',(e)=>{

@@ -17,8 +17,12 @@ create table if not exists grammar_bank (
   correct      int not null default 0,        -- times answered right
   last_seen    timestamptz,
   last_correct boolean,
-  flagged      boolean not null default false -- flagged as unnatural: never served again
+  flagged      boolean not null default false,-- flagged as unnatural: never served again
+  alternatives jsonb not null default '[]'    -- other word orders confirmed as correct
 );
+
+-- Added after the first version of this table — safe if it already exists.
+alter table grammar_bank add column if not exists alternatives jsonb not null default '[]';
 
 create index if not exists grammar_bank_serve_idx on grammar_bank (flagged, seen, last_seen);
 
