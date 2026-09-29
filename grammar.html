@@ -130,10 +130,10 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
   #btnCheck:hover{filter:brightness(1.08);}
 }
 
-/* unnatural-sentence flag */
-.flagBtn{flex-shrink:0;width:36px;height:36px;border-radius:50%;background:transparent;border:1px solid var(--border-soft);font-size:16px;line-height:1;cursor:pointer;opacity:.65;transition:opacity .15s,transform .15s;}
-.flagBtn:active{transform:scale(.92);opacity:1;}
-@media (hover:hover){.flagBtn:hover{opacity:1;}}
+/* unnatural-sentence flag — same icon button + confirm flash as preps.html */
+#btnFlagUnnatural{flex-shrink:0;}
+#btnFlagUnnatural.flag-confirm{background:var(--bad-bg);border-color:rgba(255,69,58,.6);}
+#btnFlagUnnatural.flag-confirm svg{stroke:var(--bad);}
 
 /* word class borders (literal hues, not tied to theme tokens) */
 .piece.acc-dat{border-color:#b8860b;}
@@ -175,7 +175,9 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
   <div id="drillContent" class="hidden">
     <div style="display:flex;align-items:flex-start;gap:10px;">
       <div id="englishText" style="flex:1;font-size:17px;color:var(--text);line-height:1.6;"></div>
-      <button id="btnFlagUnnatural" class="flagBtn" title="Sentence sounds unnatural — skip it and avoid ones like it" aria-label="Flag as unnatural">👎</button>
+      <button id="btnFlagUnnatural" class="iosIconBtn" title="Sentence sounds unnatural — skip it and avoid ones like it" aria-label="Flag as unnatural">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"></path><path d="M5 4h13l-3 4.5L18 13H5"></path></svg>
+      </button>
     </div>
     <div id="flagNote" class="muted small hidden" style="font-family:var(--font-chrome);margin-top:2px;">Flagged — future sentences will avoid this.</div>
 
@@ -629,7 +631,7 @@ let drillQueue=[];
 let fetchesInFlight=0;
 
 /* ── Unnatural-sentence flags ──
-   The 👎 button stores the sentence here; the most recent ones go back into
+   The flag button stores the sentence here; the most recent ones go back into
    the prompt as examples of what NOT to produce, so the generator drifts
    toward the learner's own sense of "natural". */
 const FLAGGED_LS='grammar_flagged_v1';
@@ -898,8 +900,7 @@ function renderDrill(drill){
       const now=Date.now(); if(now-lock<400) return; lock=now;
       const cur=inp.value;
       inp.value=cur+(cur&&!cur.endsWith(' ')?' ':'')+clean;
-      inp.style.height='0px';
-      inp.style.height=inp.scrollHeight+'px';
+      sizeAnswerField();
       updatePieceStates();
     },{passive:false});
     btn.addEventListener('mousedown',(e)=>e.preventDefault());
@@ -1125,6 +1126,9 @@ function boot(){
     const now=Date.now(); if(now-lockFlag<400) return; lockFlag=now;
     if(!currentDrill) return;
     flagCurrentDrill();
+    const flagBtn=document.getElementById('btnFlagUnnatural');
+    flagBtn?.classList.add('flag-confirm');
+    setTimeout(()=>flagBtn?.classList.remove('flag-confirm'),600);
     const note=document.getElementById('flagNote');
     note?.classList.remove('hidden');
     setTimeout(()=>{ note?.classList.add('hidden'); generateDrill(); },700);
