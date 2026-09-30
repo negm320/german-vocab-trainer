@@ -365,9 +365,9 @@ input,textarea{width:100%;padding:10px;border-radius:10px;font-size:16px;color:v
   <div class="menuSection">
     <div class="iosSheet-label">After a correct answer</div>
     <div class="iosSegment" data-setting="autoNext">
-      <button data-v="fast">Quick</button><button data-v="slow">Slow</button><button data-v="manual">Wait for Next</button>
+      <button data-v="fast">Quick</button><button data-v="slow">Slow</button><button data-v="smart">Smart</button><button data-v="manual">Wait</button>
     </div>
-    <p class="muted small settingsNote">Wait for Next: press Next (or Enter) when you're ready.</p>
+    <p class="muted small settingsNote">Smart: moves on slowly after a clean answer, but waits for you when there's a typo correction or an "also correct" note to read. Wait: always waits — press Next (or Enter) when you're ready.</p>
   </div>
 
   <div class="settingsGroup">Sentence bank</div>
@@ -488,6 +488,13 @@ let recognition=null;
 let micActive=false;
 let micBase='';
 let snapFlags=[];
+/* Dictation model: the recognizer reports the whole session's speech (iOS in
+   particular keeps re-sending everything since the mic was switched on), so
+   the field is always rebuilt as micBase + session words[micSkip…].
+   Editing the field mid-dictation (undo, chip tap, typing) commits the field
+   as the new micBase and marks every word heard so far as consumed — so an
+   undone word can't be re-added by the next result. */
+let micSkip=0, micSessionWords=0;
 
 /* Broad everyday themes, not specific scenarios: a narrow English scenario
    ("a robot vacuum getting stuck") plus every other constraint below is what
@@ -647,20 +654,22 @@ function pickBestAlternative(result,candidates){
 
     recognition.onstart=()=>{
       micBase=document.getElementById('answerInput')?.value||'';
+      micSkip=0; micSessionWords=0;
       snapFlags=[];
       setMicState('listening');
     };
 
     recognition.onresult=(e)=>{
+      if(!micActive) return; // late result after Check / Next / stop — ignore
       const candidates=currentDrill?._candidates||[];
-      let interim='', final='';
-      for(let i=e.resultIndex;i<e.results.length;i++){
-        const transcript=pickBestAlternative(e.results[i],candidates);
-        if(e.results[i].isFinal) final+=transcript;
-        else interim+=transcript;
+      const parts=[]; let pending=false;
+      for(let i=0;i<e.results.length;i++){
+        parts.push(pickBestAlternative(e.results[i],candidates));
+        if(!e.results[i].isFinal) pending=true;
       }
-      if(final) setInputFinal(final);
-      else if(interim) setInputInterim(interim);
+      const words=parts.join(' ').trim().split(/\s+/).filter(Boolean);
+      micSessionWords=words.length;
+      renderDictation(words.slice(micSkip).join(' '),pending);
     };
 
     recognition.onerror=(e)=>{
@@ -728,28 +737,39 @@ function sizeAnswerField(){
   inp.classList.toggle('multiline', sh > lh*1.5 + padV);
 }
 
-function setInputInterim(text){
+function renderDictation(text,pending){
   const inp=document.getElementById('answerInput');
   if(!inp) return;
-  const {text:snappedText}=snapTokens(text,currentDrill?._candidates||[]);
-  inp.value=micBase+(micBase&&!micBase.endsWith(' ')?' ':'')+snappedText;
-  inp.classList.add('input-interim');
-  sizeAnswerField();
-  updatePieceStates();
-}
-
-function setInputFinal(text){
-  const inp=document.getElementById('answerInput');
-  if(!inp) return;
+  const sep=micBase&&text&&!micBase.endsWith(' ')?' ':'';
   const baseWordCount=micBase.trim()?micBase.trim().split(/\s+/).filter(Boolean).length:0;
   const {text:snappedText,snapped}=snapTokens(text,currentDrill?._candidates||[]);
-  inp.value=micBase+(micBase&&!micBase.endsWith(' ')?' ':'')+snappedText;
-  micBase=inp.value;
-  snapFlags.push(...snapped.map(i=>baseWordCount+i));
-  inp.classList.remove('input-interim');
+  inp.value=micBase+sep+snappedText;
+  snapFlags=snapped.map(i=>baseWordCount+i);
+  inp.classList.toggle('input-interim',!!pending);
   sizeAnswerField();
   updatePieceStates();
   updateSnapPreview();
+}
+
+/* The field was edited while the mic is on: keep what's there, drop
+   everything heard so far from future results. */
+function micSyncToField(){
+  if(!micActive) return;
+  const inp=document.getElementById('answerInput');
+  micBase=inp?.value||'';
+  micSkip=micSessionWords;
+  snapFlags=[];
+  inp?.classList.remove('input-interim');
+  updateSnapPreview();
+}
+
+/* Turn the mic off now and discard anything still in flight, so late
+   results can't change the answer after Check or leak into the next card. */
+function stopMic(){
+  if(!recognition||!micActive) return;
+  setMicState('idle');
+  document.getElementById('answerInput')?.classList.remove('input-interim');
+  try{ recognition.abort(); }catch(e){ try{ recognition.stop(); }catch(_){} }
 }
 
 /* ── Debug panel ── */
@@ -1140,7 +1160,7 @@ function refillQueue(){
 }
 
 function presentDrill(drill){
-  if(micActive&&recognition) recognition.stop();
+  stopMic();
   drill._candidates=drill.pieces.map(p=>p.word.replace(/[.,!?;:"""„"–—]/g,'')).filter(Boolean);
   currentDrill=drill;
   appendDebugEntry(drill,drill.pieces,drill._hasWords);
@@ -1227,6 +1247,7 @@ function renderDrill(drill){
       const now=Date.now(); if(now-lock<400) return; lock=now;
       const cur=inp.value;
       inp.value=cur+(cur&&!cur.endsWith(' ')?' ':'')+clean;
+      micSyncToField();
       sizeAnswerField();
       updatePieceStates();
     },{passive:false});
@@ -1371,7 +1392,7 @@ const LENGTHS={
 };
 // Delay (ms) before the next drill after a correct / typo / "also correct"
 // answer; null = wait for Next.
-const AUTO_NEXT={fast:[800,2000,2600],slow:[2500,3500,4000],manual:[null,null,null]};
+const AUTO_NEXT={fast:[800,2000,2600],slow:[2500,3500,4000],smart:[2500,null,null],manual:[null,null,null]};
 function loadSettings(){
   try{ return {...DEFAULT_SETTINGS,...JSON.parse(localStorage.getItem(SETTINGS_LS)||'{}')}; }catch(e){ return {...DEFAULT_SETTINGS}; }
 }
@@ -1529,6 +1550,7 @@ let checking=false;
 async function checkAnswer(){
   if(!currentDrill||checking) return;
   const drill=currentDrill;
+  stopMic(); // what's in the field is the answer — nothing more gets dictated in
   if(drill._solved){ generateDrill(); return; } // "Wait for Next" mode: Check/Enter again moves on
   const inp=document.getElementById('answerInput');
   const feedback=document.getElementById('feedback');
@@ -1627,7 +1649,7 @@ function boot(){
     sizeAnswerField();
     updatePieceStates();
   }
-  answerEl?.addEventListener('input',autoResize);
+  answerEl?.addEventListener('input',()=>{ micSyncToField(); autoResize(); });
   answerEl?.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'){ e.preventDefault(); checkAnswer(); }
   });
@@ -1654,6 +1676,7 @@ function boot(){
     const trimmed=answerEl.value.trimEnd();
     const lastSpace=trimmed.lastIndexOf(' ');
     answerEl.value=lastSpace>=0?trimmed.slice(0,lastSpace+1):'';
+    micSyncToField();
     autoResize();
   },{passive:false});
   document.getElementById('btnUndo')?.addEventListener('mousedown',(e)=>e.preventDefault());
@@ -1722,7 +1745,7 @@ function boot(){
   document.getElementById('micBtn')?.addEventListener('pointerdown',(e)=>{
     e.preventDefault();
     const now=Date.now(); if(now-lockMic<400) return; lockMic=now;
-    if(micActive){ recognition.stop(); }
+    if(micActive){ stopMic(); }
     else{ try{ recognition.start(); }catch(err){ setMicState('idle'); } }
   },{passive:false});
   document.getElementById('micBtn')?.addEventListener('mousedown',(e)=>e.preventDefault());
