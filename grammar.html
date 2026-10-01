@@ -820,7 +820,7 @@ let fetchesInFlight=0;
    with ~20% re-tests of sentences answered wrong. Each row also records how
    often it was seen / answered right and whether it was flagged.
    Without Supabase configured (or before the table exists) the page simply
-   works as before. One-time setup: supabase/grammar_bank.sql. */
+   works as before. One-time setup SQL: see CLAUDE.md (kept locally). */
 const BANK_TARGET=10000;
 const BANK_TABLE='grammar_bank';
 const bank={ok:false,count:0,keys:[],keysPromise:null,queue:[],status:'off'};

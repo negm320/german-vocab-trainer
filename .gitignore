@@ -1,14 +1,32 @@
-# Python scripts (local only)
-generate_sentences.py
-validate_sentences.py
-add_gender.py
-nouns_list.txt
-__pycache__/
+# GitHub holds only what the site serves: the HTML screens, ios-* shared
+# files, demo-mode.js, fonts/, icons/, manifest, 5k.csv and sentences.json.
+# Everything below stays on your computer only.
+
+# Notes, docs and scripts
+*.md
+*.sql
+*.py
 *.pyc
+*.sh
+__pycache__/
+scripts/
+supabase/
+nouns_list.txt
+
+# Old data and assets no screen uses any more
+img/
+vocab.csv
+verbs.csv
+prepositions.csv
+adjadv.csv
 
 # Claude Code internals
 .claude/
-CLAUDE.md
 
-# Local secrets (not for the repo)
+# Local secrets (never commit)
 supbase password.txt
+*.env
+.env*
+
+# OS clutter
+.DS_Store
