@@ -146,7 +146,10 @@ Synced to `kv_state`: `top5k_state_v2`, `top5k_log_v1`, `chat_scenes_v1`,
   rescheduled. Level advances when all scheduled appearances are done. Not
   time-based (a long break changes nothing).
 - Word tools: Edit (overrides stored in state; editing only the meaning does
-  NOT pin the sentence), Hide, Super (show every N levels), 1-Streak, Set
+  NOT pin the sentence — before 28 Sep 2026 every Edit save pinned it; the
+  one-time `unpinAccidentalSentences()` (flag `settings.sentencesUnpinned`)
+  unpinned words whose pinned sentence is the CSV one or a current
+  sentences.json one; Edit shows "Unlock sentence" for any word still pinned), Hide, Super (show every N levels), 1-Streak, Set
   score, Typo (count last wrong answer as right), Back.
 - All 4,899 rows have English + an example sentence (the 1,982 words from
   id 2948 on were filled in on 2 Oct 2026). Rows without English would be

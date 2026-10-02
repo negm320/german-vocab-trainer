@@ -465,6 +465,35 @@ function getSentenceData(x){
   return {deSent:x.deSent,enSent:x.enSent,conjugated:x.conjugated,enInSent:x.enInSent};
 }
 
+const SENT_OV_FIELDS=['deSent','enSent','conjugated','enInSent'];
+function hasSentenceOverride(ov){ return !!ov&&(ov.deSent!==undefined||ov.enSent!==undefined); }
+function clearSentenceOverride(id){
+  const ov=state.overrides?.[id];
+  if(!ov) return;
+  for(const k of SENT_OV_FIELDS) delete ov[k];
+}
+
+// One-time fix (Oct 2026): before 28 Sep 2026 saving anything in Edit also
+// pinned the word to the sentence on screen, so it stopped rotating through
+// sentences.json. Unpin every word whose pinned sentence is just the CSV one
+// or one of its sentences.json ones; sentences the owner wrote stay pinned.
+function unpinAccidentalSentences(){
+  if(state.settings.sentencesUnpinned) return;
+  const clean=t=>(t||'').replace(/\s+/g,' ').trim();
+  const csvSent={};
+  for(const r of state.rawRows) csvSent[(r[0]||'').trim()]=clean(r[3]);
+  let n=0;
+  for(const [id,ov] of Object.entries(state.overrides||{})){
+    if(!hasSentenceOverride(ov)) continue;
+    const pinned=clean(ov.deSent);
+    const known=[csvSent[id],...(state.sentencesData?.[id]||[]).map(s=>clean(s.deSent))];
+    if(!pinned||known.includes(pinned)){ clearSentenceOverride(id); n++; }
+  }
+  state.settings.sentencesUnpinned=true;
+  if(n) Core.rebuildData();
+  saveState();
+}
+
 /* ====== gender color ====== */
 function getGenderColor(x){
   const g = x.gender || '';
@@ -1129,6 +1158,7 @@ const Core={
     sentP.then(data=>{
       if(!data||typeof data!=='object') return;
       state.sentencesData=data;
+      unpinAccidentalSentences();
       const x=state.data.find(w=>w.id===state.currentId);
       const typed=($('#coreDe')?.value||'')+($('#coreDeSent')?.value||'');
       if(x&&state._enterStage===0&&!typed&&state.activeMode!=='word') Core.render(x);
@@ -1958,6 +1988,7 @@ async function boot(){
     $('#editConjugated').value = sd.conjugated??'';
     $('#editEnInSent').value   = sd.enInSent  ??'';
     $('#editModal')?.setAttribute('aria-hidden','false');
+    $('#editPinnedRow')?.classList.toggle('hidden',!hasSentenceOverride(ov));
     window.IOSSheet?.open('editModal');
     setTimeout(()=>$('#editGerman')?.focus(),50);
   }
@@ -2000,6 +2031,14 @@ async function boot(){
     const id=e.target?.id;
     if(id==='editModalClose'||id==='editModalCancel'||id==='editModal') closeEditModal();
     if(id==='editModalSave') saveEditModal();
+    if(id==='editUnpin'&&_editId){
+      const unpinId=_editId;
+      clearSentenceOverride(unpinId);
+      closeEditModal();
+      Core.rebuildData(); saveState();
+      const updated=state.data.find(w=>w.id===unpinId);
+      if(updated) Core.render(updated);
+    }
   });
   $('#editModal')?.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeEditModal(); });
 
@@ -2299,6 +2338,10 @@ document.addEventListener('DOMContentLoaded',boot);
       <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);">English
         <input id="editEnglish" type="text" spellcheck="false">
       </label>
+    </div>
+    <div id="editPinnedRow" class="hidden" style="margin-top:12px;font-size:12px;color:var(--muted);font-family:var(--font-chrome);">
+      This word always shows the same sentence.
+      <button id="editUnpin" style="margin-top:6px;width:100%;font-size:13px;">Unlock sentence (rotate through all sentences)</button>
     </div>
     <details style="margin-top:14px;">
       <summary class="muted small" style="cursor:pointer;user-select:none;font-family:var(--font-chrome);">Advanced</summary>
