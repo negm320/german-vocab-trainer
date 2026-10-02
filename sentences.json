@@ -631,7 +631,7 @@
     {
       "deSent": "Du kannst jetzt gehen.",
       "enSent": "You can go now.",
-      "conjugated": null,
+      "conjugated": "kannst",
       "enInSent": "can"
     },
     {
@@ -2645,8 +2645,8 @@
       "enInSent": "where"
     },
     {
-      "deSent": "Woher kommst du denn?",
-      "enSent": "So where are you from?",
+      "deSent": "Wo wohnst du denn?",
+      "enSent": "So where do you live?",
       "conjugated": null,
       "enInSent": "where"
     },
@@ -3449,7 +3449,7 @@
     {
       "deSent": "Wir möchten am Wochenende verreisen.",
       "enSent": "We would like to travel on the weekend.",
-      "conjugated": null,
+      "conjugated": "möchten",
       "enInSent": "would like"
     },
     {
@@ -3461,7 +3461,7 @@
     {
       "deSent": "Meine Kinder möchten ins Schwimmbad gehen.",
       "enSent": "My children would like to go to the swimming pool.",
-      "conjugated": null,
+      "conjugated": "möchten",
       "enInSent": "would like"
     },
     {
@@ -4183,7 +4183,7 @@
     {
       "deSent": "Am Ende des Tages bin ich müde.",
       "enSent": "At the end of the day, I am tired.",
-      "conjugated": null,
+      "conjugated": "Tages",
       "enInSent": "day"
     },
     {
@@ -5551,8 +5551,8 @@
       "enInSent": "back"
     },
     {
-      "deSent": "Kannst du das Buch zurückgeben?",
-      "enSent": "Can you give the book back?",
+      "deSent": "Gibst du mir das Buch morgen zurück?",
+      "enSent": "Will you give me the book back tomorrow?",
       "conjugated": null,
       "enInSent": "back"
     },
@@ -10149,8 +10149,8 @@
       "enInSent": "in"
     },
     {
-      "deSent": "Wir müssen das Zeug reinlegen.",
-      "enSent": "We have to put that stuff in.",
+      "deSent": "Komm doch rein, es ist kalt draußen.",
+      "enSent": "Come on in, it's cold outside.",
       "conjugated": null,
       "enInSent": "in"
     },
@@ -10173,8 +10173,8 @@
       "enInSent": "inside"
     },
     {
-      "deSent": "Kannst du die Wäsche reinholen?",
-      "enSent": "Can you bring the laundry in?",
+      "deSent": "Holst du bitte die Wäsche rein?",
+      "enSent": "Can you please bring the laundry in?",
       "conjugated": null,
       "enInSent": "in"
     },
@@ -10827,8 +10827,8 @@
       "enInSent": "together"
     },
     {
-      "deSent": "Wir müssen jetzt zusammenhalten.",
-      "enSent": "We have to stick together now.",
+      "deSent": "In schweren Zeiten halten wir zusammen.",
+      "enSent": "In hard times we stick together.",
       "conjugated": null,
       "enInSent": "together"
     },
@@ -15421,13 +15421,13 @@
     {
       "deSent": "In ein paar Monaten beginnt der Frühling.",
       "enSent": "Spring begins in a few months.",
-      "conjugated": null,
+      "conjugated": "Monaten",
       "enInSent": "months"
     },
     {
       "deSent": "Sie ist seit sechs Monaten krank.",
       "enSent": "She has been sick for six months.",
-      "conjugated": null,
+      "conjugated": "Monaten",
       "enInSent": "months"
     },
     {
@@ -15439,7 +15439,7 @@
     {
       "deSent": "Nach drei Monaten fühlte er sich besser.",
       "enSent": "After three months he felt better.",
-      "conjugated": null,
+      "conjugated": "Monaten",
       "enInSent": "months"
     },
     {
@@ -17403,8 +17403,8 @@
       "enInSent": "water"
     },
     {
-      "deSent": "Das Badewasser ist zu heiß.",
-      "enSent": "The bath water is too hot.",
+      "deSent": "Das Wasser in der Badewanne ist zu heiß.",
+      "enSent": "The water in the bathtub is too hot.",
       "conjugated": null,
       "enInSent": "water"
     },
@@ -18299,10 +18299,10 @@
       "enInSent": "five"
     },
     {
-      "deSent": "Das Buch hat genau fünfhundert Seiten.",
-      "enSent": "The book has exactly five hundred pages.",
+      "deSent": "Das Buch hat genau fünf Kapitel.",
+      "enSent": "The book has exactly five chapters.",
       "conjugated": null,
-      "enInSent": "five hundred"
+      "enInSent": "five"
     },
     {
       "deSent": "Der Bus kommt in fünf Minuten an.",
@@ -21499,7 +21499,7 @@
     {
       "deSent": "Das ist ein böses Omen, finde ich.",
       "enSent": "That is a bad omen, I think.",
-      "conjugated": null,
+      "conjugated": "böses",
       "enInSent": "bad"
     }
   ],
@@ -22015,8 +22015,8 @@
       "enInSent": "number"
     },
     {
-      "deSent": "Meine Lieblingsnummer ist die Sieben.",
-      "enSent": "My favorite number is seven.",
+      "deSent": "Ich habe deine Nummer leider nicht mehr.",
+      "enSent": "Unfortunately I don't have your number anymore.",
       "conjugated": null,
       "enInSent": "number"
     },
@@ -29171,7 +29171,7 @@
     {
       "deSent": "Mit diesen Beinen läuft man schnell.",
       "enSent": "With these legs, you run fast.",
-      "conjugated": null,
+      "conjugated": "Beinen",
       "enInSent": "legs"
     }
   ],
@@ -31051,7 +31051,7 @@
     {
       "deSent": "Wir fürchten uns nicht vor der Dunkelheit.",
       "enSent": "We don't fear the darkness.",
-      "conjugated": null,
+      "conjugated": "fürchten",
       "enInSent": "fear"
     },
     {
@@ -31069,7 +31069,7 @@
     {
       "deSent": "Viele fürchten die Zukunft und ihre Änderungen.",
       "enSent": "Many fear the future and its changes.",
-      "conjugated": null,
+      "conjugated": "fürchten",
       "enInSent": "fear"
     },
     {
@@ -32679,15 +32679,15 @@
       "enInSent": "agent"
     },
     {
-      "deSent": "Ich spreche mit meinem Versicherungsagenten über die Police.",
-      "enSent": "I am speaking with my insurance agent about the policy.",
+      "deSent": "Ich spreche mit dem Agenten meiner Versicherung über die Police.",
+      "enSent": "I am speaking with my insurance company's agent about the policy.",
       "conjugated": "Agenten",
       "enInSent": "agent"
     },
     {
-      "deSent": "Sie hat einen Literaturagenten für ihr neues Buch.",
-      "enSent": "She has a literary agent for her new book.",
-      "conjugated": null,
+      "deSent": "Sie hat einen Agenten für ihr neues Buch gefunden.",
+      "enSent": "She has found an agent for her new book.",
+      "conjugated": "Agenten",
       "enInSent": "agent"
     },
     {
@@ -34685,7 +34685,7 @@
     {
       "deSent": "Der vermisste Junge wurde gestern gefunden.",
       "enSent": "The missing boy was found yesterday.",
-      "conjugated": null,
+      "conjugated": "vermisste",
       "enInSent": "missing"
     },
     {
@@ -34703,7 +34703,7 @@
     {
       "deSent": "Die Polizei sucht die vermisste Person intensiv.",
       "enSent": "The police are intensively searching for the missing person.",
-      "conjugated": null,
+      "conjugated": "vermisste",
       "enInSent": "missing"
     },
     {
@@ -36153,7 +36153,7 @@
     {
       "deSent": "Das war eine Frage des Gewissens.",
       "enSent": "That was a question of conscience.",
-      "conjugated": null,
+      "conjugated": "Gewissens",
       "enInSent": "conscience"
     },
     {
@@ -40607,16 +40607,16 @@
       "enInSent": "sake"
     },
     {
-      "deSent": "Ich tue das nur um deinetwillen.",
-      "enSent": "I'm only doing this for your sake.",
-      "conjugated": "willen",
-      "enInSent": "for your sake"
+      "deSent": "Ich tue das nur um deiner Mutter willen.",
+      "enSent": "I'm only doing this for your mother's sake.",
+      "conjugated": null,
+      "enInSent": "sake"
     },
     {
-      "deSent": "Um meinetwillen brauchst du nicht warten.",
-      "enSent": "For my sake, you don't need to wait.",
-      "conjugated": "willen",
-      "enInSent": "For my sake"
+      "deSent": "Um des lieben Friedens willen habe ich nichts gesagt.",
+      "enSent": "For the sake of peace and quiet, I didn't say anything.",
+      "conjugated": null,
+      "enInSent": "sake"
     },
     {
       "deSent": "Wir haben es um des Friedens willen getan.",
@@ -42543,7 +42543,7 @@
     {
       "deSent": "Das geschenkte Auto war sehr nützlich.",
       "enSent": "The gifted car was very useful.",
-      "conjugated": null,
+      "conjugated": "geschenkte",
       "enInSent": "gifted"
     },
     {
@@ -43409,7 +43409,7 @@
     {
       "deSent": "Er hat das verfluchte Ding weggeworfen.",
       "enSent": "He threw away the cursed thing.",
-      "conjugated": null,
+      "conjugated": "verfluchte",
       "enInSent": "cursed"
     },
     {
@@ -43433,7 +43433,7 @@
     {
       "deSent": "Der verfluchte Computer startet nicht mehr.",
       "enSent": "The damn computer won't start anymore.",
-      "conjugated": null,
+      "conjugated": "verfluchte",
       "enInSent": "damn"
     },
     {
@@ -50757,7 +50757,7 @@
     {
       "deSent": "Ich soll dich von ihm grüßen.",
       "enSent": "He told me to greet you from him.",
-      "conjugated": null,
+      "conjugated": "grüßen",
       "enInSent": "greet"
     },
     {
@@ -52225,7 +52225,7 @@
     {
       "deSent": "Während des Gesprächs haben wir gelacht.",
       "enSent": "During the conversation, we laughed.",
-      "conjugated": null,
+      "conjugated": "Gesprächs",
       "enInSent": "conversation"
     },
     {
@@ -53713,7 +53713,7 @@
     {
       "deSent": "Er kann das Wort nicht wiederholen.",
       "enSent": "He cannot repeat the word.",
-      "conjugated": null,
+      "conjugated": "wiederholen",
       "enInSent": "repeat"
     },
     {
@@ -53731,7 +53731,7 @@
     {
       "deSent": "Möchtest du das Lied noch einmal wiederholen?",
       "enSent": "Would you like to repeat the song one more time?",
-      "conjugated": null,
+      "conjugated": "wiederholen",
       "enInSent": "repeat"
     },
     {
@@ -53743,7 +53743,7 @@
     {
       "deSent": "Ich möchte das nicht noch einmal wiederholen.",
       "enSent": "I don't want to repeat that one more time.",
-      "conjugated": null,
+      "conjugated": "wiederholen",
       "enInSent": "repeat"
     },
     {
@@ -56345,7 +56345,7 @@
     {
       "deSent": "Sie kommt aus verschiedenen Ländern.",
       "enSent": "She comes from various countries.",
-      "conjugated": "verschiedene",
+      "conjugated": "verschiedenen",
       "enInSent": "various"
     },
     {
@@ -61955,8 +61955,8 @@
       "enInSent": "beyond"
     },
     {
-      "deSent": "Sie hat sich aus dem Fenster hinausgelehnt.",
-      "enSent": "She leaned out of the window.",
+      "deSent": "Sie lehnte sich weit aus dem Fenster hinaus.",
+      "enSent": "She leaned far out of the window.",
       "conjugated": null,
       "enInSent": "out"
     },
@@ -62665,9 +62665,9 @@
       "enInSent": "fall"
     },
     {
-      "deSent": "Ich sah ihn die Treppe hinunterstürzen.",
-      "enSent": "I saw him fall down the stairs.",
-      "conjugated": null,
+      "deSent": "Pass auf, dass du auf dem Eis nicht stürzt!",
+      "enSent": "Be careful not to fall on the ice!",
+      "conjugated": "stürzt",
       "enInSent": "fall"
     },
     {
@@ -62969,10 +62969,10 @@
       "enInSent": "switch"
     },
     {
-      "deSent": "Kannst du bitte einen Gang hochschalten?",
-      "enSent": "Can you please shift up a gear?",
-      "conjugated": null,
-      "enInSent": "shift up"
+      "deSent": "Schalte bitte das Licht im Flur aus.",
+      "enSent": "Please switch off the light in the hallway.",
+      "conjugated": "Schalte",
+      "enInSent": "switch"
     },
     {
       "deSent": "Die Ampel schaltet bald auf Grün.",
@@ -64389,7 +64389,7 @@
     {
       "deSent": "Ist das Robins Tasche da drüben?",
       "enSent": "Is that Robin's bag over there?",
-      "conjugated": null,
+      "conjugated": "Robins",
       "enInSent": "Robin's"
     }
   ],
@@ -64605,8 +64605,8 @@
       "enInSent": "up"
     },
     {
-      "deSent": "Zieh bitte deine Schuhe aus, bevor du die Treppe raufgehst.",
-      "enSent": "Please take off your shoes before you go up the stairs.",
+      "deSent": "Komm doch kurz zu mir rauf!",
+      "enSent": "Come up to me for a moment!",
       "conjugated": null,
       "enInSent": "up"
     },
@@ -69031,7 +69031,7 @@
     {
       "deSent": "Man hörte den Schuss eines Gewehrs.",
       "enSent": "You heard the shot of a rifle.",
-      "conjugated": null,
+      "conjugated": "Gewehrs",
       "enInSent": "rifle"
     }
   ],
@@ -71395,8 +71395,8 @@
       "enInSent": "over"
     },
     {
-      "deSent": "Kannst du mir bitte kurz das Salz rüberreichen?",
-      "enSent": "Can you please pass the salt over to me?",
+      "deSent": "Komm doch mal kurz zu uns rüber!",
+      "enSent": "Come over to us for a moment!",
       "conjugated": null,
       "enInSent": "over"
     },
@@ -72819,8 +72819,8 @@
       "enInSent": "French"
     },
     {
-      "deSent": "Mein Freund ist Französischlehrer.",
-      "enSent": "My friend is a French teacher.",
+      "deSent": "Mein Freund spricht fließend Französisch.",
+      "enSent": "My friend speaks fluent French.",
       "conjugated": null,
       "enInSent": "French"
     },
@@ -73847,7 +73847,7 @@
     {
       "deSent": "Das rote Fahrrad da drüben ist Bobbys neues Rad.",
       "enSent": "The red bike over there is Bobby's new bike.",
-      "conjugated": null,
+      "conjugated": "Bobbys",
       "enInSent": "Bobby's"
     }
   ],
@@ -77531,7 +77531,7 @@
     {
       "deSent": "Wir fahren dieses Jahr nirgendwohin.",
       "enSent": "We are going nowhere this year.",
-      "conjugated": null,
+      "conjugated": "nirgendwohin",
       "enInSent": "nowhere"
     },
     {
@@ -80703,10 +80703,10 @@
       "enInSent": "aware"
     },
     {
-      "deSent": "Er verlor nach dem schweren Sturz kurz das Bewusstsein.",
-      "enSent": "He briefly lost consciousness after the heavy fall.",
+      "deSent": "Ich bin mir des Problems völlig bewusst.",
+      "enSent": "I am fully aware of the problem.",
       "conjugated": null,
-      "enInSent": null
+      "enInSent": "aware"
     },
     {
       "deSent": "Das war eine bewusste Entscheidung.",
@@ -81077,8 +81077,8 @@
       "enInSent": "result"
     },
     {
-      "deSent": "Wann erfahren wir das Endergebnis der Wahl?",
-      "enSent": "When will we know the final result of the election?",
+      "deSent": "Wann erfahren wir das Ergebnis der Wahl?",
+      "enSent": "When will we find out the result of the election?",
       "conjugated": null,
       "enInSent": "result"
     },
@@ -81351,10 +81351,10 @@
   ],
   "1505": [
     {
-      "deSent": "Was hast du am kommenden Freitagabend schönes vor?",
-      "enSent": "What nice plans do you have for this coming Friday evening?",
+      "deSent": "Was hast du am Freitag Schönes vor?",
+      "enSent": "What nice plans do you have for Friday?",
       "conjugated": null,
-      "enInSent": null
+      "enInSent": "Friday"
     },
     {
       "deSent": "Jeden Freitag gibt es auf dem Marktplatz frischen Fisch zu kaufen.",
@@ -82199,7 +82199,7 @@
     {
       "deSent": "Sprich bitte deutlicher.",
       "enSent": "Please speak more clearly.",
-      "conjugated": null,
+      "conjugated": "deutlicher",
       "enInSent": "more clearly"
     },
     {
@@ -82435,7 +82435,7 @@
     {
       "deSent": "Das ist mein geringstes Problem, ehrlich gesagt.",
       "enSent": "That's my least problem, to be honest.",
-      "conjugated": null,
+      "conjugated": "geringstes",
       "enInSent": "least"
     },
     {
@@ -85315,7 +85315,7 @@
     {
       "deSent": "Die Ermittler sicherten Spuren des Killers am Tatort.",
       "enSent": "The investigators secured traces of the killer at the crime scene.",
-      "conjugated": null,
+      "conjugated": "Killers",
       "enInSent": null
     },
     {
@@ -85583,7 +85583,7 @@
     {
       "deSent": "Er wurde wegen eines Notfalls ins Krankenhaus gebracht.",
       "enSent": "He was taken to the hospital because of an emergency.",
-      "conjugated": null,
+      "conjugated": "Notfalls",
       "enInSent": "emergency"
     },
     {
@@ -88817,8 +88817,8 @@
       "enInSent": "Saturday"
     },
     {
-      "deSent": "Das Konzert ist diesen Samstagabend.",
-      "enSent": "The concert is this Saturday evening.",
+      "deSent": "Das Konzert ist diesen Samstag.",
+      "enSent": "The concert is this Saturday.",
       "conjugated": null,
       "enInSent": "Saturday"
     },
@@ -95337,10 +95337,10 @@
       "enInSent": "afterwards"
     },
     {
-      "deSent": "Er ist den anderen nicht hinterhergekommen.",
-      "enSent": "He couldn't keep up with the others.",
+      "deSent": "Wir gehen vor, und du kommst einfach hinterher.",
+      "enSent": "We'll go ahead, and you just follow behind.",
       "conjugated": null,
-      "enInSent": "keep up with"
+      "enInSent": "behind"
     },
     {
       "deSent": "Ich räume das Chaos hinterher auf.",
@@ -95481,8 +95481,8 @@
       "enInSent": "beard"
     },
     {
-      "deSent": "Er trägt einen Vollbart.",
-      "enSent": "He wears a full beard.",
+      "deSent": "Er trägt seit dem Urlaub einen Bart.",
+      "enSent": "He has had a beard since the holiday.",
       "conjugated": null,
       "enInSent": "beard"
     },
@@ -98189,7 +98189,7 @@
     {
       "deSent": "Eine Kette von Ereignissen führte dazu.",
       "enSent": "A chain of events led to this.",
-      "conjugated": null,
+      "conjugated": "Ereignissen",
       "enInSent": "events"
     },
     {
@@ -98351,7 +98351,7 @@
     {
       "deSent": "Niemand sollte flehen müssen.",
       "enSent": "Nobody should have to beg.",
-      "conjugated": null,
+      "conjugated": "flehen",
       "enInSent": "beg"
     },
     {
@@ -98493,8 +98493,8 @@
       "enInSent": "apart"
     },
     {
-      "deSent": "Wir sollten die Kleidung auseinanderlegen.",
-      "enSent": "We should put the clothes apart.",
+      "deSent": "Die Häuser liegen weit auseinander.",
+      "enSent": "The houses are far apart.",
       "conjugated": null,
       "enInSent": "apart"
     },
@@ -98505,14 +98505,14 @@
       "enInSent": "apart"
     },
     {
-      "deSent": "Ich kann die Zwillinge nicht auseinanderhalten.",
-      "enSent": "I can't tell the twins apart.",
+      "deSent": "Ich halte die Zwillinge immer noch nicht auseinander.",
+      "enSent": "I still can't tell the twins apart.",
       "conjugated": null,
       "enInSent": "apart"
     },
     {
-      "deSent": "Der Kuchen ist ganz auseinandergefallen.",
-      "enSent": "The cake completely fell apart.",
+      "deSent": "Nach dem Streit ging die Gruppe auseinander.",
+      "enSent": "After the argument the group broke apart.",
       "conjugated": null,
       "enInSent": "apart"
     },
@@ -98529,16 +98529,16 @@
       "enInSent": "differed"
     },
     {
-      "deSent": "Man muss den Motor auseinandernehmen.",
-      "enSent": "One has to take the engine apart.",
+      "deSent": "Wir nehmen den Motor auseinander, um ihn zu reparieren.",
+      "enSent": "We are taking the engine apart to repair it.",
       "conjugated": null,
       "enInSent": "apart"
     },
     {
-      "deSent": "Er hat das Spielzeug auseinandergebaut.",
-      "enSent": "He disassembled the toy.",
+      "deSent": "Er baut das Spielzeug gerne auseinander.",
+      "enSent": "He likes to take the toy apart.",
       "conjugated": null,
-      "enInSent": "disassembled"
+      "enInSent": "apart"
     }
   ],
   "1817": [
@@ -99265,7 +99265,7 @@
     {
       "deSent": "Diese Frage liegt leider außerhalb unseres Bereichs.",
       "enSent": "This question unfortunately lies outside of our area.",
-      "conjugated": null,
+      "conjugated": "Bereichs",
       "enInSent": "area"
     }
   ],
@@ -100871,7 +100871,7 @@
     {
       "deSent": "Ich folge den Anweisungen des Führers.",
       "enSent": "I follow the guide's instructions.",
-      "conjugated": null,
+      "conjugated": "Führers",
       "enInSent": "guide's"
     },
     {
@@ -104405,7 +104405,7 @@
     {
       "deSent": "Sie hatte ein gnädiges Herz.",
       "enSent": "She had a gracious heart.",
-      "conjugated": null,
+      "conjugated": "gnädiges",
       "enInSent": "gracious"
     },
     {
@@ -104431,7 +104431,7 @@
     {
       "deSent": "Das war eine nützliche Information.",
       "enSent": "That was useful information.",
-      "conjugated": null,
+      "conjugated": "nützliche",
       "enInSent": "useful"
     },
     {
@@ -110665,7 +110665,7 @@
     {
       "deSent": "Sie wurde Opfer eines Raubes.",
       "enSent": "She became the victim of a robbery.",
-      "conjugated": null,
+      "conjugated": "Raubes",
       "enInSent": "robbery"
     },
     {
@@ -113221,8 +113221,8 @@
       "enInSent": "sand"
     },
     {
-      "deSent": "Kinder spielen gern im Sandkasten.",
-      "enSent": "Children like to play in the sandbox.",
+      "deSent": "Die Kinder spielen gern im Sand.",
+      "enSent": "The children like to play in the sand.",
       "conjugated": null,
       "enInSent": "sand"
     },
@@ -114093,7 +114093,7 @@
     {
       "deSent": "Er will sein Haus attraktiver für Käufer machen.",
       "enSent": "He wants to make his house more attractive for buyers.",
-      "conjugated": null,
+      "conjugated": "attraktiver",
       "enInSent": "more attractive"
     },
     {
@@ -114169,7 +114169,7 @@
     {
       "deSent": "Das ist eine sinnlose Diskussion, finde ich.",
       "enSent": "That's a pointless discussion, I think.",
-      "conjugated": null,
+      "conjugated": "sinnlose",
       "enInSent": "pointless"
     },
     {
@@ -116831,7 +116831,7 @@
     {
       "deSent": "Mein Sohn spielt gern mit Robotern.",
       "enSent": "My son likes to play with robots.",
-      "conjugated": null,
+      "conjugated": "Robotern",
       "enInSent": "robots"
     },
     {
@@ -122661,13 +122661,13 @@
     {
       "deSent": "Das war ein magischer Abend.",
       "enSent": "That was a magical evening.",
-      "conjugated": null,
+      "conjugated": "magischer",
       "enInSent": "magical"
     },
     {
       "deSent": "Seine Augen hatten einen magischen Glanz.",
       "enSent": "His eyes had a magical gleam.",
-      "conjugated": null,
+      "conjugated": "magischen",
       "enInSent": "magical"
     }
   ],
@@ -123033,8 +123033,8 @@
       "enInSent": "documents"
     },
     {
-      "deSent": "Der Beamte prüft meine Reisedokumente.",
-      "enSent": "The officer checks my travel documents.",
+      "deSent": "Der Beamte prüft meine Dokumente.",
+      "enSent": "The officer checks my documents.",
       "conjugated": null,
       "enInSent": "documents"
     },
@@ -125119,7 +125119,7 @@
     {
       "deSent": "Die Ruinen des Tempels sind sehr beeindruckend.",
       "enSent": "The ruins of the temple are very impressive.",
-      "conjugated": null,
+      "conjugated": "Tempels",
       "enInSent": "temple"
     },
     {
@@ -125207,7 +125207,7 @@
     {
       "deSent": "Hast du einen Neffen oder eine Nichte?",
       "enSent": "Do you have a nephew or a niece?",
-      "conjugated": null,
+      "conjugated": "Neffen",
       "enInSent": "nephew"
     },
     {
@@ -125965,7 +125965,7 @@
     {
       "deSent": "Es gibt unsichtbare Kräfte im Universum.",
       "enSent": "There are invisible forces in the universe.",
-      "conjugated": null,
+      "conjugated": "unsichtbare",
       "enInSent": "invisible"
     },
     {
@@ -126993,7 +126993,7 @@
     {
       "deSent": "Sie ist eine engagierte Freiwillige.",
       "enSent": "She is a committed volunteer.",
-      "conjugated": null,
+      "conjugated": "engagierte",
       "enInSent": "committed"
     },
     {
@@ -127011,7 +127011,7 @@
     {
       "deSent": "Wir hatten eine engagierte Diskussion.",
       "enSent": "We had a committed discussion.",
-      "conjugated": null,
+      "conjugated": "engagierte",
       "enInSent": "committed"
     },
     {
@@ -127707,7 +127707,7 @@
     {
       "deSent": "Er stammt aus einer edlen Familie.",
       "enSent": "He comes from a noble family.",
-      "conjugated": null,
+      "conjugated": "edlen",
       "enInSent": "noble"
     }
   ],
@@ -129343,10 +129343,10 @@
       "enInSent": "leadership"
     },
     {
-      "deSent": "Eine Stadtführung ist sehr interessant.",
-      "enSent": "A city tour is very interesting.",
+      "deSent": "Die Firma braucht eine neue Führung.",
+      "enSent": "The company needs new leadership.",
       "conjugated": null,
-      "enInSent": "tour"
+      "enInSent": "leadership"
     },
     {
       "deSent": "Wer übernimmt die Führung im Team?",
@@ -133489,7 +133489,7 @@
     {
       "deSent": "Ich mag keine Clowns, sie sind mir unheimlich.",
       "enSent": "I don't like clowns; they are creepy to me.",
-      "conjugated": null,
+      "conjugated": "Clowns",
       "enInSent": "clowns"
     },
     {
@@ -133501,7 +133501,7 @@
     {
       "deSent": "Im Zirkus gab es viele lustige Clowns.",
       "enSent": "In the circus, there were many funny clowns.",
-      "conjugated": null,
+      "conjugated": "Clowns",
       "enInSent": "clowns"
     },
     {
@@ -139281,7 +139281,7 @@
     {
       "deSent": "Es gibt viele verschiedene Rassen von Tieren.",
       "enSent": "There are many different races of animals.",
-      "conjugated": null,
+      "conjugated": "Rassen",
       "enInSent": "races"
     },
     {
@@ -140121,7 +140121,7 @@
     {
       "deSent": "Haben wir einen Hasen im Garten gesehen?",
       "enSent": "Did we see a rabbit in the garden?",
-      "conjugated": null,
+      "conjugated": "Hasen",
       "enInSent": "rabbit"
     },
     {
@@ -140401,7 +140401,7 @@
     {
       "deSent": "Sie mag Geschichten über alte Cowboys und Abenteuer.",
       "enSent": "She likes stories about old cowboys and adventures.",
-      "conjugated": null,
+      "conjugated": "Cowboys",
       "enInSent": "cowboys"
     },
     {
@@ -143451,7 +143451,7 @@
     {
       "deSent": "Das ist eine sehr eigenartige Geschichte.",
       "enSent": "That is a very strange story.",
-      "conjugated": null,
+      "conjugated": "eigenartige",
       "enInSent": "strange"
     },
     {
@@ -145341,7 +145341,7 @@
     {
       "deSent": "Wir sammeln Unterschriften für eine Petition.",
       "enSent": "We are collecting signatures for a petition.",
-      "conjugated": null,
+      "conjugated": "Unterschriften",
       "enInSent": "signatures"
     },
     {
@@ -147113,8 +147113,8 @@
       "enInSent": "camp"
     },
     {
-      "deSent": "Er trainiert fleißig im Vorbereitungscamp der Nationalmannschaft.",
-      "enSent": "He is training diligently in the national team's preparation camp.",
+      "deSent": "Er trainiert fleißig im Camp der Nationalmannschaft.",
+      "enSent": "He is training diligently at the national team's camp.",
       "conjugated": "Camp",
       "enInSent": "camp"
     },
@@ -152783,7 +152783,7 @@
     {
       "deSent": "Er hofft auf ein gütigeres Urteil vom Richter.",
       "enSent": "He hopes for a kinder verdict from the judge.",
-      "conjugated": null,
+      "conjugated": "gütigeres",
       "enInSent": "kinder"
     },
     {
@@ -154713,13 +154713,13 @@
     {
       "deSent": "Ein paar Boys kommen heute vorbei.",
       "enSent": "A few guys are coming over today.",
-      "conjugated": null,
+      "conjugated": "Boys",
       "enInSent": "guys"
     },
     {
       "deSent": "Die Boys spielen im Park.",
       "enSent": "The boys are playing in the park.",
-      "conjugated": null,
+      "conjugated": "Boys",
       "enInSent": "boys"
     },
     {
@@ -154737,13 +154737,13 @@
     {
       "deSent": "Alle Boys waren auf der Party.",
       "enSent": "All the guys were at the party.",
-      "conjugated": null,
+      "conjugated": "Boys",
       "enInSent": "guys"
     },
     {
       "deSent": "Unsere Boys haben das Spiel gewonnen.",
       "enSent": "Our boys won the game.",
-      "conjugated": null,
+      "conjugated": "Boys",
       "enInSent": "boys"
     },
     {
@@ -155209,10 +155209,10 @@
   ],
   "2854": [
     {
-      "deSent": "Eine Kaltfront zieht gerade durch unser Land.",
-      "enSent": "A cold front is currently moving through our country.",
+      "deSent": "Die Front des Gebäudes wird gerade renoviert.",
+      "enSent": "The front of the building is being renovated.",
       "conjugated": null,
-      "enInSent": "cold front"
+      "enInSent": "front"
     },
     {
       "deSent": "Die Front des Hauses braucht einen neuen Anstrich.",
@@ -162129,7 +162129,7 @@
     {
       "deSent": "Dieser alte Stein ist von den Römern.",
       "enSent": "This old stone is from the Romans.",
-      "conjugated": null,
+      "conjugated": "Römern",
       "enInSent": "Romans"
     },
     {
@@ -163121,7 +163121,7 @@
     {
       "deSent": "Trotz meines Einspruchs hat er es trotzdem getan.",
       "enSent": "Despite my objection, he still did it.",
-      "conjugated": null,
+      "conjugated": "Einspruchs",
       "enInSent": "objection"
     },
     {
@@ -164863,7 +164863,7 @@
     {
       "deSent": "Er hat die Mentalität eines Siegers.",
       "enSent": "He has the mentality of a winner.",
-      "conjugated": null,
+      "conjugated": "Siegers",
       "enInSent": "winner"
     },
     {
@@ -166451,7 +166451,7 @@
     {
       "deSent": "Manche Krankheiten sind in den Genen.",
       "enSent": "Some diseases are in the genes.",
-      "conjugated": null,
+      "conjugated": "Genen",
       "enInSent": "genes"
     },
     {
@@ -166463,7 +166463,7 @@
     {
       "deSent": "Forschung an Genen ist wichtig.",
       "enSent": "Research on genes is important.",
-      "conjugated": null,
+      "conjugated": "Genen",
       "enInSent": "genes"
     },
     {
@@ -167139,7 +167139,7 @@
     {
       "deSent": "Der Wert dieses Grundstücks ist stark gestiegen.",
       "enSent": "The value of this property has risen sharply.",
-      "conjugated": null,
+      "conjugated": "Grundstücks",
       "enInSent": "property"
     },
     {
@@ -170067,8 +170067,8 @@
       "enInSent": "coordinates"
     },
     {
-      "deSent": "Die Einsatzkräfte erreichten die Zielkoordinaten in Rekordzeit.",
-      "enSent": "The emergency services reached the target coordinates in record time.",
+      "deSent": "Die Einsatzkräfte erreichten die genauen Koordinaten in Rekordzeit.",
+      "enSent": "The emergency services reached the exact coordinates in record time.",
       "conjugated": "Koordinaten",
       "enInSent": "coordinates"
     },
@@ -203415,7 +203415,7 @@
     {
       "deSent": "An gesetzlichen Feiertagen haben die Supermärkte in Deutschland geschlossen.",
       "enSent": "On public holidays, supermarkets in Germany are closed.",
-      "conjugated": null,
+      "conjugated": "Feiertagen",
       "enInSent": "public holidays"
     },
     {
@@ -203433,7 +203433,7 @@
     {
       "deSent": "Zwischen den Feiertagen nehmen sich die meisten Kollegen im Büro Urlaub.",
       "enSent": "Between the holidays, most colleagues in the office take time off.",
-      "conjugated": null,
+      "conjugated": "Feiertagen",
       "enInSent": "holidays"
     },
     {
@@ -209611,7 +209611,7 @@
     {
       "deSent": "Das ist wirklich eine Frage des persönlichen Anstands.",
       "enSent": "That really is a question of personal decency.",
-      "conjugated": "Anstand",
+      "conjugated": "Anstands",
       "enInSent": "decency"
     },
     {
@@ -210363,7 +210363,7 @@
       "enInSent": "up"
     },
     {
-      "deSent": "Kannst du bitte den schweren Koffer für mich die Treppe hinauftragen?",
+      "deSent": "Trägst du bitte den schweren Koffer für mich die Treppe hinauf?",
       "enSent": "Can you please carry the heavy suitcase up the stairs for me?",
       "conjugated": null,
       "enInSent": "up"
@@ -210387,8 +210387,8 @@
       "enInSent": "up"
     },
     {
-      "deSent": "Mit dem Fahrrad ist es wirklich anstrengend, diesen steilen Hügel hinaufzufahren.",
-      "enSent": "Riding a bike up this steep hill is really exhausting.",
+      "deSent": "Wir fahren mit dem Fahrrad den steilen Hügel hinauf.",
+      "enSent": "We are riding our bikes up the steep hill.",
       "conjugated": null,
       "enInSent": "up"
     },
@@ -244909,8 +244909,8 @@
       "enInSent": "tournament"
     },
     {
-      "deSent": "Sie hat monatelang hart trainiert, um bei dem regionalen Schachturnier zu gewinnen.",
-      "enSent": "She trained hard for months to win at the regional chess tournament.",
+      "deSent": "Sie hat monatelang hart trainiert, um das regionale Turnier zu gewinnen.",
+      "enSent": "She trained hard for months to win the regional tournament.",
       "conjugated": null,
       "enInSent": "tournament"
     },
@@ -269075,8 +269075,8 @@
       "enInSent": "wiped out"
     },
     {
-      "deSent": "Könntest du mir die Schale mit dem Salat an das andere Tischende hinüberreichen?",
-      "enSent": "Could you pass the bowl of salad over to the other end of the table?",
+      "deSent": "Reichst du mir bitte die Schale mit dem Salat hinüber?",
+      "enSent": "Could you pass the bowl of salad over to me?",
       "conjugated": null,
       "enInSent": "over"
     },
