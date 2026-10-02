@@ -734,16 +734,30 @@ function resetCloudIdleTimer(){
   cloudIdleTimer=setTimeout(scheduleCloudPush,2*60*1000);
 }
 
+// Key-order-independent compare (Postgres jsonb reorders keys) of the fields
+// that matter; ignores savedAt, currentId and fields from older app versions.
+function sameProgress(a,b){
+  const stable=v=>Array.isArray(v)?'['+v.map(stable).join(',')+']'
+    :(v&&typeof v==='object')?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}'
+    :JSON.stringify(v??null);
+  const KEYS=['level','overrides','activeMode','settings','scores','currentBatchIds','scheduledThisLevel','completedThisRun','sentenceIndex','seen'];
+  return KEYS.every(k=>stable(a?.[k])===stable(b?.[k]));
+}
+
 async function tryCloudPullOnLoad(){
   if(!supabaseConf()) return;
   try{
     const row=await supabaseGetRow(LS_KEY);
     if(!row||!row.value) return;
-    const remoteUpdatedAt=new Date(row.updated_at).getTime();
+    // Compare the cloud copy's own save time (not the row's upload time, which
+    // is always a little later than the last local save — that made this ask
+    // on every reopen), and only ask when the progress actually differs.
+    const remoteSavedAt=typeof row.value.savedAt==='number'?row.value.savedAt:new Date(row.updated_at).getTime();
     const localSavedAt=state.savedAt||0;
     const localEmpty=(state.level||1)<=1&&Object.keys(state.seen||{}).length===0;
-    if(!(remoteUpdatedAt>localSavedAt||localEmpty)) return;
-    window.IOSSheet?.confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`,{
+    if(sameProgress(row.value,buildStatePayload())) return;
+    if(!(remoteSavedAt>localSavedAt||localEmpty)) return;
+    window.IOSSheet?.confirm(`Cloud copy from ${fmtWhen(remoteSavedAt)} is newer than this device. Restore it?`,{
       title:'Cloud Sync',
       confirmLabel:'Restore',
       cancelLabel:'Keep this device',
@@ -780,11 +794,12 @@ function buildStatePayload(){
     currentId:  state.currentId||null,
     sentenceIndex: state.sentenceIndex||{},
     seen: state.seen||{},
-    savedAt: Date.now()
+    savedAt: state.savedAt||Date.now()
   };
 }
 
 function saveState(forceBackup){
+  state.savedAt=Date.now();
   const payload=buildStatePayload();
   const json=JSON.stringify(payload);
 
@@ -1095,19 +1110,29 @@ function levenshtein(a,b){
 }
 
 const Core={
+  // 'no-cache' = ask the server if the file changed and reuse the cached copy
+  // if not (a quick 304), instead of re-downloading the 9 MB sentences.json
+  // on every open. sentences.json loads in the background: the first card
+  // shows as soon as the CSV is in, and is re-shown once the extra sentences
+  // arrive (only if it hasn't been answered or typed into yet).
   async load(){
-    const [csvRes,sentRes]=await Promise.all([
-      fetch('5k.csv',{cache:'no-store'}),
-      fetch('sentences.json',{cache:'no-store'}).catch(()=>null)
-    ]);
+    const sentP=fetch('sentences.json',{cache:'no-cache'})
+      .then(r=>r.ok?r.json():null).catch(()=>null);
+    const csvRes=await fetch('5k.csv',{cache:'no-cache'});
     if(!csvRes.ok) throw new Error('Could not fetch 5k.csv');
     const txt=await csvRes.text();
     const rows=parseCSV(txt.trim());
     rows.shift(); // drop header
     state.rawRows=rows;
-    if(sentRes&&sentRes.ok){ try{ state.sentencesData=await sentRes.json(); }catch(e){} }
     this.rebuildData();
     UI.buildLevelSelector();
+    sentP.then(data=>{
+      if(!data||typeof data!=='object') return;
+      state.sentencesData=data;
+      const x=state.data.find(w=>w.id===state.currentId);
+      const typed=($('#coreDe')?.value||'')+($('#coreDeSent')?.value||'');
+      if(x&&state._enterStage===0&&!typed&&state.activeMode!=='word') Core.render(x);
+    });
   },
 
   rebuildData(){

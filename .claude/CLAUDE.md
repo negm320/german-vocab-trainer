@@ -151,6 +151,13 @@ Synced to `kv_state`: `top5k_state_v2`, `top5k_log_v1`, `chat_scenes_v1`,
 - All 4,899 rows have English + an example sentence (the 1,982 words from
   id 2948 on were filled in on 2 Oct 2026). Rows without English would be
   skipped, as a safety net.
+- Loading: `5k.csv` and `sentences.json` are fetched with `cache:'no-cache'`
+  (revalidate → 304, not a re-download). Only the CSV blocks the first card;
+  `sentences.json` (~7.5 MB, one word per line) arrives in the background and
+  re-renders the card if it's still untouched.
+- Cloud restore prompt compares the cloud copy's `value.savedAt` (not the
+  row's `updated_at`) and is skipped when the progress is identical
+  (`sameProgress`) — the old check asked on every reopen.
 - Cloze blank prefers a whole-word match (so "Freund" isn't blanked inside
   "Freundin").
 - `sentences.json` was replaced on 2 Oct 2026 (4,894 words × 9–10 sentences)
