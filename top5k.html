@@ -66,18 +66,11 @@ input,textarea{
 
 /* action rows */
 .actionRow{display:flex;gap:6px;margin-top:8px;}
-/* :not(.iosPrimaryBtn) so this generic row styling can't out-specificity
-   (.actionRow button is 0,1,1 vs .iosPrimaryBtn's 0,1,0) the shared
-   primary-CTA class on #coreCheckNext — excluding it here instead of
-   fighting for specificity lets .iosPrimaryBtn's accent color/radius/
-   padding apply cleanly. */
+/* :not(.iosPrimaryBtn) so this row styling doesn't override the shared
+   primary button (#coreCheckNext). */
 .actionRow button:not(.iosPrimaryBtn){flex:1;background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 8px;color:var(--text);cursor:pointer;font-size:14px;font-family:var(--font-chrome);}
 .actionRow button:not(.iosPrimaryBtn):hover{background:var(--btn2)}
 .actionRow .iosPrimaryBtn{flex:1;}
-/* #coreCheckNext's accent styling now comes from the shared .iosPrimaryBtn
-   class (ios-theme.css) instead of an ID-specific override. The
-   Edit/Hide/Back/Typo row now uses the shared .iosButtonRow.quiet
-   instead of its own .actionRow.secondary variant. */
 
 /* generic button reset */
 button{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);cursor:pointer;}
@@ -90,9 +83,6 @@ button:hover{background:var(--btn2)}
 .good{color:var(--good)} .bad{color:var(--bad)}
 .good-field{border-color:var(--good)!important;box-shadow:0 0 0 1px rgba(50,215,75,.45);}
 .bad-field{border-color:var(--bad)!important;box-shadow:0 0 0 1px rgba(255,69,58,.45);}
-
-/* toggle active */
-.toggle.active{outline:1px solid rgba(10,132,255,.55);background:var(--accent-bg);color:var(--accent);}
 
 /* flag confirm flash */
 #btnFlag.flag-confirm{background:rgba(255,69,58,.28);border-color:rgba(255,69,58,.6);color:var(--bad);}
@@ -117,7 +107,6 @@ button:hover{background:var(--btn2)}
 @keyframes blankPulse{0%,100%{background:rgba(10,132,255,.08)}50%{background:rgba(10,132,255,.28)}}
 .blank-pulse{animation:blankPulse 1.1s ease 2;}
 
-
 /* ── STREAK DOTS ── */
 .streakWrap{display:flex;align-items:center;gap:6px;margin-top:14px;font-family:var(--font-chrome);}
 .streakLabel{font-size:10px;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase;flex-shrink:0;}
@@ -130,12 +119,6 @@ button:hover{background:var(--btn2)}
 @keyframes settlePop{0%{transform:scale(1)}25%{transform:scale(1.9)}55%{transform:scale(.82)}80%{transform:scale(1.12)}100%{transform:scale(1)}}
 .streak-dot.settle-pop{animation:settlePop .55s cubic-bezier(.34,1.56,.64,1) both;}
 .streak-dot.half{opacity:0.25;}
-
-/* ── MENU SLIDE ── */
-@keyframes menuSlideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes menuSlideOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-10px)}}
-.menu-enter{animation:menuSlideIn .2s cubic-bezier(.25,.46,.45,.94) both;}
-.menu-exit{animation:menuSlideOut .16s ease both;}
 
 /* ── FULLSCREEN LEVEL UP ── */
 .lvlOverlay{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s;}
@@ -161,9 +144,7 @@ button:hover{background:var(--btn2)}
 .banner .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .banner .btns button{padding:8px 10px;border-radius:999px}
 
-/* ⋯ menu sheet content — .menuPanel/.menuSection/.iosSheet-label/
-   .iosSegment/.iosButtonRow now live in ios-theme.css (shared with
-   chat.html instead of copy-pasted). */
+/* ⋯ menu sheet (.menuPanel/.menuSection/… come from ios-theme.css) */
 .danger-btn{color:var(--bad);border-color:rgba(255,69,58,.35);background:var(--bad-bg);width:100%;padding:13px;font-weight:600;font-family:var(--font-chrome);}
 .danger-btn:hover{background:rgba(255,69,58,.18);}
 
@@ -244,7 +225,6 @@ button:hover{background:var(--btn2)}
     <div class="hintRow" id="hintRow">
       <span id="coreEn" class="hintWord"></span>
       <span id="coreMasri" class="hintMasri"></span>
-      <span id="coreEnLabel" class="hidden"></span>
     </div>
 
     <!-- Prompt: cloze sentence / english sentence context -->
@@ -305,14 +285,9 @@ button:hover{background:var(--btn2)}
       <span class="toolsChevron">⌄</span>
     </summary>
     <div class="toolsGrid">
-      <button id="btnDump">Dump state</button>
-      <button id="btnHardSave">Force save</button>
       <button id="btnRecalibrate">Recalibrate → 0.5</button>
       <button id="btnExportFlagged">Export flagged</button>
       <button id="btnClearFlagged">Clear flagged</button>
-      <button id="btnCheckV1">Check v1 Key</button>
-      <button id="btnCopyV1">Copy v1 JSON</button>
-      <button id="btnRestoreV1">Restore v1 → current</button>
       <button id="btnRestoreBackup">Restore latest backup</button>
       <button id="btnStorageUsage">Storage usage</button>
       <button id="btnCleanLegacy">Clean legacy keys</button>
@@ -371,7 +346,7 @@ button:hover{background:var(--btn2)}
   </div>
 
   <!-- Cloud sync -->
-  <div class="menuSection" id="menuCloudSync">
+  <div class="menuSection">
     <div class="iosSheet-label">Cloud sync (Supabase)</div>
     <div style="display:flex;flex-direction:column;gap:6px;">
       <input id="supabaseUrlInput" type="text" placeholder="Supabase URL" spellcheck="false" autocomplete="off">
@@ -382,7 +357,7 @@ button:hover{background:var(--btn2)}
   </div>
 
   <!-- Cloze settings -->
-  <div class="menuSection" id="menuClozeSettings">
+  <div class="menuSection">
     <div class="iosSheet-label">Cloze settings</div>
     <div class="iosButtonRow">
       <button id="btnToggleHint">Show hint button</button>
@@ -434,7 +409,6 @@ button:hover{background:var(--btn2)}
 function $(sel){ return document.querySelector(sel); }
 function setText(sel,t){ const el=$(sel); if(el) el.textContent=t; }
 function setHTML(sel,h){ const el=$(sel); if(el) el.innerHTML=h; }
-function norm(s){ return (s||'').trim().toLowerCase(); }
 function normDe(s){ return (s||'').trim().toLowerCase()
   .replaceAll('ß','ss').replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue'); }
 function pickRand(arr){ return arr&&arr.length ? arr[Math.floor(Math.random()*arr.length)] : null; }
@@ -634,7 +608,6 @@ function parseCSV(txt){
 /* ====== storage ====== */
 const LS_KEY  = 'top5k_state_v2';
 const GEMINI_KEY_LS = 'top5k_gemini_key';
-const LS_KEY_OLD = 'top5k_state_v1';
 const PROFILE_KEY = 'top5k_profile_v1';
 const DAILY_LOG_KEY = 'top5k_log_v1';
 const DAILY_LOG_MAX_DAYS = 400;
@@ -768,7 +741,7 @@ async function tryCloudPullOnLoad(){
     if(!row||!row.value) return;
     const remoteUpdatedAt=new Date(row.updated_at).getTime();
     const localSavedAt=state.savedAt||0;
-    const localEmpty=(state.level||1)<=1&&Object.keys(state.seen||{}).length===0&&Object.keys(state.streaks||{}).length===0;
+    const localEmpty=(state.level||1)<=1&&Object.keys(state.seen||{}).length===0;
     if(!(remoteUpdatedAt>localSavedAt||localEmpty)) return;
     window.IOSSheet?.confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`,{
       title:'Cloud Sync',
@@ -797,19 +770,11 @@ function updateBackupBanner(){
 function buildStatePayload(){
   return {
     level:      state.level,
-    streaks:    state.streaks||{},
-    penalty:    state.penalty||{},
-    reqSeen:    state.reqSeen||{},
     overrides:  state.overrides||{},
     activeMode: state.activeMode||'word',
-    sentenceMode: state.activeMode==='sentence', // backward compat
     settings:   state.settings||{showHintBtn:true},
     scores:     state.scores||{},
-    scoresMigrationVersion: state.scoresMigrationVersion||0,
-    consecutiveCorrect: state.consecutiveCorrect||{},
-    settledThisLevel:   state.settledThisLevel||{},
     currentBatchIds:    state.currentBatch||[],
-    nextWordCursor:     state.nextWordCursor||0,
     scheduledThisLevel: state.scheduledThisLevel||{},
     completedThisRun:   state.completedThisRun||{},
     currentId:  state.currentId||null,
@@ -838,9 +803,6 @@ function saveState(forceBackup){
   // Backup write is redundant when the level hasn't moved since the last one —
   // only re-write it on level change or an explicit Export (forceBackup).
   if(forceBackup||lastBackupLevel===null||state.level!==lastBackupLevel){
-    // Clear the legacy key first so it frees quota before the (larger) backup write below,
-    // rather than never running because that write threw a quota error first.
-    try{ localStorage.removeItem('top5k_backups_v1'); }catch(e){}
     try{
       localStorage.setItem('top5k_backup_v2',json);
       lastBackupLevel=state.level;
@@ -918,47 +880,21 @@ function logDailyActivity(mode,isCorrect){
 }
 
 function loadState(){
-  const rawV2=localStorage.getItem(LS_KEY);
-  const rawV1=localStorage.getItem(LS_KEY_OLD);
   let obj=null;
-
-  if(rawV2){ try{ const p=JSON.parse(rawV2); if(p&&typeof p==='object'&&typeof p.level==='number'&&p.level>=1) obj=p; }catch(e){} }
-  if(!obj&&rawV1){ try{ const p=JSON.parse(rawV1); if(p&&typeof p==='object'){ obj=p; localStorage.setItem(LS_KEY,JSON.stringify(p)); } }catch(e){} }
+  try{ const p=JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(p&&typeof p==='object'&&typeof p.level==='number'&&p.level>=1) obj=p; }catch(e){}
   if(!obj) return;
 
   state.level    = obj.level||1;
   state.savedAt  = typeof obj.savedAt==='number' ? obj.savedAt : 0;
-  state.streaks  = obj.streaks||{};
-  state.penalty  = obj.penalty||{};
-  state.reqSeen  = obj.reqSeen||{};
   state.overrides= obj.overrides||{};
-  // Migrate sentenceMode → activeMode
-  if(obj.activeMode){ state.activeMode=obj.activeMode; }
-  else if(obj.sentenceMode){ state.activeMode='sentence'; }
-  else { state.activeMode='word'; }
+  state.activeMode=obj.activeMode||'word';
   if(obj.settings&&typeof obj.settings==='object') state.settings={...state.settings,...obj.settings};
   if(obj.scores&&typeof obj.scores==='object') state.scores=obj.scores;
-  if(obj.scoresMigrationVersion) state.scoresMigrationVersion=obj.scoresMigrationVersion;
-  if(obj.consecutiveCorrect&&typeof obj.consecutiveCorrect==='object') state.consecutiveCorrect=obj.consecutiveCorrect;
-  if(obj.settledThisLevel&&typeof obj.settledThisLevel==='object') state.settledThisLevel=obj.settledThisLevel;
   if(obj.sentenceIndex&&typeof obj.sentenceIndex==='object') state.sentenceIndex=obj.sentenceIndex;
-  if(typeof obj.nextWordCursor==='number') state.nextWordCursor=obj.nextWordCursor;
   if(obj.scheduledThisLevel&&typeof obj.scheduledThisLevel==='object') state.scheduledThisLevel=obj.scheduledThisLevel;
   if(obj.completedThisRun&&typeof obj.completedThisRun==='object') state.completedThisRun=obj.completedThisRun;
   if(obj.seen&&typeof obj.seen==='object') state.seen=obj.seen;
-  // Support new key (IDs only) and old key (may contain full objects from older saves)
-  const batchSrc=obj.currentBatchIds||obj.currentBatch;
-  if(batchSrc&&Array.isArray(batchSrc))
-    state.currentBatch=batchSrc.map(x=>(x&&typeof x==='object')?x.id:x).filter(Boolean);
-
-  // One-time migration: backfill seen from prior progress signals
-  if(Object.keys(state.seen||{}).length===0){
-    const backfill={};
-    for(const k of Object.keys(state.streaks||{})) backfill[k]=true;
-    for(const k of Object.keys(state.consecutiveCorrect||{})) backfill[k]=true;
-    for(const k of Object.keys(state.completedThisRun||{})) backfill[k]=true;
-    if(Object.keys(backfill).length) state.seen=backfill;
-  }
+  if(Array.isArray(obj.currentBatchIds)) state.currentBatch=obj.currentBatchIds;
 }
 
 /* ====== state ====== */
@@ -966,20 +902,16 @@ const APP={wordsPerLevel:25};
 
 const state={
   rawRows:[], data:[],
-  level:1, streaks:{}, penalty:{}, reqSeen:{},
+  level:1,
   overrides:{},
   activeMode:'word',
   settings:{ showHintBtn:true },
   scores:{},
-  scoresMigrationVersion:0,
   currentBatch:[],
-  nextWordCursor:0,
   scheduledThisLevel:{},
   completedThisRun:{},
   fractionalRolled:{},
   scoreAtScheduling:{},
-  consecutiveCorrect:{},
-  settledThisLevel:{},
   seen:{},
   currentId:null,
   lastReview:null,
@@ -994,9 +926,8 @@ const state={
 
 function cloneProgressState(){
   return JSON.parse(JSON.stringify({
-    level:state.level, streaks:state.streaks||{}, penalty:state.penalty||{},
-    reqSeen:state.reqSeen||{}, overrides:state.overrides||{}, activeMode:state.activeMode||'word',
-    scores:state.scores||{}, consecutiveCorrect:state.consecutiveCorrect||{}, settledThisLevel:state.settledThisLevel||{},
+    level:state.level, overrides:state.overrides||{}, activeMode:state.activeMode||'word',
+    scores:state.scores||{},
     scheduledThisLevel:state.scheduledThisLevel||{}, completedThisRun:state.completedThisRun||{}, fractionalRolled:state.fractionalRolled||{}, scoreAtScheduling:state.scoreAtScheduling||{}, currentBatch:state.currentBatch||[], seen:state.seen||{}
   }));
 }
@@ -1004,14 +935,9 @@ function cloneProgressState(){
 function restoreProgressState(snap){
   if(!snap) return;
   state.level    = snap.level||1;
-  state.streaks  = JSON.parse(JSON.stringify(snap.streaks||{}));
-  state.penalty  = JSON.parse(JSON.stringify(snap.penalty||{}));
-  state.reqSeen  = JSON.parse(JSON.stringify(snap.reqSeen||{}));
   state.overrides= JSON.parse(JSON.stringify(snap.overrides||{}));
   state.activeMode= snap.activeMode||'word';
   state.scores             = JSON.parse(JSON.stringify(snap.scores||{}));
-  state.consecutiveCorrect = JSON.parse(JSON.stringify(snap.consecutiveCorrect||{}));
-  state.settledThisLevel   = JSON.parse(JSON.stringify(snap.settledThisLevel||{}));
   state.scheduledThisLevel = JSON.parse(JSON.stringify(snap.scheduledThisLevel||{}));
   state.completedThisRun   = JSON.parse(JSON.stringify(snap.completedThisRun||{}));
   state.fractionalRolled   = JSON.parse(JSON.stringify(snap.fractionalRolled||{}));
@@ -1079,8 +1005,6 @@ function weightedPick(pool){
   return pool[pool.length-1];
 }
 
-const SCORES_MIGRATION_VERSION=2;
-
 function scheduleAppearances(id){
   const ov=state.overrides?.[id];
   const score=Math.max(0.1, state.scores[id]??3.0);
@@ -1124,8 +1048,26 @@ function initCurrentBatch(){
   }
   if(!state.currentBatch||state.currentBatch.length===0){
     state.currentBatch=state.data.filter(it=>it.lvl===state.level).map(it=>it.id);
-    state.nextWordCursor=state.level*APP.wordsPerLevel;
   }
+}
+
+// Clears this level's appearance schedule (new level, level jump, recalibrate).
+function resetLevelSchedule(){
+  state.scheduledThisLevel={};
+  state.completedThisRun={};
+  state.fractionalRolled={};
+  state.scoreAtScheduling={};
+  ensureLevelScheduled();
+}
+
+// After a correct answer: move to the next level once every scheduled
+// appearance is done.
+function maybeAdvanceLevel(){
+  if(!isLevelComplete()||state.level*APP.wordsPerLevel>=state.data.length) return;
+  state.level++;
+  resetLevelSchedule();
+  triggerLevelUp(state.level);
+  saveState();
 }
 
 function levelProgressFraction(){
@@ -1138,38 +1080,6 @@ function levelProgressFraction(){
   return {X, Z, frac: Z===0?1:X/Z};
 }
 
-function migrateLegacyState(){
-  if(state.scoresMigrationVersion>=SCORES_MIGRATION_VERSION) return;
-  // Pre-migration backup
-  const existing=localStorage.getItem(LS_KEY);
-  if(existing) localStorage.setItem('top5k_state_premigration_v2',existing);
-
-  state.scores={};
-  for(const item of state.data){
-    const id=item.id;
-    const ov=state.overrides?.[id];
-    if(ov?.deleted||ov?.super) continue;
-    if(ov?.easy1){ state.scores[id]=0; continue; }
-    const pen=state.penalty?.[id];
-    const hasActivePen=pen&&state.level<=pen.untilLevel;
-    if(hasActivePen){ state.scores[id]=5; continue; }
-    const streak=state.streaks?.[id]||0;
-    const d=state.level-(item.lvl||1);
-    if(streak===0){
-      // d>0 means old level — word was mastered and streak reset by level advance
-      state.scores[id] = d>0 ? 1.6 : 3;
-      continue;
-    }
-    if(d<=0)      state.scores[id]=3;
-    else if(d===1) state.scores[id]=2;
-    else if(d<=4)  state.scores[id]=1;
-    else           state.scores[id]=0;
-  }
-  state.scoresMigrationVersion=SCORES_MIGRATION_VERSION;
-  saveState();
-}
-
-/* ====== Core ====== */
 /* ====== local cloze evaluation ====== */
 function normDeLocal(s){
   return (s||'').trim().toLowerCase()
@@ -1265,26 +1175,6 @@ const Core={
       const sents=state.sentencesData?.[w.id];
       return !!(sents&&sents.length);
     });
-  },
-
-  baseRequiredFor(item){
-    const ov=state.overrides?.[item.id];
-    if(ov?.easy1) return 1;
-    const d=state.level-(item.lvl||1);
-    if(d<=1) return 3;
-    if(d===2) return 2;
-    return 1;
-  },
-
-  requiredFor(item){
-    const base=this.baseRequiredFor(item);
-    const pen=state.penalty?.[item.id];
-    const req=(pen&&state.level<=pen.untilLevel)?Math.max(base,pen.target):base;
-    const id=item.id;
-    const prev=state.reqSeen?.[id];
-    if(prev===undefined){ state.reqSeen[id]=req; return req; }
-    if(prev!==req){ state.streaks[id]=0; state.reqSeen[id]=req; }
-    return req;
   },
 
   pick(){
@@ -1501,8 +1391,6 @@ const Core={
     if(isCorrect){
       state.completedThisRun[id]=(state.completedThisRun[id]||0)+1;
       const cr=state.completedThisRun[id];
-      const scheduled=state.scheduledThisLevel[id]??1;
-
       decayScore(id);
 
       const done=isWordDone(id);
@@ -1537,18 +1425,7 @@ const Core={
     captureReviewSnapshot(x,{beforeState,canTypo:!isCorrect});
     saveState();
 
-    // Level advance
-    if(isLevelComplete()&&state.level*APP.wordsPerLevel<state.data.length){
-      state.level++;
-      state.nextWordCursor=state.level*APP.wordsPerLevel;
-      state.scheduledThisLevel={};
-      state.completedThisRun={};
-      state.fractionalRolled={};
-      state.scoreAtScheduling={};
-      ensureLevelScheduled();
-      triggerLevelUp(state.level);
-      saveState();
-    }
+    maybeAdvanceLevel();
     this.updateProgress(); this.updateDbg();
     if(typeof syncWordToolsUI==='function') syncWordToolsUI();
     resetCloudIdleTimer();
@@ -1594,9 +1471,7 @@ const UI={
       state.level=Math.max(1,Math.min(v,maxL));
       state._enterStage=0;
       state.currentBatch=state.data.filter(it=>it.lvl===state.level).map(it=>it.id);
-      state.nextWordCursor=state.level*APP.wordsPerLevel;
-      state.scheduledThisLevel={}; state.completedThisRun={}; state.fractionalRolled={}; state.scoreAtScheduling={};
-      ensureLevelScheduled(); saveState(); nextCard();
+      resetLevelSchedule(); saveState(); nextCard();
     };
   },
 
@@ -1633,16 +1508,10 @@ const UI={
       const obj=JSON.parse(txt);
       if(!obj||typeof obj!=='object') throw new Error('not an object');
       if(typeof obj.level==='number')                                    state.level=obj.level;
-      if(obj.streaks&&typeof obj.streaks==='object')                     state.streaks=obj.streaks;
-      if(obj.penalty&&typeof obj.penalty==='object')                     state.penalty=obj.penalty;
-      if(obj.reqSeen&&typeof obj.reqSeen==='object')                     state.reqSeen=obj.reqSeen;
       if(obj.overrides&&typeof obj.overrides==='object')                 state.overrides=obj.overrides;
       if(obj.scores&&typeof obj.scores==='object')                       state.scores=obj.scores;
-      if(obj.scoresMigrationVersion)                                     state.scoresMigrationVersion=obj.scoresMigrationVersion;
-      if(obj.consecutiveCorrect&&typeof obj.consecutiveCorrect==='object') state.consecutiveCorrect=obj.consecutiveCorrect;
-      if(obj.settledThisLevel&&typeof obj.settledThisLevel==='object')   state.settledThisLevel=obj.settledThisLevel;
-      if(obj.currentBatch&&Array.isArray(obj.currentBatch))                state.currentBatch=obj.currentBatch;
-      if(typeof obj.nextWordCursor==='number')                              state.nextWordCursor=obj.nextWordCursor;
+      if(Array.isArray(obj.currentBatchIds))                               state.currentBatch=obj.currentBatchIds;
+      if(obj.sentenceIndex&&typeof obj.sentenceIndex==='object')           state.sentenceIndex=obj.sentenceIndex;
       if(obj.scheduledThisLevel&&typeof obj.scheduledThisLevel==='object') state.scheduledThisLevel=obj.scheduledThisLevel;
       if(obj.completedThisRun&&typeof obj.completedThisRun==='object')     state.completedThisRun=obj.completedThisRun;
       if(obj.fractionalRolled&&typeof obj.fractionalRolled==='object')     state.fractionalRolled=obj.fractionalRolled;
@@ -1650,12 +1519,12 @@ const UI={
       if(obj.seen&&typeof obj.seen==='object')                           state.seen=obj.seen;
       if(obj.settings&&typeof obj.settings==='object')                   state.settings={...state.settings,...obj.settings};
       if(obj.activeMode) state.activeMode=obj.activeMode;
-      else if(typeof obj.sentenceMode==='boolean') state.activeMode=obj.sentenceMode?'sentence':'word';
       const maxL=this.maxLevel();
       state.level=Math.max(1,Math.min(state.level||1,maxL));
       if(typeof window.syncMenuUI==='function') window.syncMenuUI();
       Core.rebuildData(); ensureLevelScheduled(); saveState(); this.buildLevelSelector();
-      $('#importModal')?.classList.add('hidden');
+      $('#importModal')?.setAttribute('aria-hidden','true');
+      window.IOSSheet?.close('importModal');
       nextCard();
     }catch(e){
       if(hint) hint.textContent='Invalid JSON — check your paste and try again.';
@@ -1831,15 +1700,6 @@ async function boot(){
     setTimeout(()=>el?.focus(),0);
   }
 
-  function bindBtn(btnSel,onClick){
-    const btn=$(btnSel);
-    if(!btn) return;
-    btn.addEventListener('pointerdown',(e)=>e.preventDefault(),{passive:false});
-    btn.addEventListener('touchstart',(e)=>e.preventDefault(),{passive:false});
-    btn.addEventListener('mousedown',(e)=>e.preventDefault());
-    btn.addEventListener('click',()=>{ onClick(); refocusActiveInput(); });
-  }
-
   window.doCheckNext=function(){
     if(state._enterStage===0){
       const x=state.data.find(w=>w.id===state.currentId);
@@ -1996,7 +1856,7 @@ async function boot(){
     state._enterStage=0;
     saveState();
     syncMenuUI();
-    $('#menuPanel')?.classList.add('hidden');
+    closeMenu();
     nextCard();
     refocusActiveInput();
   }
@@ -2041,17 +1901,10 @@ async function boot(){
         const countStrTypo=newSch>0?` (${Math.min(cr,newSch)}/${newSch} this level)`:'';
         setHTML('#coreFeedback',`<span class="good">Counted as correct (Typo).</span>${countStrTypo}`);
         if(state.activeMode!=='cloze') setText('#coreDeSentence',x.deSent||'');
-        if(isLevelComplete()&&state.level*APP.wordsPerLevel<state.data.length){
-          state.level++;
-          state.nextWordCursor=state.level*APP.wordsPerLevel;
-          state.scheduledThisLevel={};
-          state.completedThisRun={};
-          state.fractionalRolled={};
-          state.scoreAtScheduling={};
-          ensureLevelScheduled();
-        }
         captureReviewSnapshot(x,{beforeState:cloneProgressState(),canTypo:false});
-        saveState(); Core.updateProgress(); Core.updateDbg();
+        saveState();
+        maybeAdvanceLevel();
+        Core.updateProgress(); Core.updateDbg();
         if(typeof window.syncWordToolsUI==='function') window.syncWordToolsUI();
       }
       typoBtn.addEventListener('pointerdown',doTypo,{passive:false});
@@ -2147,7 +2000,6 @@ async function boot(){
         const ov=state.overrides[id]||{};
         const on=!ov.easy1;
         state.overrides[id]={...ov,easy1:on};
-        if(on){ delete state.penalty[id]; delete state.reqSeen[id]; }
         // 1-Streak means one appearance per level — apply it to this level too.
         if(on&&state.scheduledThisLevel[id]!==undefined) state.scheduledThisLevel[id]=Math.min(state.scheduledThisLevel[id],1);
         Core.rebuildData(); saveState(); Core.updateProgress(); Core.updateDbg();
@@ -2194,14 +2046,14 @@ async function boot(){
   // ---- Reset ----
   $('#coreReset')?.addEventListener('click',()=>{
     closeMenu();
-    window.IOSSheet?.confirm('This clears all streaks and level progress.',{
+    window.IOSSheet?.confirm('This clears all scores and level progress.',{
       title:'Reset all progress',
       confirmLabel:'Reset Progress',
       cancelLabel:'Cancel',
       danger:true,
       onConfirm:()=>{
-        state.level=1; state.streaks={}; state.penalty={}; state.activeMode='word';
-        state.scores={}; state.currentBatch=[]; state.nextWordCursor=0;
+        state.level=1; state.activeMode='word';
+        state.scores={}; state.currentBatch=[];
         state.scheduledThisLevel={}; state.completedThisRun={}; state.fractionalRolled={}; state.scoreAtScheduling={};
         state.currentId=null; saveState(); location.reload();
       }
@@ -2258,7 +2110,6 @@ async function boot(){
   $('#btnBackupDismiss')?.addEventListener('click',()=>{ sessionStorage.setItem(BACKUP_DISMISS_SESSION_KEY,'1'); updateBackupBanner(); });
 
   // ---- Debug tools ----
-  $('#btnDump')?.addEventListener('click',()=>{ console.log('TOP5K STATE:',JSON.parse(JSON.stringify(state))); alert('Dumped to console.'); });
   $('#btnExportFlagged')?.addEventListener('click',()=>{ openCopyModal(JSON.stringify(flaggedSentences,null,2),'Export flagged sentences'); });
   $('#btnClearFlagged')?.addEventListener('click',()=>{
     const n=Object.values(flaggedSentences).reduce((a,v)=>a+(Array.isArray(v)?v.length:0),0);
@@ -2268,19 +2119,14 @@ async function boot(){
     try{ localStorage.removeItem(FLAGGED_KEY); }catch(e){}
     alert('Flagged sentences cleared.');
   });
-  $('#btnHardSave')?.addEventListener('click',()=>{ saveState(); alert('Saved.'); });
   $('#btnRecalibrate')?.addEventListener('click',()=>{
-    if(!confirm('Recalibrate scores?\n\nCurrent level words → 50% chance each. Future words → appear once each. Supers, level, and streaks unchanged.')) return;
+    if(!confirm('Recalibrate scores?\n\nCurrent level words → 50% chance each. Future words → appear once each. Supers and level unchanged.')) return;
     const poolIds=new Set(Core.levelPool().map(w=>w.id));
     for(const w of state.data){
       if(state.overrides?.[w.id]?.super) continue;
       state.scores[w.id]=poolIds.has(w.id)?0.5:1;
     }
-    state.scheduledThisLevel={};
-    state.completedThisRun={};
-    state.fractionalRolled={};
-    state.scoreAtScheduling={};
-    ensureLevelScheduled();
+    resetLevelSchedule();
     saveState();
     Core.updateProgress();
     nextCard();
@@ -2295,13 +2141,13 @@ async function boot(){
     }catch(e){ alert('Restore failed.'); console.error(e); }
   });
 
-  const KNOWN_LS_KEYS=new Set([
-    'top5k_state_v2','top5k_backup_v2','top5k_profile_v1','top5k_log_v1',
-    'top5k_gemini_key','top5k_active_tab','top5k_last_cloud_backup_v1','lena_chat_history',
-    'top5k_supabase_url','top5k_supabase_key','top5k_chat_saved_at_v1','top5k_flagged_v1',
-    'preps_stats_v1','preps_saved_at_v1',
-    'ausdruck_entries_v1','ausdruck_saved_at_v1'
+  // Keys left behind by removed features. Anything belonging to a current
+  // screen (top5k_/grammar_/preps_/ausdruck_/chat_) is never touched.
+  const LEGACY_LS_KEYS=new Set([
+    'top5k_state_v1','top5k_backups_v1','top5k_state_premigration_v2',
+    'top5k_chat_saved_at_v1','lena_chat_history'
   ]);
+  const isLegacyKey=k=>LEGACY_LS_KEYS.has(k)||!/^(top5k|grammar|preps|ausdruck|chat)_/.test(k);
 
   function getStorageReport(){
     const rows=[];
@@ -2319,7 +2165,7 @@ async function boot(){
 
   function fmtKB(bytes){ return (bytes/1024).toFixed(1)+' KB'; }
 
-  $('#btnStorageUsage')?.addEventListener('click',()=>{
+  function showStorageReport(){
     const out=$('#storageUsageOut');
     if(!out) return;
     const {rows,total}=getStorageReport();
@@ -2327,42 +2173,17 @@ async function boot(){
     lines.push('',`Total — ${fmtKB(total)}`);
     out.textContent=lines.join('\n');
     out.classList.remove('hidden');
-  });
+  }
+  $('#btnStorageUsage')?.addEventListener('click',showStorageReport);
 
   $('#btnCleanLegacy')?.addEventListener('click',()=>{
     const {rows}=getStorageReport();
-    const toDelete=rows.map(r=>r.key).filter(k=>!KNOWN_LS_KEYS.has(k));
+    const toDelete=rows.map(r=>r.key).filter(isLegacyKey);
     if(!toDelete.length){ alert('No legacy keys found.'); return; }
     if(!confirm(`Delete these ${toDelete.length} key(s)?\n\n${toDelete.join('\n')}`)) return;
     for(const k of toDelete) localStorage.removeItem(k);
     alert('Deleted ✅');
-    const out=$('#storageUsageOut');
-    if(out&&!out.classList.contains('hidden')){
-      const {rows:rows2,total}=getStorageReport();
-      const lines=rows2.map(r=>`${r.key} — ${fmtKB(r.bytes)}`);
-      lines.push('',`Total — ${fmtKB(total)}`);
-      out.textContent=lines.join('\n');
-    }
-  });
-
-  function getV1Raw(){ return localStorage.getItem('top5k_state_v1'); }
-  async function copyTextToClipboard(txt){
-    try{ if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(txt); alert('Copied ✅'); return true; } }catch(e){}
-    window.prompt('Copy this JSON:',txt); return false;
-  }
-
-  $('#btnCheckV1')?.addEventListener('click',()=>{
-    const raw=getV1Raw();
-    if(!raw){ alert('v1 key NOT found in this container.'); return; }
-    try{ const obj=JSON.parse(raw); alert('v1 found. Level = '+(obj.level??'unknown')); console.log('V1 STATE:',obj); }
-    catch(e){ alert('v1 exists but JSON invalid'); }
-  });
-  $('#btnCopyV1')?.addEventListener('click',()=>{ const raw=localStorage.getItem('top5k_state_v1'); if(!raw){alert('No v1 key found.');return;} openCopyModal(raw,'Export (v1 key)'); });
-  $('#btnRestoreV1')?.addEventListener('click',()=>{
-    const raw=getV1Raw();
-    if(!raw){ alert('No v1 key found.'); return; }
-    if(!confirm('Restore progress from v1 and make it the current state?')) return;
-    localStorage.setItem(LS_KEY,raw); alert('Restored ✅ App will reload now.'); location.reload();
+    if(!$('#storageUsageOut')?.classList.contains('hidden')) showStorageReport();
   });
 
   // ---- Cloud sync settings ----
@@ -2383,7 +2204,6 @@ async function boot(){
   }
 
   await Core.load();
-  migrateLegacyState();
   initCurrentBatch();
   ensureLevelScheduled();
   syncMenuUI();

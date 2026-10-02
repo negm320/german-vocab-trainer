@@ -153,6 +153,18 @@ Synced to `kv_state`: `top5k_state_v2`, `top5k_log_v1`, `chat_scenes_v1`,
   skipped, as a safety net.
 - Cloze blank prefers a whole-word match (so "Freund" isn't blanked inside
   "Freundin").
+- `sentences.json` was replaced on 2 Oct 2026 (4,894 words × 9–10 sentences)
+  and checked: every slot's blank lands on a whole word (inflected forms are
+  in `conjugated`; separable verbs as `"gibt... vor"`). Re-check any new
+  version the same way before committing — the owner's generator once wrote
+  the text `"None"` instead of `null`.
+- Tools (bottom of the card): Recalibrate, Export/Clear flagged, Restore
+  latest backup, Storage usage, Clean legacy keys (only deletes keys of
+  removed features or not starting with `top5k_/grammar_/preps_/ausdruck_/chat_`),
+  Push now. The old streak/penalty system, v1-state migration and v1 tools
+  were removed in the Oct 2026 cleanup (saved state now holds only `level,
+  overrides, activeMode, settings, scores, currentBatchIds, scheduledThisLevel,
+  completedThisRun, currentId, sentenceIndex, seen, savedAt`).
 
 ### Grammar (`grammar.html`) — main focus
 **Drill**: English sentence shown; the German words are shuffled chips;
@@ -334,9 +346,8 @@ No test suite. What has worked well:
 - **Grammar Phase 3**: structure picker (Relativsatz, zu-Infinitiv, indirect
   questions, Modalverben, trennbare Verben, nicht-position…), A2/B1/B2
   difficulty, stats per connector/structure from the bank data.
-- Vocab: 109 cloze sentences in `sentences.json` (after the 2 Oct 2026 replacement — 4,894 words × 9–10 sentences) lack a `conjugated` form so the blank sits
-  inside a longer word ("Du ___st"); review isn't time-based; Sentence mode
-  needs AI grading; Reset doesn't clear `seen`.
+- Vocab: review isn't time-based; Sentence mode needs AI grading; Reset
+  doesn't clear `seen`.
 - Preps model upgrade (see AI models). Preps stats screen.
 - Root URL has no `index.html` (404) — a redirect to `top5k.html` would fix
   old bookmarks.
