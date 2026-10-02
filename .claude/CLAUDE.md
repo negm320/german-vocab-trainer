@@ -148,8 +148,9 @@ Synced to `kv_state`: `top5k_state_v2`, `top5k_log_v1`, `chat_scenes_v1`,
 - Word tools: Edit (overrides stored in state; editing only the meaning does
   NOT pin the sentence), Hide, Super (show every N levels), 1-Streak, Set
   score, Typo (count last wrong answer as right), Back.
-- Rows without English are skipped (the tail of `5k.csv`, from id 2948, has
-  German only — ~1,980 words still need translation/sentences/gender).
+- All 4,899 rows have English + an example sentence (the 1,982 words from
+  id 2948 on were filled in on 2 Oct 2026). Rows without English would be
+  skipped, as a safety net.
 - Cloze blank prefers a whole-word match (so "Freund" isn't blanked inside
   "Freundin").
 
@@ -333,8 +334,7 @@ No test suite. What has worked well:
 - **Grammar Phase 3**: structure picker (Relativsatz, zu-Infinitiv, indirect
   questions, Modalverben, trennbare Verben, nicht-position…), A2/B1/B2
   difficulty, stats per connector/structure from the bank data.
-- Vocab: ~1,980 words (ids ≥ 2948) lack English/sentences/gender; 229 cloze
-  sentences in `sentences.json` lack a `conjugated` form so the blank sits
+- Vocab: 229 cloze sentences in `sentences.json` lack a `conjugated` form so the blank sits
   inside a longer word ("Du ___st"); review isn't time-based; Sentence mode
   needs AI grading; Reset doesn't clear `seen`.
 - Preps model upgrade (see AI models). Preps stats screen.
