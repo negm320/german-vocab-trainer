@@ -1,6 +1,7 @@
-# GitHub holds only what the site serves: the HTML screens, ios-* shared
-# files, demo-mode.js, fonts/, icons/, manifest, 5k.csv and sentences.json.
-# Everything below stays on your computer only.
+# The repo root holds only what the site serves: the HTML screens, ios-*
+# shared files, demo-mode.js, fonts/, icons/, manifest, 5k.csv and
+# sentences.json. Docs, notes, SQL and scripts go in .claude/ (allowed at the
+# bottom of this file). Anything else below never gets committed.
 
 # Notes, docs and scripts
 *.md
@@ -20,9 +21,6 @@ verbs.csv
 prepositions.csv
 adjadv.csv
 
-# Claude Code internals
-.claude/
-
 # Local secrets (never commit)
 supbase password.txt
 *.env
@@ -30,3 +28,8 @@ supbase password.txt
 
 # OS clutter
 .DS_Store
+
+# Extra project files live in .claude/ and ARE committed (docs, SQL, scripts)
+!.claude/
+!.claude/**
+.claude/settings.local.json
