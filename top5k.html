@@ -309,6 +309,7 @@ button:hover{background:var(--btn2)}
       <button id="btnHardSave">Force save</button>
       <button id="btnRecalibrate">Recalibrate → 0.5</button>
       <button id="btnExportFlagged">Export flagged</button>
+      <button id="btnClearFlagged">Clear flagged</button>
       <button id="btnCheckV1">Check v1 Key</button>
       <button id="btnCopyV1">Copy v1 JSON</button>
       <button id="btnRestoreV1">Restore v1 → current</button>
@@ -532,10 +533,20 @@ function buildClozeResult(x, sentData){
   if(searchTerm.includes('...')){
     const parts=searchTerm.split('...').map(p=>p.trim()).filter(Boolean);
     const sl=sentence.toLowerCase();
+    const isLetter=c=>!!c&&/\p{L}/u.test(c);
     let pos=0;
     const positions=[];
-    for(const part of parts){
-      const idx=sl.indexOf(part.toLowerCase(),pos);
+    for(let pi=0;pi<parts.length;pi++){
+      const part=parts[pi], pl=part.toLowerCase();
+      // Whole-word hits only ("an" not inside "elegant", "ab" not inside
+      // "Abend"). The verb takes the first one; the separated prefix takes the
+      // last one (it sits at the end of the clause). Substring hit as fallback.
+      let idx=-1, sub=-1;
+      for(let i=sl.indexOf(pl,pos); i!==-1; i=sl.indexOf(pl,i+1)){
+        if(sub===-1) sub=i;
+        if(!isLetter(sentence[i-1])&&!isLetter(sentence[i+pl.length])){ idx=i; if(pi===0) break; }
+      }
+      if(idx===-1) idx=sub;
       if(idx===-1) return null;
       positions.push({idx,len:part.length,text:sentence.slice(idx,idx+part.length)});
       pos=idx+part.length;
@@ -2249,6 +2260,14 @@ async function boot(){
   // ---- Debug tools ----
   $('#btnDump')?.addEventListener('click',()=>{ console.log('TOP5K STATE:',JSON.parse(JSON.stringify(state))); alert('Dumped to console.'); });
   $('#btnExportFlagged')?.addEventListener('click',()=>{ openCopyModal(JSON.stringify(flaggedSentences,null,2),'Export flagged sentences'); });
+  $('#btnClearFlagged')?.addEventListener('click',()=>{
+    const n=Object.values(flaggedSentences).reduce((a,v)=>a+(Array.isArray(v)?v.length:0),0);
+    if(!n){ alert('No flagged sentences.'); return; }
+    if(!confirm(`Clear ${n} flagged sentence${n===1?'':'s'}?\n\nUse this after sentences.json has been replaced — the flags point at sentence numbers, so old flags would hide the new sentences in those spots.`)) return;
+    flaggedSentences={};
+    try{ localStorage.removeItem(FLAGGED_KEY); }catch(e){}
+    alert('Flagged sentences cleared.');
+  });
   $('#btnHardSave')?.addEventListener('click',()=>{ saveState(); alert('Saved.'); });
   $('#btnRecalibrate')?.addEventListener('click',()=>{
     if(!confirm('Recalibrate scores?\n\nCurrent level words → 50% chance each. Future words → appear once each. Supers, level, and streaks unchanged.')) return;

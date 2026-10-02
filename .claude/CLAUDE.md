@@ -116,7 +116,7 @@ screen — idea: picture cards) and `vocab.csv`, `verbs.csv`, `prepositions.csv`
 | `top5k_state_v2` (+`_v1`, `top5k_backup_v2`, `top5k_state_premigration_v2`) | Vocab | progress: level, scores, schedule, overrides, seen… |
 | `top5k_profile_v1` | Vocab → read by Grammar & Chat | `{v:1, level, words:[{id, german, english, gender, score, bucket:'training'|'weak'|'random'}]}` — written on every save |
 | `top5k_log_v1` | Vocab | daily answer log |
-| `top5k_flagged_v1` | Vocab | flagged sentences.json slots per word |
+| `top5k_flagged_v1` | Vocab | flagged sentences.json slots per word (by index — clear via Tools → "Clear flagged" whenever sentences.json is replaced) |
 | `top5k_last_cloud_backup_v1`, `top5k_backup_dismissed_v1` | Vocab | backup banner |
 | `top5k_gemini_key`, `top5k_supabase_url`, `top5k_supabase_key`, `top5k_demo_mode`, `top5k_active_tab` | all | shared config |
 | `grammar_settings_v1` | Grammar | settings object (see Grammar) |
@@ -334,7 +334,7 @@ No test suite. What has worked well:
 - **Grammar Phase 3**: structure picker (Relativsatz, zu-Infinitiv, indirect
   questions, Modalverben, trennbare Verben, nicht-position…), A2/B1/B2
   difficulty, stats per connector/structure from the bank data.
-- Vocab: 229 cloze sentences in `sentences.json` lack a `conjugated` form so the blank sits
+- Vocab: 109 cloze sentences in `sentences.json` (after the 2 Oct 2026 replacement — 4,894 words × 9–10 sentences) lack a `conjugated` form so the blank sits
   inside a longer word ("Du ___st"); review isn't time-based; Sentence mode
   needs AI grading; Reset doesn't clear `seen`.
 - Preps model upgrade (see AI models). Preps stats screen.
