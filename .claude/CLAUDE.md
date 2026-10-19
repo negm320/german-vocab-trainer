@@ -206,10 +206,12 @@ rebuild the German order by tapping chips, typing or dictating. Check / Next
 **Checking** (`evaluateAnswer`): punctuation/case-insensitive alignment;
 small word typos (Levenshtein ≤ 2 or same Kölner Phonetik) → "Typo — close
 enough"; one dropped ≤3-letter word → typo. If an answer is wrong but uses
-exactly the drill's words in another order → `verifyAlternative` asks the
-lite model whether it's also correct German. Valid → "Also correct ✓", saved
-to the drill and the bank row's `alternatives`; invalid → shows the one-line
-rule that was broken. Only the first Check of a drill is recorded.
+exactly the drill's words in another order → `verifyAlternative` asks
+`DRILL_MODEL` (3.8 Flash, thinking `low`; same lite fallback as drills)
+whether it's also correct German. Valid → "Also correct ✓", saved to the
+drill and the bank row's `alternatives`; invalid → says which words to move
+where + the rule. (Was the lite model with a sample reason in the prompt —
+it parroted "verb goes to the end" even when the verb was right.) Only the first Check of a drill is recorded.
 
 **Sentence bank** (Supabase table `grammar_bank`, SQL below):
 - Every generation saves all 3 candidates (`source` 'picked' / 'alt') unless
@@ -284,10 +286,10 @@ spans and the rule named. iMessage-style UI with heavy iOS keyboard handling.
 
 ## AI models (prices checked Sept 2026, per 1M tokens in/out)
 - `gemini-3.5-flash-lite` — $0.30 / $2.50. Used for chat replies, Ausdruck,
-  grammar alternative-order checks, fallback.
+  fallback.
 - `gemini-3.6/3.7/3.8-flash` — $0.75 / $3.75 intro until 31 Dec 2026, then
   $1.50 / $7.50. `gemini-3.8-flash` generates grammar drills (naturalness
-  needs a full Flash model).
+  needs a full Flash model) and does the alternative-order checks.
 - `gemini-3.5-flash` — $1.50 / $9.00; no reason to use.
 - Rough cost: a grammar drill ≈ $0.004 on 3.8 Flash. Recommended next: move
   Preps and the Chat/Ausdruck *graders* to 3.8 Flash; keep Lite for chat

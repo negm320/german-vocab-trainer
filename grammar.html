@@ -1518,6 +1518,8 @@ async function verifyAlternative(drill,answer){
   if(window.IOSDemo?.on) return {valid:false,reason:''};
   const key=localStorage.getItem(GEMINI_KEY_LS);
   if(!key) return null;
+  /* No sample reason in this prompt: the model used to copy it ("the verb
+     goes to the end") even when the verb was already in the right place. */
   const prompt=`A German learner rebuilt a sentence from its shuffled words.
 Original: "${drill.correct}"
 Meaning: "${drill.english}"
@@ -1526,9 +1528,18 @@ Punctuation and capitalization are missing from the learner's version — ignore
 
 Is the learner's order ALSO a correct German sentence that a native speaker would accept, with the same meaning? Different but valid orders count as correct (e.g. the subordinate clause before or after the main clause with the right verb position, or a time/place phrase moved to the front). Anything a native would find wrong or clearly odd is not correct.
 
-Return JSON only: {"valid":true|false,"reason":"if not valid: one short English sentence naming the rule that was broken, e.g. \\"After weil the conjugated verb goes to the end.\\"; if valid: empty"}`;
-  const body=JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0,maxOutputTokens:400,responseMimeType:'application/json',thinkingConfig:{thinkingLevel:'minimal'}}});
-  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body});
+If it is not correct, compare the learner's order with the original word by word and find exactly which word(s) are in the wrong place. Check each verb's position first: only blame the verb if it really is in a different place than in the original. If the verbs are in the right place, the mistake is in the order of the other words (e.g. nicht/negation, adverbs, objects, a place or direction phrase that belongs right before the final verb).
+
+Return JSON only: {"valid":true|false,"reason":"if not valid: one or two short, plain English sentences for a learner — say which words to move and where (quote them, e.g. 'put X before Y'), then the rule behind it; if valid: empty"}`;
+  const body=JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0,maxOutputTokens:2048,responseMimeType:'application/json',thinkingConfig:{thinkingLevel:'low'}}});
+  // Same model as the drills (the lite model gave wrong reasons); same fallback to lite.
+  const onFallback=Date.now()<drillModelOffUntil;
+  const model=onFallback?DRILL_FALLBACK_MODEL:DRILL_MODEL;
+  let res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body});
+  if([400,403,404,429].includes(res.status)&&!onFallback&&DRILL_MODEL!==DRILL_FALLBACK_MODEL){
+    drillModelOffUntil=Date.now()+(res.status===429?10*60*1000:Infinity);
+    res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${DRILL_FALLBACK_MODEL}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body});
+  }
   if(!res.ok) throw new Error(`API ${res.status}`);
   const out=parseFirstJSON(extractGeminiText(await res.json()));
   return {valid:out.valid===true,reason:String(out.reason||'').trim()};
