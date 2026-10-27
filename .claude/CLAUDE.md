@@ -100,6 +100,14 @@ screen — idea: picture cards) and `vocab.csv`, `verbs.csv`, `prepositions.csv`
   keys are not JWTs). Generic table `kv_state(key, value jsonb, updated_at)`
   holds one JSON blob per screen; on load, if the cloud copy is newer, the
   page offers to restore it. App works fully offline without it.
+  **Overwrite guard** (branch `claude/trusting-hamilton-49ki94`, not deployed
+  yet): pushes are conditional PATCHes — Vocab on `value->>savedAt`, the
+  other screens on `updated_at` — equal to the copy the tab last loaded or
+  wrote, so a save from another device (the native iOS app) is never
+  overwritten; the page asks "Load cloud copy / Keep this device" instead.
+  The cloud is also re-checked when the app returns to the foreground.
+  `top5k.html?cloudKey=<row key>` opens that row read-only (no pushes,
+  saves go to a scratch key) to check blobs written by another client.
 - **PWA caching**: there is no service worker; iOS serves cached files until
   the HTTP cache expires. The Chat screen's Settings has a "force refresh"
   button (`hardRefresh()` re-fetches every asset with `cache:'reload'`).

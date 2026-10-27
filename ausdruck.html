@@ -402,20 +402,83 @@ async function supabaseGetRow(key){
   return (rows&&rows[0])||null;
 }
 
+// updated_at of the cloud row this tab last loaded or wrote ('' = no row yet,
+// null = unknown, the load-time read failed). A push only replaces the row
+// while it still holds that copy, so a save from another device is never
+// silently overwritten — the push stops and asks instead.
+let cloudBaseAt=null;
+const cloudLoadSavedAt=parseInt(localStorage.getItem(ENTRIES_SAVED_AT_KEY)||'0',10);
+let cloudPromptOpen=false;
+
+// Writes the row only if it still has updated_at = base (one atomic request).
+// Returns the new updated_at, or null when another device wrote since.
+async function supabaseWriteIf(key,value,base){
+  const conf=supabaseConf();
+  if(!conf) return null;
+  const headers={'apikey':conf.key,'Content-Type':'application/json','Prefer':'return=representation'};
+  const body=JSON.stringify({key,value,updated_at:new Date().toISOString()});
+  const url=`${conf.url}/rest/v1/kv_state`;
+  const res=base===''
+    // No row yet: insert, but never on top of a row another device created meanwhile.
+    ? await fetch(`${url}?select=updated_at`,{method:'POST',headers:{...headers,'Prefer':'resolution=ignore-duplicates,return=representation'},body:`[${body}]`})
+    : await fetch(`${url}?key=eq.${encodeURIComponent(key)}&updated_at=eq.${encodeURIComponent(base)}&select=updated_at`,{method:'PATCH',headers,body});
+  if(!res.ok) throw new Error(`Supabase write ${key} failed: HTTP ${res.status}`);
+  const rows=await res.json().catch(()=>[]);
+  return (rows&&rows[0]&&rows[0].updated_at)||null;
+}
+
+// One sheet at a time: "Load cloud copy" restores it, "Keep this device" lets
+// this device's copy overwrite it. Until the learner picks, nothing is pushed.
+// Returns true if the cloud copy was applied.
+async function askCloudChoice(row,message){
+  if(cloudPromptOpen) return false;
+  cloudPromptOpen=true;
+  try{
+    if(!row) row=await supabaseGetRow(ENTRIES_KEY);
+    if(!row||!(row.value&&typeof row.value==='object'&&Array.isArray(row.value.entries))) return false;
+    const restore=await window.IOSSheet?.confirm(message||`Another device saved Ausdruck entries at ${fmtWhen(new Date(row.updated_at).getTime())}. Load it here, or keep this device's and overwrite the cloud copy?`,{
+      title:'Cloud Sync',
+      confirmLabel:message?'Restore':'Load cloud copy',
+      cancelLabel:'Keep this device'
+    });
+    cloudBaseAt=row.updated_at;
+    if(restore){ store={v:1,entries:row.value.entries}; saveEntries(); return true; }
+    runAusdruckPush(true);
+    return false;
+  }catch(e){
+    console.error('Cloud pull failed:',e);
+    return false;
+  }finally{
+    cloudPromptOpen=false;
+  }
+}
+
 let ausdruckPushInFlight=false;
 let ausdruckPushQueued=false;
 
-function runAusdruckPush(){
+// force = the learner chose "Keep this device": overwrite whatever is there.
+function runAusdruckPush(force){
   if(!supabaseConf()) return;
   if(ausdruckPushInFlight){ ausdruckPushQueued=true; return; }
   ausdruckPushInFlight=true;
-  supabaseUpsert(ENTRIES_KEY,store)
-    .then(row=>{
+  (async()=>{
+    if(force) return ((await supabaseUpsert(ENTRIES_KEY,store))||{}).updated_at||null;
+    if(cloudBaseAt===null){
+      // The load-time read failed: anything written after this device's own
+      // last save counts as another device's work.
+      const row=await supabaseGetRow(ENTRIES_KEY);
+      if(row&&new Date(row.updated_at).getTime()>cloudLoadSavedAt) return null;
+      cloudBaseAt=row?row.updated_at:'';
+    }
+    return supabaseWriteIf(ENTRIES_KEY,store,cloudBaseAt);
+  })()
+    .then(at=>{
+      if(!at){ if(!document.hidden) askCloudChoice(null); return; }
+      cloudBaseAt=at;
       // Pin our local "saved at" to the row's own timestamp, not Date.now(),
       // so a same-device reload never sees remoteUpdatedAt > localSavedAt
       // from clock/rounding drift and fires a spurious "cloud is newer" prompt.
-      const ts=row&&row.updated_at?new Date(row.updated_at).getTime():null;
-      if(ts) try{ localStorage.setItem(ENTRIES_SAVED_AT_KEY,String(ts)); }catch(e){}
+      try{ localStorage.setItem(ENTRIES_SAVED_AT_KEY,String(new Date(at).getTime())); }catch(e){}
     })
     .catch(e=>console.error('Cloud push failed:',e))
     .finally(()=>{
@@ -427,27 +490,30 @@ function pushAusdruckNow(){
   if(!supabaseConf()) return;
   runAusdruckPush();
 }
-document.addEventListener('visibilitychange',()=>{ if(document.hidden) pushAusdruckNow(); });
+// Coming back to the app re-checks the cloud too, so a save from another
+// device in the meantime is offered before anything new is added.
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) pushAusdruckNow(); else tryCloudPullOnLoad(); });
 
 function fmtWhen(ts){ if(!ts) return 'never'; try{ return new Date(ts).toLocaleString(); }catch{ return 'never'; } }
 
+// Runs on load and whenever the app comes back to the foreground.
 // Returns true if the cloud copy was applied.
 async function tryCloudPullOnLoad(){
-  if(!supabaseConf()) return false;
+  if(!supabaseConf()||cloudPromptOpen) return false;
   try{
     const row=await supabaseGetRow(ENTRIES_KEY);
-    if(!row||!row.value||typeof row.value!=='object'||!Array.isArray(row.value.entries)) return false;
+    if(!row){ if(cloudBaseAt===null) cloudBaseAt=''; return false; }
+    if(row.updated_at===cloudBaseAt) return false; // unchanged since this tab last synced
+    // Another device wrote since this tab last synced: ask, whatever the clocks say.
+    const changedElsewhere=cloudBaseAt!==null;
     const remoteUpdatedAt=new Date(row.updated_at).getTime();
     const localSavedAt=parseInt(localStorage.getItem(ENTRIES_SAVED_AT_KEY)||'0',10);
     const localEmpty=store.entries.length===0;
-    if(!(remoteUpdatedAt>localSavedAt||localEmpty)) return false;
-    window.IOSSheet?.confirm(`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`,{
-      title:'Cloud Sync',
-      confirmLabel:'Restore',
-      cancelLabel:'Keep this device',
-      onConfirm:()=>{ store={v:1,entries:row.value.entries}; saveEntries(); }
-    });
-    return false;
+    if(!(row.value&&typeof row.value==='object'&&Array.isArray(row.value.entries))||!(changedElsewhere||remoteUpdatedAt>localSavedAt||localEmpty)){
+      cloudBaseAt=row.updated_at; // this device's copy is the one to keep
+      return false;
+    }
+    return await askCloudChoice(row,changedElsewhere?null:`Cloud copy from ${fmtWhen(remoteUpdatedAt)} is newer than this device. Restore it?`);
   }catch(e){
     console.error('Cloud pull failed:',e);
     return false;

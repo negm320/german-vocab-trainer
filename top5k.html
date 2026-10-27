@@ -161,7 +161,7 @@ button:hover{background:var(--btn2)}
 <script src="demo-mode.js" defer></script>
 </head>
 <body>
-<script>(function(){var t=localStorage.getItem('top5k_active_tab');if(t==='grammar')location.replace('grammar.html');else if(t==='chat')location.replace('chat.html');else if(t==='preps')location.replace('preps.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
+<script>(function(){if(/[?&]cloudKey=/.test(location.search))return;var t=localStorage.getItem('top5k_active_tab');if(t==='grammar')location.replace('grammar.html');else if(t==='chat')location.replace('chat.html');else if(t==='preps')location.replace('preps.html');else if(t==='ausdruck')location.replace('ausdruck.html');})();</script>
 
 <!-- API Key Setup Screen -->
 <div id="apiKeyScreen" class="iosSetupScreen hidden">
@@ -635,7 +635,14 @@ function parseCSV(txt){
 }
 
 /* ====== storage ====== */
-const LS_KEY  = 'top5k_state_v2';
+// ?cloudKey=<kv_state key> opens that cloud row read-only, to check a blob
+// written by another client (the iPhone app): nothing is pushed, and saves go
+// to a scratch key, so this device's own progress, log and profile stay as
+// they are. Open top5k.html without the flag to go back.
+const CLOUD_TEST_KEY=new URLSearchParams(location.search).get('cloudKey')||null;
+const LS_KEY  = CLOUD_TEST_KEY ? 'cloudtest_state' : 'top5k_state_v2';
+const CLOUD_STATE_KEY = CLOUD_TEST_KEY || 'top5k_state_v2';
+if(CLOUD_TEST_KEY) try{ localStorage.removeItem(LS_KEY); }catch(e){}
 const GEMINI_KEY_LS = 'top5k_gemini_key';
 const PROFILE_KEY = 'top5k_profile_v1';
 const DAILY_LOG_KEY = 'top5k_log_v1';
@@ -659,6 +666,7 @@ function loadFlagged(){
 }
 let flaggedSentences=loadFlagged();
 function flagSentenceSlot(id,idx){
+  if(CLOUD_TEST_KEY) return;
   if(!Array.isArray(flaggedSentences[id])) flaggedSentences[id]=[];
   if(!flaggedSentences[id].includes(idx)) flaggedSentences[id].push(idx);
   try{ localStorage.setItem(FLAGGED_KEY,JSON.stringify(flaggedSentences)); }catch(e){}
@@ -708,6 +716,69 @@ let cloudPushInFlight=false;
 let cloudPushQueued=false;
 let cloudIdleTimer=null;
 let lastCloudPush={time:null,ok:null,error:null};
+// savedAt of the cloud copy this tab last loaded or wrote (0 = no cloud row;
+// null = unknown, the load-time read failed). A push only replaces the row
+// while it still holds that copy, so a save from another device is never
+// silently overwritten — the push stops and asks instead.
+let cloudBaseSavedAt=null;
+let cloudLoadSavedAt=0;
+
+// Writes the state row only if the cloud still holds the copy with savedAt
+// = base (one atomic request). Returns false when another device saved since.
+async function supabaseWriteStateIf(value,base){
+  const conf=supabaseConf();
+  if(!conf) return true;
+  const headers={'apikey':conf.key,'Content-Type':'application/json','Prefer':'return=representation'};
+  const body=JSON.stringify({key:CLOUD_STATE_KEY,value,updated_at:new Date().toISOString()});
+  const url=`${conf.url}/rest/v1/kv_state`;
+  const res=base===0
+    // No row yet: insert, but never on top of a row another device created meanwhile.
+    ? await fetch(`${url}?select=key`,{method:'POST',headers:{...headers,'Prefer':'resolution=ignore-duplicates,return=representation'},body:`[${body}]`})
+    : await fetch(`${url}?key=eq.${encodeURIComponent(CLOUD_STATE_KEY)}&value->>savedAt=eq.${base}&select=key`,{method:'PATCH',headers,body});
+  if(!res.ok) throw new Error(`Supabase write ${CLOUD_STATE_KEY} failed: HTTP ${res.status}`);
+  const rows=await res.json().catch(()=>[]);
+  return Array.isArray(rows)&&rows.length>0;
+}
+
+async function supabaseGetSavedAt(key){
+  const conf=supabaseConf();
+  if(!conf) return 0;
+  const res=await fetch(`${conf.url}/rest/v1/kv_state?key=eq.${encodeURIComponent(key)}&select=savedAt:value->savedAt`,{headers:{'apikey':conf.key}});
+  if(!res.ok) throw new Error(`Supabase get ${key} failed: HTTP ${res.status}`);
+  const rows=await res.json();
+  if(!rows||!rows[0]) return 0;
+  return typeof rows[0].savedAt==='number'?rows[0].savedAt:-1;
+}
+
+function onCloudConflict(){
+  lastCloudPush={time:Date.now(),ok:false,error:'another device saved newer progress — not pushed'};
+  if(!document.hidden) askCloudChoice(null,null);
+}
+
+// One sheet at a time: "Load cloud copy" restores it, "Keep this device" lets
+// the next push overwrite it. Until the learner picks, nothing is pushed.
+let cloudPromptOpen=false;
+async function askCloudChoice(row,message){
+  if(cloudPromptOpen) return;
+  cloudPromptOpen=true;
+  try{
+    if(!row) row=await supabaseGetRow(CLOUD_STATE_KEY);
+    if(!row||!row.value) return;
+    const remoteSavedAt=typeof row.value.savedAt==='number'?row.value.savedAt:new Date(row.updated_at).getTime();
+    const restore=await window.IOSSheet?.confirm(message||`Another device saved Vocab progress at ${fmtWhen(remoteSavedAt)}. Load it here, or keep this device's progress and overwrite the cloud copy?`,{
+      title:'Cloud Sync',
+      confirmLabel:message?'Restore':'Load cloud copy',
+      cancelLabel:'Keep this device'
+    });
+    cloudBaseSavedAt=typeof row.value.savedAt==='number'?row.value.savedAt:null;
+    if(restore) UI.applyImport(JSON.stringify(row.value));
+    else runCloudPush(true);
+  }catch(e){
+    console.error('Cloud pull failed:',e);
+  }finally{
+    cloudPromptOpen=false;
+  }
+}
 
 function updateSyncStatusUI(){
   const el=$('#syncStatusLine');
@@ -719,18 +790,32 @@ function updateSyncStatusUI(){
     : `Cloud sync: last push ${fmtWhen(lastCloudPush.time)} — error: ${lastCloudPush.error}`;
 }
 
-function runCloudPush(){
-  if(!supabaseConf()) return;
+// force = the learner chose "Keep this device": overwrite whatever is there.
+function runCloudPush(force){
+  if(!supabaseConf()||CLOUD_TEST_KEY) return;
   if(cloudPushInFlight){ cloudPushQueued=true; return; }
   cloudPushInFlight=true;
   const payload=buildStatePayload();
   const logRaw=localStorage.getItem(DAILY_LOG_KEY);
   let logVal=null;
   try{ logVal=logRaw?JSON.parse(logRaw):null; }catch(e){}
-  const pushes=[supabaseUpsert(LS_KEY,payload)];
-  if(logVal!==null) pushes.push(supabaseUpsert(DAILY_LOG_KEY,logVal));
-  Promise.all(pushes)
-    .then(()=>{ lastCloudPush={time:Date.now(),ok:true,error:null}; })
+  (async()=>{
+    if(!force&&cloudBaseSavedAt===null){
+      // The load-time read failed: anything saved after this device's own
+      // copy counts as another device's work.
+      const remote=await supabaseGetSavedAt(CLOUD_STATE_KEY);
+      if(remote>cloudLoadSavedAt||remote===-1) return false;
+      cloudBaseSavedAt=remote;
+    }
+    const ok=force
+      ? (await supabaseUpsert(CLOUD_STATE_KEY,payload),true)
+      : await supabaseWriteStateIf(payload,cloudBaseSavedAt);
+    if(!ok) return false;
+    cloudBaseSavedAt=payload.savedAt;
+    if(logVal!==null) await supabaseUpsert(DAILY_LOG_KEY,logVal);
+    return true;
+  })()
+    .then(ok=>{ if(ok) lastCloudPush={time:Date.now(),ok:true,error:null}; else onCloudConflict(); })
     .catch(e=>{
       console.error('Cloud push failed:',e);
       lastCloudPush={time:Date.now(),ok:false,error:(e&&e.message)||String(e)};
@@ -773,25 +858,32 @@ function sameProgress(a,b){
   return KEYS.every(k=>stable(a?.[k])===stable(b?.[k]));
 }
 
+// Runs on load and whenever the app comes back to the foreground.
 async function tryCloudPullOnLoad(){
-  if(!supabaseConf()) return;
+  if(!supabaseConf()||cloudPromptOpen) return;
   try{
-    const row=await supabaseGetRow(LS_KEY);
-    if(!row||!row.value) return;
+    const row=await supabaseGetRow(CLOUD_STATE_KEY);
+    if(CLOUD_TEST_KEY){
+      if(row&&row.value) UI.applyImport(JSON.stringify(row.value));
+      else alert(`No cloud row "${CLOUD_TEST_KEY}".`);
+      return;
+    }
+    if(!row||!row.value){ if(cloudBaseSavedAt===null) cloudBaseSavedAt=0; return; }
+    const remoteBase=typeof row.value.savedAt==='number'?row.value.savedAt:null;
+    if(remoteBase!==null&&remoteBase===cloudBaseSavedAt) return; // unchanged since this tab last synced
+    // Another device wrote since this tab last synced: ask, whatever the clocks say.
+    const changedElsewhere=cloudBaseSavedAt!==null;
     // Compare the cloud copy's own save time (not the row's upload time, which
     // is always a little later than the last local save — that made this ask
     // on every reopen), and only ask when the progress actually differs.
-    const remoteSavedAt=typeof row.value.savedAt==='number'?row.value.savedAt:new Date(row.updated_at).getTime();
+    const remoteSavedAt=remoteBase??new Date(row.updated_at).getTime();
     const localSavedAt=state.savedAt||0;
     const localEmpty=(state.level||1)<=1&&Object.keys(state.seen||{}).length===0;
-    if(sameProgress(row.value,buildStatePayload())) return;
-    if(!(remoteSavedAt>localSavedAt||localEmpty)) return;
-    window.IOSSheet?.confirm(`Cloud copy from ${fmtWhen(remoteSavedAt)} is newer than this device. Restore it?`,{
-      title:'Cloud Sync',
-      confirmLabel:'Restore',
-      cancelLabel:'Keep this device',
-      onConfirm:()=>UI.applyImport(JSON.stringify(row.value))
-    });
+    if(sameProgress(row.value,buildStatePayload())||!(changedElsewhere||remoteSavedAt>localSavedAt||localEmpty)){
+      cloudBaseSavedAt=remoteBase; // this device's copy is the one to keep
+      return;
+    }
+    askCloudChoice(row,changedElsewhere?null:`Cloud copy from ${fmtWhen(remoteSavedAt)} is newer than this device. Restore it?`);
   }catch(e){
     console.error('Cloud pull failed:',e);
   }
@@ -846,6 +938,7 @@ function saveState(forceBackup){
 
   // Backup write is redundant when the level hasn't moved since the last one —
   // only re-write it on level change or an explicit Export (forceBackup).
+  if(CLOUD_TEST_KEY) return;
   if(forceBackup||lastBackupLevel===null||state.level!==lastBackupLevel){
     try{
       localStorage.setItem('top5k_backup_v2',json);
@@ -897,6 +990,7 @@ function buildLearnerProfile(){
 }
 
 function logDailyActivity(mode,isCorrect){
+  if(CLOUD_TEST_KEY) return;
   try{
     const raw=localStorage.getItem(DAILY_LOG_KEY);
     let log=null;
@@ -1747,7 +1841,14 @@ async function boot(){
     return;
   }
   loadState();
+  cloudLoadSavedAt=state.savedAt||0;
   updateBackupBanner();
+  if(CLOUD_TEST_KEY){
+    const bar=document.createElement('div');
+    bar.textContent=`Read-only test: cloud row "${CLOUD_TEST_KEY}" — nothing is saved or pushed`;
+    bar.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;padding:6px 12px;font-size:12px;text-align:center;background:#b45309;color:#fff';
+    document.body.appendChild(bar);
+  }
 
   function refocusActiveInput(){
     const isSentence=state.activeMode==='sentence';
@@ -2263,7 +2364,9 @@ async function boot(){
       updateSyncStatusUI();
     });
     $('#btnPushNow')?.addEventListener('click',()=>{ pushCloudNow(); });
-    document.addEventListener('visibilitychange',()=>{ if(document.hidden) pushCloudNow(); });
+    // Coming back to the app re-checks the cloud too, so progress saved on
+    // another device in the meantime is offered before any new answers.
+    document.addEventListener('visibilitychange',()=>{ if(document.hidden) pushCloudNow(); else tryCloudPullOnLoad(); });
     updateSyncStatusUI();
   }
 
