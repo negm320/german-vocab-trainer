@@ -104,7 +104,17 @@ screen — idea: picture cards) and `vocab.csv`, `verbs.csv`, `prepositions.csv`
   other screens on `updated_at` — equal to the copy the tab last loaded or
   wrote, so a save from another device (the native iOS app) is never
   overwritten; the page asks "Load cloud copy / Keep this device" instead.
-  The cloud is also re-checked when the app returns to the foreground.
+  The cloud is also re-checked when the app returns to the foreground
+  (`visibilitychange` and `pageshow` with `persisted`), and pushes wait for
+  that check; nothing is pushed while the question is open, and swiping the
+  sheet away is not "Keep this device". Vocab keeps the base in
+  `top5k_cloud_base_v1`, so after a reload a cloud copy with a different
+  `savedAt` is known to be another device's, whatever the clocks say. The
+  other device must write a new whole-number `savedAt` (ms) on every save.
+  **Stale code**: a home-screen app is usually only woken, not reloaded — on
+  27 Oct a page opened before the guard deploy overwrote the iOS app's save.
+  Vocab now compares its own inline script with the server's `top5k.html`
+  on load and on every wake and reloads when it changed (max once a minute).
   `top5k.html?cloudKey=<row key>` opens that row read-only (no pushes,
   saves go to a scratch key) to check blobs written by another client.
 - **PWA caching**: there is no service worker; iOS serves cached files until
@@ -125,6 +135,7 @@ screen — idea: picture cards) and `vocab.csv`, `verbs.csv`, `prepositions.csv`
 | `top5k_log_v1` | Vocab | daily answer log |
 | `top5k_flagged_v1` | Vocab | flagged sentences.json slots per word (by index — clear via Tools → "Clear flagged" whenever sentences.json is replaced) |
 | `top5k_last_cloud_backup_v1`, `top5k_backup_dismissed_v1` | Vocab | backup banner |
+| `top5k_cloud_base_v1` | Vocab | `savedAt` of the cloud copy last loaded or written (overwrite guard) |
 | `top5k_gemini_key`, `top5k_supabase_url`, `top5k_supabase_key`, `top5k_demo_mode`, `top5k_active_tab` | all | shared config |
 | `grammar_settings_v1` | Grammar | settings object (see Grammar) |
 | `grammar_daily_v1` | Grammar | `{ "YYYY-MM-DD": count }`, last 120 days |

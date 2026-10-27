@@ -5,7 +5,9 @@
    API:
      IOSSheet.open(id)
      IOSSheet.close(id)
-     IOSSheet.confirm(message, { title, confirmLabel, cancelLabel, danger, onConfirm })
+     IOSSheet.confirm(message, { title, confirmLabel, cancelLabel, danger, onConfirm, resolveOnDismiss })
+       resolveOnDismiss: resolve null when the sheet is swiped away or the
+       backdrop is tapped (otherwise the promise stays pending then)
 
    Sheets can also be dragged down from their grab handle
    (.iosSheet-handle) to dismiss, like a native iOS sheet.
@@ -69,6 +71,7 @@
     el.style.transform = '';
     springs.delete(el);
     if(el.dataset.iosSheetTemp === '1') el.remove();
+    if(el._onDismiss) el._onDismiss();
   }
 
   function open(id){
@@ -135,6 +138,8 @@
         resolve(true);
       });
       cancelBtn.addEventListener('click', function(){ close(id); resolve(false); });
+      // Runs after every close; a no-op once a button has already resolved.
+      if(opts.resolveOnDismiss) el._onDismiss = function(){ resolve(null); };
 
       open(id);
     });

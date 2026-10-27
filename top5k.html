@@ -720,7 +720,16 @@ let lastCloudPush={time:null,ok:null,error:null};
 // null = unknown, the load-time read failed). A push only replaces the row
 // while it still holds that copy, so a save from another device is never
 // silently overwritten — the push stops and asks instead.
+// It is also kept in localStorage, so after a reload a cloud copy that differs
+// from it is known to come from another device, whatever the clocks say.
+const CLOUD_BASE_KEY='top5k_cloud_base_v1';
 let cloudBaseSavedAt=null;
+if(!CLOUD_TEST_KEY) try{ const b=Number(localStorage.getItem(CLOUD_BASE_KEY)); if(localStorage.getItem(CLOUD_BASE_KEY)!==null&&Number.isFinite(b)) cloudBaseSavedAt=b; }catch(e){}
+function setCloudBase(v){
+  cloudBaseSavedAt=v;
+  if(CLOUD_TEST_KEY) return;
+  try{ if(typeof v==='number') localStorage.setItem(CLOUD_BASE_KEY,String(v)); else localStorage.removeItem(CLOUD_BASE_KEY); }catch(e){}
+}
 let cloudLoadSavedAt=0;
 
 // Writes the state row only if the cloud still holds the copy with savedAt
@@ -768,9 +777,13 @@ async function askCloudChoice(row,message){
     const restore=await window.IOSSheet?.confirm(message||`Another device saved Vocab progress at ${fmtWhen(remoteSavedAt)}. Load it here, or keep this device's progress and overwrite the cloud copy?`,{
       title:'Cloud Sync',
       confirmLabel:message?'Restore':'Load cloud copy',
-      cancelLabel:'Keep this device'
+      cancelLabel:'Keep this device',
+      resolveOnDismiss:true
     });
-    cloudBaseSavedAt=typeof row.value.savedAt==='number'?row.value.savedAt:null;
+    // Only a tap on a button decides. A sheet swiped away (null) or no sheet
+    // at all (undefined) keeps both copies as they are, and asks again later.
+    if(restore!==true&&restore!==false) return;
+    setCloudBase(typeof row.value.savedAt==='number'?row.value.savedAt:null);
     if(restore) UI.applyImport(JSON.stringify(row.value));
     else runCloudPush(true);
   }catch(e){
@@ -800,22 +813,32 @@ function runCloudPush(force){
   let logVal=null;
   try{ logVal=logRaw?JSON.parse(logRaw):null; }catch(e){}
   (async()=>{
+    // Waking up re-checks the code and the cloud first; while the
+    // "Load cloud copy / Keep this device" question is open, nothing is pushed.
+    if(!force){
+      await wakeCheck;
+      if(cloudPromptOpen) return 'asking';
+    }
     if(!force&&cloudBaseSavedAt===null){
       // The load-time read failed: anything saved after this device's own
       // copy counts as another device's work.
       const remote=await supabaseGetSavedAt(CLOUD_STATE_KEY);
       if(remote>cloudLoadSavedAt||remote===-1) return false;
-      cloudBaseSavedAt=remote;
+      setCloudBase(remote);
     }
     const ok=force
       ? (await supabaseUpsert(CLOUD_STATE_KEY,payload),true)
       : await supabaseWriteStateIf(payload,cloudBaseSavedAt);
     if(!ok) return false;
-    cloudBaseSavedAt=payload.savedAt;
+    setCloudBase(payload.savedAt);
     if(logVal!==null) await supabaseUpsert(DAILY_LOG_KEY,logVal);
     return true;
   })()
-    .then(ok=>{ if(ok) lastCloudPush={time:Date.now(),ok:true,error:null}; else onCloudConflict(); })
+    .then(ok=>{
+      if(ok==='asking') lastCloudPush={time:Date.now(),ok:false,error:'waiting for "Load cloud copy / Keep this device" — not pushed'};
+      else if(ok) lastCloudPush={time:Date.now(),ok:true,error:null};
+      else onCloudConflict();
+    })
     .catch(e=>{
       console.error('Cloud push failed:',e);
       lastCloudPush={time:Date.now(),ok:false,error:(e&&e.message)||String(e)};
@@ -868,7 +891,7 @@ async function tryCloudPullOnLoad(){
       else alert(`No cloud row "${CLOUD_TEST_KEY}".`);
       return;
     }
-    if(!row||!row.value){ if(cloudBaseSavedAt===null) cloudBaseSavedAt=0; return; }
+    if(!row||!row.value){ if(cloudBaseSavedAt===null) setCloudBase(0); return; }
     const remoteBase=typeof row.value.savedAt==='number'?row.value.savedAt:null;
     if(remoteBase!==null&&remoteBase===cloudBaseSavedAt) return; // unchanged since this tab last synced
     // Another device wrote since this tab last synced: ask, whatever the clocks say.
@@ -880,13 +903,47 @@ async function tryCloudPullOnLoad(){
     const localSavedAt=state.savedAt||0;
     const localEmpty=(state.level||1)<=1&&Object.keys(state.seen||{}).length===0;
     if(sameProgress(row.value,buildStatePayload())||!(changedElsewhere||remoteSavedAt>localSavedAt||localEmpty)){
-      cloudBaseSavedAt=remoteBase; // this device's copy is the one to keep
+      setCloudBase(remoteBase); // this device's copy is the one to keep
       return;
     }
     askCloudChoice(row,changedElsewhere?null:`Cloud copy from ${fmtWhen(remoteSavedAt)} is newer than this device. Restore it?`);
   }catch(e){
     console.error('Cloud pull failed:',e);
   }
+}
+
+// A home-screen app on the iPhone is usually only woken, not reloaded, so it
+// can keep running a version from before the last deploy (that is how a
+// pre-guard page overwrote the iPhone app's save on 27 Oct). On load and on
+// every wake, compare this page's script with the server's copy; if it
+// changed, refresh the cached files and reload (progress is in localStorage).
+const PAGE_SCRIPT=(document.currentScript?.textContent||'').replace(/\r\n?/g,'\n');
+async function reloadIfCodeChanged(){
+  if(!PAGE_SCRIPT) return false;
+  try{
+    const res=await fetch(location.pathname,{cache:'no-cache'});
+    if(!res.ok) return false;
+    const html=(await res.text()).replace(/\r\n?/g,'\n');
+    if(html.includes(PAGE_SCRIPT)) return false;
+    // Never loop: at most one code reload per minute.
+    const last=Number(sessionStorage.getItem('top5k_code_reload_at')||0);
+    if(Date.now()-last<60000) return false;
+    sessionStorage.setItem('top5k_code_reload_at',String(Date.now()));
+    await Promise.all(['ios-theme.css','ios-motion.js','ios-sheet.js','demo-mode.js','manifest.webmanifest']
+      .map(u=>fetch(u,{cache:'reload'}).catch(()=>{})));
+    location.reload();
+    return true;
+  }catch(e){ return false; }
+}
+
+// Pushes wait for this, so a woken page never pushes before it has re-checked
+// the code and the cloud copy.
+let wakeCheck=Promise.resolve();
+function onWake(){
+  wakeCheck=(async()=>{
+    if(await reloadIfCodeChanged()) return new Promise(()=>{}); // reloading: never push from this page
+    await tryCloudPullOnLoad();
+  })();
 }
 
 function updateBackupBanner(){
@@ -2366,7 +2423,9 @@ async function boot(){
     $('#btnPushNow')?.addEventListener('click',()=>{ pushCloudNow(); });
     // Coming back to the app re-checks the cloud too, so progress saved on
     // another device in the meantime is offered before any new answers.
-    document.addEventListener('visibilitychange',()=>{ if(document.hidden) pushCloudNow(); else tryCloudPullOnLoad(); });
+    document.addEventListener('visibilitychange',()=>{ if(document.hidden) pushCloudNow(); else onWake(); });
+    // Restored from the back/forward cache: the page was frozen, not reloaded.
+    window.addEventListener('pageshow',e=>{ if(e.persisted) onWake(); });
     updateSyncStatusUI();
   }
 
@@ -2375,7 +2434,7 @@ async function boot(){
   ensureLevelScheduled();
   syncMenuUI();
   nextCard();
-  tryCloudPullOnLoad();
+  onWake();
 }
 
 function nextCard(){
